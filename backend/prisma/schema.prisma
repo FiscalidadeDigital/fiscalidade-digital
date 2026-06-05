@@ -1,0 +1,546 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model Tenant {
+  id String @id @default(uuid())
+
+  name String
+  nif String @unique
+  email String @unique
+
+  phone String?
+  address String?
+
+  sector String?
+
+  companyType String?
+
+  employees Int?
+
+  regime FiscalRegime @default(GERAL)
+
+  retentionRate Float @default(0)
+
+  status TenantStatus @default(TRIAL)
+
+  planType PlanType @default(FREE)
+
+  trialEndsAt DateTime?
+
+  settings Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  users User[]
+  clients Client[]
+  products Product[]
+  invoices Invoice[]
+  obligations FiscalObligation[]
+  notifications Notification[]
+  subscriptions Subscription[]
+  taxCalculations TaxCalculation[]
+  declarations TaxDeclaration[]
+  payments TaxPayment[]
+  revenues Revenue[]
+  aiQuestions AIQuestion[]
+
+  auditLogs AuditLog[]
+  smsLogs SMSLog[]
+  emailLogs EmailLog[]
+
+  companySettings CompanySettings?
+  
+
+  @@index([nif])
+}
+
+model User {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  name String
+
+  email String
+  password String
+
+  phone String?
+
+  avatar String?
+
+  role UserRole @default(VIEWER)
+
+  isActive Boolean @default(true)
+
+  twoFactorEnabled Boolean @default(false)
+
+  lastLogin DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([email, tenantId])
+  @@index([tenantId])
+}
+
+model Client {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  name String
+
+  nif String?
+
+  email String?
+
+  phone String?
+
+  address String?
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  invoices Invoice[]
+
+  @@index([tenantId])
+}
+
+model Product {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  code String?
+
+  name String
+
+  description String?
+
+  price Float
+
+  ivaRate Float @default(14)
+
+  stock Float?
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  invoiceItems InvoiceItem[]
+
+  @@index([tenantId])
+}
+
+model Invoice {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  clientId String
+
+  invoiceNumber String
+
+  subtotal Float
+
+  iva Float
+
+  withholdingTax Float @default(0)
+
+  total Float
+
+  status InvoiceStatus @default(PENDING)
+
+  notes String?
+
+  pdfUrl String?
+
+  qrCode String?
+
+  issuedAt DateTime @default(now())
+
+  dueDate DateTime?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  client Client @relation(fields: [clientId], references: [id])
+
+  items InvoiceItem[]
+
+  @@unique([tenantId, invoiceNumber])
+  @@index([tenantId])
+}
+
+model InvoiceItem {
+  id String @id @default(uuid())
+
+  invoiceId String
+
+  productId String?
+
+  productName String
+
+  quantity Float
+
+  unitPrice Float
+
+  total Float
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  product Product? @relation(fields: [productId], references: [id])
+
+  @@index([invoiceId])
+}
+
+model Revenue {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  month Int
+  year Int
+
+  amount Float
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model FiscalObligation {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  type ObligationType
+
+  title String
+
+  description String?
+
+  amount Float?
+
+  dueDate DateTime
+
+  status ObligationStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TaxDeclaration {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  taxType TaxType
+
+  period String
+
+  declaredAmount Float
+
+  paidAmount Float @default(0)
+
+  status DeclarationStatus @default(PENDING)
+
+  declarationDate DateTime @default(now())
+
+  paymentDate DateTime?
+
+  notes String?
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  payments TaxPayment[]
+}
+
+
+model TaxPayment {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  declarationId String?
+
+  taxType TaxType
+
+  amount Float
+
+  reference String?
+
+  paymentMethod String?
+
+  paidAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  declaration TaxDeclaration? @relation(fields: [declarationId], references: [id])
+}
+
+model Notification {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  title String
+
+  message String
+
+  notificationType NotificationType @default(INFO)
+
+  isRead Boolean @default(false)
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model Subscription {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  planType PlanType
+
+  paymentStatus PaymentStatus @default(PENDING)
+
+  currency String @default("AOA")
+
+  priceKwanza Float
+
+  startsAt DateTime
+
+  endsAt DateTime
+
+  isActive Boolean @default(true)
+
+  paymentRef String?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model TaxCalculation {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  taxType String
+
+  amount Float
+
+  tax Float
+
+  total Float
+
+  rate String
+
+  notes String?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AIQuestion {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  question String @db.Text
+
+  answer String @db.Text
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model AuditLog {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  userId String?
+
+  action String
+
+  entity String
+
+  entityId String?
+
+  oldData Json?
+
+  newData Json?
+
+  createdAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model SMSLog {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  phone String
+
+  message String
+
+  status String
+
+  provider String?
+
+  sentAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model EmailLog {
+  id String @id @default(uuid())
+
+  tenantId String
+
+  email String
+
+  subject String
+
+  body String?
+
+  status String
+
+  sentAt DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+model FiscalCalendar {
+  id String @id @default(uuid())
+
+  title String
+
+  taxType TaxType
+
+  dueDate DateTime
+
+  description String?
+
+  active Boolean @default(true)
+
+  createdAt DateTime @default(now())
+}
+
+model CompanySettings {
+  id String @id @default(uuid())
+
+  tenantId String @unique
+
+  companyLogo String?
+
+  invoicePrefix String?
+
+  smsEnabled Boolean @default(true)
+
+  emailEnabled Boolean @default(true)
+
+  aiEnabled Boolean @default(true)
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+}
+
+enum UserRole {
+  OWNER
+  ADMIN
+  ACCOUNTANT
+  VIEWER
+}
+
+enum TenantStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+}
+
+enum PlanType {
+  FREE
+  BASIC
+  PREMIUM
+  ENTERPRISE
+}
+
+enum TaxType {
+  IVA
+  IRT
+  INDUSTRIAL
+  SELO
+  SS
+}
+
+enum DeclarationStatus {
+  PENDING
+  PAID
+  PARTIAL
+  LATE
+}
+
+enum ObligationType {
+  IVA
+  IRT
+  II
+  SS
+  DECLARACAO
+}
+
+enum ObligationStatus {
+  PENDING
+  PAID
+  LATE
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+enum NotificationType {
+  INFO
+  WARNING
+  SUCCESS
+  ERROR
+}
+enum FiscalRegime {
+  GERAL
+  SIMPLIFICADO
+  PRESTADOR_SERVICO
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  EXPIRED
+}
