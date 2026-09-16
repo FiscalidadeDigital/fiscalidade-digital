@@ -11,43 +11,77 @@ export class RevenueService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async create(data: {
-    tenantId: string;
-    month: number;
-    year: number;
-    amount: number;
-    notes?: string;
-  }) {
+  // =====================================================
+  // CRIAR RECEITA
+  // =====================================================
+
+  async create(
+    tenantId: string,
+    data: {
+      month: number;
+      year: number;
+      amount: number;
+      notes?: string;
+    },
+  ) {
     return this.prisma.revenue.create({
-      data,
+      data: {
+        tenantId,
+        month: data.month,
+        year: data.year,
+        amount: data.amount,
+        notes: data.notes,
+      },
     });
   }
 
-  async findAll() {
+  // =====================================================
+  // LISTAR RECEITAS
+  // =====================================================
+
+  async findAll(tenantId: string) {
     return this.prisma.revenue.findMany({
+      where: {
+        tenantId,
+      },
       orderBy: {
         createdAt: 'desc',
       },
     });
   }
 
-  async findOne(id: string) {
+  // =====================================================
+  // CONSULTAR RECEITA
+  // =====================================================
+
+  async findOne(
+    id: string,
+    tenantId: string,
+  ) {
     const revenue =
-      await this.prisma.revenue.findUnique({
-        where: { id },
+      await this.prisma.revenue.findFirst({
+        where: {
+          id,
+          tenantId,
+        },
       });
 
     if (!revenue) {
       throw new NotFoundException(
-        'Receita não encontrada',
+        'Receita não encontrada.',
       );
     }
 
     return revenue;
   }
 
+  // =====================================================
+  // ATUALIZAR RECEITA
+  // =====================================================
+
   async update(
     id: string,
+    tenantId: string,
     data: {
       month?: number;
       year?: number;
@@ -55,25 +89,94 @@ export class RevenueService {
       notes?: string;
     },
   ) {
+    const revenue =
+      await this.prisma.revenue.findFirst({
+        where: {
+          id,
+          tenantId,
+        },
+      });
+
+    if (!revenue) {
+      throw new NotFoundException(
+        'Receita não encontrada.',
+      );
+    }
+
     return this.prisma.revenue.update({
-      where: { id },
-      data,
+      where: {
+        id,
+      },
+      data: {
+        ...(data.month !== undefined && {
+          month: data.month,
+        }),
+
+        ...(data.year !== undefined && {
+          year: data.year,
+        }),
+
+        ...(data.amount !== undefined && {
+          amount: data.amount,
+        }),
+
+        ...(data.notes !== undefined && {
+          notes: data.notes,
+        }),
+      },
     });
   }
 
-  async remove(id: string) {
+  // =====================================================
+  // ELIMINAR RECEITA
+  // =====================================================
+
+  async remove(
+    id: string,
+    tenantId: string,
+  ) {
+    const revenue =
+      await this.prisma.revenue.findFirst({
+        where: {
+          id,
+          tenantId,
+        },
+      });
+
+    if (!revenue) {
+      throw new NotFoundException(
+        'Receita não encontrada.',
+      );
+    }
+
     return this.prisma.revenue.delete({
-      where: { id },
+      where: {
+        id,
+      },
     });
   }
 
-  async dashboardRevenue() {
+  // =====================================================
+  // DASHBOARD
+  // =====================================================
+
+  async dashboardRevenue(
+    tenantId: string,
+  ) {
     const revenues =
-      await this.prisma.revenue.findMany();
+      await this.prisma.revenue.findMany({
+        where: {
+          tenantId,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
 
     const totalRevenue =
       revenues.reduce(
-        (sum, item) => sum + item.amount,
+        (sum, item) =>
+          sum + Number(item.amount),
         0,
       );
 

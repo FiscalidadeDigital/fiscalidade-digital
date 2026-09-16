@@ -1,55 +1,87 @@
-import { Injectable } from '@nestjs/common';
+﻿import {
+  BadRequestException,
+  Injectable,
+} from '@nestjs/common';
+
+import { IvaEngine } from './engines/iva.engine';
+
+import { RetentionEngine } from './engines/retention.engine';
+
+import { IndustrialEngine } from './engines/industrial.engine';
+
+import { CalculateIvaDto } from './dto/calculate-iva.dto';
+
+import { CalculateRetentionDto } from './dto/calculate-retention.dto';
+
+import { CalculateIndustrialDto } from './dto/calculate-industrial.dto';
 
 @Injectable()
 export class TaxCalculatorService {
+  constructor(
+    private readonly ivaEngine: IvaEngine,
 
-  calculateIva(
-    base: number,
-    taxa: number,
+    private readonly retentionEngine: RetentionEngine,
+
+    private readonly industrialEngine: IndustrialEngine,
+  ) {}
+
+  // =====================================================
+  // IVA
+  // =====================================================
+
+  async calculateIVA(
+    tenantId: string,
+    dto: CalculateIvaDto,
   ) {
-    const iva =
-      (base * taxa) / 100;
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Empresa autenticada não identificada.',
+      );
+    }
 
-    return {
-      base,
-      taxa,
-      iva,
-      total: base + iva,
-    };
+    return this.ivaEngine.calculate(
+      tenantId,
+      dto,
+    );
   }
 
-  calculateRetention(
-    valor: number,
-    taxa: number,
-  ) {
-    const retencao =
-      (valor * taxa) / 100;
+  // =====================================================
+  // RETENÇÃO
+  // =====================================================
 
-    return {
-      valor,
-      taxa,
-      retencao,
-      liquido: valor - retencao,
-    };
+  async calculateRetention(
+    tenantId: string,
+    dto: CalculateRetentionDto,
+  ) {
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Empresa autenticada não identificada.',
+      );
+    }
+
+    return this.retentionEngine.calculate(
+      tenantId,
+      dto,
+    );
   }
 
-  calculateIndustrial(
-    receitas: number,
-    custos: number,
+  // =====================================================
+  // IMPOSTO INDUSTRIAL
+  // =====================================================
+
+  async calculateIndustrial(
+    tenantId: string,
+    dto: CalculateIndustrialDto,
   ) {
-    const lucro =
-      receitas - custos;
+    if (!tenantId) {
+      throw new BadRequestException(
+        'Empresa autenticada não identificada.',
+      );
+    }
 
-    const imposto =
-      lucro > 0
-        ? lucro * 0.25
-        : 0;
-
-    return {
-      receitas,
-      custos,
-      lucro,
-      imposto,
-    };
+    return this.industrialEngine.calculate(
+      tenantId,
+      dto,
+    );
   }
 }

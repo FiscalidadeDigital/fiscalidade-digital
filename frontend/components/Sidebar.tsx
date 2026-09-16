@@ -14,6 +14,10 @@ import {
   History,
   Settings,
   Building2,
+  Receipt,
+  ShoppingCart,
+  Users,
+  Truck,
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -25,15 +29,40 @@ export default function Sidebar() {
       href: '/dashboard',
       icon: LayoutDashboard,
     },
+
+    // =====================================================
+    // OPERAÇÕES / FACTURAÇÃO
+    // =====================================================
+
+    {
+      name: 'Facturas',
+      href: '/invoices',
+      icon: Receipt,
+    },
+    {
+      name: 'Facturas de Compra',
+      href: '/purchase-invoices',
+      icon: ShoppingCart,
+    },
+    {
+      name: 'Clientes',
+      href: '/clients',
+      icon: Users,
+    },
+    {
+      name: 'Fornecedores',
+      href: '/suppliers',
+      icon: Truck,
+    },
+
+    // =====================================================
+    // FISCALIDADE
+    // =====================================================
+
     {
       name: 'Obrigações',
       href: '/obligations',
       icon: FileText,
-    },
-    {
-      name: 'Notificações',
-      href: '/notifications',
-      icon: Bell,
     },
     {
       name: 'Calendário Fiscal',
@@ -49,6 +78,16 @@ export default function Sidebar() {
       name: 'Histórico Fiscal',
       href: '/history',
       icon: History,
+    },
+
+    // =====================================================
+    // SISTEMA
+    // =====================================================
+
+    {
+      name: 'Notificações',
+      href: '/notifications',
+      icon: Bell,
     },
     {
       name: 'Empresa',
@@ -76,7 +115,6 @@ export default function Sidebar() {
       {/* LOGO */}
 
       <div className="p-6 border-b border-slate-800">
-
         <motion.div
           initial={{
             opacity: 0,
@@ -109,7 +147,6 @@ export default function Sidebar() {
           </div>
 
           <div>
-
             <h1 className="font-bold text-xl text-white">
               Fiscalidade Digital
             </h1>
@@ -117,22 +154,19 @@ export default function Sidebar() {
             <p className="text-slate-400 text-sm">
               Plataforma Fiscal Angola
             </p>
-
           </div>
-
         </motion.div>
-
       </div>
 
       {/* MENU */}
 
       <nav className="p-4 space-y-2">
-
         {menu.map((item) => {
           const Icon = item.icon;
 
           const active =
-            pathname === item.href;
+            pathname === item.href ||
+            pathname.startsWith(`${item.href}/`);
 
           return (
             <Link
@@ -208,13 +242,11 @@ export default function Sidebar() {
             </Link>
           );
         })}
-
       </nav>
 
       {/* FOOTER */}
 
       <div className="absolute bottom-6 left-6 right-6">
-
         <div
           className="
             bg-slate-900
@@ -236,9 +268,7 @@ export default function Sidebar() {
             Versão 1.0
           </div>
         </div>
-
       </div>
-
     </aside>
   );
 }

@@ -2,37 +2,22 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-
-import {
-  Building2,
-  Menu,
-  X,
-} from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 
 export default function Navbar() {
-  const [scrolled, setScrolled] =
-    useState(false);
-
-  const [mobileOpen, setMobileOpen] =
-    useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      setScrolled(
-        window.scrollY > 30,
-      );
+      setScrolled(window.scrollY > 20);
     };
 
-    window.addEventListener(
-      'scroll',
-      handleScroll,
-    );
+    window.addEventListener('scroll', handleScroll);
 
-    return () =>
-      window.removeEventListener(
-        'scroll',
-        handleScroll,
-      );
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
   }, []);
 
   return (
@@ -44,194 +29,185 @@ export default function Navbar() {
         right-0
         z-50
         transition-all
-        duration-500
+        duration-300
         ${
           scrolled
-            ? 'bg-slate-950/90 backdrop-blur-xl border-b border-white/10 shadow-2xl'
-            : 'bg-transparent'
+            ? 'bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm'
+            : 'bg-white border-b border-slate-100'
         }
       `}
     >
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <div className="h-[76px] flex items-center justify-between">
 
-        <div className="h-20 flex items-center justify-between">
+          {/* LOGO */}
 
           <Link
             href="/"
-            className="flex items-center gap-4"
+            className="flex items-center gap-3 shrink-0"
           >
-            <div className="w-12 h-12 rounded-2xl bg-blue-600 flex items-center justify-center shadow-lg shadow-blue-600/30">
-              <Building2
-                className="text-white"
-                size={24}
+            <div className="w-11 h-11 flex items-center justify-center">
+              <img
+                src="/logofiscalidade.png"
+                alt="Fiscalidade Digital"
+                className="w-full h-full object-contain"
               />
             </div>
 
-            <div>
-
-              <h1 className="text-white font-bold text-xl">
+            <div className="hidden sm:block">
+              <div className="text-[17px] font-bold tracking-tight text-slate-900">
                 Fiscalidade Digital
-              </h1>
+              </div>
 
-              <p className="text-slate-400 text-xs">
-                Plataforma Fiscal Inteligente
-              </p>
-
+              <div className="text-[11px] text-slate-500 mt-0.5">
+                Gestão fiscal empresarial
+              </div>
             </div>
-
           </Link>
 
-          {/* DESKTOP */}
+          {/* NAVEGAÇÃO */}
 
-          <nav className="hidden lg:flex items-center gap-10">
-
+          <nav className="hidden lg:flex items-center gap-8">
             <a
               href="#sobre"
-              className="text-slate-300 hover:text-white transition"
+              className="text-sm text-slate-600 hover:text-blue-700 transition-colors"
             >
               Sobre
             </a>
 
             <a
+              href="#beneficios"
+              className="text-sm text-slate-600 hover:text-blue-700 transition-colors"
+            >
+              Benefícios
+            </a>
+
+            <a
               href="#modulos"
-              className="text-slate-300 hover:text-white transition"
+              className="text-sm text-slate-600 hover:text-blue-700 transition-colors"
             >
               Módulos
             </a>
 
             <a
-              href="#impacto"
-              className="text-slate-300 hover:text-white transition"
-            >
-              Impacto
-            </a>
-
-            <a
               href="#faq"
-              className="text-slate-300 hover:text-white transition"
+              className="text-sm text-slate-600 hover:text-blue-700 transition-colors"
             >
-              FAQ
+              Perguntas
             </a>
-
           </nav>
 
-          {/* CTA */}
+          {/* AÇÕES */}
 
-          <div className="hidden lg:flex gap-3">
-
+          <div className="hidden lg:flex items-center gap-3">
             <Link
               href="/login"
               className="
-                px-5
-                py-3
-                rounded-xl
-                border
-                border-white/20
-                text-white
-                hover:bg-white/10
-                transition
+                px-4
+                py-2.5
+                text-sm
+                font-medium
+                text-slate-700
+                hover:text-blue-700
+                transition-colors
               "
             >
-              Iniciar Sessão
+              Iniciar sessão
             </Link>
 
             <Link
               href="/register"
               className="
                 px-5
-                py-3
-                rounded-xl
-                bg-blue-600
-                hover:bg-blue-700
+                py-2.5
+                rounded-lg
+                bg-blue-700
                 text-white
-                transition
-                shadow-xl
-                shadow-blue-600/30
+                text-sm
+                font-semibold
+                hover:bg-blue-800
+                transition-colors
               "
             >
-              Registrar Empresa
+              Criar conta
             </Link>
-
           </div>
 
           {/* MOBILE */}
 
           <button
-            className="lg:hidden text-white"
-            onClick={() =>
-              setMobileOpen(
-                !mobileOpen,
-              )
-            }
+            type="button"
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="lg:hidden text-slate-700"
+            aria-label="Abrir menu"
           >
             {mobileOpen ? (
-              <X size={28} />
+              <X size={25} />
             ) : (
-              <Menu size={28} />
+              <Menu size={25} />
             )}
           </button>
-
         </div>
-
       </div>
 
-      {/* MOBILE MENU */}
+      {/* MENU MOBILE */}
 
       {mobileOpen && (
-        <div className="lg:hidden bg-slate-950 border-t border-white/10 p-6">
-
-          <div className="flex flex-col gap-5">
+        <div className="lg:hidden border-t border-slate-200 bg-white">
+          <div className="px-6 py-6 flex flex-col gap-5">
 
             <a
               href="#sobre"
-              className="text-slate-300"
+              onClick={() => setMobileOpen(false)}
+              className="text-slate-700"
             >
               Sobre
             </a>
 
             <a
+              href="#beneficios"
+              onClick={() => setMobileOpen(false)}
+              className="text-slate-700"
+            >
+              Benefícios
+            </a>
+
+            <a
               href="#modulos"
-              className="text-slate-300"
+              onClick={() => setMobileOpen(false)}
+              className="text-slate-700"
             >
               Módulos
             </a>
 
             <a
-              href="#impacto"
-              className="text-slate-300"
-            >
-              Impacto
-            </a>
-
-            <a
               href="#faq"
-              className="text-slate-300"
+              onClick={() => setMobileOpen(false)}
+              className="text-slate-700"
             >
-              FAQ
+              Perguntas
             </a>
 
-            <Link
-              href="/login"
-              className="text-white"
-            >
-              Iniciar Sessão
-            </Link>
+            <div className="pt-3 border-t border-slate-100 flex flex-col gap-3">
 
-            <Link
-              href="/register"
-              className="
-                bg-blue-600
-                text-center
-                py-3
-                rounded-xl
-                text-white
-              "
-            >
-              Registrar Empresa
-            </Link>
+              <Link
+                href="/login"
+                onClick={() => setMobileOpen(false)}
+                className="text-center py-3 text-slate-700 font-medium"
+              >
+                Iniciar sessão
+              </Link>
 
+              <Link
+                href="/register"
+                onClick={() => setMobileOpen(false)}
+                className="text-center py-3 rounded-lg bg-blue-700 text-white font-semibold"
+              >
+                Criar conta
+              </Link>
+
+            </div>
           </div>
-
         </div>
       )}
     </header>

@@ -16,19 +16,24 @@ export default function Counter({
   const [count, setCount] = useState(0);
 
   useEffect(() => {
-    let start = 0;
-
-    const increment =
-      end / (duration / 16);
+    const startTime = Date.now();
 
     const timer = setInterval(() => {
-      start += increment;
+      const elapsed = Date.now() - startTime;
+      const progress = Math.min(
+        elapsed / duration,
+        1,
+      );
 
-      if (start >= end) {
-        setCount(end);
+      const current = Math.floor(
+        progress * end,
+      );
+
+      setCount(current);
+
+      if (progress >= 1) {
         clearInterval(timer);
-      } else {
-        setCount(Math.floor(start));
+        setCount(end);
       }
     }, 16);
 
@@ -37,7 +42,7 @@ export default function Counter({
 
   return (
     <>
-      {count.toLocaleString()}
+      {count.toLocaleString('pt-AO')}
       {suffix}
     </>
   );

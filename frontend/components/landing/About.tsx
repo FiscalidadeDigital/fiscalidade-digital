@@ -11,125 +11,183 @@ export default function About() {
   return (
     <section
       id="sobre"
-      className="py-32 bg-white"
+      className="py-24 lg:py-28 bg-slate-50 border-y border-slate-200"
     >
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
 
-        <div className="grid lg:grid-cols-2 gap-20 items-center">
+        <div className="grid lg:grid-cols-2 gap-16 lg:gap-24 items-center">
 
-          {/* ESQUERDA */}
+          {/* TEXTO */}
 
           <div>
 
-            <div className="inline-flex items-center px-4 py-2 rounded-full bg-blue-100 text-blue-700 font-medium mb-6">
-              Sobre a Plataforma
+            <div className="
+              inline-flex
+              px-3
+              py-1.5
+              rounded-md
+              bg-white
+              border
+              border-slate-200
+              text-blue-700
+              text-xs
+              font-semibold
+              mb-5
+            ">
+              Sobre a plataforma
             </div>
 
-            <h2 className="text-5xl font-black text-slate-900 leading-tight">
-              Fiscalidade Inteligente para Empresas Modernas
+            <h2 className="
+              text-3xl
+              sm:text-4xl
+              font-bold
+              tracking-tight
+              text-slate-950
+              leading-tight
+            ">
+              Uma forma mais simples de acompanhar a fiscalidade da sua empresa.
             </h2>
 
-            <p className="text-xl text-slate-600 mt-8 leading-relaxed">
-              O Fiscalidade Digital foi criado para ajudar
-              empresas angolanas a automatizar processos fiscais,
-              reduzir riscos, evitar multas e tomar decisões
-              financeiras com mais segurança.
+            <p className="
+              mt-6
+              text-lg
+              leading-8
+              text-slate-600
+            ">
+              O Fiscalidade Digital reúne num único espaço
+              as principais informações e tarefas relacionadas
+              com a gestão fiscal da empresa.
             </p>
 
-            <div className="mt-10 space-y-5">
+            <p className="
+              mt-4
+              text-base
+              leading-7
+              text-slate-600
+            ">
+              Em vez de procurar informação em vários lugares,
+              a equipa pode acompanhar obrigações, documentos,
+              pagamentos e prazos a partir de uma única plataforma.
+            </p>
 
-              <div className="flex items-center gap-4">
-                <ShieldCheck className="text-green-600" />
-                <span>
-                  Conformidade fiscal automatizada
-                </span>
-              </div>
+            <div className="mt-8 grid sm:grid-cols-2 gap-5">
 
-              <div className="flex items-center gap-4">
-                <BellRing className="text-orange-500" />
-                <span>
-                  Alertas inteligentes de obrigações
-                </span>
-              </div>
+              <Feature
+                icon={ShieldCheck}
+                title="Maior controlo"
+                text="Tenha uma visão mais clara da situação fiscal."
+                color="text-blue-700"
+              />
 
-              <div className="flex items-center gap-4">
-                <Clock3 className="text-blue-600" />
-                <span>
-                  Redução significativa do trabalho manual
-                </span>
-              </div>
+              <Feature
+                icon={BellRing}
+                title="Alertas"
+                text="Acompanhe prazos e obrigações importantes."
+                color="text-orange-600"
+              />
 
-              <div className="flex items-center gap-4">
-                <TrendingUp className="text-purple-600" />
-                <span>
-                  Maior controlo financeiro e fiscal
-                </span>
-              </div>
+              <Feature
+                icon={Clock3}
+                title="Mais organização"
+                text="Reduza tarefas dispersas e trabalho repetitivo."
+                color="text-emerald-600"
+              />
+
+              <Feature
+                icon={TrendingUp}
+                title="Melhor acompanhamento"
+                text="Consulte indicadores para apoiar decisões."
+                color="text-purple-600"
+              />
 
             </div>
 
           </div>
 
-          {/* DIREITA */}
+          {/* BLOCO VISUAL */}
 
-          <div>
+          <div className="
+            bg-white
+            border
+            border-slate-200
+            rounded-2xl
+            p-6
+            lg:p-8
+            shadow-sm
+          ">
 
-            <div className="bg-slate-950 rounded-[32px] p-8 text-white shadow-2xl">
+            <div className="flex items-center justify-between mb-7">
 
-              <div className="flex justify-between mb-8">
+              <div>
+                <p className="text-xs text-slate-500">
+                  Visão geral
+                </p>
 
-                <div>
-                  <div className="text-slate-400">
-                    Receita Anual
-                  </div>
-
-                  <div className="text-4xl font-black">
-                    48.7M AOA
-                  </div>
-                </div>
-
-                <div className="text-green-400 font-bold">
-                  +27%
-                </div>
-
+                <h3 className="text-lg font-bold text-slate-900 mt-1">
+                  Estado da empresa
+                </h3>
               </div>
 
-              <div className="space-y-5">
+              <span className="
+                px-2.5
+                py-1
+                rounded-md
+                bg-emerald-50
+                text-emerald-700
+                text-xs
+                font-semibold
+              ">
+                Regular
+              </span>
 
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span>Conformidade Fiscal</span>
-                    <span>98%</span>
-                  </div>
+            </div>
 
-                  <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-green-500 w-[98%]" />
-                  </div>
-                </div>
+            <div className="space-y-5">
 
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span>Automatização</span>
-                    <span>91%</span>
-                  </div>
+              <Progress
+                title="Obrigações acompanhadas"
+                value="86%"
+                width="86%"
+              />
 
-                  <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-blue-500 w-[91%]" />
-                  </div>
-                </div>
+              <Progress
+                title="Documentos organizados"
+                value="74%"
+                width="74%"
+              />
 
-                <div>
-                  <div className="flex justify-between mb-2">
-                    <span>Eficiência Operacional</span>
-                    <span>95%</span>
-                  </div>
+              <Progress
+                title="Pagamentos em dia"
+                value="92%"
+                width="92%"
+              />
 
-                  <div className="h-3 bg-slate-700 rounded-full overflow-hidden">
-                    <div className="h-full bg-cyan-500 w-[95%]" />
-                  </div>
-                </div>
+            </div>
 
-              </div>
+            <div className="
+              mt-8
+              pt-6
+              border-t
+              border-slate-200
+              grid
+              grid-cols-3
+              gap-4
+            ">
+
+              <Metric
+                value="12"
+                label="Obrigações"
+              />
+
+              <Metric
+                value="28"
+                label="Documentos"
+              />
+
+              <Metric
+                value="04"
+                label="Alertas"
+              />
 
             </div>
 
@@ -139,5 +197,89 @@ export default function About() {
 
       </div>
     </section>
+  );
+}
+
+function Feature({
+  icon: Icon,
+  title,
+  text,
+  color,
+}: {
+  icon: any;
+  title: string;
+  text: string;
+  color: string;
+}) {
+  return (
+    <div className="flex gap-3">
+      <Icon
+        size={20}
+        className={`${color} shrink-0 mt-0.5`}
+      />
+
+      <div>
+        <h3 className="text-sm font-semibold text-slate-900">
+          {title}
+        </h3>
+
+        <p className="text-sm text-slate-500 mt-1 leading-6">
+          {text}
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function Progress({
+  title,
+  value,
+  width,
+}: {
+  title: string;
+  value: string;
+  width: string;
+}) {
+  return (
+    <div>
+
+      <div className="flex justify-between mb-2">
+        <span className="text-sm text-slate-600">
+          {title}
+        </span>
+
+        <span className="text-sm font-semibold text-slate-900">
+          {value}
+        </span>
+      </div>
+
+      <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div
+          className="h-full bg-blue-600 rounded-full"
+          style={{ width }}
+        />
+      </div>
+
+    </div>
+  );
+}
+
+function Metric({
+  value,
+  label,
+}: {
+  value: string;
+  label: string;
+}) {
+  return (
+    <div>
+      <div className="text-xl font-bold text-slate-900">
+        {value}
+      </div>
+
+      <div className="text-xs text-slate-500 mt-1">
+        {label}
+      </div>
+    </div>
   );
 }

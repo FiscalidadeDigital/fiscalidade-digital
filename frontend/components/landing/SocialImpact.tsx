@@ -1,103 +1,98 @@
 'use client';
 
-import {
-  Building2,
-  Users,
-  ShieldCheck,
-  Landmark,
-} from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight } from 'lucide-react';
 
-export default function SocialImpact() {
+export default function PremiumCTA() {
   return (
-    <section className="py-32 bg-slate-50">
+    <section className="py-24 lg:py-28 bg-white">
 
       <div className="max-w-7xl mx-auto px-6">
 
-        <div className="text-center mb-20">
+        <div
+          className="
+            relative
+            overflow-hidden
+            rounded-3xl
+            bg-slate-900
+            px-7
+            py-14
+            lg:px-16
+            lg:py-16
+          "
+        >
 
-          <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full font-medium">
-            Responsabilidade Social
-          </span>
+          {/* detalhe discreto */}
 
-          <h2 className="text-5xl font-black mt-6">
-            Impacto Positivo na Economia
-          </h2>
+          <div className="absolute -right-32 -top-32 w-96 h-96 rounded-full bg-blue-600/15 blur-3xl" />
 
-          <p className="text-xl text-slate-600 max-w-4xl mx-auto mt-6">
-            Empresas mais organizadas geram mais empregos,
-            pagam impostos correctamente e ajudam no
-            crescimento sustentável de Angola.
-          </p>
+          <div className="relative max-w-3xl">
 
-        </div>
+            <span className="text-sm font-semibold text-blue-300">
+              Fiscalidade Digital
+            </span>
 
-        <div className="grid md:grid-cols-4 gap-8">
+            <h2 className="mt-4 text-4xl lg:text-5xl font-bold leading-tight text-white">
+              Tenha a gestão fiscal da sua empresa num só lugar.
+            </h2>
 
-          <div className="bg-white rounded-3xl p-8 shadow-sm">
-
-            <Building2
-              size={48}
-              className="text-blue-600 mb-5"
-            />
-
-            <h3 className="font-bold text-xl mb-3">
-              Empresas
-            </h3>
-
-            <p className="text-slate-600">
-              Maior organização e conformidade fiscal.
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+              Organize facturação, obrigações, impostos e relatórios
+              sem depender de informação espalhada por diferentes ferramentas.
             </p>
 
-          </div>
+            <div className="mt-8 flex flex-wrap gap-3">
 
-          <div className="bg-white rounded-3xl p-8 shadow-sm">
+              <Link
+                href="/register"
+                className="
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-blue-600
+                  px-6
+                  py-3.5
+                  font-semibold
+                  text-white
+                  hover:bg-blue-500
+                  transition-colors
+                "
+              >
+                Criar conta
+                <ArrowRight size={18} />
+              </Link>
 
-            <Users
-              size={48}
-              className="text-green-600 mb-5"
-            />
+              <Link
+                href="/login"
+                className="
+                  inline-flex
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-white/15
+                  px-6
+                  py-3.5
+                  font-semibold
+                  text-white
+                  hover:bg-white/10
+                  transition-colors
+                "
+              >
+                Iniciar sessão
+              </Link>
 
-            <h3 className="font-bold text-xl mb-3">
-              Trabalhadores
-            </h3>
+            </div>
 
-            <p className="text-slate-600">
-              Mais estabilidade e transparência.
-            </p>
-
-          </div>
-
-          <div className="bg-white rounded-3xl p-8 shadow-sm">
-
-            <ShieldCheck
-              size={48}
-              className="text-orange-500 mb-5"
-            />
-
-            <h3 className="font-bold text-xl mb-3">
-              Conformidade
-            </h3>
-
-            <p className="text-slate-600">
-              Redução de riscos e penalizações.
-            </p>
-
-          </div>
-
-          <div className="bg-white rounded-3xl p-8 shadow-sm">
-
-            <Landmark
-              size={48}
-              className="text-purple-600 mb-5"
-            />
-
-            <h3 className="font-bold text-xl mb-3">
-              Estado
-            </h3>
-
-            <p className="text-slate-600">
-              Maior arrecadação e controlo fiscal.
-            </p>
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+              <span>Acesso online</span>
+              <span>•</span>
+              <span>Gestão centralizada</span>
+              <span>•</span>
+              <span>Para empresas</span>
+            </div>
 
           </div>
 

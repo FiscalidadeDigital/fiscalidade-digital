@@ -17,25 +17,54 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+  ) {}
+
+  // =========================================================
+  // REGISTO DE EMPRESA
+  // =========================================================
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
+  register(
+    @Body() dto: RegisterDto,
+  ) {
     return this.authService.register(dto);
   }
 
+  // =========================================================
+  // LOGIN
+  // =========================================================
+
   @Post('login')
-  login(@Body() dto: LoginDto) {
+  login(
+    @Body() dto: LoginDto,
+  ) {
     return this.authService.login(dto);
   }
 
+  // =========================================================
+  // UTILIZADOR AUTENTICADO
+  // =========================================================
+  //
+  // Este endpoint será utilizado pelo frontend para
+  // recuperar os dados reais da sessão atual:
+  //
+  // Utilizador
+  // Empresa
+  // NIF
+  // Regime
+  // Tipo de empresa
+  //
+  // =========================================================
+
   @UseGuards(JwtAuthGuard)
   @Get('me')
-  me(@CurrentUser() user: any) {
-    return {
-      message: 'Utilizador autenticado',
-
-      user,
-    };
+  me(
+    @CurrentUser() user: any,
+  ) {
+    return this.authService.getCurrentUser(
+      user.userId,
+    );
   }
 }

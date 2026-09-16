@@ -9,84 +9,141 @@ import {
   Briefcase,
 } from 'lucide-react';
 
-export default function Features() {
-  const features = [
-    {
-      icon: ShieldCheck,
-      title: 'Segurança Avançada',
-      description:
-        'Protecção de dados com padrões modernos de segurança.',
-    },
-    {
-      icon: Bell,
-      title: 'Alertas Inteligentes',
-      description:
-        'Receba notificações antes dos prazos fiscais.',
-    },
-    {
-      icon: TrendingUp,
-      title: 'Maior Produtividade',
-      description:
-        'Automatize processos e reduza trabalho manual.',
-    },
-    {
-      icon: Users,
-      title: 'Escalável',
-      description:
-        'Adequado para PME e grandes empresas.',
-    },
-    {
-      icon: Globe,
-      title: 'Acesso Online',
-      description:
-        'Aceda ao sistema em qualquer lugar.',
-    },
-    {
-      icon: Briefcase,
-      title: 'Gestão Completa',
-      description:
-        'Tudo centralizado numa única plataforma.',
-    },
-  ];
+const features = [
+  {
+    icon: ShieldCheck,
+    title: 'Segurança',
+    description:
+      'Mantenha a informação da empresa organizada e protegida.',
+  },
+  {
+    icon: Bell,
+    title: 'Alertas de prazos',
+    description:
+      'Acompanhe obrigações e receba avisos sobre datas importantes.',
+  },
+  {
+    icon: TrendingUp,
+    title: 'Indicadores',
+    description:
+      'Consulte informação resumida para acompanhar o negócio.',
+  },
+  {
+    icon: Users,
+    title: 'Trabalho em equipa',
+    description:
+      'Centralize a informação que a sua equipa precisa no dia a dia.',
+  },
+  {
+    icon: Globe,
+    title: 'Acesso online',
+    description:
+      'Consulte a plataforma a partir do computador onde estiver.',
+  },
+  {
+    icon: Briefcase,
+    title: 'Gestão centralizada',
+    description:
+      'Documentos, obrigações e informação fiscal num único lugar.',
+  },
+];
 
+export default function Features() {
   return (
     <section
       id="beneficios"
-      className="py-32 bg-slate-50"
+      className="py-24 lg:py-28 bg-white"
     >
-      <div className="max-w-7xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6 lg:px-8">
 
-        <h2 className="text-5xl font-black text-center mb-5">
-          Por que aderir ao sistema?
-        </h2>
+        <div className="max-w-2xl mb-12">
 
-        <p className="text-center text-slate-600 max-w-3xl mx-auto mb-16">
-          Desenvolvido para simplificar a gestão fiscal
-          e financeira das empresas angolanas.
-        </p>
+          <div className="
+            text-xs
+            font-semibold
+            text-blue-700
+            uppercase
+            tracking-wide
+            mb-3
+          ">
+            Benefícios
+          </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <h2 className="
+            text-3xl
+            sm:text-4xl
+            font-bold
+            tracking-tight
+            text-slate-950
+          ">
+            Ferramentas pensadas para o trabalho fiscal do dia a dia.
+          </h2>
 
-          {features.map((item, index) => {
+          <p className="
+            mt-4
+            text-lg
+            text-slate-600
+            leading-7
+          ">
+            Menos informação espalhada e mais visibilidade
+            sobre aquilo que precisa de ser tratado.
+          </p>
+
+        </div>
+
+        <div className="
+          grid
+          md:grid-cols-2
+          lg:grid-cols-3
+          gap-px
+          bg-slate-200
+          border
+          border-slate-200
+          rounded-2xl
+          overflow-hidden
+        ">
+
+          {features.map((item) => {
             const Icon = item.icon;
 
             return (
               <div
-                key={index}
-                className="bg-white rounded-3xl p-8 border border-slate-100 shadow-sm hover:shadow-xl transition-all"
+                key={item.title}
+                className="
+                  bg-white
+                  p-7
+                  hover:bg-slate-50
+                  transition-colors
+                "
               >
-                <Icon
-                  size={42}
-                  className="text-blue-600 mb-5"
-                />
 
-                <h3 className="text-xl font-bold mb-3">
+                <div className="
+                  w-10
+                  h-10
+                  rounded-lg
+                  bg-blue-50
+                  text-blue-700
+                  flex
+                  items-center
+                  justify-center
+                  mb-5
+                ">
+                  <Icon size={20} />
+                </div>
+
+                <h3 className="font-semibold text-slate-900">
                   {item.title}
                 </h3>
 
-                <p className="text-slate-600">
+                <p className="
+                  text-sm
+                  text-slate-500
+                  leading-6
+                  mt-2
+                ">
                   {item.description}
                 </p>
+
               </div>
             );
           })}

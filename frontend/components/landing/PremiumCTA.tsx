@@ -5,152 +5,94 @@ import { ArrowRight } from 'lucide-react';
 
 export default function PremiumCTA() {
   return (
-    <section className="relative overflow-hidden py-36 bg-slate-950 text-white">
+    <section className="py-24 lg:py-28 bg-white">
 
-      {/* BACKGROUND */}
+      <div className="max-w-7xl mx-auto px-6">
 
-      <div className="absolute inset-0">
+        <div
+          className="
+            relative
+            overflow-hidden
+            rounded-3xl
+            bg-slate-900
+            px-7
+            py-14
+            lg:px-16
+            lg:py-16
+          "
+        >
 
-        <div className="absolute -top-40 left-0 w-[700px] h-[700px] bg-blue-600/20 rounded-full blur-[180px]" />
+          {/* detalhe discreto */}
 
-        <div className="absolute bottom-0 right-0 w-[700px] h-[700px] bg-cyan-500/20 rounded-full blur-[180px]" />
+          <div className="absolute -right-32 -top-32 w-96 h-96 rounded-full bg-blue-600/15 blur-3xl" />
 
-        <div className="absolute top-1/2 left-1/2 w-[500px] h-[500px] bg-blue-500/10 rounded-full blur-[140px] -translate-x-1/2 -translate-y-1/2" />
+          <div className="relative max-w-3xl">
 
-      </div>
-
-      {/* GRID */}
-
-      <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
-        }}
-      />
-
-      <div className="relative max-w-6xl mx-auto px-6">
-
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-[40px] p-12 lg:p-20">
-
-          <div className="text-center">
-
-            <span className="inline-flex px-5 py-2 rounded-full bg-blue-500/20 border border-blue-500/30 text-blue-300 text-sm font-semibold">
-              Plataforma Fiscal Inteligente
+            <span className="text-sm font-semibold text-blue-300">
+              Fiscalidade Digital
             </span>
 
-            <h2 className="mt-8 text-5xl lg:text-7xl font-black leading-tight">
-
-              Transforme a Gestão Fiscal
-              <span className="block text-blue-500">
-                da Sua Empresa
-              </span>
-
+            <h2 className="mt-4 text-4xl lg:text-5xl font-bold leading-tight text-white">
+              Tenha a gestão fiscal da sua empresa num só lugar.
             </h2>
 
-            <p className="mt-8 text-xl text-slate-300 max-w-3xl mx-auto leading-relaxed">
-
-              Automatize obrigações fiscais,
-              acompanhe impostos em tempo real,
-              elimine processos manuais
-              e tenha controlo total da sua empresa
-              numa única plataforma moderna.
-
+            <p className="mt-5 max-w-2xl text-lg leading-8 text-slate-300">
+              Organize facturação, obrigações, impostos e relatórios
+              sem depender de informação espalhada por diferentes ferramentas.
             </p>
 
-            {/* STATS */}
-
-            <div className="grid md:grid-cols-3 gap-8 mt-14">
-
-              <div>
-
-                <div className="text-5xl font-black text-blue-400">
-                  500+
-                </div>
-
-                <div className="text-slate-400 mt-2">
-                  Empresas
-                </div>
-
-              </div>
-
-              <div>
-
-                <div className="text-5xl font-black text-green-400">
-                  25K+
-                </div>
-
-                <div className="text-slate-400 mt-2">
-                  Declarações
-                </div>
-
-              </div>
-
-              <div>
-
-                <div className="text-5xl font-black text-orange-400">
-                  98%
-                </div>
-
-                <div className="text-slate-400 mt-2">
-                  Conformidade
-                </div>
-
-              </div>
-
-            </div>
-
-            {/* BUTTONS */}
-
-            <div className="flex flex-wrap justify-center gap-5 mt-14">
+            <div className="mt-8 flex flex-wrap gap-3">
 
               <Link
                 href="/register"
                 className="
-                  px-10
-                  py-5
-                  rounded-2xl
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
                   bg-blue-600
-                  hover:bg-blue-700
+                  px-6
+                  py-3.5
+                  font-semibold
                   text-white
-                  font-bold
-                  text-lg
-                  shadow-[0_20px_60px_rgba(37,99,235,.45)]
-                  hover:scale-105
-                  transition-all
+                  hover:bg-blue-500
+                  transition-colors
                 "
               >
-                Registrar Empresa
+                Criar conta
+                <ArrowRight size={18} />
               </Link>
 
               <Link
                 href="/login"
                 className="
-                  px-10
-                  py-5
-                  rounded-2xl
-                  bg-white
-                  text-slate-900
-                  font-bold
-                  text-lg
-                  flex
+                  inline-flex
                   items-center
-                  gap-3
-                  hover:scale-105
-                  transition-all
+                  justify-center
+                  rounded-xl
+                  border
+                  border-white/15
+                  px-6
+                  py-3.5
+                  font-semibold
+                  text-white
+                  hover:bg-white/10
+                  transition-colors
                 "
               >
-                Iniciar Sessão
-
-                <ArrowRight size={20} />
+                Iniciar sessão
               </Link>
 
             </div>
 
-            <p className="mt-8 text-slate-400 text-sm">
-              Sem instalação • Acesso online • Seguro • Escalável
-            </p>
+            <div className="mt-7 flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-400">
+              <span>Acesso online</span>
+              <span>•</span>
+              <span>Gestão centralizada</span>
+              <span>•</span>
+              <span>Para empresas</span>
+            </div>
 
           </div>
 

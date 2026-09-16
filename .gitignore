@@ -54,3 +54,65 @@ pids
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
+# Next.js
+.next/
+out/
+
+# Backups e ficheiros temporários
+**/backups/
+**/*.bak
+**/*.backup
+*.zip
+
+# Uploads locais
+backend/uploads/
+frontend/public/pessoa/
+
+# Bases de dados locais
+*.db
+*.sqlite
+*.sqlite3
+
+# Ficheiros de diagnóstico e scripts temporários
+backend/*diagnostico*
+backend/*diagnose*
+backend/*check-*
+backend/*ocr-*
+backend/*extrair-*
+backend/*inspecionar-*
+backend/*classificar-*
+backend/*importar-*
+backend/*exportar-*
+backend/*sincronizar*
+backend/*sync-*
+backend/*remove-*
+
+# Ficheiros de compilação TypeScript
+*.tsbuildinfo
+# Dados locais e documentos de armazenamento
+/storage/
+backend/prisma/data/
+backend/prisma-backups/
+
+
+# Backups locais
+**/*.backup
+**/*.bak
+**/*.before-repair-*
+backend/prisma/schema.backup.prisma
+backend/prisma/seed.backup.ts
+frontend/tsconfig.backup.json
+frontend/components/layout/*.backup.tsx
+
+# Scripts e ficheiros SQL tempor�rios de diagn�stico
+backend/catalogar-agt.js
+backend/diagnosticar-agt.js
+backend/testar-leitura-agt.js
+backend/db-to-schema.sql
+backend/migration-original.sql
+backend/schema-current.sql
+.migration-original.sql
+
+frontend/components/layout/*.before-*.tsx
+
+frontend/components/layout/*.before-*.tsx

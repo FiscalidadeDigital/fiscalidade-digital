@@ -1,65 +1,196 @@
 import {
   Controller,
-  Get,
-  Post,
   Delete,
-  Patch,
+  Get,
   Param,
-  Body,
-  NotFoundException,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 
+import type { Request } from 'express';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+
 import { ObligationsService } from './obligations.service';
-import { CreateObligationDto } from './dto/create-obligation.dto';
+
+interface AuthenticatedRequest
+  extends Request {
+  user: {
+    tenantId: string;
+  };
+}
 
 @Controller('obligations')
+@UseGuards(JwtAuthGuard)
 export class ObligationsController {
   constructor(
     private readonly obligationsService: ObligationsService,
   ) {}
 
-  @Post()
-  create(@Body() dto: CreateObligationDto) {
-    const tenantId =
-      '5cbc437f-b6c7-4d58-aa98-da215e240bcd';
+  // ==========================================================
+  // LISTAR
+  //
+  // GET /obligations
+  // ==========================================================
 
-    return this.obligationsService.create(
-      dto,
+  @Get()
+  async findAll(
+    @Req()
+    req: AuthenticatedRequest,
+
+    @Query('year')
+    year?: string,
+  ) {
+    const tenantId =
+      req.user.tenantId;
+
+    const referenceYear =
+      this.parseYear(year);
+
+    return this.obligationsService.findAll(
       tenantId,
+      referenceYear,
     );
   }
 
-  @Get()
-  findAll() {
-    return this.obligationsService.findAll();
-  }
+  // ==========================================================
+  // DASHBOARD
+  //
+  // GET /obligations/dashboard
+  // ==========================================================
 
   @Get('dashboard')
-  dashboard() {
-    return this.obligationsService.getDashboard();
+  async dashboard(
+    @Req()
+    req: AuthenticatedRequest,
+  ) {
+    return this.obligationsService.getDashboard(
+      req.user.tenantId,
+    );
   }
+
+  // ==========================================================
+  // SINCRONIZAR
+  //
+  // POST /obligations/sync
+  // ==========================================================
+
+  @Post('sync')
+  async sync(
+    @Req()
+    req: AuthenticatedRequest,
+  ) {
+    return this.obligationsService.sync(
+      req.user.tenantId,
+    );
+  }
+
+  // ==========================================================
+  // ATUALIZAR ESTADOS
+  //
+  // POST /obligations/update-statuses
+  // ==========================================================
+
+  @Post('update-statuses')
+  async updateStatuses(
+    @Req()
+    req: AuthenticatedRequest,
+  ) {
+    return this.obligationsService.updateStatuses(
+      req.user.tenantId,
+    );
+  }
+
+  // ==========================================================
+  // BUSCAR UMA
+  //
+  // GET /obligations/:id
+  // ==========================================================
 
   @Get(':id')
-  async findOne(@Param('id') id: string) {
-    const obligation =
-      await this.obligationsService.findOne(id);
+  async findOne(
+    @Req()
+    req: AuthenticatedRequest,
 
-    if (!obligation) {
-      throw new NotFoundException(
-        'Obrigação fiscal não encontrada',
-      );
-    }
-
-    return obligation;
+    @Param('id')
+    id: string,
+  ) {
+    return this.obligationsService.findOne(
+      req.user.tenantId,
+      id,
+    );
   }
+
+  // ==========================================================
+  // PAGAR
+  //
+  // PATCH /obligations/:id/pay
+  // ==========================================================
 
   @Patch(':id/pay')
-  pay(@Param('id') id: string) {
-    return this.obligationsService.markAsPaid(id);
+  async pay(
+    @Req()
+    req: AuthenticatedRequest,
+
+    @Param('id')
+    id: string,
+  ) {
+    return this.obligationsService.markAsPaid(
+      req.user.tenantId,
+      id,
+    );
   }
 
+  // ==========================================================
+  // REMOVER
+  //
+  // DELETE /obligations/:id
+  // ==========================================================
+
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.obligationsService.remove(id);
+  async remove(
+    @Req()
+    req: AuthenticatedRequest,
+
+    @Param('id')
+    id: string,
+  ) {
+    return this.obligationsService.remove(
+      req.user.tenantId,
+      id,
+    );
+  }
+
+  // ==========================================================
+  // ANO
+  // ==========================================================
+
+  private parseYear(
+    value?: string,
+  ): number | undefined {
+    if (
+      !value ||
+      !value.trim()
+    ) {
+      return undefined;
+    }
+
+    const year =
+      Number(value);
+
+    if (
+      !Number.isInteger(
+        year,
+      ) ||
+      year < 2000 ||
+      year > 2100
+    ) {
+      return undefined;
+    }
+
+    return year;
   }
 }

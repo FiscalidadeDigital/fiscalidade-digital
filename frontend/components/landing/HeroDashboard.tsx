@@ -1,10 +1,7 @@
 'use client';
 
-import { motion } from 'framer-motion';
-
 import {
   TrendingUp,
-  DollarSign,
   BellRing,
   ShieldCheck,
   Receipt,
@@ -13,256 +10,267 @@ import {
 
 export default function HeroDashboard() {
   return (
-    <motion.div
-      initial={{
-        opacity: 0,
-        scale: 0.9,
-      }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-        y: [0, -15, 0],
-      }}
-      transition={{
-        duration: 6,
-        repeat: Infinity,
-        ease: 'easeInOut',
-      }}
-      className="relative"
-    >
-      {/* Glow */}
+    <div className="relative">
 
-      <div className="absolute inset-0 bg-blue-600/20 blur-3xl rounded-[40px]" />
+      {/* sombra de fundo */}
 
-      {/* Main Card */}
+      <div className="
+        absolute
+        inset-8
+        bg-blue-200/30
+        blur-3xl
+        rounded-3xl
+      " />
 
-      <div
-        className="
-          relative
+      {/* MOCKUP */}
+
+      <div className="
+        relative
+        bg-white
+        border
+        border-slate-200
+        rounded-2xl
+        shadow-[0_24px_70px_rgba(15,23,42,0.12)]
+        overflow-hidden
+      ">
+
+        {/* TOPBAR */}
+
+        <div className="
+          h-16
+          px-6
+          border-b
+          border-slate-200
+          flex
+          items-center
+          justify-between
           bg-white
-          rounded-[40px]
-          border
-          border-slate-100
-          shadow-[0_40px_120px_rgba(0,0,0,0.25)]
-          p-8
-        "
-      >
-        {/* Header */}
+        ">
 
-        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
 
-          <div>
-
-            <h3 className="text-3xl font-black text-slate-900">
-              Dashboard Executivo
-            </h3>
-
-            <p className="text-slate-500">
-              Fiscalidade Digital
-            </p>
-
-          </div>
-
-          <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center text-white">
-            <BarChart3 size={28} />
-          </div>
-
-        </div>
-
-        {/* KPI Cards */}
-
-        <div className="grid grid-cols-2 gap-5 mb-8">
-
-          <div className="bg-blue-50 rounded-3xl p-5 hover:scale-105 transition-all">
-
-            <DollarSign
-              size={28}
-              className="text-blue-600 mb-3"
-            />
-
-            <div className="text-slate-500 text-sm">
-              Facturação
+            <div className="
+              w-8
+              h-8
+              rounded-lg
+              bg-blue-700
+              flex
+              items-center
+              justify-center
+              text-white
+            ">
+              <BarChart3 size={17} />
             </div>
-
-            <div className="text-3xl font-black text-blue-700">
-              12.5M
-            </div>
-
-            <div className="text-green-600 text-sm mt-2">
-              +18.4%
-            </div>
-
-          </div>
-
-          <div className="bg-green-50 rounded-3xl p-5 hover:scale-105 transition-all">
-
-            <TrendingUp
-              size={28}
-              className="text-green-600 mb-3"
-            />
-
-            <div className="text-slate-500 text-sm">
-              IVA Declarado
-            </div>
-
-            <div className="text-3xl font-black text-green-700">
-              1.7M
-            </div>
-
-            <div className="text-green-600 text-sm mt-2">
-              +12.8%
-            </div>
-
-          </div>
-
-          <div className="bg-orange-50 rounded-3xl p-5 hover:scale-105 transition-all">
-
-            <BellRing
-              size={28}
-              className="text-orange-600 mb-3"
-            />
-
-            <div className="text-slate-500 text-sm">
-              Obrigações
-            </div>
-
-            <div className="text-3xl font-black text-orange-700">
-              5
-            </div>
-
-            <div className="text-orange-600 text-sm mt-2">
-              Pendentes
-            </div>
-
-          </div>
-
-          <div className="bg-red-50 rounded-3xl p-5 hover:scale-105 transition-all">
-
-            <ShieldCheck
-              size={28}
-              className="text-red-600 mb-3"
-            />
-
-            <div className="text-slate-500 text-sm">
-              Alertas
-            </div>
-
-            <div className="text-3xl font-black text-red-700">
-              2
-            </div>
-
-            <div className="text-red-600 text-sm mt-2">
-              Urgentes
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* Fake Graph */}
-
-        <div className="bg-slate-50 rounded-3xl p-6">
-
-          <div className="flex justify-between mb-6">
 
             <div>
+              <div className="text-sm font-bold text-slate-900">
+                Dashboard
+              </div>
 
-              <h4 className="font-bold text-slate-900">
-                Evolução Financeira
-              </h4>
+              <div className="text-[10px] text-slate-400">
+                Visão geral
+              </div>
+            </div>
 
-              <p className="text-slate-500 text-sm">
-                Últimos 6 meses
-              </p>
+          </div>
+
+          <div className="
+            text-xs
+            text-slate-500
+            border
+            border-slate-200
+            rounded-md
+            px-3
+            py-1.5
+          ">
+            2026
+          </div>
+
+        </div>
+
+        {/* CONTEÚDO */}
+
+        <div className="p-6">
+
+          <div className="mb-6">
+            <p className="text-sm text-slate-500">
+              Bom dia
+            </p>
+
+            <h3 className="text-xl font-bold text-slate-900 mt-1">
+              Situação fiscal
+            </h3>
+          </div>
+
+          {/* KPIs */}
+
+          <div className="grid grid-cols-2 gap-4">
+
+            <div className="
+              border
+              border-slate-200
+              rounded-xl
+              p-4
+            ">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Facturação
+                </span>
+
+                <Receipt
+                  size={17}
+                  className="text-blue-600"
+                />
+              </div>
+
+              <div className="text-2xl font-bold text-slate-900 mt-3">
+                12,5M
+              </div>
+
+              <div className="text-xs text-emerald-600 mt-1">
+                +18,4% este período
+              </div>
+            </div>
+
+            <div className="
+              border
+              border-slate-200
+              rounded-xl
+              p-4
+            ">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  IVA declarado
+                </span>
+
+                <TrendingUp
+                  size={17}
+                  className="text-emerald-600"
+                />
+              </div>
+
+              <div className="text-2xl font-bold text-slate-900 mt-3">
+                1,7M
+              </div>
+
+              <div className="text-xs text-emerald-600 mt-1">
+                +12,8% este período
+              </div>
+            </div>
+
+            <div className="
+              border
+              border-slate-200
+              rounded-xl
+              p-4
+            ">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Obrigações
+                </span>
+
+                <BellRing
+                  size={17}
+                  className="text-orange-500"
+                />
+              </div>
+
+              <div className="text-2xl font-bold text-slate-900 mt-3">
+                5
+              </div>
+
+              <div className="text-xs text-orange-600 mt-1">
+                Pendentes
+              </div>
+            </div>
+
+            <div className="
+              border
+              border-slate-200
+              rounded-xl
+              p-4
+            ">
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-slate-500">
+                  Conformidade
+                </span>
+
+                <ShieldCheck
+                  size={17}
+                  className="text-blue-600"
+                />
+              </div>
+
+              <div className="text-2xl font-bold text-slate-900 mt-3">
+                98%
+              </div>
+
+              <div className="text-xs text-blue-600 mt-1">
+                Situação actual
+              </div>
+            </div>
+
+          </div>
+
+          {/* GRÁFICO */}
+
+          <div className="
+            mt-5
+            border
+            border-slate-200
+            rounded-xl
+            p-5
+          ">
+
+            <div className="flex items-center justify-between mb-5">
+
+              <div>
+                <h4 className="text-sm font-bold text-slate-900">
+                  Evolução financeira
+                </h4>
+
+                <p className="text-xs text-slate-500 mt-1">
+                  Últimos seis meses
+                </p>
+              </div>
+
+              <BarChart3
+                size={18}
+                className="text-slate-400"
+              />
 
             </div>
 
-            <Receipt
-              className="text-blue-600"
-              size={22}
-            />
+            <div className="h-28 flex items-end gap-3">
 
-          </div>
+              <div className="flex-1 bg-blue-100 rounded-t-md h-[38%]" />
+              <div className="flex-1 bg-blue-200 rounded-t-md h-[48%]" />
+              <div className="flex-1 bg-blue-300 rounded-t-md h-[55%]" />
+              <div className="flex-1 bg-blue-400 rounded-t-md h-[68%]" />
+              <div className="flex-1 bg-blue-500 rounded-t-md h-[62%]" />
+              <div className="flex-1 bg-blue-600 rounded-t-md h-[84%]" />
 
-          <div className="flex items-end gap-3 h-40">
+            </div>
 
-            <div className="bg-blue-200 rounded-t-xl h-16 flex-1" />
-            <div className="bg-blue-300 rounded-t-xl h-20 flex-1" />
-            <div className="bg-blue-400 rounded-t-xl h-24 flex-1" />
-            <div className="bg-blue-500 rounded-t-xl h-32 flex-1" />
-            <div className="bg-blue-600 rounded-t-xl h-28 flex-1" />
-            <div className="bg-blue-700 rounded-t-xl h-40 flex-1" />
+            <div className="
+              mt-3
+              flex
+              justify-between
+              text-[10px]
+              text-slate-400
+            ">
+              <span>Jan</span>
+              <span>Fev</span>
+              <span>Mar</span>
+              <span>Abr</span>
+              <span>Mai</span>
+              <span>Jun</span>
+            </div>
 
           </div>
 
         </div>
-
       </div>
-
-      {/* Floating Card 1 */}
-
-      <motion.div
-        animate={{
-          y: [0, -10, 0],
-        }}
-        transition={{
-          duration: 4,
-          repeat: Infinity,
-        }}
-        className="
-          absolute
-          -left-12
-          top-20
-          bg-white
-          rounded-2xl
-          shadow-xl
-          px-5
-          py-4
-          hidden
-          lg:block
-        "
-      >
-        <div className="text-xs text-slate-500">
-          Receita Mensal
-        </div>
-
-        <div className="font-black text-green-600 text-xl">
-          +32%
-        </div>
-      </motion.div>
-
-      {/* Floating Card 2 */}
-
-      <motion.div
-        animate={{
-          y: [0, 10, 0],
-        }}
-        transition={{
-          duration: 5,
-          repeat: Infinity,
-        }}
-        className="
-          absolute
-          -right-10
-          bottom-24
-          bg-white
-          rounded-2xl
-          shadow-xl
-          px-5
-          py-4
-          hidden
-          lg:block
-        "
-      >
-        <div className="text-xs text-slate-500">
-          Conformidade Fiscal
-        </div>
-
-        <div className="font-black text-blue-600 text-xl">
-          98%
-        </div>
-      </motion.div>
-
-    </motion.div>
+    </div>
   );
 }

@@ -1,5 +1,10 @@
-export class CalculateIndustrialDto {
-  receitas!: number;
+import {
+  IsNumber,
+  Min,
+} from 'class-validator';
 
-  custos!: number;
+export class CalculateRetentionDto {
+  @IsNumber()
+  @Min(0)
+  amount!: number;
 }

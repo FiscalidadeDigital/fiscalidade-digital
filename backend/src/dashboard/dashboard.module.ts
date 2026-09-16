@@ -6,12 +6,20 @@ import { DashboardController } from './dashboard.controller';
 import { DashboardService } from './dashboard.service';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+  ],
 
-  controllers: [DashboardController],
+  controllers: [
+    DashboardController,
+  ],
 
-  providers: [DashboardService],
+  providers: [
+    DashboardService,
+  ],
 
-  exports: [DashboardService],
+  exports: [
+    DashboardService,
+  ],
 })
 export class DashboardModule {}

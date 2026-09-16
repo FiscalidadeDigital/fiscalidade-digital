@@ -1,33 +1,81 @@
-import { Injectable } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 
-import { PassportStrategy } from '@nestjs/passport';
+import {
+  PassportStrategy,
+} from '@nestjs/passport';
 
-import { ExtractJwt, Strategy } from 'passport-jwt';
+import {
+  ConfigService,
+} from '@nestjs/config';
+
+import {
+  ExtractJwt,
+  Strategy,
+} from 'passport-jwt';
+
+interface JwtPayload {
+  sub: string;
+  tenantId: string;
+  email: string;
+  role: string;
+}
 
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
+export class JwtStrategy extends PassportStrategy(
+  Strategy,
+) {
+  constructor(
+    private readonly configService: ConfigService,
+  ) {
+    const secret =
+      configService.get<string>(
+        'JWT_SECRET',
+      );
+
+    if (!secret) {
+      throw new Error(
+        'JWT_SECRET não está configurado. Defina JWT_SECRET no ficheiro .env.',
+      );
+    }
+
     super({
       jwtFromRequest:
         ExtractJwt.fromAuthHeaderAsBearerToken(),
 
       ignoreExpiration: false,
 
-      secretOrKey:
-        process.env.JWT_SECRET ||
-        'fiscalidade_digital_secret',
+      secretOrKey: secret,
     });
   }
 
-  async validate(payload: any) {
+  async validate(
+    payload: JwtPayload,
+  ) {
+    if (
+      !payload?.sub ||
+      !payload?.tenantId ||
+      !payload?.email ||
+      !payload?.role
+    ) {
+      throw new UnauthorizedException(
+        'Token de autenticação inválido.',
+      );
+    }
+
     return {
       userId: payload.sub,
 
-      email: payload.email,
+      tenantId:
+        payload.tenantId,
 
-      role: payload.role,
+      email:
+        payload.email,
 
-      tenantId: payload.tenantId,
+      role:
+        payload.role,
     };
   }
 }

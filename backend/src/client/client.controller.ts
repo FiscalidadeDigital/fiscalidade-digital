@@ -6,21 +6,34 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 
-import { ClientService } from './client.service';
+import {
+  ClientService,
+} from './client.service';
 
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  JwtAuthGuard,
+} from '../auth/guards/jwt-auth.guard';
 
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+} from '../common/decorators/current-user.decorator';
 
 @Controller('clients')
 @UseGuards(JwtAuthGuard)
 export class ClientController {
+
   constructor(
     private readonly service: ClientService,
   ) {}
+
+  // =====================================================
+  // CRIAR CLIENTE
+  // POST /clients
+  // =====================================================
 
   @Post()
   create(
@@ -33,14 +46,49 @@ export class ClientController {
     );
   }
 
+  // =====================================================
+  // LISTAR CLIENTES
+  // GET /clients
+  // =====================================================
+
   @Get()
   findAll(
     @CurrentUser() user: any,
+    @Query('search') search?: string,
   ) {
+    if (
+      search !== undefined &&
+      search.trim() !== ''
+    ) {
+      return this.service.search(
+        user.tenantId,
+        search,
+      );
+    }
+
     return this.service.findAll(
       user.tenantId,
     );
   }
+
+  // =====================================================
+  // CONTAR CLIENTES
+  // GET /clients/count
+  // =====================================================
+
+  @Get('count')
+  count(
+    @CurrentUser() user: any,
+  ) {
+    return this.service.count(
+      user.tenantId,
+    );
+  }
+
+  // =====================================================
+  // BUSCAR CLIENTE
+  // GET /clients/:id
+  // =====================================================
 
   @Get(':id')
   findOne(
@@ -52,6 +100,11 @@ export class ClientController {
       id,
     );
   }
+
+  // =====================================================
+  // ATUALIZAR CLIENTE
+  // PATCH /clients/:id
+  // =====================================================
 
   @Patch(':id')
   update(
@@ -65,6 +118,11 @@ export class ClientController {
       body,
     );
   }
+
+  // =====================================================
+  // ELIMINAR CLIENTE
+  // DELETE /clients/:id
+  // =====================================================
 
   @Delete(':id')
   remove(

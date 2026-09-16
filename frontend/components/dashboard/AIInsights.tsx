@@ -1,203 +1,119 @@
 'use client';
 
-import { motion } from 'framer-motion';
-
 import {
   Bot,
-  TrendingUp,
-  AlertTriangle,
-  FileText,
-  CheckCircle2,
   Sparkles,
+  AlertTriangle,
 } from 'lucide-react';
 
-export default function AIInsights() {
+interface Props {
+  message?: string;
+  recommendations?: string[];
+}
+
+export default function AIInsights({
+  message,
+  recommendations = [],
+}: Props) {
   return (
-    <motion.div
-      initial={{
-        opacity: 0,
-        scale: 0.95,
-      }}
-      animate={{
-        opacity: 1,
-        scale: 1,
-      }}
-      transition={{
-        duration: 0.5,
-      }}
-      className="
-        relative
-        overflow-hidden
-        rounded-3xl
-        bg-gradient-to-br
-        from-blue-700
-        via-blue-600
-        to-cyan-500
-        p-6
-        text-white
-        shadow-2xl
-      "
-    >
-      <div
-        className="
-          absolute
-          top-0
-          right-0
-          w-40
-          h-40
-          rounded-full
-          bg-white/10
-          blur-3xl
-        "
-      />
+    <div className="
+      rounded-2xl
+      border
+      border-indigo-100
+      bg-gradient-to-br
+      from-indigo-50
+      to-white
+      p-6
+      shadow-sm
+    ">
 
-      <div className="relative z-10">
-        <div className="flex items-center gap-3 mb-5">
-          <div
-            className="
-              w-14
-              h-14
-              rounded-2xl
-              bg-white/20
-              flex
-              items-center
-              justify-center
-            "
-          >
-            <Bot size={30} />
-          </div>
+      <div className="flex items-center gap-3">
 
-          <div>
-            <h3 className="font-bold text-xl">
-              Fiscal AI Copilot
-            </h3>
-
-            <p className="text-blue-100 text-sm">
-              Inteligência fiscal em tempo real
-            </p>
-          </div>
+        <div className="
+          flex
+          h-11
+          w-11
+          items-center
+          justify-center
+          rounded-xl
+          bg-indigo-600
+          text-white
+        ">
+          <Bot size={22} />
         </div>
 
-        <div className="space-y-3">
+        <div>
+          <h3 className="font-bold text-slate-900">
+            Assistente Fiscal
+          </h3>
 
-          <div className="flex gap-3 items-start">
-            <AlertTriangle
-              size={18}
-              className="mt-1 text-yellow-300"
-            />
-
-            <div>
-              <p className="font-medium">
-                IVA vence em 3 dias
-              </p>
-
-              <p className="text-xs text-blue-100">
-                Recomenda-se preparar a declaração.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3 items-start">
-            <FileText
-              size={18}
-              className="mt-1 text-orange-300"
-            />
-
-            <div>
-              <p className="font-medium">
-                2 facturas pendentes
-              </p>
-
-              <p className="text-xs text-blue-100">
-                Valor total: 650.000 AOA
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3 items-start">
-            <TrendingUp
-              size={18}
-              className="mt-1 text-green-300"
-            />
-
-            <div>
-              <p className="font-medium">
-                Crescimento de 18%
-              </p>
-
-              <p className="text-xs text-blue-100">
-                Comparado ao mês anterior.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex gap-3 items-start">
-            <CheckCircle2
-              size={18}
-              className="mt-1 text-emerald-300"
-            />
-
-            <div>
-              <p className="font-medium">
-                Compliance Fiscal: 95%
-              </p>
-
-              <p className="text-xs text-blue-100">
-                Empresa em conformidade.
-              </p>
-            </div>
-          </div>
-
+          <p className="text-xs text-slate-500">
+            Análise da sua empresa
+          </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-3 mt-6">
-
-          <button
-            className="
-              bg-white
-              text-blue-700
-              font-semibold
-              py-3
-              rounded-xl
-              hover:scale-105
-              transition
-            "
-          >
-            Gerar Relatório
-          </button>
-
-          <button
-            className="
-              bg-white/15
-              backdrop-blur
-              border
-              border-white/20
-              py-3
-              rounded-xl
-              font-semibold
-              hover:bg-white/20
-              transition
-            "
-          >
-            Analisar Empresa
-          </button>
-
-        </div>
-
-        <div
-          className="
-            mt-5
-            flex
-            items-center
-            gap-2
-            text-xs
-            text-blue-100
-          "
-        >
-          <Sparkles size={14} />
-          Insights actualizados automaticamente
-        </div>
       </div>
-    </motion.div>
+
+      <div className="mt-5">
+
+        {message ? (
+          <p className="text-sm leading-6 text-slate-700">
+            {message}
+          </p>
+        ) : (
+          <p className="text-sm text-slate-500">
+            Ainda não existem insights fiscais
+            disponíveis para esta empresa.
+          </p>
+        )}
+
+      </div>
+
+      {recommendations.length > 0 && (
+        <div className="mt-5 space-y-3">
+
+          {recommendations
+            .slice(0, 4)
+            .map((item, index) => (
+              <div
+                key={index}
+                className="
+                  flex
+                  gap-3
+                  rounded-xl
+                  bg-white
+                  p-3
+                  shadow-sm
+                "
+              >
+
+                <AlertTriangle
+                  size={17}
+                  className="mt-0.5 text-orange-500"
+                />
+
+                <p className="text-xs text-slate-600">
+                  {item}
+                </p>
+
+              </div>
+            ))}
+
+        </div>
+      )}
+
+      <div className="
+        mt-5
+        flex
+        items-center
+        gap-2
+        text-[11px]
+        text-indigo-500
+      ">
+        <Sparkles size={13} />
+        Dados baseados na actividade fiscal da empresa
+      </div>
+
+    </div>
   );
 }

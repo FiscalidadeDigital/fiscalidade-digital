@@ -3,26 +3,36 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
 } from 'class-validator';
 
-export class CreateInvoiceDto {
-  @IsString()
-  tenantId: string;
+import { Type } from 'class-transformer';
 
+export class CreateInvoiceItemDto {
   @IsString()
-  clientId: string;
+  productName: string;
 
   @IsNumber()
-  subtotal: number;
+  @Min(0.0001)
+  quantity: number;
+
+  @IsNumber()
+  @Min(0.01)
+  unitPrice: number;
+}
+
+export class CreateInvoiceDto {
+  @IsUUID()
+  clientId: string;
 
   @IsOptional()
   @IsString()
   notes?: string;
 
   @IsArray()
-  items: {
-    productName: string;
-    quantity: number;
-    unitPrice: number;
-  }[];
+  @ValidateNested({ each: true })
+  @Type(() => CreateInvoiceItemDto)
+  items: CreateInvoiceItemDto[];
 }

@@ -11,59 +11,33 @@ import {
 } from 'lucide-react';
 
 interface Activity {
+  id?: string;
   title: string;
   date: string;
   amount?: number;
   type?: string;
 }
 
-const demoActivities: Activity[] = [
-  {
-    title: 'Factura FT-2026-00021 emitida',
-    date: '2026-06-05',
-    amount: 450000,
-    type: 'invoice',
-  },
-  {
-    title: 'Pagamento IVA registado',
-    date: '2026-06-04',
-    amount: 320000,
-    type: 'payment',
-  },
-  {
-    title: 'Alerta Fiscal gerado',
-    date: '2026-06-03',
-    type: 'alert',
-  },
-  {
-    title: 'Segurança Social próxima do vencimento',
-    date: '2026-06-02',
-    type: 'calendar',
-  },
-  {
-    title: 'Empresa actualizou cadastro',
-    date: '2026-06-01',
-    type: 'company',
-  },
-];
+function formatAOA(value: number) {
+  return new Intl.NumberFormat('pt-AO', {
+    style: 'currency',
+    currency: 'AOA',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 export default function ActivityTimeline({
   activities,
 }: {
   activities: Activity[];
 }) {
-  const data =
-    activities.length > 0
-      ? activities
-      : demoActivities;
-
   function getIcon(type?: string) {
     switch (type) {
       case 'invoice':
         return (
           <Receipt
             size={18}
-            className="text-blue-600"
+            className="text-indigo-600"
           />
         );
 
@@ -71,7 +45,7 @@ export default function ActivityTimeline({
         return (
           <CheckCircle2
             size={18}
-            className="text-green-600"
+            className="text-emerald-600"
           />
         );
 
@@ -102,139 +76,142 @@ export default function ActivityTimeline({
   }
 
   return (
-    <div
-      className="
-        bg-white
-        rounded-3xl
-        shadow-xl
-        border
-        border-slate-200
-        p-6
-      "
-    >
-      <div className="flex items-center justify-between mb-6">
+    <div className="
+      rounded-2xl
+      border
+      border-slate-200
+      bg-white
+      p-6
+      shadow-sm
+    ">
+
+      <div className="mb-6 flex items-center justify-between">
+
         <div>
-          <h3 className="text-xl font-bold text-slate-800">
+          <h3 className="text-lg font-bold text-slate-900">
             Actividade Recente
           </h3>
 
-          <p className="text-slate-500 text-sm">
+          <p className="mt-1 text-sm text-slate-500">
             Histórico fiscal da empresa
           </p>
         </div>
 
-        <div
-          className="
-            bg-blue-50
-            text-blue-700
-            px-4
-            py-2
-            rounded-xl
-            text-sm
-            font-medium
-          "
-        >
-          Últimos eventos
-        </div>
       </div>
 
-      <div className="relative">
+      {activities.length === 0 ? (
+        <div className="
+          rounded-xl
+          border
+          border-dashed
+          border-slate-200
+          p-8
+          text-center
+        ">
+          <p className="text-sm text-slate-500">
+            Ainda não existem actividades registadas.
+          </p>
+        </div>
+      ) : (
+        <div className="relative">
 
-        <div
-          className="
+          <div className="
             absolute
+            bottom-0
             left-5
             top-0
-            bottom-0
-            w-[2px]
+            w-px
             bg-slate-200
-          "
-        />
+          " />
 
-        <div className="space-y-6">
+          <div className="space-y-5">
 
-          {data.map((activity, index) => (
-            <motion.div
-              key={index}
-              initial={{
-                opacity: 0,
-                x: -20,
-              }}
-              animate={{
-                opacity: 1,
-                x: 0,
-              }}
-              transition={{
-                duration: 0.4,
-                delay: index * 0.1,
-              }}
-              className="
-                relative
-                flex
-                gap-4
-              "
-            >
-              <div
-                className="
-                  w-10
-                  h-10
-                  rounded-full
-                  bg-white
-                  border-2
-                  border-slate-200
-                  flex
-                  items-center
-                  justify-center
-                  z-10
-                "
-              >
-                {getIcon(activity.type)}
-              </div>
+            {activities.map(
+              (activity, index) => (
+                <motion.div
+                  key={
+                    activity.id ??
+                    `${activity.date}-${index}`
+                  }
+                  initial={{
+                    opacity: 0,
+                    x: -10,
+                  }}
+                  animate={{
+                    opacity: 1,
+                    x: 0,
+                  }}
+                  transition={{
+                    delay: index * 0.05,
+                  }}
+                  className="relative flex gap-4"
+                >
 
-              <div
-                className="
-                  flex-1
-                  bg-slate-50
-                  hover:bg-slate-100
-                  transition
-                  rounded-2xl
-                  p-4
-                "
-              >
-                <div className="flex justify-between items-start">
-                  <div>
-                    <h4 className="font-semibold text-slate-800">
-                      {activity.title}
-                    </h4>
-
-                    <p className="text-sm text-slate-500 mt-1">
-                      {new Date(
-                        activity.date
-                      ).toLocaleDateString(
-                        'pt-PT'
-                      )}
-                    </p>
+                  <div className="
+                    z-10
+                    flex
+                    h-10
+                    w-10
+                    shrink-0
+                    items-center
+                    justify-center
+                    rounded-full
+                    border
+                    border-slate-200
+                    bg-white
+                  ">
+                    {getIcon(activity.type)}
                   </div>
 
-                  {activity.amount && (
-                    <div
-                      className="
-                        font-bold
-                        text-blue-700
-                      "
-                    >
-                      {activity.amount.toLocaleString()}
-                      {' '}
-                      AOA
-                    </div>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          ))}
+                  <div className="
+                    flex-1
+                    rounded-xl
+                    bg-slate-50
+                    p-4
+                  ">
 
+                    <div className="
+                      flex
+                      items-start
+                      justify-between
+                      gap-4
+                    ">
+
+                      <div>
+                        <h4 className="font-semibold text-slate-800">
+                          {activity.title}
+                        </h4>
+
+                        <p className="mt-1 text-xs text-slate-500">
+                          {new Date(
+                            activity.date,
+                          ).toLocaleDateString(
+                            'pt-PT',
+                          )}
+                        </p>
+                      </div>
+
+                      {typeof activity.amount ===
+                        'number' && (
+                        <span className="whitespace-nowrap text-sm font-bold text-indigo-600">
+                          {formatAOA(
+                            activity.amount,
+                          )}
+                        </span>
+                      )}
+
+                    </div>
+
+                  </div>
+
+                </motion.div>
+              ),
+            )}
+
+          </div>
         </div>
-      </div>
+      )}
+
     </div>
   );
 }

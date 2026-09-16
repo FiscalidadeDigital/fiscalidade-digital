@@ -11,9 +11,7 @@ export class CompanyService {
     private readonly prisma: PrismaService,
   ) {}
 
-  async getCompany(
-    tenantId: string,
-  ) {
+  async getCompany(tenantId: string) {
     const company =
       await this.prisma.tenant.findUnique({
         where: {
@@ -60,10 +58,18 @@ export class CompanyService {
         address: body.address,
         sector: body.sector,
         companyType: body.companyType,
-        employees: body.employees,
+
+        employeeCount:
+          body.employeeCount !== undefined
+            ? Number(body.employeeCount)
+            : undefined,
+
         regime: body.regime,
+
         retentionRate:
-          body.retentionRate,
+          body.retentionRate !== undefined
+            ? Number(body.retentionRate)
+            : undefined,
       },
     });
   }

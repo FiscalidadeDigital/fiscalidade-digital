@@ -1,20 +1,11 @@
+
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { FormEvent, useState } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
-
-import {
-  Building2,
-  Mail,
-  Lock,
-  Eye,
-  EyeOff,
-  ShieldCheck,
-  TrendingUp,
-  Sparkles,
-  ArrowRight,
-} from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 import { login } from '@/services/auth';
 import { saveToken } from '@/lib/auth';
@@ -22,357 +13,414 @@ import { saveToken } from '@/lib/auth';
 export default function LoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] =
-    useState('');
-
-  const [password, setPassword] =
-    useState('');
-
-  const [showPassword, setShowPassword] =
-    useState(false);
-
-  const [loading, setLoading] =
-    useState(false);
-
-  const [error, setError] =
-    useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
 
   async function handleLogin(
-    e: React.FormEvent,
+    event: FormEvent<HTMLFormElement>,
   ) {
-    e.preventDefault();
+    event.preventDefault();
+    setError('');
+
+    const normalizedEmail = email.trim().toLowerCase();
+
+    if (!normalizedEmail) {
+      setError('Introduza o seu email.');
+      return;
+    }
+
+    if (
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(
+        normalizedEmail,
+      )
+    ) {
+      setError('Introduza um email válido.');
+      return;
+    }
+
+    if (!password) {
+      setError('Introduza a sua palavra-passe.');
+      return;
+    }
+
+    if (password.length < 6) {
+      setError(
+        'A palavra-passe deve ter pelo menos 6 caracteres.',
+      );
+      return;
+    }
+
+    setLoading(true);
 
     try {
-      setLoading(true);
-      setError('');
-
       const data = await login(
-        email,
+        normalizedEmail,
         password,
       );
 
-      saveToken(
-        data.access_token,
-      );
+      if (!data?.access_token) {
+        throw new Error(
+          'O servidor não devolveu um token de autenticação.',
+        );
+      }
 
-      router.push(
-        '/dashboard',
-      );
-    } catch (err: any) {
-      console.error(err);
+      saveToken(data.access_token);
 
-      setError(
-        err?.response?.data
-          ?.message ||
-          'Credenciais inválidas',
-      );
+      if (typeof window !== 'undefined') {
+        if (data.user) {
+          localStorage.setItem(
+            'user',
+            JSON.stringify(data.user),
+          );
+        }
+
+        if (data.tenant) {
+          localStorage.setItem(
+            'tenant',
+            JSON.stringify(data.tenant),
+          );
+
+          if (data.tenant.id) {
+            localStorage.setItem(
+              'tenantId',
+              data.tenant.id,
+            );
+          }
+        }
+      }
+
+      router.push('/dashboard');
+    } catch (err: unknown) {
+      console.error('Erro ao iniciar sessão:', err);
+
+      let message =
+        'Não foi possível iniciar sessão.';
+
+      if (
+        err &&
+        typeof err === 'object' &&
+        'response' in err
+      ) {
+        const response = (
+          err as {
+            response?: {
+              data?: {
+                message?: string | string[];
+              };
+            };
+          }
+        ).response;
+
+        const apiMessage = response?.data?.message;
+
+        if (Array.isArray(apiMessage)) {
+          message = apiMessage.join(' ');
+        } else if (typeof apiMessage === 'string') {
+          message = apiMessage;
+        }
+      } else if (
+        err instanceof Error &&
+        err.message
+      ) {
+        message = err.message;
+      }
+
+      setError(message);
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-slate-950">
+    <main className="min-h-screen bg-[#f7f8fc] text-[#202338]">
 
-      {/* BACKGROUND */}
+      <div className="flex min-h-screen flex-col lg:flex-row">
 
-      <div className="absolute inset-0">
+        {/* PAINEL INSTITUCIONAL */}
 
-        <div className="absolute -top-40 -left-40 w-[800px] h-[800px] rounded-full bg-blue-600/20 blur-[180px]" />
+        <section className="relative hidden overflow-hidden bg-[#26194e] lg:flex lg:w-[44%] xl:w-[46%]">
 
-        <div className="absolute bottom-0 right-0 w-[800px] h-[800px] rounded-full bg-cyan-500/10 blur-[180px]" />
+          <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-[#9e4f95]/20 blur-3xl" />
 
-      </div>
+          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#5940d7]/20 blur-3xl" />
 
-      {/* GRID */}
+          <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
 
-      <div
-        className="absolute inset-0 opacity-[0.05]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)',
-          backgroundSize:
-            '50px 50px',
-        }}
-      />
+            <Link href="/" className="inline-block">
+              <Image
+                src="/logofiscalidade.png"
+                alt="Fiscalidade Digital"
+                width={230}
+                height={70}
+                className="h-auto w-auto max-w-[230px] object-contain"
+                priority
+              />
+            </Link>
 
-      {/* PARTICULAS */}
+            <div className="max-w-md">
 
-      <div className="absolute top-20 left-20 w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
+              <p className="mb-5 text-sm font-medium uppercase tracking-[0.18em] text-white/50">
+                Fiscalidade Digital
+              </p>
 
-      <div className="absolute top-40 right-40 w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
+              <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-5xl">
+                A sua gestão fiscal,
+                <br />
+                num só lugar.
+              </h1>
 
-      <div className="absolute bottom-40 left-1/3 w-2 h-2 rounded-full bg-white animate-pulse" />
+              <p className="mt-6 max-w-sm text-base leading-7 text-white/65">
+                Organize as obrigações fiscais
+                e acompanhe a gestão da sua
+                empresa com simplicidade.
+              </p>
 
-      <div className="relative min-h-screen flex">
+              <div className="mt-10 h-px w-20 bg-white/30" />
 
-        {/* LADO ESQUERDO */}
+              <p className="mt-5 text-sm text-white/50">
+                Uma solução digital para empresas
+                e profissionais em Angola.
+              </p>
 
-        <div className="hidden lg:flex flex-1 flex-col justify-center px-20">
+            </div>
 
-          <div className="max-w-xl">
+            <p className="text-xs text-white/40">
+              © {new Date().getFullYear()} Fiscalidade Digital.
+              Todos os direitos reservados.
+            </p>
 
-            <div className="flex items-center gap-4 mb-10">
+          </div>
 
-              <div className="w-16 h-16 rounded-3xl bg-blue-600 flex items-center justify-center">
+        </section>
 
-                <Building2
-                  className="text-white"
-                  size={34}
+        {/* ÁREA DE LOGIN */}
+
+        <section className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
+
+          <div className="w-full max-w-[420px]">
+
+            {/* LOGO MOBILE */}
+
+            <div className="mb-12 flex justify-center lg:hidden">
+
+              <Link href="/">
+                <Image
+                  src="/logofiscalidade.png"
+                  alt="Fiscalidade Digital"
+                  width={230}
+                  height={70}
+                  className="h-auto w-auto max-w-[230px] object-contain"
+                  priority
                 />
+              </Link>
 
+            </div>
+
+            {/* CABEÇALHO */}
+
+            <div className="mb-9">
+
+              <p className="mb-3 text-sm font-medium text-[#5940d7]">
+                Área reservada
+              </p>
+
+              <h2 className="text-3xl font-semibold tracking-tight text-[#202338] sm:text-[34px]">
+                Bem-vindo de volta
+              </h2>
+
+              <p className="mt-3 text-[15px] leading-6 text-[#85899c]">
+                Entre na sua conta para continuar.
+              </p>
+
+            </div>
+
+            {/* ERRO */}
+
+            {error && (
+              <div
+                role="alert"
+                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-600"
+              >
+                {error}
               </div>
+            )}
+
+            {/* FORMULÁRIO */}
+
+            <form
+              onSubmit={handleLogin}
+              className="space-y-5"
+            >
+
+              {/* EMAIL */}
 
               <div>
 
-                <h1 className="text-white text-3xl font-black">
-                  Fiscalidade Digital
-                </h1>
+                <label
+                  htmlFor="email"
+                  className="mb-2 block text-sm font-medium text-[#34384e]"
+                >
+                  Email
+                </label>
 
-                <p className="text-slate-400">
-                  Plataforma Fiscal Inteligente
-                </p>
+                <div className="relative">
 
-              </div>
+                  <Mail
+                    size={18}
+                    strokeWidth={1.7}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9b9fb2]"
+                  />
 
-            </div>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(event) => {
+                      setEmail(event.target.value);
 
-            <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-full px-4 py-2 text-blue-300 mb-8">
+                      if (error) setError('');
+                    }}
+                    placeholder="seuemail@exemplo.com"
+                    autoComplete="email"
+                    disabled={loading}
+                    className="h-14 w-full rounded-xl border border-[#e4e5ed] bg-white pl-11 pr-4 text-sm text-[#202338] outline-none transition placeholder:text-[#b5b8c6] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                  />
 
-              <Sparkles size={18} />
-
-              Gestão Fiscal Moderna
-
-            </div>
-
-            <h2 className="text-6xl font-black text-white leading-tight">
-
-              Bem-vindo
-              <span className="block text-blue-500">
-                de Volta
-              </span>
-
-            </h2>
-
-            <p className="text-slate-300 text-xl mt-8 leading-relaxed">
-
-              Acompanhe impostos,
-              facturação, obrigações
-              fiscais e indicadores
-              financeiros em tempo real.
-
-            </p>
-
-            <div className="grid grid-cols-2 gap-6 mt-12">
-
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
-
-                <ShieldCheck
-                  className="text-green-400 mb-4"
-                  size={30}
-                />
-
-                <div className="text-3xl font-black text-white">
-                  98%
-                </div>
-
-                <div className="text-slate-400">
-                  Conformidade Fiscal
                 </div>
 
               </div>
 
-              <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6">
+              {/* PALAVRA-PASSE */}
 
-                <TrendingUp
-                  className="text-blue-400 mb-4"
-                  size={30}
-                />
+              <div>
 
-                <div className="text-3xl font-black text-white">
-                  500+
-                </div>
+                <div className="mb-2 flex items-center justify-between">
 
-                <div className="text-slate-400">
-                  Empresas
-                </div>
-
-              </div>
-
-            </div>
-
-          </div>
-
-        </div>
-
-        {/* LOGIN */}
-
-        <div className="flex items-center justify-center w-full lg:w-[600px] p-8">
-
-          <div className="w-full max-w-md">
-
-            <div className="bg-white/10 backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 shadow-[0_40px_120px_rgba(0,0,0,.35)]">
-
-              <div className="text-center mb-8">
-<Link
-  href="/"
-  className="
-    inline-flex
-    items-center
-    gap-2
-    text-slate-300
-    hover:text-white
-    mb-6
-  "
->
-  ← Voltar ao Início
-</Link>
-                <h2 className="text-4xl font-black text-white">
-                  Iniciar Sessão
-                </h2>
-
-                <p className="text-slate-300 mt-3">
-                  Entre na sua conta empresarial
-                </p>
-
-              </div>
-
-              <form
-                onSubmit={
-                  handleLogin
-                }
-                className="space-y-5"
-              >
-
-                <div>
-
-                  <label className="block text-slate-300 mb-2">
-                    Email
-                  </label>
-
-                  <div className="relative">
-
-                    <Mail
-                      size={20}
-                      className="absolute left-4 top-4 text-slate-400"
-                    />
-
-                    <input
-                      type="email"
-                      value={email}
-                      onChange={(e) =>
-                        setEmail(
-                          e.target.value,
-                        )
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white outline-none focus:border-blue-500"
-                      placeholder="empresa@email.com"
-                      required
-                    />
-
-                  </div>
-
-                </div>
-
-                <div>
-
-                  <label className="block text-slate-300 mb-2">
+                  <label
+                    htmlFor="password"
+                    className="block text-sm font-medium text-[#34384e]"
+                  >
                     Palavra-passe
                   </label>
 
-                  <div className="relative">
-
-                    <Lock
-                      size={20}
-                      className="absolute left-4 top-4 text-slate-400"
-                    />
-
-                    <input
-                      type={
-                        showPassword
-                          ? 'text'
-                          : 'password'
-                      }
-                      value={
-                        password
-                      }
-                      onChange={(e) =>
-                        setPassword(
-                          e.target.value,
-                        )
-                      }
-                      className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-14 py-4 text-white outline-none focus:border-blue-500"
-                      placeholder="********"
-                      required
-                    />
-
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setShowPassword(
-                          !showPassword,
-                        )
-                      }
-                      className="absolute right-4 top-4 text-slate-400"
-                    >
-                      {showPassword ? (
-                        <EyeOff
-                          size={20}
-                        />
-                      ) : (
-                        <Eye
-                          size={20}
-                        />
-                      )}
-                    </button>
-
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setError(
+                        'A recuperação de palavra-passe será disponibilizada em breve.',
+                      )
+                    }
+                    className="text-xs font-medium text-[#5940d7] transition hover:text-[#411260]"
+                  >
+                    Esqueceu-se?
+                  </button>
 
                 </div>
 
-                {error && (
-                  <div className="bg-red-500/10 border border-red-500/20 text-red-300 rounded-xl p-3 text-sm">
-                    {error}
-                  </div>
-                )}
+                <div className="relative">
 
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-blue-600 hover:bg-blue-700 rounded-2xl py-4 font-bold text-white transition-all hover:scale-[1.02] shadow-lg shadow-blue-600/30"
-                >
-                  {loading
-                    ? 'A entrar...'
-                    : 'Entrar'}
-                </button>
-
-              </form>
-
-              <div className="mt-8 text-center">
-
-                <p className="text-slate-400">
-
-                  Ainda não possui conta?
-
-                </p>
-
-                <Link
-                  href="/register"
-                  className="inline-flex items-center gap-2 text-blue-400 font-semibold mt-3 hover:text-blue-300"
-                >
-                  Registrar Empresa
-                  <ArrowRight
+                  <Lock
                     size={18}
+                    strokeWidth={1.7}
+                    className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9b9fb2]"
                   />
-                </Link>
+
+                  <input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(event) => {
+                      setPassword(event.target.value);
+
+                      if (error) setError('');
+                    }}
+                    placeholder="Introduza a sua palavra-passe"
+                    autoComplete="current-password"
+                    disabled={loading}
+                    className="h-14 w-full rounded-xl border border-[#e4e5ed] bg-white pl-11 pr-12 text-sm text-[#202338] outline-none transition placeholder:text-[#b5b8c6] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                  />
+
+                  <button
+                    type="button"
+                    aria-label={
+                      showPassword
+                        ? 'Ocultar palavra-passe'
+                        : 'Mostrar palavra-passe'
+                    }
+                    onClick={() =>
+                      setShowPassword((current) => !current)
+                    }
+                    disabled={loading}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9b9fb2] transition hover:text-[#5940d7] disabled:opacity-50"
+                  >
+                    {showPassword ? (
+                      <EyeOff size={18} strokeWidth={1.7} />
+                    ) : (
+                      <Eye size={18} strokeWidth={1.7} />
+                    )}
+                  </button>
+
+                </div>
 
               </div>
+
+              {/* BOTÃO */}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="flex h-14 w-full items-center justify-center rounded-xl bg-[#5940d7] text-sm font-semibold text-white shadow-[0_8px_20px_rgba(89,64,215,0.16)] transition hover:bg-[#4b34c2] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+              >
+
+                {loading ? (
+                  <span className="flex items-center gap-3">
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    A entrar...
+                  </span>
+                ) : (
+                  'Entrar na minha conta'
+                )}
+
+              </button>
+
+            </form>
+
+            {/* REGISTO */}
+
+            <div className="mt-9 text-center">
+
+              <p className="text-sm text-[#85899c]">
+                Ainda não tem uma conta?
+              </p>
+
+              <Link
+                href="/register"
+                className="mt-2 inline-block text-sm font-semibold text-[#5940d7] transition hover:text-[#411260]"
+              >
+                Criar conta empresarial
+              </Link>
+
+            </div>
+
+            {/* RODAPÉ */}
+
+            <div className="mt-12 text-center">
+
+              <Link
+                href="/"
+                className="text-xs text-[#a3a6b6] transition hover:text-[#5940d7]"
+              >
+                Voltar ao início
+              </Link>
 
             </div>
 
           </div>
 
-        </div>
+        </section>
 
       </div>
 

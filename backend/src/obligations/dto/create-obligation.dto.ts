@@ -1,25 +1,18 @@
 import {
-  IsString,
+  IsInt,
   IsOptional,
-  IsNumber,
-  IsDateString,
+  Min,
 } from 'class-validator';
 
 export class CreateObligationDto {
-  @IsString()
-  title!: string;
-
-  @IsString()
-  type!: string;
-
+  /**
+   * Ano do calendário fiscal que será utilizado.
+   *
+   * Se não for informado, o service utilizará
+   * o ano fiscal atual.
+   */
   @IsOptional()
-  @IsString()
-  description?: string;
-
-  @IsOptional()
-  @IsNumber()
-  amount?: number;
-
-  @IsDateString()
-  dueDate!: string;
+  @IsInt()
+  @Min(2000)
+  referenceYear?: number;
 }

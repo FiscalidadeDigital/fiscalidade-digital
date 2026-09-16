@@ -1,4 +1,4 @@
-import {
+﻿import {
   Body,
   Controller,
   Get,
@@ -6,14 +6,18 @@ import {
   Patch,
   Post,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 
-import { Response } from 'express';
+import type { Response } from 'express';
 
 import { InvoiceService } from './invoice.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('invoice')
+@UseGuards(JwtAuthGuard)
 export class InvoiceController {
   constructor(
     private readonly invoiceService: InvoiceService,
@@ -21,48 +25,74 @@ export class InvoiceController {
 
   @Post()
   create(
-    @Body()
-    dto: CreateInvoiceDto,
+    @CurrentUser() user: { tenantId: string },
+    @Body() dto: CreateInvoiceDto,
   ) {
-    return this.invoiceService.create(dto);
+    return this.invoiceService.create(
+      user.tenantId,
+      dto,
+    );
   }
 
   @Get()
-  findAll() {
-    return this.invoiceService.findAll();
+  findAll(
+    @CurrentUser() user: { tenantId: string },
+  ) {
+    return this.invoiceService.findAll(
+      user.tenantId,
+    );
+  }
+
+  @Get('dashboard/stats')
+  getDashboardStats(
+    @CurrentUser() user: { tenantId: string },
+  ) {
+    return this.invoiceService.getDashboardStats(
+      user.tenantId,
+    );
   }
 
   @Get(':id')
   findOne(
-    @Param('id')
-    id: string,
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') id: string,
   ) {
-    return this.invoiceService.findOne(id);
+    return this.invoiceService.findOne(
+      user.tenantId,
+      id,
+    );
   }
 
   @Patch(':id/pay')
   markAsPaid(
-    @Param('id')
-    id: string,
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') id: string,
   ) {
-    return this.invoiceService.markAsPaid(id);
+    return this.invoiceService.markAsPaid(
+      user.tenantId,
+      id,
+    );
   }
 
   @Patch(':id/cancel')
   cancel(
-    @Param('id')
-    id: string,
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') id: string,
   ) {
-    return this.invoiceService.cancel(id);
+    return this.invoiceService.cancel(
+      user.tenantId,
+      id,
+    );
   }
 
   @Get(':id/pdf')
   generatePdf(
-    @Param('id')
-    id: string,
+    @CurrentUser() user: { tenantId: string },
+    @Param('id') id: string,
     @Res() res: Response,
   ) {
     return this.invoiceService.generatePdf(
+      user.tenantId,
       id,
       res,
     );

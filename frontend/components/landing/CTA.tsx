@@ -4,44 +4,76 @@ import Link from 'next/link';
 
 export default function CTA() {
   return (
-    <section className="relative overflow-hidden bg-slate-950 py-32">
+    <section className="py-20 bg-slate-50 border-t border-slate-200">
 
-      <div className="absolute inset-0">
+      <div className="max-w-5xl mx-auto px-6">
 
-        <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600/20 rounded-full blur-3xl" />
+        <div className="
+          bg-blue-700
+          rounded-2xl
+          px-8
+          py-12
+          lg:px-14
+          lg:py-14
+          text-center
+        ">
 
-        <div className="absolute bottom-0 right-0 w-96 h-96 bg-cyan-600/20 rounded-full blur-3xl" />
+          <h2 className="
+            text-3xl
+            sm:text-4xl
+            font-bold
+            text-white
+          ">
+            Comece a organizar a gestão fiscal da sua empresa.
+          </h2>
 
-      </div>
+          <p className="
+            mt-4
+            text-blue-100
+            max-w-2xl
+            mx-auto
+            leading-7
+          ">
+            Crie a sua conta e tenha uma visão mais organizada
+            das obrigações e informações fiscais da empresa.
+          </p>
 
-      <div className="relative max-w-5xl mx-auto px-6 text-center">
+          <div className="flex flex-wrap justify-center gap-3 mt-8">
 
-        <h2 className="text-6xl font-black text-white mb-8">
-          Pronto para transformar
-          a sua gestão fiscal?
-        </h2>
+            <Link
+              href="/register"
+              className="
+                px-6
+                py-3
+                rounded-lg
+                bg-white
+                text-blue-700
+                font-semibold
+                hover:bg-blue-50
+                transition
+              "
+            >
+              Criar conta
+            </Link>
 
-        <p className="text-slate-300 text-xl mb-12">
-          Junte-se às empresas que já modernizaram
-          os seus processos fiscais com o
-          Fiscalidade Digital.
-        </p>
+            <Link
+              href="/login"
+              className="
+                px-6
+                py-3
+                rounded-lg
+                border
+                border-blue-400
+                text-white
+                font-semibold
+                hover:bg-blue-600
+                transition
+              "
+            >
+              Iniciar sessão
+            </Link>
 
-        <div className="flex flex-wrap justify-center gap-4">
-
-          <Link
-            href="/register"
-            className="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-2xl text-white font-semibold"
-          >
-            Registrar Empresa
-          </Link>
-
-          <Link
-            href="/login"
-            className="bg-white hover:bg-slate-200 px-8 py-4 rounded-2xl text-slate-900 font-semibold"
-          >
-            Iniciar Sessão
-          </Link>
+          </div>
 
         </div>
 

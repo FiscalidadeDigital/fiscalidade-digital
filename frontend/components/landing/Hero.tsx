@@ -7,160 +7,335 @@ import HeroDashboard from './HeroDashboard';
 
 import {
   ArrowRight,
-  Sparkles,
+  CheckCircle2,
 } from 'lucide-react';
 
 export default function Hero() {
   return (
-    <section className="relative min-h-screen overflow-hidden bg-slate-950">
+    <section
+      className="
+        relative
+        overflow-hidden
+        bg-slate-50
+        border-b
+        border-slate-200
+      "
+    >
 
-      {/* BACKGROUND */}
+      {/* =========================================
+          FUNDO
+      ========================================== */}
 
-      <div className="absolute inset-0">
+      <div
+        className="
+          absolute
+          inset-0
+          pointer-events-none
+          overflow-hidden
+        "
+      >
 
-        <div className="absolute -top-40 -left-40 w-[800px] h-[800px] bg-blue-600/20 rounded-full blur-[180px]" />
+        {/* brilho azul muito discreto */}
+        <div
+          className="
+            absolute
+            -top-48
+            -left-48
+            w-[650px]
+            h-[650px]
+            rounded-full
+            bg-blue-100/50
+            blur-3xl
+          "
+        />
 
-        <div className="absolute bottom-0 right-0 w-[800px] h-[800px] bg-cyan-500/10 rounded-full blur-[180px]" />
-
-        <div className="absolute top-1/2 left-1/2 w-[600px] h-[600px] bg-blue-500/10 rounded-full blur-[150px] -translate-x-1/2 -translate-y-1/2" />
+        <div
+          className="
+            absolute
+            top-1/3
+            right-[-250px]
+            w-[600px]
+            h-[600px]
+            rounded-full
+            bg-indigo-100/40
+            blur-3xl
+          "
+        />
 
       </div>
 
-      {/* GRID */}
+      {/* =========================================
+          CONTEÚDO
+      ========================================== */}
 
       <div
-        className="absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            'linear-gradient(rgba(255,255,255,.3) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.3) 1px, transparent 1px)',
-          backgroundSize: '50px 50px',
-        }}
-      />
+        className="
+          relative
+          max-w-7xl
+          mx-auto
+          px-6
+          lg:px-8
+          pt-32
+          lg:pt-40
+          pb-20
+          lg:pb-28
+        "
+      >
 
-      {/* LINHAS */}
+        <div
+          className="
+            grid
+            lg:grid-cols-[0.9fr_1.1fr]
+            gap-14
+            lg:gap-20
+            items-center
+          "
+        >
 
-      <div className="absolute top-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-blue-500 to-transparent opacity-40" />
-
-      <div className="absolute bottom-20 left-0 w-full h-px bg-gradient-to-r from-transparent via-cyan-500 to-transparent opacity-40" />
-
-      {/* PARTÍCULAS */}
-
-      <div className="absolute top-32 left-20 w-3 h-3 rounded-full bg-blue-500 animate-pulse" />
-
-      <div className="absolute top-60 right-40 w-2 h-2 rounded-full bg-cyan-400 animate-ping" />
-
-      <div className="absolute bottom-32 left-1/3 w-2 h-2 rounded-full bg-white animate-pulse" />
-
-      <div className="relative max-w-7xl mx-auto px-6 pt-36 pb-24">
-
-        <div className="grid lg:grid-cols-2 gap-20 items-center">
-
-          {/* ESQUERDA */}
+          {/* =====================================
+              ESQUERDA
+          ====================================== */}
 
           <motion.div
             initial={{
               opacity: 0,
-              y: 40,
+              y: 24,
             }}
             animate={{
               opacity: 1,
               y: 0,
             }}
             transition={{
-              duration: 0.8,
+              duration: 0.7,
+              ease: 'easeOut',
             }}
           >
 
-            <div className="inline-flex items-center gap-2 bg-blue-500/10 border border-blue-500/30 rounded-full px-4 py-2 text-blue-300 mb-8">
+            {/* PEQUENO LABEL */}
 
-              <Sparkles size={18} />
+            <div
+              className="
+                inline-flex
+                items-center
+                gap-2
+                rounded-full
+                border
+                border-blue-200
+                bg-white
+                px-4
+                py-2
+                text-sm
+                font-medium
+                text-blue-700
+                shadow-sm
+              "
+            >
+              <span
+                className="
+                  h-2
+                  w-2
+                  rounded-full
+                  bg-blue-600
+                "
+              />
 
-              Plataforma Fiscal Inteligente para Angola
-
+              Gestão fiscal para empresas angolanas
             </div>
 
-            <h1 className="text-6xl lg:text-7xl font-black text-white leading-tight">
+            {/* TÍTULO */}
 
-              Modernize a
-
-              <span className="block text-blue-500">
-                Gestão Fiscal
+            <h1
+              className="
+                mt-7
+                text-5xl
+                sm:text-6xl
+                lg:text-[64px]
+                font-bold
+                tracking-tight
+                leading-[1.05]
+                text-slate-950
+              "
+            >
+              A sua gestão fiscal,
+              <span
+                className="
+                  block
+                  text-blue-600
+                "
+              >
+                num só lugar.
               </span>
-
-              da Sua Empresa
-
             </h1>
 
-            <p className="text-slate-300 text-xl mt-8 leading-relaxed max-w-2xl">
+            {/* DESCRIÇÃO */}
 
-              Automatize facturação,
-              obrigações fiscais,
-              declarações,
-              impostos,
-              relatórios e notificações
-              numa única plataforma empresarial moderna.
-
+            <p
+              className="
+                mt-7
+                max-w-xl
+                text-lg
+                lg:text-xl
+                leading-8
+                text-slate-600
+              "
+            >
+              Simplifique a facturação, acompanhe as
+              obrigações fiscais e tenha uma visão clara
+              da situação da sua empresa.
             </p>
 
-            <div className="flex flex-wrap gap-4 mt-10">
+            {/* BOTÕES */}
+
+            <div
+              className="
+                mt-9
+                flex
+                flex-wrap
+                items-center
+                gap-3
+              "
+            >
 
               <Link
                 href="/register"
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-4 rounded-2xl flex items-center gap-3 font-semibold shadow-[0_20px_60px_rgba(37,99,235,.4)] transition-all hover:scale-105"
+                className="
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-blue-600
+                  px-6
+                  py-3.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-sm
+                  hover:bg-blue-700
+                  transition-colors
+                "
               >
-                Registrar Empresa
+                Criar conta
 
-                <ArrowRight size={20} />
+                <ArrowRight size={18} />
               </Link>
 
               <Link
                 href="/login"
-                className="bg-white hover:bg-slate-100 text-slate-900 px-8 py-4 rounded-2xl font-semibold transition-all hover:scale-105"
+                className="
+                  inline-flex
+                  items-center
+                  justify-center
+                  rounded-xl
+                  border
+                  border-slate-300
+                  bg-white
+                  px-6
+                  py-3.5
+                  text-sm
+                  font-semibold
+                  text-slate-700
+                  hover:bg-slate-50
+                  transition-colors
+                "
               >
-                Iniciar Sessão
+                Iniciar sessão
               </Link>
 
             </div>
 
-            <div className="flex flex-wrap gap-10 mt-14">
+            {/* CONFIANÇA */}
 
-              <div>
-                <div className="text-4xl font-black text-white">
-                  500+
-                </div>
+            <div
+              className="
+                mt-8
+                flex
+                flex-wrap
+                gap-x-6
+                gap-y-3
+                text-sm
+                text-slate-500
+              "
+            >
 
-                <div className="text-slate-400">
-                  Empresas
-                </div>
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+                <CheckCircle2
+                  size={17}
+                  className="text-emerald-600"
+                />
+
+                Gestão centralizada
               </div>
 
-              <div>
-                <div className="text-4xl font-black text-white">
-                  25K+
-                </div>
+              <div
+                className="
+                  flex
+                  items-center
+                  gap-2
+                "
+              >
+                <CheckCircle2
+                  size={17}
+                  className="text-emerald-600"
+                />
 
-                <div className="text-slate-400">
-                  Declarações
-                </div>
-              </div>
-
-              <div>
-                <div className="text-4xl font-black text-white">
-                  98%
-                </div>
-
-                <div className="text-slate-400">
-                  Conformidade
-                </div>
+                Alertas de prazos
               </div>
 
             </div>
 
           </motion.div>
 
-          {/* DIREITA */}
+          {/* =====================================
+              DIREITA — DASHBOARD
+          ====================================== */}
 
-          <HeroDashboard />
+          <motion.div
+            initial={{
+              opacity: 0,
+              x: 30,
+            }}
+            animate={{
+              opacity: 1,
+              x: 0,
+            }}
+            transition={{
+              duration: 0.8,
+              delay: 0.15,
+              ease: 'easeOut',
+            }}
+            className="
+              relative
+              lg:pl-4
+            "
+          >
+
+            <div
+              className="
+                absolute
+                -inset-6
+                rounded-[32px]
+                bg-blue-100/40
+                blur-2xl
+                pointer-events-none
+              "
+            />
+
+            <div
+              className="
+                relative
+              "
+            >
+              <HeroDashboard />
+            </div>
+
+          </motion.div>
 
         </div>
 

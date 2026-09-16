@@ -1,197 +1,181 @@
 'use client';
 
 import {
-  Bell,
   Search,
-  Building2,
-  BadgeCheck,
-  CalendarDays,
+  HelpCircle,
+  Bell,
 } from 'lucide-react';
 
-export default function Header({
-  company,
-}: any) {
-  const today = new Date().toLocaleDateString(
-    'pt-PT',
-    {
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    }
-  );
-
+export default function Header() {
   return (
     <header
       className="
-      bg-white
-      border-b
-      px-8
-      py-5
-      shadow-sm
-      flex
-      items-center
-      justify-between
-      gap-6
-    "
+        h-[88px]
+        bg-white
+        border-b
+        border-slate-200
+        flex
+        items-center
+        justify-between
+        px-6
+        lg:px-8
+        sticky
+        top-0
+        z-40
+      "
     >
-      {/* Empresa */}
-      <div className="flex items-center gap-4">
+
+      {/* PESQUISA */}
+      <div className="relative w-full max-w-[560px]">
+
+        <Search
+          size={21}
+          className="
+            absolute
+            left-5
+            top-1/2
+            -translate-y-1/2
+            text-slate-400
+          "
+        />
+
+        <input
+          type="text"
+          placeholder="Pesquisar..."
+          className="
+            w-full
+            h-12
+            rounded-2xl
+            border
+            border-slate-200
+            bg-slate-50
+            pl-14
+            pr-16
+            outline-none
+            text-slate-700
+            placeholder:text-slate-400
+            focus:border-blue-500
+            focus:ring-4
+            focus:ring-blue-500/10
+            transition
+          "
+        />
+
         <div
           className="
-          w-14
-          h-14
-          rounded-2xl
-          bg-blue-600
-          text-white
-          flex
-          items-center
-          justify-center
-          font-bold
-          text-xl
-          shadow-lg
-        "
+            absolute
+            right-4
+            top-1/2
+            -translate-y-1/2
+            px-2
+            py-1
+            rounded-lg
+            border
+            border-slate-200
+            bg-white
+            text-xs
+            text-slate-400
+          "
         >
-          {company?.name?.[0] || 'E'}
+          ⌘K
         </div>
 
-        <div>
-          <h2 className="text-2xl font-bold text-slate-800">
-            {company?.name || 'Empresa'}
-          </h2>
-
-          <div className="flex flex-wrap gap-4 mt-1 text-sm text-slate-500">
-            <span className="flex items-center gap-1">
-              <Building2 size={14} />
-              {company?.sector || 'Sector não definido'}
-            </span>
-
-            <span>
-              NIF:
-              <strong className="ml-1 text-slate-700">
-                {company?.nif || '---'}
-              </strong>
-            </span>
-
-            <span>
-              Regime:
-              <strong className="ml-1 text-blue-600">
-                {company?.regime || 'Geral'}
-              </strong>
-            </span>
-          </div>
-        </div>
       </div>
 
-      {/* Centro */}
-      <div className="hidden lg:flex flex-1 justify-center px-10">
-        <div
-          className="
-          flex
-          items-center
-          gap-3
-          bg-slate-100
-          rounded-2xl
-          px-5
-          py-3
-          w-full
-          max-w-lg
-        "
-        >
-          <Search size={18} className="text-slate-400" />
-
-          <input
-            type="text"
-            placeholder="Pesquisar clientes, facturas, impostos..."
-            className="
-              bg-transparent
-              outline-none
-              w-full
-              text-sm
-            "
-          />
-        </div>
-      </div>
-
-      {/* Direita */}
-      <div className="flex items-center gap-4">
-        <div
-          className="
-          hidden
-          xl:flex
-          items-center
-          gap-2
-          bg-green-50
-          text-green-700
-          px-4
-          py-2
-          rounded-xl
-          border
-          border-green-200
-        "
-        >
-          <BadgeCheck size={18} />
-
-          <span className="font-medium">
-            Fiscal OK
-          </span>
-        </div>
-
-        <div
-          className="
-          hidden
-          lg:flex
-          items-center
-          gap-2
-          text-slate-500
-          text-sm
-        "
-        >
-          <CalendarDays size={16} />
-
-          {today}
-        </div>
+      {/* DIREITA */}
+      <div className="flex items-center gap-5 ml-6">
 
         <button
           className="
-          relative
-          p-3
-          rounded-xl
-          hover:bg-slate-100
-          transition
-        "
+            w-10
+            h-10
+            rounded-xl
+            flex
+            items-center
+            justify-center
+            text-slate-600
+            hover:bg-slate-100
+            transition
+          "
         >
-          <Bell size={20} />
+          <HelpCircle size={21} />
+        </button>
+
+        <button
+          className="
+            relative
+            w-10
+            h-10
+            rounded-xl
+            flex
+            items-center
+            justify-center
+            text-slate-600
+            hover:bg-slate-100
+            transition
+          "
+        >
+
+          <Bell size={21} />
 
           <span
             className="
-            absolute
-            top-2
-            right-2
-            w-2
-            h-2
-            rounded-full
-            bg-red-500
+              absolute
+              -top-1
+              -right-1
+              w-5
+              h-5
+              rounded-full
+              bg-red-500
+              text-white
+              text-[10px]
+              font-bold
+              flex
+              items-center
+              justify-center
             "
-          />
+          >
+            4
+          </span>
+
         </button>
 
-        <div
-          className="
-          w-12
-          h-12
-          rounded-2xl
-          bg-blue-600
-          text-white
-          font-bold
-          flex
-          items-center
-          justify-center
-          shadow-lg
-        "
-        >
-          {company?.name?.[0] || 'E'}
+        <div className="h-8 w-px bg-slate-200" />
+
+        <div className="flex items-center gap-3">
+
+          <div className="text-right hidden sm:block">
+
+            <p className="text-sm font-bold text-slate-900">
+              Edgar&Filhos
+            </p>
+
+            <p className="text-xs text-slate-400">
+              NIF: 5000123
+            </p>
+
+          </div>
+
+          <div
+            className="
+              w-11
+              h-11
+              rounded-full
+              bg-indigo-600
+              text-white
+              font-bold
+              flex
+              items-center
+              justify-center
+            "
+          >
+            E
+          </div>
+
         </div>
+
       </div>
+
     </header>
   );
 }

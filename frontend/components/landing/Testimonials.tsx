@@ -1,135 +1,110 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { Quote, Star } from 'lucide-react';
+import {
+  CheckCircle2,
+  FileText,
+  CalendarCheck,
+  BarChart3,
+} from 'lucide-react';
 
-const testimonials = [
+const items = [
   {
-    name: 'José Manuel',
-    company: 'Grupo Empresarial JM',
-    text: 'Reduzimos drasticamente os atrasos fiscais e hoje temos total controlo das obrigações da empresa.',
+    icon: FileText,
+    title: 'Documentação organizada',
+    text: 'Tenha os principais documentos e processos fiscais reunidos num ambiente centralizado.',
   },
   {
-    name: 'Maria Fernandes',
-    company: 'MF Comércio',
-    text: 'A plataforma tornou os processos fiscais simples e transparentes para toda a equipa.',
+    icon: CalendarCheck,
+    title: 'Prazos acompanhados',
+    text: 'Consulte as obrigações e compromissos que precisam da sua atenção.',
   },
   {
-    name: 'Carlos Alberto',
-    company: 'CA Serviços',
-    text: 'Hoje acompanhamos receitas, impostos e alertas em tempo real.',
+    icon: BarChart3,
+    title: 'Informação para decidir',
+    text: 'Acompanhe indicadores e relatórios que ajudam a compreender a situação da empresa.',
   },
   {
-    name: 'Ana Paula',
-    company: 'AP Investimentos',
-    text: 'O Fiscalidade Digital eliminou planilhas e trouxe organização financeira.',
+    icon: CheckCircle2,
+    title: 'Mais confiança no dia a dia',
+    text: 'Reduza tarefas repetitivas e tenha uma visão mais clara dos processos fiscais.',
   },
 ];
 
 export default function Testimonials() {
-  const [active, setActive] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setActive((prev) =>
-        prev === testimonials.length - 1
-          ? 0
-          : prev + 1,
-      );
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, []);
-
   return (
-    <section className="py-32 bg-slate-50">
+    <section className="py-24 lg:py-28 bg-white">
 
-      <div className="max-w-6xl mx-auto px-6">
+      <div className="max-w-7xl mx-auto px-6">
 
-        <div className="text-center mb-16">
+        <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-14 items-start">
 
-          <h2 className="text-5xl font-black text-slate-900">
-            O Que os Clientes Dizem
-          </h2>
+          {/* Texto */}
 
-          <p className="text-slate-600 mt-4 text-lg">
-            Empresas que modernizaram a sua gestão fiscal.
-          </p>
+          <div>
 
-        </div>
+            <span className="text-sm font-semibold text-blue-600">
+              Experiência de utilização
+            </span>
 
-        <div className="relative overflow-hidden">
+            <h2 className="mt-3 text-4xl lg:text-5xl font-bold tracking-tight text-slate-900">
+              Uma plataforma pensada para o trabalho real
+            </h2>
 
-          <div
-            className="flex transition-all duration-700"
-            style={{
-              transform: `translateX(-${active * 100}%)`,
-            }}
-          >
+            <p className="mt-5 text-lg leading-8 text-slate-600">
+              A gestão fiscal não precisa de estar espalhada por
+              folhas de cálculo, documentos e diferentes ferramentas.
+            </p>
 
-            {testimonials.map((item, index) => (
-              <div
-                key={index}
-                className="min-w-full px-4"
-              >
+            <div className="mt-7 flex items-start gap-3">
 
-                <div className="bg-white rounded-[36px] shadow-xl p-10 text-center">
+              <CheckCircle2
+                size={20}
+                className="mt-0.5 shrink-0 text-emerald-600"
+              />
 
-                  <Quote
-                    size={50}
-                    className="mx-auto text-blue-600 mb-6"
-                  />
+              <p className="text-sm leading-6 text-slate-600">
+                Informação centralizada para facilitar o acompanhamento
+                das actividades fiscais da empresa.
+              </p>
 
-                  <div className="flex justify-center gap-1 mb-6">
-
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <Star
-                        key={star}
-                        size={20}
-                        className="fill-yellow-400 text-yellow-400"
-                      />
-                    ))}
-
-                  </div>
-
-                  <p className="text-2xl text-slate-700 leading-relaxed max-w-3xl mx-auto">
-                    "{item.text}"
-                  </p>
-
-                  <div className="mt-8">
-
-                    <h3 className="font-bold text-xl">
-                      {item.name}
-                    </h3>
-
-                    <p className="text-slate-500">
-                      {item.company}
-                    </p>
-
-                  </div>
-
-                </div>
-
-              </div>
-            ))}
+            </div>
 
           </div>
 
-          <div className="flex justify-center gap-3 mt-8">
+          {/* Cards */}
 
-            {testimonials.map((_, index) => (
-              <button
-                key={index}
-                onClick={() =>
-                  setActive(index)
-                }
-                className={`h-3 rounded-full transition-all ${
-                  active === index
-                    ? 'bg-blue-600 w-10'
-                    : 'bg-slate-300 w-3'
-                }`}
-              />
-            ))}
+          <div className="grid sm:grid-cols-2 gap-4">
+
+            {items.map((item, index) => {
+              const Icon = item.icon;
+
+              return (
+                <div
+                  key={index}
+                  className="
+                    rounded-2xl
+                    border
+                    border-slate-200
+                    bg-slate-50
+                    p-6
+                  "
+                >
+
+                  <div className="w-10 h-10 rounded-xl bg-white border border-slate-200 text-blue-600 flex items-center justify-center">
+                    <Icon size={20} />
+                  </div>
+
+                  <h3 className="mt-5 font-semibold text-slate-900">
+                    {item.title}
+                  </h3>
+
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {item.text}
+                  </p>
+
+                </div>
+              );
+            })}
 
           </div>
 

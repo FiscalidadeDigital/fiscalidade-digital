@@ -7,76 +7,70 @@ import {
   LayoutDashboard,
   Building2,
   CalendarDays,
-  Bell,
-  Calculator,
-  FileText,
-  Users,
+  ShieldCheck,
   Receipt,
-  BookOpen,
-  ShieldAlert,
+  Users,
+  Calculator,
+  Library,
+  FileText,
+  Bell,
   Settings,
-  Bot,
 } from 'lucide-react';
 
-const links = [
+const menuItems = [
   {
-    title: 'Dashboard',
+    label: 'Dashboard',
     href: '/dashboard',
     icon: LayoutDashboard,
   },
   {
-    title: 'Empresa',
+    label: 'Empresa',
     href: '/company',
     icon: Building2,
   },
   {
-    title: 'Calendário Fiscal',
-    href: '/calendar',
+    label: 'Calendário Fiscal',
+    href: '/calendario',
     icon: CalendarDays,
   },
   {
-    title: 'Obrigações',
-    href: '/obligations',
-    icon: ShieldAlert,
+    label: 'Obrigações',
+    href: '/obrigacoes',
+    icon: ShieldCheck,
   },
   {
-    title: 'Facturação',
-    href: '/invoice',
+    label: 'Facturação',
+    href: '/facturacao',
     icon: Receipt,
   },
   {
-    title: 'Clientes',
-    href: '/clients',
+    label: 'Clientes',
+    href: '/clientes',
     icon: Users,
   },
   {
-    title: 'Simulador Fiscal',
-    href: '/calculator',
+    label: 'Simulador Fiscal',
+    href: '/simulador',
     icon: Calculator,
   },
   {
-    title: 'Biblioteca Fiscal',
-    href: '/library',
-    icon: BookOpen,
+    label: 'Biblioteca Fiscal',
+    href: '/biblioteca',
+    icon: Library,
   },
   {
-    title: 'Relatórios',
-    href: '/reports',
+    label: 'Relatórios',
+    href: '/relatorios',
     icon: FileText,
   },
   {
-    title: 'Alertas',
-    href: '/notifications',
+    label: 'Alertas',
+    href: '/alertas',
     icon: Bell,
   },
   {
-    title: 'Assistente IA',
-    href: '/ai',
-    icon: Bot,
-  },
-  {
-    title: 'Definições',
-    href: '/settings',
+    label: 'Definições',
+    href: '/definicoes',
     icon: Settings,
   },
 ];
@@ -85,48 +79,178 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="w-72 bg-[#07122e] text-white flex flex-col">
+    <aside
+      className="
+        fixed
+        left-0
+        top-0
+        z-50
+        h-screen
+        w-[300px]
+        bg-[#07132f]
+        text-white
+        flex
+        flex-col
+      "
+    >
 
-      <div className="p-6 border-b border-slate-800">
-        <h1 className="text-xl font-bold">
-          Fiscalidade Digital
-        </h1>
+      {/* LOGO */}
+      <div className="h-[120px] px-6 flex items-center border-b border-white/10">
 
-        <p className="text-slate-400 text-sm mt-1">
-          Plataforma Fiscal Inteligente
-        </p>
-      </div>
+        <div className="flex items-center gap-4">
 
-      <nav className="flex-1 p-4 space-y-2">
-
-        {links.map((link) => {
-          const active =
-            pathname === link.href;
-
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={`
+          <div
+            className="
+              w-12
+              h-12
+              rounded-2xl
+              bg-white
               flex
               items-center
-              gap-3
-              p-3
-              rounded-xl
-              transition
-              ${
-                active
-                  ? 'bg-blue-600'
-                  : 'hover:bg-slate-800'
-              }
-            `}
-            >
-              <link.icon size={18} />
-              <span>{link.title}</span>
-            </Link>
-          );
-        })}
+              justify-center
+              shadow-lg
+            "
+          >
+            <div className="text-blue-600 font-black text-lg">
+              FD
+            </div>
+          </div>
+
+          <div>
+            <h1 className="text-xl font-black tracking-tight">
+              Fiscalidade Digital
+            </h1>
+
+            <p className="text-sm text-slate-400 mt-1">
+              Plataforma Fiscal Inteligente
+            </p>
+          </div>
+
+        </div>
+
+      </div>
+
+      {/* MENU */}
+      <nav className="flex-1 px-4 py-6 overflow-y-auto">
+
+        <div className="space-y-2">
+
+          {menuItems.map((item) => {
+
+            const Icon = item.icon;
+
+            const active =
+              pathname === item.href ||
+              pathname.startsWith(`${item.href}/`);
+
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                className={`
+                  group
+                  flex
+                  items-center
+                  gap-4
+                  px-5
+                  py-4
+                  rounded-2xl
+                  transition-all
+                  duration-200
+                  ${
+                    active
+                      ? `
+                        bg-blue-600
+                        text-white
+                        shadow-lg
+                        shadow-blue-900/30
+                      `
+                      : `
+                        text-slate-300
+                        hover:bg-white/10
+                        hover:text-white
+                      `
+                  }
+                `}
+              >
+
+                <Icon
+                  size={21}
+                  strokeWidth={1.8}
+                  className={
+                    active
+                      ? 'text-white'
+                      : 'text-slate-300 group-hover:text-white'
+                  }
+                />
+
+                <span className="text-[15px] font-medium">
+                  {item.label}
+                </span>
+
+              </Link>
+            );
+
+          })}
+
+        </div>
+
       </nav>
+
+      {/* EMPRESA / UTILIZADOR */}
+      <div className="p-4 border-t border-white/10">
+
+        <div
+          className="
+            rounded-2xl
+            bg-white/5
+            px-4
+            py-4
+            flex
+            items-center
+            justify-between
+          "
+        >
+
+          <div className="flex items-center gap-3">
+
+            <div
+              className="
+                w-10
+                h-10
+                rounded-full
+                bg-indigo-600
+                flex
+                items-center
+                justify-center
+                font-bold
+              "
+            >
+              E
+            </div>
+
+            <div>
+
+              <p className="font-semibold text-sm">
+                Edgar&Filhos
+              </p>
+
+              <p className="text-xs text-slate-400">
+                NIF: 5000123
+              </p>
+
+            </div>
+
+          </div>
+
+          <span className="text-slate-400">
+            ⌄
+          </span>
+
+        </div>
+
+      </div>
+
     </aside>
   );
 }
