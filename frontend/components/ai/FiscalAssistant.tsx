@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 
@@ -28,7 +28,7 @@ export default function FiscalAssistant() {
     setLoading(true);
 
     const response = await fetch(
-      'http://localhost:3001/ai/chat',
+      'https://fiscalidade-digital-api.onrender.com/ai/chat',
       {
         method: 'POST',
         headers: {

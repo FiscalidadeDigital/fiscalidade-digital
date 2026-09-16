@@ -1,4 +1,4 @@
-import api from './api';
+﻿import api from './api';
 
 export type DocumentCategory =
   | 'FACTURA'
@@ -68,7 +68,7 @@ export type UploadDocumentData = {
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
-  'http://localhost:3001';
+  'https://fiscalidade-digital-api.onrender.com';
 
 function buildFileUrl(
   fileUrl?: string | null,
@@ -258,7 +258,7 @@ export function formatDocumentSize(
 }
 
 /**
- * Obter URL pública do documento
+ * Obter URL pÃºblica do documento
  */
 export function getDocumentUrl(
   document: FiscalDocument,

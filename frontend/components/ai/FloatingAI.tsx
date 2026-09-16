@@ -1,4 +1,4 @@
-'use client';
+﻿'use client';
 
 import { useState } from 'react';
 import axios from 'axios';
@@ -17,7 +17,7 @@ export default function FloatingAI() {
 
       const response =
         await axios.post(
-          'http://localhost:3001/ai/chat',
+          'https://fiscalidade-digital-api.onrender.com/ai/chat',
           {
             message,
           },
@@ -58,7 +58,7 @@ export default function FloatingAI() {
             onChange={(e) =>
               setMessage(e.target.value)
             }
-            placeholder="Faça uma pergunta..."
+            placeholder="FaÃ§a uma pergunta..."
             className="w-full border rounded-lg p-3 h-28"
           />
 
