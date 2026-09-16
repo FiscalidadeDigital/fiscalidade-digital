@@ -22,67 +22,14 @@ import {
 ========================================================= */
 
 const partnerLogos = [
-  {
-    name: 'Ensalogo',
-    image: '/Ensalogo.png',
-  },
-  {
-    name: 'Yash Hub',
-    image: '/yashhublogo.jpg',
-  },
-  {
-    name: 'Rede Canais',
-    image: '/imageslogo.jfif',
-  },
-  {
-    name: 'Banco Nacional de Angola',
-    image: '/Bnalogo.png',
-  },
-  {
-    name: 'Acelera',
-    image: '/aceleralogo.png',
-  },
-   {
-    name: 'Acelera',
-    image: '/aceleralogo.png',
-  },
-   {
-    name: 'Acelera',
-    image: '/aceleralogo.png',
-  },
-   {
-    name: 'Acelera',
-    image: '/aceleralogo.png',
-  },
-   {
-    name: 'Acelera',
-    image: '/aceleralogo.png',
-  },
-  {
-    name: 'Ignition',
-    image: '/Ignitionlogo.png',
-  },
-   {
-    name: 'catoca',
-    image: '/catocalogo.png',
-    
-  },
-   {
-    name: 'Ignition',
-    image: '/Ignitionlogo.png',
-  },
-   {
-    name: 'Ignition',
-    image: '/Ignitionlogo.png',
-  },
-   {
-    name: 'Ignition',
-    image: '/Ignitionlogo.png',
-  },
-   {
-    name: 'bai',
-    image: '/bailogo.png',
-  },
+  { name: 'Ensa', image: '/Ensalogo.png' },
+  { name: 'Yash Hub', image: '/yashhublogo.jpg' },
+  { name: 'Rede Canais', image: '/imageslogo.jfif' },
+  { name: 'Banco Nacional de Angola', image: '/Bnalogo.png' },
+  { name: 'Acelera', image: '/aceleralogo.png' },
+  { name: 'Ignition', image: '/Ignitionlogo.png' },
+  { name: 'Catoca', image: '/catocalogo.png' },
+  { name: 'BAI', image: '/bailogo.png' },
 ];
 
 const teamMembers = [
@@ -1134,16 +1081,16 @@ export default function HomePage() {
         ===================================================== */
 
         .partners-section {
-          padding: 22px 0 24px;
-          border-top: 1px solid #eeeeF3;
-          border-bottom: 1px solid #eeeeF3;
+          padding: 26px 0 28px;
+          border-top: 1px solid #edf0f6;
+          border-bottom: 1px solid #edf0f6;
           background: #ffffff;
         }
 
         .partners-title {
-          margin: 0 0 21px;
+          margin: 0 0 22px;
           text-align: center;
-          color: #9299a8;
+          color: #8290a8;
           font-size: 10px;
           font-weight: 800;
           letter-spacing: 0.2em;
@@ -1154,80 +1101,90 @@ export default function HomePage() {
           position: relative;
           width: 100%;
           overflow: hidden;
-          padding: 5px 0 8px;
+          padding: 8px 0 10px;
           -webkit-mask-image: linear-gradient(
             to right,
             transparent 0,
-            #000 5%,
-            #000 95%,
+            #000 7%,
+            #000 93%,
             transparent 100%
           );
           mask-image: linear-gradient(
             to right,
             transparent 0,
-            #000 5%,
-            #000 95%,
+            #000 7%,
+            #000 93%,
             transparent 100%
           );
         }
 
-        .partners-window::before,
-        .partners-window::after {
-          display: none;
-        }
-
         .partners-track {
+          display: flex !important;
           width: max-content;
-          display: flex;
-          flex-wrap: nowrap;
+          min-width: max-content;
+          flex-wrap: nowrap !important;
           align-items: center;
-          justify-content: flex-start;
-          gap: 38px;
-          animation: partnerMarquee 38s linear infinite;
+          animation: partnerMarquee 42s linear infinite;
           will-change: transform;
         }
 
-        .partners-window:hover .partners-track {
+        .partners-group {
+          display: flex;
+          flex: 0 0 auto;
+          align-items: center;
+          gap: 34px;
+          padding-right: 34px;
+        }
+
+        .partners-window:hover .partners-track,
+        .partners-window:focus-within .partners-track {
           animation-play-state: paused;
         }
 
         .partner-item {
-          width: 154px;
+          width: 142px;
           height: 62px;
-          flex: 0 0 154px;
+          min-width: 142px;
+          flex: 0 0 142px !important;
           display: flex;
           align-items: center;
           justify-content: center;
+          border: 1px solid #f0f2f7;
           border-radius: 12px;
           background: #ffffff;
+          transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
 
         .partner-item img {
           display: block;
           width: auto;
-          max-width: 146px;
-          max-height: 48px;
+          max-width: 124px;
+          max-height: 42px;
           height: auto;
           object-fit: contain;
           filter: none !important;
           opacity: 1 !important;
           visibility: visible !important;
+          image-rendering: auto;
           transition: transform 0.2s ease;
         }
 
+        .partner-item:hover {
+          border-color: #dbe7f5;
+          box-shadow: 0 8px 22px rgba(30, 63, 112, 0.07);
+        }
+
         .partner-item:hover img {
-          filter: none !important;
-          opacity: 1 !important;
-          transform: scale(1.03);
+          transform: scale(1.04);
         }
 
         @keyframes partnerMarquee {
           from {
-            transform: translateX(0);
+            transform: translate3d(0, 0, 0);
           }
 
           to {
-            transform: translateX(-50%);
+            transform: translate3d(-50%, 0, 0);
           }
         }
 
@@ -1237,6 +1194,7 @@ export default function HomePage() {
 
         .partners-window,
         .partners-track,
+        .partners-group,
         .partner-item,
         .partner-item img {
           opacity: 1 !important;
@@ -2635,7 +2593,7 @@ export default function HomePage() {
             display: flex;
             flex-wrap: nowrap;
             gap: 28px;
-            animation-duration: 32s;
+            animation-duration: 34s;
           }
 
           .partner-item {
@@ -2763,19 +2721,25 @@ export default function HomePage() {
           }
 
           .partners-track {
-            gap: 22px;
-            animation-duration: 27s;
+            animation-duration: 34s;
+          }
+
+          .partners-group {
+            gap: 18px;
+            padding-right: 18px;
           }
 
           .partner-item {
-            width: 112px;
+            width: 104px;
             height: 46px;
-            flex-basis: 112px;
+            min-width: 104px;
+            flex-basis: 104px;
+            border-radius: 9px;
           }
 
           .partner-item img {
-            max-width: 108px;
-            max-height: 36px;
+            max-width: 94px;
+            max-height: 31px;
             height: auto;
           }
 
@@ -3117,20 +3081,25 @@ export default function HomePage() {
 
           <div className="partners-window">
             <div className="partners-track">
-              {[
-                ...partnerLogos,
-                ...partnerLogos,
-              ].map((partner, index) => (
+              {[0, 1].map((groupIndex) => (
                 <div
-                  className="partner-item"
-                  key={`${partner.name}-${index}`}
-                  title={partner.name}
+                  className="partners-group"
+                  key={`partners-group-${groupIndex}`}
+                  aria-hidden={groupIndex === 1}
                 >
-                  <img
-                    src={partner.image}
-                    alt={partner.name}
-                    loading="eager"
-                  />
+                  {partnerLogos.map((partner, index) => (
+                    <div
+                      className="partner-item"
+                      key={`${groupIndex}-${partner.name}-${index}`}
+                      title={partner.name}
+                    >
+                      <img
+                        src={partner.image}
+                        alt={groupIndex === 1 ? '' : partner.name}
+                        loading={groupIndex === 0 ? 'eager' : 'lazy'}
+                      />
+                    </div>
+                  ))}
                 </div>
               ))}
             </div>
