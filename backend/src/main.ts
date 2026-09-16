@@ -1,28 +1,14 @@
-import {
-  ValidationPipe,
-} from '@nestjs/common';
 
-import {
-  NestFactory,
-} from '@nestjs/core';
+import { ValidationPipe } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
 
-import {
-  AppModule,
-} from './app.module';
-
-import {
-  join,
-} from 'path';
-
+import { join } from 'path';
 import * as express from 'express';
-
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app =
-    await NestFactory.create(
-      AppModule,
-    );
+  const app = await NestFactory.create(AppModule);
 
   // =========================================================
   // SEGURANÇA HTTP
@@ -54,50 +40,45 @@ async function bootstrap() {
   // =========================================================
   // FICHEIROS UPLOAD
   // =========================================================
-  //
-  // Mantemos /uploads nesta fase.
-  //
-  // Posteriormente podemos migrar para Object Storage.
-  // =========================================================
 
   app.use(
     '/uploads',
     express.static(
-      join(
-        process.cwd(),
-        'uploads',
-      ),
+      join(process.cwd(), 'uploads'),
     ),
   );
 
   // =========================================================
   // CORS
   // =========================================================
-  //
-  // Desenvolvimento:
-  //   http://localhost:3000
-  //
-  // Produção:
-  //   FRONTEND_URL=https://app.fiscalidade.ao
-  //
-  // Também aceitamos FRONTEND_URLS separado por vírgula
-  // para permitir mais de um frontend.
-  // =========================================================
 
-  const configuredOrigins =
-    (
-      process.env.FRONTEND_URLS ||
-      process.env.FRONTEND_URL ||
-      'http://localhost:3000'
-    )
-      .split(',')
-      .map(
-        (origin) =>
-          origin.trim(),
-      )
-      .filter(
-        Boolean,
-      );
+  const defaultOrigins = [
+    'http://localhost:3000',
+    'http://127.0.0.1:3000',
+
+    // Domínios principais da Vercel
+    'https://fiscalidade-digital.vercel.app',
+    'https://fiscalidade-digital-3bh4.vercel.app',
+
+    // Domínio Git Main da Vercel
+    'https://fiscalidade-digital-git-main-fiscalidade-digital.vercel.app',
+  ];
+
+  const environmentOrigins = (
+    process.env.FRONTEND_URLS ||
+    process.env.FRONTEND_URL ||
+    ''
+  )
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
+  const configuredOrigins = [
+    ...new Set([
+      ...defaultOrigins,
+      ...environmentOrigins,
+    ]),
+  ];
 
   app.enableCors({
     origin: (
@@ -105,28 +86,34 @@ async function bootstrap() {
       callback,
     ) => {
       // Permitir pedidos sem Origin:
-      // Postman, health checks, comunicação interna, etc.
+      // Postman, health checks e comunicação interna.
       if (!requestOrigin) {
-        return callback(
-          null,
-          true,
-        );
+        return callback(null, true);
       }
 
+      // Permitir os domínios configurados.
       if (
         configuredOrigins.includes(
           requestOrigin,
         )
       ) {
-        return callback(
-          null,
-          true,
+        return callback(null, true);
+      }
+
+      // Permitir URLs de deployment da Vercel
+      // relacionadas com o projeto Fiscalidade Digital.
+      const isFiscalidadeVercelDomain =
+        /^https:\/\/fiscalidade-digital(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(
+          requestOrigin,
         );
+
+      if (isFiscalidadeVercelDomain) {
+        return callback(null, true);
       }
 
       return callback(
         new Error(
-          'Origem não autorizada pelo CORS.',
+          `Origem não autorizada pelo CORS: ${requestOrigin}`,
         ),
         false,
       );
@@ -154,30 +141,11 @@ async function bootstrap() {
   });
 
   // =========================================================
-  // PREFIXO OPCIONAL DA API
-  // =========================================================
-  //
-  // Não activamos /api globalmente agora porque o frontend
-  // actual provavelmente utiliza as rotas existentes
-  // directamente.
-  //
-  // Assim evitamos quebrar:
-  //
-  // /auth
-  // /invoice
-  // /obligations
-  // /payroll
-  // etc.
-  // =========================================================
-
-  // =========================================================
   // PORTA
   // =========================================================
 
   const port =
-    Number(
-      process.env.PORT,
-    ) || 3001;
+    Number(process.env.PORT) || 3001;
 
   await app.listen(
     port,
@@ -190,16 +158,13 @@ async function bootstrap() {
 
   console.log(
     `Ambiente: ${
-      process.env.NODE_ENV ||
-      'development'
+      process.env.NODE_ENV || 'development'
     }`,
   );
 
   console.log(
     `CORS autorizado: ${
-      configuredOrigins.join(
-        ', ',
-      )
+      configuredOrigins.join(', ')
     }`,
   );
 }
