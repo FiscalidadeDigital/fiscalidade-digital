@@ -556,7 +556,7 @@ export default function HomePage() {
 
         .nav-trigger:hover {
           color: var(--purple);
-          background: #faf9fe;
+          background: #f5fbfd;
         }
 
         .nav-item:hover .nav-dropdown {
@@ -598,7 +598,7 @@ export default function HomePage() {
 
         .nav-dropdown a:hover {
           color: var(--purple);
-          background: #f7f4ff;
+          background: #effcff;
         }
 
         .nav-actions {
@@ -630,14 +630,14 @@ export default function HomePage() {
           border-radius: 999px;
           background: linear-gradient(
             135deg,
-            #6239df,
-            #5226ca
+            #22b8d6,
+            #0ea5c9
           );
           color: #ffffff;
           font-size: 14px;
           font-weight: 800;
           box-shadow:
-            0 11px 24px rgba(91, 53, 213, 0.22),
+            0 11px 24px rgba(14, 165, 201, 0.22),
             inset 0 1px 0 rgba(255, 255, 255, 0.16);
           cursor: pointer;
           transition:
@@ -938,7 +938,7 @@ export default function HomePage() {
         }
 
         .art-main-line span:first-child {
-          background: #8065dc;
+          background: #22b8d6;
         }
 
         .art-main-content {
@@ -954,7 +954,7 @@ export default function HomePage() {
           gap: 7px;
           padding: 8px 11px;
           border-radius: 999px;
-          background: #f1edff;
+          background: #e8f8fb;
           color: var(--purple);
           font-size: 9px;
           font-weight: 800;
@@ -1058,7 +1058,7 @@ export default function HomePage() {
           align-items: center;
           justify-content: center;
           border-radius: 11px;
-          background: #eee9ff;
+          background: #e5f8fc;
           color: var(--purple);
         }
 
@@ -1289,7 +1289,7 @@ export default function HomePage() {
           margin-top: 26px;
           padding: 18px 20px;
           border-left: 3px solid var(--purple);
-          background: #faf9fe;
+          background: #f5fbfd;
           color: #56647d;
           font-size: 12px;
           line-height: 1.7;
@@ -1311,7 +1311,7 @@ export default function HomePage() {
             ),
             linear-gradient(
               135deg,
-              #f7f4ff,
+              #effcff,
               #ffffff 65%
             );
         }
@@ -1510,7 +1510,7 @@ export default function HomePage() {
             ),
             linear-gradient(
               145deg,
-              #f6f3ff,
+              #effcff,
               #ffffff 65%
             );
           border: 1px solid #e9e7f0;
@@ -1666,7 +1666,7 @@ export default function HomePage() {
           justify-self: end;
           padding: 4px 7px;
           border-radius: 999px;
-          background: #f0edff;
+          background: #e8f8fb;
           color: var(--purple);
           font-size: 7px;
           font-weight: 800;
@@ -1781,7 +1781,7 @@ export default function HomePage() {
             ),
             linear-gradient(
               145deg,
-              #f6f3ff,
+              #effcff,
               #ffffff 68%
             );
           border: 1px solid #e9e8f0;
@@ -1792,7 +1792,7 @@ export default function HomePage() {
           content: '';
           position: absolute;
           border-radius: 50%;
-          border: 1px solid rgba(91, 53, 213, 0.08);
+          border: 1px solid rgba(14, 165, 201, 0.08);
         }
 
         .fiscal-visual::before {
@@ -1966,7 +1966,7 @@ export default function HomePage() {
         }
 
         .benefits-section .section-label {
-          color: #a89bf0;
+          color: #7dd3e8;
         }
 
         .benefits-section .section-title {
@@ -1974,7 +1974,7 @@ export default function HomePage() {
         }
 
         .benefits-section .section-title .purple {
-          color: #a995ff;
+          color: #8be1f0;
         }
 
         .benefits-section .section-description {
@@ -2439,7 +2439,7 @@ export default function HomePage() {
           }
 
           .mobile-menu a:hover {
-            background: #f7f4ff;
+            background: #effcff;
           }
 
           .mobile-menu .mobile-cta {
@@ -2787,7 +2787,30 @@ export default function HomePage() {
         }
 
         }
-      `}</style>
+        /* Garantia de visibilidade dos parceiros */
+        .partners-window,
+        .partners-track,
+        .partner-item,
+        .partner-item img {
+          opacity: 1 !important;
+          filter: none !important;
+          visibility: visible !important;
+        }
+
+        .partner-item img {
+          display: block !important;
+          transform: none !important;
+          mix-blend-mode: normal !important;
+        }
+
+        .partner-item:hover img {
+          opacity: 1 !important;
+          filter: none !important;
+          transform: scale(1.02);
+        }
+
+      `}
+      </style>
 
       {/* =====================================================
           NAVBAR
