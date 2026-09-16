@@ -435,17 +435,17 @@ export default function HomePage() {
         :root {
           --navy: #17294d;
           --navy-deep: #10203f;
-          --purple: #5b35d5;
-          --purple-dark: #4822b9;
+          --purple: #6842e8;
+          --purple-dark: #4d2bb8;
           --purple-light: #eee8ff;
-          --blue: #3469ed;
+          --blue: #2f7df4;
           --blue-light: #eaf1ff;
-          --peach: #fff2e9;
+          --peach: #fff0e5;
           --text: #17294d;
           --muted: #697792;
           --light-text: #8994a8;
           --border: #e8e9ef;
-          --soft: #faf9fc;
+          --soft: #f7f8fc;
         }
 
         * {
@@ -480,7 +480,7 @@ export default function HomePage() {
         }
 
         .container {
-          width: min(1240px, calc(100% - 48px));
+          width: min(1180px, calc(100% - 40px));
           margin: 0 auto;
         }
 
@@ -663,7 +663,7 @@ export default function HomePage() {
         .mobile-menu-button {
           display: none;
           width: 43px;
-          height: 43px;
+          height: 36px;
           align-items: center;
           justify-content: center;
           margin-left: auto;
@@ -687,7 +687,7 @@ export default function HomePage() {
           min-height: 720px;
           display: flex;
           align-items: center;
-          padding: 92px 0 108px;
+          padding: 76px 0 88px;
           background:
             radial-gradient(
               circle at 77% 43%,
@@ -726,7 +726,7 @@ export default function HomePage() {
           display: grid;
           grid-template-columns: minmax(0, 0.92fr) minmax(500px, 1.08fr);
           align-items: center;
-          gap: 52px;
+          gap: 42px;
         }
 
         .hero-copy {
@@ -757,7 +757,7 @@ export default function HomePage() {
           margin: 0;
           color: var(--navy);
           font-family: 'Manrope', sans-serif;
-          font-size: clamp(52px, 5.35vw, 78px);
+          font-size: clamp(45px, 4.8vw, 70px);
           line-height: 0.98;
           letter-spacing: -0.068em;
           font-weight: 800;
@@ -1134,7 +1134,7 @@ export default function HomePage() {
         ===================================================== */
 
         .partners-section {
-          padding: 27px 0 31px;
+          padding: 22px 0 24px;
           border-top: 1px solid #eeeeF3;
           border-bottom: 1px solid #eeeeF3;
           background: #ffffff;
@@ -1189,13 +1189,13 @@ export default function HomePage() {
           width: max-content;
           display: flex;
           align-items: center;
-          gap: 62px;
+          gap: 42px;
           animation: partnerMarquee 32s linear infinite;
         }
 
         .partner-item {
-          width: 155px;
-          height: 56px;
+          width: 132px;
+          height: 50px;
           flex-shrink: 0;
           display: flex;
           align-items: center;
@@ -1205,11 +1205,11 @@ export default function HomePage() {
         .partner-item img {
           display: block;
           width: auto;
-          max-width: 140px;
-          height: 43px;
+          max-width: 118px;
+          height: 36px;
           object-fit: contain;
-          filter: grayscale(100%);
-          opacity: 0.56;
+          filter: grayscale(0%);
+          opacity: 1;
           transition:
             filter 0.25s ease,
             opacity 0.25s ease,
@@ -1283,7 +1283,7 @@ export default function HomePage() {
         ===================================================== */
 
         .about-section {
-          padding: 118px 0;
+          padding: 92px 0;
           background: #ffffff;
         }
 
@@ -1384,7 +1384,7 @@ export default function HomePage() {
         ===================================================== */
 
         .challenge-section {
-          padding: 108px 0;
+          padding: 88px 0;
           background: #f8f8fb;
         }
 
@@ -1447,7 +1447,7 @@ export default function HomePage() {
         ===================================================== */
 
         .solution-section {
-          padding: 123px 0;
+          padding: 96px 0;
           background: #ffffff;
         }
 
@@ -1686,7 +1686,7 @@ export default function HomePage() {
         ===================================================== */
 
         .features-section {
-          padding: 113px 0 123px;
+          padding: 92px 0 100px;
           background: #faf9fc;
         }
 
@@ -1762,7 +1762,7 @@ export default function HomePage() {
         ===================================================== */
 
         .fiscal-section {
-          padding: 124px 0;
+          padding: 96px 0;
           background: #ffffff;
         }
 
@@ -1943,7 +1943,7 @@ export default function HomePage() {
 
         .benefits-section {
           position: relative;
-          padding: 107px 0;
+          padding: 88px 0;
           overflow: hidden;
           background:
             radial-gradient(
@@ -2023,7 +2023,7 @@ export default function HomePage() {
         ===================================================== */
 
         .team-section {
-          padding: 118px 0;
+          padding: 92px 0;
           background: #faf9fc;
         }
 
@@ -2104,7 +2104,7 @@ export default function HomePage() {
         ===================================================== */
 
         .trust-section {
-          padding: 112px 0;
+          padding: 88px 0;
           background: #ffffff;
         }
 
@@ -2184,7 +2184,7 @@ export default function HomePage() {
         ===================================================== */
 
         .faq-section {
-          padding: 114px 0 123px;
+          padding: 90px 0 96px;
           background: #f8f8fb;
         }
 
@@ -2245,7 +2245,7 @@ export default function HomePage() {
 
         .final-cta {
           position: relative;
-          padding: 123px 0;
+          padding: 96px 0;
           overflow: hidden;
           background:
             radial-gradient(
@@ -2732,6 +2732,65 @@ export default function HomePage() {
             flex-direction: column;
             align-items: flex-start;
           }
+        @media (max-width: 600px) {
+          .partners-section {
+            padding: 18px 0 20px;
+          }
+
+          .partners-title {
+            margin-bottom: 14px;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+          }
+
+          .partners-track {
+            gap: 24px;
+            animation-duration: 24s;
+          }
+
+          .partner-item {
+            width: 104px;
+            height: 43px;
+          }
+
+          .partner-item img {
+            max-width: 94px;
+            height: 31px;
+          }
+
+          .section-title {
+            font-size: clamp(31px, 8.5vw, 43px);
+            letter-spacing: -0.045em;
+          }
+
+          .section-description {
+            font-size: 14px;
+            line-height: 1.7;
+          }
+
+          .hero-title {
+            letter-spacing: -0.055em;
+          }
+
+          .hero-copy {
+            text-align: left;
+          }
+
+          .hero-check {
+            font-size: 10px;
+          }
+
+          .feature-card,
+          .challenge-card,
+          .benefit-item {
+            padding: 24px 21px;
+          }
+
+          .footer {
+            padding-top: 48px;
+          }
+        }
+
         }
       `}</style>
 
@@ -3027,7 +3086,7 @@ export default function HomePage() {
                   <img
                     src={partner.image}
                     alt={partner.name}
-                    loading="lazy"
+                    loading="eager"
                   />
                 </div>
               ))}
