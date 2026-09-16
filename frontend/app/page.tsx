@@ -435,10 +435,10 @@ export default function HomePage() {
         :root {
           --navy: #17294d;
           --navy-deep: #10203f;
-          --purple: #0ea5c9;
-          --purple-dark: #087ea4;
-          --purple-light: #e5f8fc;
-          --blue: #22b8d6;
+          --purple: #079dcc;
+          --purple-dark: #006bb5;
+          --purple-light: #e5f7fc;
+          --blue: #18b7d6;
           --blue-light: #e8f8fb;
           --peach: #effcff;
           --text: #17294d;
@@ -1154,6 +1154,21 @@ export default function HomePage() {
           position: relative;
           width: 100%;
           overflow: hidden;
+          padding: 5px 0 8px;
+          -webkit-mask-image: linear-gradient(
+            to right,
+            transparent 0,
+            #000 5%,
+            #000 95%,
+            transparent 100%
+          );
+          mask-image: linear-gradient(
+            to right,
+            transparent 0,
+            #000 5%,
+            #000 95%,
+            transparent 100%
+          );
         }
 
         .partners-window::before,
@@ -1162,19 +1177,24 @@ export default function HomePage() {
         }
 
         .partners-track {
-          width: 100%;
+          width: max-content;
           display: flex;
-          flex-wrap: wrap;
+          flex-wrap: nowrap;
           align-items: center;
-          justify-content: center;
-          gap: 18px 34px;
-          animation: none;
+          justify-content: flex-start;
+          gap: 38px;
+          animation: partnerMarquee 38s linear infinite;
+          will-change: transform;
+        }
+
+        .partners-window:hover .partners-track {
+          animation-play-state: paused;
         }
 
         .partner-item {
-          width: 132px;
-          height: 50px;
-          flex-shrink: 0;
+          width: 154px;
+          height: 62px;
+          flex: 0 0 154px;
           display: flex;
           align-items: center;
           justify-content: center;
@@ -1185,18 +1205,19 @@ export default function HomePage() {
         .partner-item img {
           display: block;
           width: auto;
-          max-width: 118px;
-          height: 36px;
+          max-width: 146px;
+          max-height: 48px;
+          height: auto;
           object-fit: contain;
-          filter: none;
-          opacity: 1;
-          visibility: visible;
+          filter: none !important;
+          opacity: 1 !important;
+          visibility: visible !important;
           transition: transform 0.2s ease;
         }
 
         .partner-item:hover img {
-          filter: none;
-          opacity: 1;
+          filter: none !important;
+          opacity: 1 !important;
           transform: scale(1.03);
         }
 
@@ -2610,20 +2631,23 @@ export default function HomePage() {
           }
 
           .partners-track {
-            width: 100%;
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 14px;
+            width: max-content;
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 28px;
+            animation-duration: 32s;
           }
 
           .partner-item {
-            width: 100%;
-            height: 48px;
+            width: 132px;
+            height: 54px;
+            flex: 0 0 132px;
           }
 
           .partner-item img {
-            max-width: 112px;
-            height: 34px;
+            max-width: 126px;
+            max-height: 42px;
+            height: auto;
           }
 
           .about-visual {
@@ -2739,18 +2763,20 @@ export default function HomePage() {
           }
 
           .partners-track {
-            gap: 24px;
-            animation-duration: 24s;
+            gap: 22px;
+            animation-duration: 27s;
           }
 
           .partner-item {
-            width: 104px;
-            height: 43px;
+            width: 112px;
+            height: 46px;
+            flex-basis: 112px;
           }
 
           .partner-item img {
-            max-width: 94px;
-            height: 31px;
+            max-width: 108px;
+            max-height: 36px;
+            height: auto;
           }
 
           .section-title {
@@ -2799,7 +2825,6 @@ export default function HomePage() {
 
         .partner-item img {
           display: block !important;
-          transform: none !important;
           mix-blend-mode: normal !important;
         }
 
