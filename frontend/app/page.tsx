@@ -435,17 +435,17 @@ export default function HomePage() {
         :root {
           --navy: #17294d;
           --navy-deep: #10203f;
-          --purple: #6842e8;
-          --purple-dark: #4d2bb8;
-          --purple-light: #eee8ff;
-          --blue: #2f7df4;
-          --blue-light: #eaf1ff;
-          --peach: #fff0e5;
+          --purple: #0ea5c9;
+          --purple-dark: #087ea4;
+          --purple-light: #e5f8fc;
+          --blue: #22b8d6;
+          --blue-light: #e8f8fb;
+          --peach: #effcff;
           --text: #17294d;
           --muted: #697792;
           --light-text: #8994a8;
           --border: #e8e9ef;
-          --soft: #f7f8fc;
+          --soft: #f5fbfd;
         }
 
         * {
@@ -870,7 +870,7 @@ export default function HomePage() {
           width: 48px;
           height: 48px;
           border-radius: 11px;
-          background: rgba(91, 53, 213, 0.09);
+          background: rgba(14, 165, 201, 0.10);
         }
 
         .shape-grid span:nth-child(2),
@@ -880,7 +880,7 @@ export default function HomePage() {
 
         .shape-grid span:nth-child(4),
         .shape-grid span:nth-child(7) {
-          background: rgba(52, 105, 237, 0.09);
+          background: rgba(34, 184, 214, 0.10);
         }
 
         .shape-grid-left {
@@ -1158,39 +1158,17 @@ export default function HomePage() {
 
         .partners-window::before,
         .partners-window::after {
-          content: '';
-          position: absolute;
-          z-index: 3;
-          top: 0;
-          width: 90px;
-          height: 100%;
-          pointer-events: none;
-        }
-
-        .partners-window::before {
-          left: 0;
-          background: linear-gradient(
-            to right,
-            #ffffff,
-            rgba(255, 255, 255, 0)
-          );
-        }
-
-        .partners-window::after {
-          right: 0;
-          background: linear-gradient(
-            to left,
-            #ffffff,
-            rgba(255, 255, 255, 0)
-          );
+          display: none;
         }
 
         .partners-track {
-          width: max-content;
+          width: 100%;
           display: flex;
+          flex-wrap: wrap;
           align-items: center;
-          gap: 42px;
-          animation: partnerMarquee 32s linear infinite;
+          justify-content: center;
+          gap: 18px 34px;
+          animation: none;
         }
 
         .partner-item {
@@ -1200,6 +1178,8 @@ export default function HomePage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          border-radius: 12px;
+          background: #ffffff;
         }
 
         .partner-item img {
@@ -1208,18 +1188,16 @@ export default function HomePage() {
           max-width: 118px;
           height: 36px;
           object-fit: contain;
-          filter: grayscale(0%);
+          filter: none;
           opacity: 1;
-          transition:
-            filter 0.25s ease,
-            opacity 0.25s ease,
-            transform 0.25s ease;
+          visibility: visible;
+          transition: transform 0.2s ease;
         }
 
         .partner-item:hover img {
-          filter: grayscale(0%);
+          filter: none;
           opacity: 1;
-          transform: scale(1.04);
+          transform: scale(1.03);
         }
 
         @keyframes partnerMarquee {
@@ -1230,6 +1208,19 @@ export default function HomePage() {
           to {
             transform: translateX(-50%);
           }
+        }
+
+        /* =====================================================
+           PERMANENT VISIBILITY
+        ===================================================== */
+
+        .partners-window,
+        .partners-track,
+        .partner-item,
+        .partner-item img {
+          opacity: 1 !important;
+          filter: none !important;
+          visibility: visible !important;
         }
 
         /* =====================================================
@@ -1528,7 +1519,7 @@ export default function HomePage() {
         .platform-decoration {
           position: absolute;
           border-radius: 50%;
-          border: 1px solid rgba(91, 53, 213, 0.09);
+          border: 1px solid rgba(14, 165, 201, 0.10);
         }
 
         .platform-decoration-one {
@@ -1687,7 +1678,7 @@ export default function HomePage() {
 
         .features-section {
           padding: 92px 0 100px;
-          background: #faf9fc;
+          background: #f5fbfd;
         }
 
         .features-heading {
@@ -2024,7 +2015,7 @@ export default function HomePage() {
 
         .team-section {
           padding: 92px 0;
-          background: #faf9fc;
+          background: #f5fbfd;
         }
 
         .team-heading {
@@ -2619,16 +2610,20 @@ export default function HomePage() {
           }
 
           .partners-track {
-            gap: 38px;
+            width: 100%;
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 14px;
           }
 
           .partner-item {
-            width: 125px;
+            width: 100%;
+            height: 48px;
           }
 
           .partner-item img {
             max-width: 112px;
-            height: 37px;
+            height: 34px;
           }
 
           .about-visual {
