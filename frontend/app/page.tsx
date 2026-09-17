@@ -52,7 +52,7 @@ const teamMembers = [
   
   {
     name: 'Desiderio',
-    image: '/Desiderio.png',
+    image: '/Desiderio.jpeg',
   },
   {
     name: 'Edgar',
@@ -60,7 +60,7 @@ const teamMembers = [
   },
   {
     name: 'Francisco',
-    image: '/Francisco.jpg',
+    image: '/Francisco.jpeg',
   },
   {
     name: 'Anildodev',
