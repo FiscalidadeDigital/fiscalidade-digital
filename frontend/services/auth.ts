@@ -8,8 +8,7 @@ import { removeToken } from '@/lib/auth';
 
 export type FiscalRegime =
   | 'GERAL'
-  | 'SIMPLIFICADO'
-  | 'PRESTADOR_SERVICO';
+  | 'SIMPLIFICADO';
 
 export interface Tenant {
   id: string;
@@ -90,13 +89,19 @@ export interface RegisterData {
 
   sector?: string;
 
-  companyType?: string;
+  companyType: string;
 
   employees?: number;
 
   regime: FiscalRegime;
 
   password: string;
+
+  acceptTerms: boolean;
+
+  acceptPrivacyPolicy: boolean;
+
+  confirmInformation: boolean;
 }
 
 // =====================================================
@@ -199,8 +204,7 @@ export const register = async (
           undefined,
 
         companyType:
-          data.companyType?.trim() ||
-          undefined,
+          data.companyType.trim(),
 
         employees:
           data.employees,
@@ -210,6 +214,15 @@ export const register = async (
 
         password:
           data.password,
+
+        acceptTerms:
+          data.acceptTerms,
+
+        acceptPrivacyPolicy:
+          data.acceptPrivacyPolicy,
+
+        confirmInformation:
+          data.confirmInformation,
       },
     );
 
