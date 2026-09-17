@@ -17,7 +17,6 @@ import {
 
 import {
   getLegislationLibrary,
-  getLegislationLibraryDocument,
   searchLegislationLibrary,
   type LibraryArticle,
   type LibraryDocument,
@@ -66,7 +65,7 @@ function getDocumentTitle(document: LibraryDocument) {
     return document.titleDetected;
   }
 
-  return document.sourceFile
+  return String(document.sourceFile || 'Documento legal')
     .replace(/\.pdf$/i, '')
     .replace(/[_-]+/g, ' ');
 }
@@ -92,7 +91,7 @@ function getArticleText(article: LibraryArticle) {
     article.text ||
       article.content ||
       article.title ||
-      '',
+      'Conteúdo não disponível.',
   ).trim();
 }
 
@@ -120,9 +119,6 @@ export default function LegislationPage() {
 
   const [articleSearch, setArticleSearch] =
     useState('');
-
-  const [documentLoading, setDocumentLoading] =
-    useState(false);
 
   const [showFullText, setShowFullText] =
     useState(false);
@@ -193,34 +189,18 @@ export default function LegislationPage() {
     }
   }
 
-  async function openDocument(
-    document: LibraryDocument,
-  ) {
-    try {
-      setDocumentLoading(true);
-      setError('');
-      setSelectedArticle(null);
-      setArticleSearch('');
-      setShowFullText(false);
-
-      const completeDocument =
-        await getLegislationLibraryDocument(
-          document.sourceFile,
-        );
-
-      setSelected(completeDocument);
-    } catch (err) {
-      console.error(
-        'Erro ao abrir diploma:',
-        err,
-      );
-
-      setError(
-        'Não foi possível abrir este diploma.',
-      );
-    } finally {
-      setDocumentLoading(false);
-    }
+  /*
+   * Abre directamente o documento já carregado pela API.
+   *
+   * Não chama /legislation/library/document/:sourceFile,
+   * evitando o erro 404 apresentado anteriormente.
+   */
+  function openDocument(document: LibraryDocument) {
+    setError('');
+    setSelectedArticle(null);
+    setArticleSearch('');
+    setShowFullText(false);
+    setSelected(document);
   }
 
   function closeDocument() {
@@ -305,9 +285,7 @@ export default function LegislationPage() {
     <DashboardLayout>
       <div className="mx-auto max-w-[1400px]">
 
-        {/* =====================================================
-            CABEÇALHO
-        ===================================================== */}
+        {/* CABEÇALHO */}
 
         <section className="mb-7">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
@@ -358,9 +336,7 @@ export default function LegislationPage() {
           </div>
         </section>
 
-        {/* =====================================================
-            PESQUISA
-        ===================================================== */}
+        {/* PESQUISA */}
 
         <section className="mb-7 rounded-2xl border border-[#e6e9f1] bg-white p-4 shadow-[0_2px_10px_rgba(20,30,60,0.03)]">
 
@@ -426,13 +402,10 @@ export default function LegislationPage() {
               disabled={loading}
               className="h-[44px] rounded-lg bg-[#5146e5] px-5 text-[12px] font-bold text-white transition hover:bg-[#4338ca] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              {loading
-                ? 'A carregar...'
-                : 'Pesquisar'}
+              {loading ? 'A carregar...' : 'Pesquisar'}
             </button>
 
-            {(search ||
-              sourceCategory !== 'ALL') && (
+            {(search || sourceCategory !== 'ALL') && (
               <button
                 type="button"
                 onClick={clearFilters}
@@ -464,9 +437,7 @@ export default function LegislationPage() {
 
         </section>
 
-        {/* =====================================================
-            ERRO
-        ===================================================== */}
+        {/* ERRO */}
 
         {error && (
           <div className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[12px] font-medium text-red-700">
@@ -474,23 +445,21 @@ export default function LegislationPage() {
           </div>
         )}
 
-        {/* =====================================================
-            LOADING
-        ===================================================== */}
+        {/* LISTAGEM */}
 
         {loading ? (
+
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
 
-            {[1, 2, 3, 4, 5, 6].map(
-              (item) => (
-                <div
-                  key={item}
-                  className="h-[280px] animate-pulse rounded-2xl border border-[#e8ebf2] bg-white"
-                />
-              ),
-            )}
+            {[1, 2, 3, 4, 5, 6].map((item) => (
+              <div
+                key={item}
+                className="h-[280px] animate-pulse rounded-2xl border border-[#e8ebf2] bg-white"
+              />
+            ))}
 
           </div>
+
         ) : filteredDocuments.length === 0 ? (
 
           <div className="rounded-2xl border border-[#e6e9f1] bg-white px-6 py-16 text-center">
@@ -504,8 +473,8 @@ export default function LegislationPage() {
             </h3>
 
             <p className="mx-auto mt-2 max-w-[480px] text-[12px] leading-5 text-[#8490aa]">
-              Tente alterar a pesquisa ou
-              seleccionar outra categoria.
+              Tente alterar a pesquisa ou seleccionar
+              outra categoria.
             </p>
 
             <button
@@ -520,122 +489,108 @@ export default function LegislationPage() {
 
         ) : (
 
-          /* ===================================================
-             DIPLOMAS
-          =================================================== */
-
           <div className="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3">
 
-            {filteredDocuments.map(
-              (document) => {
-                const CategoryIcon =
-                  getCategoryIcon(
-                    document.sourceCategory,
-                  );
+            {filteredDocuments.map((document) => {
+              const CategoryIcon = getCategoryIcon(
+                document.sourceCategory,
+              );
 
-                return (
-                  <article
-                    key={`${document.sourceCategory}-${document.sourceFile}`}
-                    className="group flex min-h-[300px] flex-col rounded-2xl border border-[#e5e8f0] bg-white p-5 shadow-[0_2px_10px_rgba(20,30,60,0.025)] transition-all duration-200 hover:-translate-y-1 hover:border-[#d9d5ff] hover:shadow-[0_12px_30px_rgba(50,40,120,0.08)]"
-                  >
+              return (
+                <article
+                  key={`${document.sourceCategory}-${document.sourceFile}`}
+                  className="group flex min-h-[300px] flex-col rounded-2xl border border-[#e5e8f0] bg-white p-5 shadow-[0_2px_10px_rgba(20,30,60,0.025)] transition-all duration-200 hover:-translate-y-1 hover:border-[#d9d5ff] hover:shadow-[0_12px_30px_rgba(50,40,120,0.08)]"
+                >
 
-                    <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-start justify-between gap-3">
 
-                      <div className="flex min-w-0 items-center gap-2">
+                    <div className="flex min-w-0 items-center gap-2">
 
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#f0edff] text-[#5146e5]">
-                          <CategoryIcon size={17} />
-                        </div>
-
-                        <span className="truncate rounded-md bg-[#f5f6fa] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#526080]">
-                          {getCategoryLabel(
-                            document.sourceCategory,
-                          )}
-                        </span>
-
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#f0edff] text-[#5146e5]">
+                        <CategoryIcon size={17} />
                       </div>
 
-                      <span className="shrink-0 rounded-full bg-[#edf9f2] px-2.5 py-1 text-[9px] font-bold text-[#15945b]">
-                        {document.articlesDetected || 0}{' '}
-                        artigos
+                      <span className="truncate rounded-md bg-[#f5f6fa] px-2.5 py-1 text-[9px] font-bold uppercase tracking-wide text-[#526080]">
+                        {getCategoryLabel(
+                          document.sourceCategory,
+                        )}
                       </span>
 
                     </div>
 
-                    <h2 className="mt-5 line-clamp-4 text-[16px] font-bold leading-6 text-[#101b3d] transition group-hover:text-[#5146e5]">
-                      {getDocumentTitle(document)}
-                    </h2>
+                    <span className="shrink-0 rounded-full bg-[#edf9f2] px-2.5 py-1 text-[9px] font-bold text-[#15945b]">
+                      {document.articlesDetected || 0}{' '}
+                      artigos
+                    </span>
 
-                    <p className="mt-2 line-clamp-2 text-[11px] leading-5 text-[#8490aa]">
-                      {getDocumentDescription(
-                        document,
-                      )}
-                    </p>
+                  </div>
 
-                    <div className="mt-4 space-y-2">
+                  <h2 className="mt-5 line-clamp-4 text-[16px] font-bold leading-6 text-[#101b3d] transition group-hover:text-[#5146e5]">
+                    {getDocumentTitle(document)}
+                  </h2>
 
-                      <div className="flex items-center gap-2 text-[10px] text-[#7180a2]">
-                        <FileText
-                          size={13}
-                          className="shrink-0 text-[#8b96b0]"
-                        />
+                  <p className="mt-2 line-clamp-2 text-[11px] leading-5 text-[#8490aa]">
+                    {getDocumentDescription(document)}
+                  </p>
 
-                        <span className="truncate">
-                          {document.sourceFile}
-                        </span>
-                      </div>
+                  <div className="mt-4 space-y-2">
 
-                      <div className="flex items-center gap-2 text-[10px] text-[#7180a2]">
-                        <BookOpen
-                          size={13}
-                          className="shrink-0 text-[#8b96b0]"
-                        />
+                    <div className="flex items-center gap-2 text-[10px] text-[#7180a2]">
 
-                        <span>
-                          {document.pageCount} páginas
-                        </span>
-                      </div>
+                      <FileText
+                        size={13}
+                        className="shrink-0 text-[#8b96b0]"
+                      />
+
+                      <span className="truncate">
+                        {document.sourceFile}
+                      </span>
 
                     </div>
 
-                    <div className="flex-1" />
+                    <div className="flex items-center gap-2 text-[10px] text-[#7180a2]">
 
-                    <button
-                      type="button"
-                      onClick={() =>
-                        void openDocument(document)
-                      }
-                      className="mt-5 flex h-10 w-full items-center justify-between rounded-lg bg-[#f7f7ff] px-4 text-left text-[11px] font-bold text-[#5146e5] transition hover:bg-[#efedff]"
-                    >
+                      <BookOpen
+                        size={13}
+                        className="shrink-0 text-[#8b96b0]"
+                      />
+
                       <span>
-                        Consultar diploma
+                        {document.pageCount || 0} páginas
                       </span>
 
-                      <ArrowRight size={15} />
-                    </button>
+                    </div>
 
-                  </article>
-                );
-              },
-            )}
+                  </div>
+
+                  <div className="flex-1" />
+
+                  <button
+                    type="button"
+                    onClick={() => openDocument(document)}
+                    className="mt-5 flex h-10 w-full items-center justify-between rounded-lg bg-[#f7f7ff] px-4 text-left text-[11px] font-bold text-[#5146e5] transition hover:bg-[#efedff]"
+                  >
+                    <span>Consultar diploma</span>
+                    <ArrowRight size={15} />
+                  </button>
+
+                </article>
+              );
+            })}
 
           </div>
+
         )}
 
       </div>
 
-      {/* =======================================================
-          MODAL DO DIPLOMA
-      ======================================================= */}
+      {/* MODAL */}
 
       {selected && (
         <div
           className="fixed inset-0 z-[100] flex items-center justify-center bg-[#10152b]/50 p-4 backdrop-blur-sm"
           onMouseDown={(event) => {
-            if (
-              event.target ===
-              event.currentTarget
-            ) {
+            if (event.target === event.currentTarget) {
               closeDocument();
             }
           }}
@@ -643,7 +598,7 @@ export default function LegislationPage() {
 
           <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
 
-            {/* HEADER */}
+            {/* CABEÇALHO DO MODAL */}
 
             <div className="flex shrink-0 items-start justify-between gap-4 border-b border-[#edf0f5] p-5">
 
@@ -677,7 +632,7 @@ export default function LegislationPage() {
                 <p className="mt-1 text-[10px] text-[#8a96ad]">
                   {selected.sourceFile}
                   {' • '}
-                  {selected.pageCount} páginas
+                  {selected.pageCount || 0} páginas
                 </p>
 
               </div>
@@ -686,25 +641,24 @@ export default function LegislationPage() {
                 type="button"
                 onClick={closeDocument}
                 className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#f5f6fa] text-[#66728c] transition hover:bg-[#eceef5] hover:text-[#101b3d]"
+                aria-label="Fechar documento"
               >
                 <X size={17} />
               </button>
 
             </div>
 
-            {/* BODY */}
+            {/* CONTEÚDO DO MODAL */}
 
             <div className="min-h-0 flex-1 overflow-hidden">
 
               <div className="grid h-full grid-cols-1 lg:grid-cols-[320px_1fr]">
 
-                {/* =================================================
-                    LADO ESQUERDO
-                ================================================= */}
+                {/* MENU LATERAL */}
 
                 <aside className="border-b border-[#edf0f5] bg-[#fafbfe] lg:overflow-y-auto lg:border-b-0 lg:border-r">
 
-                  <div className="sticky top-0 z-10 border-b border-[#edf0f5] bg-[#fafbfe] p-4">
+                  <div className="border-b border-[#edf0f5] bg-[#fafbfe] p-4">
 
                     <div className="mb-3 flex items-center justify-between">
 
@@ -820,10 +774,8 @@ export default function LegislationPage() {
 
                           {filteredArticles.map(
                             (article, index) => {
-
                               const isSelected =
-                                selectedArticle ===
-                                article &&
+                                selectedArticle === article &&
                                 !showFullText;
 
                               return (
@@ -831,12 +783,8 @@ export default function LegislationPage() {
                                   type="button"
                                   key={`${article.article || 'article'}-${index}`}
                                   onClick={() => {
-                                    setSelectedArticle(
-                                      article,
-                                    );
-                                    setShowFullText(
-                                      false,
-                                    );
+                                    setSelectedArticle(article);
+                                    setShowFullText(false);
                                   }}
                                   className={`w-full rounded-lg px-3 py-2.5 text-left transition ${
                                     isSelected
@@ -858,9 +806,7 @@ export default function LegislationPage() {
                                         : 'text-[#8a96ad]'
                                     }`}
                                   >
-                                    {getArticleText(
-                                      article,
-                                    )}
+                                    {getArticleText(article)}
                                   </div>
 
                                 </button>
@@ -869,6 +815,7 @@ export default function LegislationPage() {
                           )}
 
                         </div>
+
                       )
 
                     ) : (
@@ -885,20 +832,19 @@ export default function LegislationPage() {
                         </p>
 
                         <p className="mt-1 text-[9px] leading-4 text-[#8a96ad]">
-                          O texto integral está disponível
-                          para consulta.
+                          Consulte as informações
+                          disponíveis deste documento.
                         </p>
 
                       </div>
+
                     )}
 
                   </div>
 
                 </aside>
 
-                {/* =================================================
-                    TEXTO
-                ================================================= */}
+                {/* ÁREA PRINCIPAL */}
 
                 <main className="min-h-0 overflow-y-auto">
 
@@ -941,7 +887,7 @@ export default function LegislationPage() {
                         <div className="mt-4 flex flex-wrap gap-2">
 
                           <span className="rounded-full bg-white px-3 py-1.5 text-[9px] font-semibold text-[#65728e]">
-                            {selected.pageCount} páginas
+                            {selected.pageCount || 0} páginas
                           </span>
 
                           <span className="rounded-full bg-white px-3 py-1.5 text-[9px] font-semibold text-[#65728e]">
@@ -1001,9 +947,7 @@ export default function LegislationPage() {
                       </div>
 
                       <div className="whitespace-pre-wrap break-words text-[12px] leading-7 text-[#394866]">
-                        {getArticleText(
-                          selectedArticle,
-                        )}
+                        {getArticleText(selectedArticle)}
                       </div>
 
                     </div>
@@ -1022,8 +966,8 @@ export default function LegislationPage() {
 
                       <p className="mt-2 max-w-[430px] text-[11px] leading-5 text-[#8490aa]">
                         Seleccione um artigo ou abra o
-                        texto integral para consultar o
-                        conteúdo jurídico.
+                        texto integral para consultar
+                        o conteúdo jurídico.
                       </p>
 
                       <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3">
@@ -1034,8 +978,7 @@ export default function LegislationPage() {
                           </p>
 
                           <p className="mt-1 text-[18px] font-bold text-[#253453]">
-                            {selected.articlesDetected ||
-                              0}
+                            {selected.articlesDetected || 0}
                           </p>
                         </div>
 
@@ -1045,7 +988,7 @@ export default function LegislationPage() {
                           </p>
 
                           <p className="mt-1 text-[18px] font-bold text-[#253453]">
-                            {selected.pageCount}
+                            {selected.pageCount || 0}
                           </p>
                         </div>
 
@@ -1055,9 +998,7 @@ export default function LegislationPage() {
                           </p>
 
                           <p className="mt-1 text-[18px] font-bold text-[#253453]">
-                            {fullText.length > 0
-                              ? 'OK'
-                              : '—'}
+                            {fullText.length > 0 ? 'OK' : '—'}
                           </p>
                         </div>
 
@@ -1066,9 +1007,7 @@ export default function LegislationPage() {
                       {fullText.length > 0 && (
                         <button
                           type="button"
-                          onClick={() =>
-                            setShowFullText(true)
-                          }
+                          onClick={() => setShowFullText(true)}
                           className="mt-6 inline-flex items-center gap-2 rounded-lg bg-[#5146e5] px-5 py-2.5 text-[11px] font-bold text-white transition hover:bg-[#4338ca]"
                         >
                           <FileText size={14} />
@@ -1086,9 +1025,7 @@ export default function LegislationPage() {
 
             </div>
 
-            {/* =====================================================
-                FOOTER
-            ===================================================== */}
+            {/* RODAPÉ */}
 
             <div className="flex shrink-0 items-center justify-between border-t border-[#edf0f5] p-4">
 
@@ -1103,30 +1040,6 @@ export default function LegislationPage() {
               >
                 Fechar
               </button>
-
-            </div>
-
-          </div>
-
-        </div>
-      )}
-
-      {/* =======================================================
-          LOADING DO DIPLOMA
-      ======================================================= */}
-
-      {documentLoading && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-[#10152b]/30 backdrop-blur-sm">
-
-          <div className="rounded-xl bg-white px-6 py-5 shadow-xl">
-
-            <div className="flex items-center gap-3">
-
-              <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#5146e5] border-t-transparent" />
-
-              <span className="text-[12px] font-semibold text-[#253453]">
-                A abrir diploma...
-              </span>
 
             </div>
 
