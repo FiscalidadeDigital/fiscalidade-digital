@@ -1,3 +1,4 @@
+
 import api from './api';
 
 import { removeToken } from '@/lib/auth';
@@ -12,47 +13,28 @@ export type FiscalRegime =
 
 export interface Tenant {
   id: string;
-
   name: string;
-
   nif: string;
-
   email: string;
-
   phone: string | null;
-
   address: string | null;
-
   sector: string | null;
-
   companyType: string | null;
-
   employeeCount: number | null;
-
   regime: FiscalRegime;
-
   retentionRate: number;
-
   status: string;
-
   planType: string;
-
   trialEndsAt: string | null;
 }
 
 export interface AuthUser {
   id: string;
-
   name: string;
-
   email: string;
-
   role: string;
-
   tenantId: string;
-
   isActive: boolean;
-
   lastLogin?: string | null;
 }
 
@@ -62,11 +44,8 @@ export interface AuthUser {
 
 export interface LoginResponse {
   message: string;
-
   access_token: string;
-
   user: AuthUser;
-
   tenant: Tenant;
 }
 
@@ -76,31 +55,19 @@ export interface LoginResponse {
 
 export interface RegisterData {
   companyName: string;
-
   ownerName: string;
-
   nif: string;
-
   email: string;
-
   phone?: string;
-
   address?: string;
-
   sector?: string;
-
-  companyType: string;
-
+  companyType?: string;
   employees?: number;
-
   regime: FiscalRegime;
-
   password: string;
 
   acceptTerms: boolean;
-
   acceptPrivacyPolicy: boolean;
-
   confirmInformation: boolean;
 }
 
@@ -110,24 +77,16 @@ export interface RegisterData {
 
 export interface RegisterResponse {
   message: string;
-
   access_token: string;
-
   user: AuthUser;
-
   tenant: Tenant;
 
   obligations: {
     automatic: boolean;
-
     created: number;
-
     updated: number;
-
     late: number;
-
     year: number;
-
     source: string;
   };
 }
@@ -138,7 +97,6 @@ export interface RegisterResponse {
 
 export interface CurrentUserResponse {
   user: AuthUser;
-
   tenant: Tenant;
 }
 
@@ -154,9 +112,7 @@ export const login = async (
     await api.post<LoginResponse>(
       '/auth/login',
       {
-        email:
-          email.trim().toLowerCase(),
-
+        email: email.trim().toLowerCase(),
         password,
       },
     );
@@ -182,29 +138,22 @@ export const register = async (
           data.ownerName.trim(),
 
         nif:
-          data.nif
-            .trim()
-            .toUpperCase(),
+          data.nif.trim().toUpperCase(),
 
         email:
-          data.email
-            .trim()
-            .toLowerCase(),
+          data.email.trim().toLowerCase(),
 
         phone:
-          data.phone?.trim() ||
-          undefined,
+          data.phone?.trim() || undefined,
 
         address:
-          data.address?.trim() ||
-          undefined,
+          data.address?.trim() || undefined,
 
         sector:
-          data.sector?.trim() ||
-          undefined,
+          data.sector?.trim() || undefined,
 
         companyType:
-          data.companyType.trim(),
+          data.companyType?.trim() || undefined,
 
         employees:
           data.employees,
