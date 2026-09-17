@@ -1204,20 +1204,36 @@ export class PayrollService {
                 rule.dueDate,
               );
 
+            /*
+             * A regra da AGT pode indicar:
+             * - o mês do vencimento (ex.: OUTUBRO); ou
+             * - o mês de referência da folha (ex.: SETEMBRO),
+             *   quando o texto indica "mês anterior".
+             *
+             * Por isso, não podemos exigir apenas o mês seguinte.
+             */
+            const referenceMonth =
+              this.getMonthName(payrollMonth);
+
+            const normalizedText =
+              this.normalizeText(text);
+
+            const mentionsPreviousMonth =
+              normalizedText.includes('MES ANTERIOR') ||
+              normalizedText.includes('MES DE REFERENCIA') ||
+              normalizedText.includes('REFERENTE AO MES');
             const correctPeriod =
-              period ===
-                expectedMonth ||
-              period ===
-                String(
-                  next.month,
-                ) ||
-              period ===
-                String(
-                  next.month,
-                ).padStart(
-                  2,
-                  '0',
-                );
+              period === expectedMonth ||
+              period === String(next.month) ||
+              period === String(next.month).padStart(2, '0') ||
+              (
+                mentionsPreviousMonth &&
+                (
+                  period === referenceMonth ||
+                  period === String(payrollMonth) ||
+                  period === String(payrollMonth).padStart(2, '0')
+                )
+              );
 
             const correctDueDate =
               !Number.isNaN(
