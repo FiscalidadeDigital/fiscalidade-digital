@@ -30,13 +30,26 @@ const partnerLogos = [
   { name: 'Ignition', image: '/Ignitionlogo.png' },
   { name: 'Catoca', image: '/catocalogo.png' },
   { name: 'BAI', image: '/bailogo.png' },
+   { name: 'Ensa', image: '/Ensalogo.png' },
+  { name: 'Yash Hub', image: '/yashhublogo.jpg' },
+  { name: 'Rede Canais', image: '/imageslogo.jfif' },
+  { name: 'Banco Nacional de Angola', image: '/Bnalogo.png' },
+  { name: 'Acelera', image: '/aceleralogo.png' },
+  { name: 'Ignition', image: '/Ignitionlogo.png' },
+  { name: 'Catoca', image: '/catocalogo.png' },
+  { name: 'BAI', image: '/bailogo.png' },
+   { name: 'Ensa', image: '/Ensalogo.png' },
+  { name: 'Yash Hub', image: '/yashhublogo.jpg' },
+  { name: 'Rede Canais', image: '/imageslogo.jfif' },
+  { name: 'Banco Nacional de Angola', image: '/Bnalogo.png' },
+  { name: 'Acelera', image: '/aceleralogo.png' },
+  { name: 'Ignition', image: '/Ignitionlogo.png' },
+  { name: 'Catoca', image: '/catocalogo.png' },
+  { name: 'BAI', image: '/bailogo.png' },
 ];
 
 const teamMembers = [
-  {
-    name: 'Anildodev',
-    image: '/Anildodev.jpg',
-  },
+  
   {
     name: 'Desiderio',
     image: '/Desiderio.png',
@@ -44,6 +57,14 @@ const teamMembers = [
   {
     name: 'Edgar',
     image: '/edgar.jpg',
+  },
+  {
+    name: 'Francisco',
+    image: '/Francisco.jpg',
+  },
+  {
+    name: 'Anildodev',
+    image: '/Anildodev.jpg',
   },
 ];
 
