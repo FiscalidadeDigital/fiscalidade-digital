@@ -53,8 +53,13 @@ async function bootstrap() {
   // =========================================================
 
   const defaultOrigins = [
+    // Desenvolvimento local
     'http://localhost:3000',
     'http://127.0.0.1:3000',
+
+    // Domínio oficial
+    'https://fiscalidadedigital.ao',
+    'https://www.fiscalidadedigital.ao',
 
     // Domínios principais da Vercel
     'https://fiscalidade-digital.vercel.app',
