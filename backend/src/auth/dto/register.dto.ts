@@ -1,10 +1,12 @@
 import {
+  IsBoolean,
   IsEmail,
   IsEnum,
   IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
+  IsIn,
   Min,
   MinLength,
 } from 'class-validator';
@@ -12,10 +14,6 @@ import {
 import { FiscalRegime } from '@prisma/client';
 
 export class RegisterDto {
-  // =====================================================
-  // EMPRESA
-  // =====================================================
-
   @IsString({
     message: 'O nome da empresa deve ser um texto.',
   })
@@ -23,10 +21,6 @@ export class RegisterDto {
     message: 'O nome da empresa é obrigatório.',
   })
   companyName!: string;
-
-  // =====================================================
-  // RESPONSÁVEL
-  // =====================================================
 
   @IsString({
     message: 'O nome do responsável deve ser um texto.',
@@ -36,10 +30,6 @@ export class RegisterDto {
   })
   ownerName!: string;
 
-  // =====================================================
-  // NIF
-  // =====================================================
-
   @IsString({
     message: 'O NIF deve ser um texto.',
   })
@@ -47,10 +37,6 @@ export class RegisterDto {
     message: 'O NIF é obrigatório.',
   })
   nif!: string;
-
-  // =====================================================
-  // EMAIL
-  // =====================================================
 
   @IsEmail(
     {},
@@ -60,19 +46,11 @@ export class RegisterDto {
   )
   email!: string;
 
-  // =====================================================
-  // TELEFONE
-  // =====================================================
-
   @IsOptional()
   @IsString({
     message: 'O telefone deve ser um texto.',
   })
   phone?: string;
-
-  // =====================================================
-  // MORADA
-  // =====================================================
 
   @IsOptional()
   @IsString({
@@ -80,30 +58,36 @@ export class RegisterDto {
   })
   address?: string;
 
-  // =====================================================
-  // SETOR
-  // =====================================================
-
   @IsOptional()
   @IsString({
-    message: 'O setor deve ser um texto.',
+    message: 'O sector deve ser um texto.',
   })
   sector?: string;
 
-  // =====================================================
-  // TIPO DE EMPRESA
-  // =====================================================
-
-  @IsOptional()
   @IsString({
-    message:
-      'O tipo de empresa deve ser um texto.',
+    message: 'O tipo de empresa deve ser um texto.',
   })
-  companyType?: string;
-
-  // =====================================================
-  // NÚMERO DE FUNCIONÁRIOS
-  // =====================================================
+  @IsNotEmpty({
+    message: 'O tipo de empresa é obrigatório.',
+  })
+  @IsIn(
+    [
+      'COMERCIANTE_NOME_INDIVIDUAL',
+      'SOCIEDADE_UNIPESSOAL_QUOTAS',
+      'SOCIEDADE_POR_QUOTAS',
+      'SOCIEDADE_ANONIMA',
+      'SOCIEDADE_EM_NOME_COLETIVO',
+      'SOCIEDADE_EM_COMANDITA',
+      'COOPERATIVA',
+      'SUCURSAL',
+      'ESCRITORIO_REPRESENTACAO',
+      'OUTRO',
+    ],
+    {
+      message: 'Seleccione um tipo de empresa válido.',
+    },
+  )
+  companyType!: string;
 
   @IsOptional()
   @IsInt({
@@ -116,31 +100,48 @@ export class RegisterDto {
   })
   employees?: number;
 
-  // =====================================================
-  // REGIME FISCAL
-  // =====================================================
-
   @IsEnum(FiscalRegime, {
-    message:
-      'Regime fiscal inválido. Selecione GERAL, SIMPLIFICADO ou PRESTADOR_SERVICO.',
+    message: 'Regime fiscal inválido.',
   })
+  @IsIn(
+    [
+      FiscalRegime.GERAL,
+      FiscalRegime.SIMPLIFICADO,
+    ],
+    {
+      message:
+        'Seleccione um regime fiscal válido: GERAL ou SIMPLIFICADO.',
+    },
+  )
   regime!: FiscalRegime;
 
-  // =====================================================
-  // PASSWORD
-  // =====================================================
-
   @IsString({
-    message:
-      'A palavra-passe deve ser um texto.',
+    message: 'A palavra-passe deve ser um texto.',
   })
   @IsNotEmpty({
-    message:
-      'A palavra-passe é obrigatória.',
+    message: 'A palavra-passe é obrigatória.',
   })
   @MinLength(6, {
     message:
       'A palavra-passe deve ter pelo menos 6 caracteres.',
   })
   password!: string;
+
+  @IsBoolean({
+    message:
+      'A aceitação dos termos deve ser verdadeira ou falsa.',
+  })
+  acceptTerms!: boolean;
+
+  @IsBoolean({
+    message:
+      'A aceitação da política deve ser verdadeira ou falsa.',
+  })
+  acceptPrivacyPolicy!: boolean;
+
+  @IsBoolean({
+    message:
+      'A confirmação das informações deve ser verdadeira ou falsa.',
+  })
+  confirmInformation!: boolean;
 }

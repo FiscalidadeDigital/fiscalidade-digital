@@ -51,6 +51,9 @@ interface FormData {
   regime: FiscalRegime | '';
   password: string;
   confirmPassword: string;
+  acceptTerms: boolean;
+  acceptPrivacyPolicy: boolean;
+  confirmInformation: boolean;
 }
 
 const initialForm: FormData = {
@@ -66,6 +69,9 @@ const initialForm: FormData = {
   regime: '',
   password: '',
   confirmPassword: '',
+  acceptTerms: false,
+  acceptPrivacyPolicy: false,
+  confirmInformation: false,
 };
 
 export default function RegisterPage() {
@@ -210,9 +216,27 @@ export default function RegisterPage() {
 
   function validateStepThree(): boolean {
     if (!form.regime) {
-      setError(
-        'Selecione o regime fiscal da empresa.',
-      );
+      setError('Selecione o regime fiscal da empresa.');
+      return false;
+    }
+
+    if (!form.companyType) {
+      setError('Seleccione o tipo de empresa.');
+      return false;
+    }
+
+    if (!form.acceptTerms) {
+      setError('Deve aceitar os Termos de Utilização.');
+      return false;
+    }
+
+    if (!form.acceptPrivacyPolicy) {
+      setError('Deve aceitar a Política de Privacidade.');
+      return false;
+    }
+
+    if (!form.confirmInformation) {
+      setError('Deve confirmar que as informações são verdadeiras.');
       return false;
     }
 
@@ -285,6 +309,10 @@ export default function RegisterPage() {
         regime: form.regime as FiscalRegime,
 
         password: form.password,
+
+        acceptTerms: form.acceptTerms,
+        acceptPrivacyPolicy: form.acceptPrivacyPolicy,
+        confirmInformation: form.confirmInformation,
       });
 
       if (!response?.access_token) {
@@ -913,16 +941,40 @@ export default function RegisterPage() {
                           Selecionar tipo
                         </option>
 
-                        <option value="EMPRESA">
-                          Empresa
+                        <option value="COMERCIANTE_NOME_INDIVIDUAL">
+                          Comerciante em Nome Individual
                         </option>
 
-                        <option value="SINGLE">
-                          Empresário em nome individual
+                        <option value="SOCIEDADE_UNIPESSOAL_QUOTAS">
+                          Sociedade Unipessoal por Quotas
                         </option>
 
-                        <option value="SOCIEDADE">
-                          Sociedade
+                        <option value="SOCIEDADE_POR_QUOTAS">
+                          Sociedade por Quotas
+                        </option>
+
+                        <option value="SOCIEDADE_ANONIMA">
+                          Sociedade Anónima
+                        </option>
+
+                        <option value="SOCIEDADE_EM_NOME_COLETIVO">
+                          Sociedade em Nome Colectivo
+                        </option>
+
+                        <option value="SOCIEDADE_EM_COMANDITA">
+                          Sociedade em Comandita
+                        </option>
+
+                        <option value="COOPERATIVA">
+                          Cooperativa
+                        </option>
+
+                        <option value="SUCURSAL">
+                          Sucursal
+                        </option>
+
+                        <option value="ESCRITORIO_REPRESENTACAO">
+                          Escritório de Representação
                         </option>
 
                         <option value="OUTRO">
@@ -1099,55 +1151,71 @@ export default function RegisterPage() {
                       </div>
                     </label>
 
-                    <label
-                      className={`block cursor-pointer rounded-2xl border p-5 transition ${
-                        form.regime === 'PRESTADOR_SERVICO'
-                          ? 'border-[#5940d7] bg-[#5940d7]/5'
-                          : 'border-[#e5e0ef] bg-[#faf9fd] hover:border-[#c9c0dd]'
-                      }`}
-                    >
+                  </div>
+
+                  {/* CONFIRMAÇÕES OBRIGATÓRIAS */}
+
+                  <div className="space-y-4 rounded-2xl border border-[#e5e0ef] bg-[#faf9fd] p-5">
+
+                    <label className="flex cursor-pointer items-start gap-3">
                       <input
-                        type="radio"
-                        name="regime"
-                        value="PRESTADOR_SERVICO"
-                        checked={
-                          form.regime === 'PRESTADOR_SERVICO'
+                        type="checkbox"
+                        checked={form.acceptTerms}
+                        onChange={(event) =>
+                          updateField('acceptTerms', event.target.checked)
                         }
-                        onChange={() =>
-                          updateField(
-                            'regime',
-                            'PRESTADOR_SERVICO' as FiscalRegime,
-                          )
-                        }
-                        className="sr-only"
+                        className="mt-1 h-4 w-4 accent-[#5940d7]"
                       />
 
-                      <div className="flex items-start gap-4">
-
-                        <span
-                          className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
-                            form.regime === 'PRESTADOR_SERVICO'
-                              ? 'border-[#5940d7] bg-[#5940d7]'
-                              : 'border-[#cfc9dd]'
-                          }`}
+                      <span className="text-sm leading-6 text-[#4d4764]">
+                        Aceito os{' '}
+                        <Link
+                          href="/terms"
+                          target="_blank"
+                          className="font-semibold text-[#5940d7] underline"
                         >
-                          {form.regime === 'PRESTADOR_SERVICO' && (
-                            <span className="h-2 w-2 rounded-full bg-white" />
-                          )}
-                        </span>
+                          Termos de Utilização
+                        </Link>
+                        .
+                      </span>
+                    </label>
 
-                        <div>
-                          <h4 className="font-semibold text-[#292342]">
-                            Prestador de Serviços
-                          </h4>
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={form.acceptPrivacyPolicy}
+                        onChange={(event) =>
+                          updateField('acceptPrivacyPolicy', event.target.checked)
+                        }
+                        className="mt-1 h-4 w-4 accent-[#5940d7]"
+                      />
 
-                          <p className="mt-1 text-sm leading-6 text-[#817a96]">
-                            Enquadramento disponível
-                            para prestadores de serviços.
-                          </p>
-                        </div>
+                      <span className="text-sm leading-6 text-[#4d4764]">
+                        Aceito a{' '}
+                        <Link
+                          href="/privacy"
+                          target="_blank"
+                          className="font-semibold text-[#5940d7] underline"
+                        >
+                          Política de Privacidade
+                        </Link>
+                        .
+                      </span>
+                    </label>
 
-                      </div>
+                    <label className="flex cursor-pointer items-start gap-3">
+                      <input
+                        type="checkbox"
+                        checked={form.confirmInformation}
+                        onChange={(event) =>
+                          updateField('confirmInformation', event.target.checked)
+                        }
+                        className="mt-1 h-4 w-4 accent-[#5940d7]"
+                      />
+
+                      <span className="text-sm leading-6 text-[#4d4764]">
+                        Confirmo que as informações fornecidas são verdadeiras e correctas.
+                      </span>
                     </label>
 
                   </div>
