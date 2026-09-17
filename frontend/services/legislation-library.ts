@@ -1,4 +1,5 @@
-﻿import axios from 'axios';
+﻿
+import axios from 'axios';
 
 const API_URL =
   process.env.NEXT_PUBLIC_API_URL ||
@@ -10,6 +11,10 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// =====================================================
+// INTERFACES
+// =====================================================
 
 export interface LibraryArticle {
   article: string;
@@ -37,6 +42,10 @@ export interface LibraryResponse {
   documents: LibraryDocument[];
 }
 
+// =====================================================
+// BIBLIOTECA COMPLETA
+// =====================================================
+
 export async function getLegislationLibrary(): Promise<LibraryResponse> {
   const response = await api.get<LibraryResponse>(
     '/legislation/library',
@@ -45,15 +54,25 @@ export async function getLegislationLibrary(): Promise<LibraryResponse> {
   return response.data;
 }
 
+// =====================================================
+// LISTAR DOCUMENTOS
+// Usa a rota /legislation/library que está disponível
+// no backend publicado.
+// =====================================================
+
 export async function getLegislationLibraryDocuments(): Promise<
   LibraryDocument[]
 > {
-  const response = await api.get<LibraryDocument[]>(
-    '/legislation/library/documents',
+  const response = await api.get<LibraryResponse>(
+    '/legislation/library',
   );
 
-  return response.data;
+  return response.data.documents || [];
 }
+
+// =====================================================
+// PESQUISAR NA BIBLIOTECA
+// =====================================================
 
 export async function searchLegislationLibrary(
   query: string,
@@ -69,6 +88,10 @@ export async function searchLegislationLibrary(
 
   return response.data;
 }
+
+// =====================================================
+// ABRIR DOCUMENTO
+// =====================================================
 
 export async function getLegislationLibraryDocument(
   sourceFile: string,
