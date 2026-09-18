@@ -1,11 +1,8 @@
 ﻿
 import axios, {
   AxiosHeaders,
+  type InternalAxiosRequestConfig,
 } from 'axios';
-
-// =====================================================
-// CONFIGURAÇÃO DA API
-// =====================================================
 
 const api = axios.create({
   baseURL:
@@ -16,26 +13,24 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 
-  timeout: 15000,
+  // Permitir tempo para o Render iniciar a API
+  timeout: 60000,
 });
 
 // =====================================================
-// INTERCEPTOR DE REQUISIÇÕES
+// INTERCEPTOR DE PEDIDOS
 // =====================================================
 
 api.interceptors.request.use(
-  (config) => {
+  (config: InternalAxiosRequestConfig) => {
     if (typeof window !== 'undefined') {
-      const token =
-        localStorage.getItem('token');
+      const token = localStorage.getItem('token');
 
       if (token) {
-        // Garantir que os headers são AxiosHeaders
         if (!config.headers) {
           config.headers = new AxiosHeaders();
         }
 
-        // Adicionar token de autenticação
         config.headers.set(
           'Authorization',
           `Bearer ${token}`,
@@ -56,41 +51,15 @@ api.interceptors.request.use(
 // =====================================================
 
 api.interceptors.response.use(
-  (response) => {
-    return response;
-  },
+  (response) => response,
 
   (error) => {
-    const status =
-      error.response?.status;
-
-    if (status === 401) {
-      if (
-        typeof window !== 'undefined'
-      ) {
-        // Remover sessão inválida
+    if (error.response?.status === 401) {
+      if (typeof window !== 'undefined') {
         localStorage.removeItem('token');
         localStorage.removeItem('user');
         localStorage.removeItem('tenant');
         localStorage.removeItem('tenantId');
-
-        // Evitar redireccionamento repetido
-        const currentPath =
-          window.location.pathname;
-
-        if (
-          !currentPath.startsWith('/login')
-        ) {
-          const redirect =
-            encodeURIComponent(
-              window.location.pathname +
-                window.location.search,
-            );
-
-          window.location.replace(
-            `/login?redirect=${redirect}`,
-          );
-        }
       }
     }
 
