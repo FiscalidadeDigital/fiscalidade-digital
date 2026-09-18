@@ -1,4 +1,3 @@
-
 'use client';
 
 import {
@@ -20,7 +19,6 @@ import {
   getCurrentUser,
   login as loginRequest,
   register as registerRequest,
-  logout as logoutRequest,
   type AuthUser,
   type Tenant,
   type LoginResponse,
@@ -31,6 +29,7 @@ import {
 import {
   getToken,
   saveToken,
+  removeToken,
 } from '@/lib/auth';
 
 // =====================================================
@@ -118,12 +117,13 @@ function SecurityLoadingScreen() {
       >
         <div
           style={{
-            width: '38px',
-            height: '38px',
+            width: '40px',
+            height: '40px',
             border: '4px solid #dbeafe',
             borderTopColor: '#0284c7',
             borderRadius: '50%',
-            animation: 'fd-spin 0.8s linear infinite',
+            animation:
+              'fiscalidade-spin 0.8s linear infinite',
             margin: '0 auto 16px',
           }}
         />
@@ -138,8 +138,8 @@ function SecurityLoadingScreen() {
         </p>
       </div>
 
-      <style jsx>{`
-        @keyframes fd-spin {
+      <style>{`
+        @keyframes fiscalidade-spin {
           to {
             transform: rotate(360deg);
           }
@@ -173,23 +173,27 @@ export function AuthProvider({
   const publicRoute = isPublicRoute(pathname);
 
   // ===================================================
-  // LIMPAR SESSÃO
+  // LIMPAR SESSÃO LOCALMENTE
   // ===================================================
 
   const clearSession = useCallback(() => {
-    logoutRequest();
+    removeToken();
+
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('user');
+      localStorage.removeItem('tenant');
+      localStorage.removeItem('tenantId');
+    }
 
     setUser(null);
     setCompany(null);
   }, []);
 
   // ===================================================
-  // CARREGAR E VALIDAR SESSÃO
+  // VALIDAR SESSÃO
   // ===================================================
 
   const refreshSession = useCallback(async () => {
-    setLoading(true);
-
     const token = getToken();
 
     if (!token) {
@@ -202,7 +206,11 @@ export function AuthProvider({
     try {
       const session = await getCurrentUser();
 
-      if (!session?.user || !session?.tenant) {
+      if (
+        !session ||
+        !session.user ||
+        !session.tenant
+      ) {
         throw new Error(
           'Resposta de sessão inválida.',
         );
@@ -212,7 +220,7 @@ export function AuthProvider({
       setCompany(session.tenant);
     } catch (error) {
       console.error(
-        'Sessão inválida ou expirada.',
+        'Não foi possível validar a sessão:',
         error,
       );
 
@@ -235,20 +243,16 @@ export function AuthProvider({
   // ===================================================
 
   useEffect(() => {
-    if (loading) {
-      return;
-    }
-
-    if (publicRoute) {
+    if (loading || publicRoute) {
       return;
     }
 
     const token = getToken();
 
     const authenticated =
-      !!token &&
-      !!user &&
-      !!company;
+      Boolean(token) &&
+      Boolean(user) &&
+      Boolean(company);
 
     if (!authenticated) {
       clearSession();
@@ -284,9 +288,14 @@ export function AuthProvider({
         password,
       );
 
-      if (!response?.access_token) {
+      if (
+        !response ||
+        !response.access_token ||
+        !response.user ||
+        !response.tenant
+      ) {
         throw new Error(
-          'O servidor não devolveu um token válido.',
+          'O servidor não devolveu uma sessão válida.',
         );
       }
 
@@ -294,6 +303,7 @@ export function AuthProvider({
 
       setUser(response.user);
       setCompany(response.tenant);
+      setLoading(false);
 
       return response;
     },
@@ -309,9 +319,14 @@ export function AuthProvider({
       const response =
         await registerRequest(data);
 
-      if (!response?.access_token) {
+      if (
+        !response ||
+        !response.access_token ||
+        !response.user ||
+        !response.tenant
+      ) {
         throw new Error(
-          'O servidor não devolveu um token válido.',
+          'O servidor não devolveu uma sessão válida.',
         );
       }
 
@@ -319,6 +334,7 @@ export function AuthProvider({
 
       setUser(response.user);
       setCompany(response.tenant);
+      setLoading(false);
 
       return response;
     },
@@ -331,7 +347,6 @@ export function AuthProvider({
 
   const logout = useCallback(() => {
     clearSession();
-
     router.replace('/login');
   }, [clearSession, router]);
 
@@ -339,13 +354,17 @@ export function AuthProvider({
   // VALOR DO CONTEXT
   // ===================================================
 
+  const isAuthenticated =
+    Boolean(user) &&
+    Boolean(company) &&
+    Boolean(getToken());
+
   const value = useMemo<AuthContextValue>(
     () => ({
       user,
       company,
       loading,
-      isAuthenticated:
-        !!user && !!company && !!getToken(),
+      isAuthenticated,
       login,
       register,
       refreshSession,
@@ -355,6 +374,7 @@ export function AuthProvider({
       user,
       company,
       loading,
+      isAuthenticated,
       login,
       register,
       refreshSession,
@@ -366,14 +386,9 @@ export function AuthProvider({
   // RENDERIZAÇÃO SEGURA
   // ===================================================
 
-  const authenticated =
-    !!user &&
-    !!company &&
-    !!getToken();
-
   if (
     !publicRoute &&
-    (loading || !authenticated)
+    (loading || !isAuthenticated)
   ) {
     return (
       <AuthContext.Provider value={value}>
