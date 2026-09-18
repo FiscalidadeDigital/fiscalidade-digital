@@ -256,9 +256,6 @@ export default function DashboardLayout({
   const [loadingCompany, setLoadingCompany] =
     useState(!companyProp);
 
-  const [pageVisible, setPageVisible] =
-    useState(true);
-
   const [isNavigating, setIsNavigating] =
     useState(false);
 
@@ -271,15 +268,6 @@ export default function DashboardLayout({
 
   useEffect(() => {
     setIsNavigating(false);
-    setPageVisible(false);
-
-    const frame = window.requestAnimationFrame(() => {
-      setPageVisible(true);
-    });
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-    };
   }, [pathname]);
 
   /* =======================================================
@@ -1708,24 +1696,56 @@ export default function DashboardLayout({
           "
         >
           <div
-            className={`
+            key={pathname}
+            className="
+              dashboard-page-content
               transform-gpu
               will-change-[opacity,transform]
-              transition-[opacity,transform]
-              duration-200
-              ease-out
-
-              ${
-                pageVisible
-                  ? 'translate-y-0 opacity-100'
-                  : 'translate-y-[3px] opacity-0'
-              }
-            `}
+            "
           >
             {children}
           </div>
         </main>
       </div>
+
+      <style jsx global>{`
+        @keyframes dashboard-page-enter {
+          from { opacity: 0; transform: translate3d(0, 6px, 0); }
+          to { opacity: 1; transform: translate3d(0, 0, 0); }
+        }
+
+        .dashboard-page-content {
+          animation: dashboard-page-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
+          contain: layout paint;
+        }
+
+        ::view-transition-old(root) {
+          animation: dashboard-view-out 160ms ease-out both;
+        }
+
+        ::view-transition-new(root) {
+          animation: dashboard-view-in 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+
+        @keyframes dashboard-view-out {
+          from { opacity: 1; }
+          to { opacity: 0; }
+        }
+
+        @keyframes dashboard-view-in {
+          from { opacity: 0; transform: translateY(4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .dashboard-page-content,
+          ::view-transition-old(root),
+          ::view-transition-new(root) {
+            animation: none;
+          }
+        }
+      `}</style>
+
     </div>
   );
 }
