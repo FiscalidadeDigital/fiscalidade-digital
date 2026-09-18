@@ -1,8 +1,11 @@
-﻿
-import axios, {
+﻿import axios, {
   AxiosHeaders,
   type InternalAxiosRequestConfig,
 } from 'axios';
+
+// =====================================================
+// CONFIGURAÇÃO DA API
+// =====================================================
 
 const api = axios.create({
   baseURL:
@@ -13,7 +16,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 
-  // Permitir tempo para o Render iniciar a API
+  // Tempo para o Render acordar e responder
   timeout: 60000,
 });
 
@@ -27,14 +30,18 @@ api.interceptors.request.use(
       const token = localStorage.getItem('token');
 
       if (token) {
-        if (!config.headers) {
-          config.headers = new AxiosHeaders();
-        }
+        // Normaliza os headers para AxiosHeaders
+        const headers = AxiosHeaders.from(
+          config.headers,
+        );
 
-        config.headers.set(
+        // Adiciona o token de autenticação
+        headers.set(
           'Authorization',
           `Bearer ${token}`,
         );
+
+        config.headers = headers;
       }
     }
 
@@ -54,13 +61,24 @@ api.interceptors.response.use(
   (response) => response,
 
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        localStorage.removeItem('tenant');
-        localStorage.removeItem('tenantId');
-      }
+    const status = error.response?.status;
+
+    // Remover sessão apenas quando o token for inválido
+    if (
+      status === 401 &&
+      typeof window !== 'undefined'
+    ) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('tenant');
+      localStorage.removeItem('tenantId');
+    }
+
+    // Registar erros de timeout
+    if (error.code === 'ECONNABORTED') {
+      console.error(
+        'A API demorou demasiado tempo a responder.',
+      );
     }
 
     return Promise.reject(error);
