@@ -66,6 +66,15 @@ type Company = {
   status?: string | null;
 };
 
+type CompanyFormState = {
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  sector: string;
+  companyType: string;
+};
+
 type FormState = {
   name: string;
   employeeNumber: string;
@@ -170,6 +179,22 @@ export default function CompanyPage() {
   const [company, setCompany] =
     useState<Company | null>(null);
 
+  const [showCompanyModal, setShowCompanyModal] =
+    useState(false);
+
+  const [savingCompany, setSavingCompany] =
+    useState(false);
+
+  const [companyForm, setCompanyForm] =
+    useState<CompanyFormState>({
+      name: '',
+      email: '',
+      phone: '',
+      address: '',
+      sector: '',
+      companyType: '',
+    });
+
   const [employees, setEmployees] =
     useState<Employee[]>([]);
 
@@ -241,6 +266,90 @@ export default function CompanyPage() {
       }
     } finally {
       setLoadingCompany(false);
+    }
+  }
+
+  /* =======================================================
+     EDITAR EMPRESA
+  ======================================================= */
+
+  function openEditCompany() {
+    setError('');
+    setSuccess('');
+
+    setCompanyForm({
+      name: company?.name || '',
+      email: company?.email || '',
+      phone: company?.phone || '',
+      address: company?.address || '',
+      sector: company?.sector || '',
+      companyType: company?.companyType || '',
+    });
+
+    setShowCompanyModal(true);
+  }
+
+  function updateCompanyForm(
+    field: keyof CompanyFormState,
+    value: string,
+  ) {
+    setCompanyForm((current) => ({
+      ...current,
+      [field]: value,
+    }));
+  }
+
+  function closeCompanyModal() {
+    if (!savingCompany) {
+      setShowCompanyModal(false);
+    }
+  }
+
+  async function handleCompanySubmit(event: FormEvent) {
+    event.preventDefault();
+
+    if (!companyForm.name.trim()) {
+      setError('O nome da empresa é obrigatório.');
+      return;
+    }
+
+    try {
+      setSavingCompany(true);
+      setError('');
+      setSuccess('');
+
+      const payload = {
+        name: companyForm.name.trim(),
+        email: companyForm.email.trim() || undefined,
+        phone: companyForm.phone.trim() || undefined,
+        address: companyForm.address.trim() || undefined,
+        sector: companyForm.sector.trim() || undefined,
+        companyType: companyForm.companyType.trim() || undefined,
+      };
+
+      const response = await api.patch('/company', payload);
+
+      const updatedCompany =
+        response?.data?.data ??
+        response?.data ??
+        null;
+
+      if (updatedCompany) {
+        setCompany((current) => ({
+          ...(current || {}),
+          ...updatedCompany,
+        }));
+      } else {
+        await loadCompany();
+      }
+
+      setShowCompanyModal(false);
+      setSuccess('Dados da empresa actualizados com sucesso.');
+    } catch (err) {
+      console.error('Erro ao actualizar empresa:', err);
+      setError(getErrorMessage(err));
+    } finally {
+      setSavingCompany(false);
     }
   }
 
@@ -805,70 +914,34 @@ export default function CompanyPage() {
 
         <main className="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8">
 
-          {/* =================================================
-              CABEÇALHO
-          ================================================= */}
+          {/* CABEÇALHO SIMPLES */}
 
           <header className="mb-6">
-            <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
-
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-
-                <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-[#d9edf8] bg-white px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-[#0877e8] shadow-sm">
-
-                  <Building2 size={14} />
-
+                <p className="mb-1 text-[10px] font-black uppercase tracking-[0.18em] text-[#079fe5]">
                   Gestão empresarial
-
-                </div>
-
-                <h1 className="text-3xl font-black tracking-[-0.035em] text-[#101b3d] sm:text-4xl">
-                  {loadingCompany
-                    ? 'A carregar empresa...'
-                    : company?.name ||
-                      'Minha empresa'}
-                </h1>
-
-                <p className="mt-2 max-w-2xl text-sm leading-6 text-[#667692]">
-                  Centralize a informação
-                  empresarial,
-                  colaboradores e
-                  remunerações num único
-                  espaço de gestão
-                  fiscal.
                 </p>
 
+                <h1 className="text-2xl font-black tracking-tight text-[#101b3d] sm:text-3xl">
+                  {loadingCompany
+                    ? 'A carregar empresa...'
+                    : company?.name || 'Minha empresa'}
+                </h1>
+
+                <p className="mt-1 text-sm text-[#748198]">
+                  Gere os dados da empresa e os seus colaboradores.
+                </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
-
-                <div className="hidden items-center gap-2 rounded-xl border border-[#dfe7f1] bg-white px-4 py-3 text-xs font-bold text-[#65738c] sm:flex">
-
-                  <ShieldCheck
-                    size={16}
-                    className="text-[#079fe5]"
-                  />
-
-                  Ambiente protegido
-
-                </div>
-
-                <button
-                  type="button"
-                  onClick={
-                    openCreateEmployee
-                  }
-                  className="inline-flex h-12 items-center justify-center gap-2 rounded-xl bg-[#0877e8] px-5 text-sm font-black text-white shadow-lg shadow-[#0877e8]/20 transition hover:-translate-y-0.5 hover:bg-[#066bd1]"
-                >
-
-                  <Plus size={18} />
-
-                  Novo funcionário
-
-                </button>
-
-              </div>
-
+              <button
+                type="button"
+                onClick={openCreateEmployee}
+                className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0877e8] px-5 text-sm font-black text-white shadow-lg shadow-[#0877e8]/20 transition hover:bg-[#066bd1]"
+              >
+                <Plus size={17} />
+                Novo funcionário
+              </button>
             </div>
           </header>
 
@@ -1035,7 +1108,9 @@ export default function CompanyPage() {
 
                   <button
                     type="button"
-                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-[#0877e8] transition hover:bg-[#f4f9fd]"
+                    onClick={openEditCompany}
+                    disabled={loadingCompany || !company}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-white px-5 text-sm font-black text-[#0877e8] transition hover:bg-[#f4f9fd] disabled:cursor-not-allowed disabled:opacity-50"
                   >
 
                     <Edit3 size={16} />
@@ -1689,6 +1764,144 @@ export default function CompanyPage() {
         {/* =====================================================
             MODAL
         ===================================================== */}
+
+        {/* MODAL DE EDIÇÃO DA EMPRESA */}
+
+        {showCompanyModal && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[#101b3d]/65 p-4 backdrop-blur-sm">
+            <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
+              <div className="flex items-center justify-between border-b border-[#e5ebf2] px-5 py-5 sm:px-7">
+                <div>
+                  <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#079fe5]">
+                    Perfil empresarial
+                  </p>
+                  <h2 className="mt-1 text-xl font-black text-[#101b3d]">
+                    Editar empresa
+                  </h2>
+                  <p className="mt-1 text-sm text-[#748198]">
+                    Actualize os dados gerais da empresa.
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={closeCompanyModal}
+                  disabled={savingCompany}
+                  className="flex h-10 w-10 items-center justify-center rounded-xl text-[#8a96a8] transition hover:bg-[#f1f4f8]"
+                  aria-label="Fechar"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <form onSubmit={handleCompanySubmit}>
+                <div className="grid gap-4 p-5 sm:grid-cols-2 sm:p-7">
+                  <Field label="Nome da empresa" required>
+                    <input
+                      value={companyForm.name}
+                      onChange={(event) =>
+                        updateCompanyForm('name', event.target.value)
+                      }
+                      required
+                      className="input-field"
+                      placeholder="Nome da empresa"
+                    />
+                  </Field>
+
+                  <Field label="Email">
+                    <input
+                      type="email"
+                      value={companyForm.email}
+                      onChange={(event) =>
+                        updateCompanyForm('email', event.target.value)
+                      }
+                      className="input-field"
+                      placeholder="empresa@email.com"
+                    />
+                  </Field>
+
+                  <Field label="Telefone">
+                    <input
+                      value={companyForm.phone}
+                      onChange={(event) =>
+                        updateCompanyForm('phone', event.target.value)
+                      }
+                      className="input-field"
+                      placeholder="+244 9xx xxx xxx"
+                    />
+                  </Field>
+
+                  <Field label="Sector">
+                    <input
+                      value={companyForm.sector}
+                      onChange={(event) =>
+                        updateCompanyForm('sector', event.target.value)
+                      }
+                      className="input-field"
+                      placeholder="Sector de actividade"
+                    />
+                  </Field>
+
+                  <div className="sm:col-span-2">
+                    <Field label="Tipo de empresa">
+                      <input
+                        value={companyForm.companyType}
+                        onChange={(event) =>
+                          updateCompanyForm('companyType', event.target.value)
+                        }
+                        className="input-field"
+                        placeholder="Tipo de empresa"
+                      />
+                    </Field>
+                  </div>
+
+                  <div className="sm:col-span-2">
+                    <Field label="Morada">
+                      <textarea
+                        value={companyForm.address}
+                        onChange={(event) =>
+                          updateCompanyForm('address', event.target.value)
+                        }
+                        rows={3}
+                        className="input-field h-auto resize-none py-3"
+                        placeholder="Morada da empresa"
+                      />
+                    </Field>
+                  </div>
+                </div>
+
+                <div className="flex flex-col-reverse gap-2 border-t border-[#e5ebf2] bg-[#fbfcfe] px-5 py-4 sm:flex-row sm:justify-end sm:px-7">
+                  <button
+                    type="button"
+                    onClick={closeCompanyModal}
+                    disabled={savingCompany}
+                    className="h-11 rounded-xl border border-[#dfe7f1] px-5 text-sm font-black text-[#53627a] hover:bg-white disabled:opacity-50"
+                  >
+                    Cancelar
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={savingCompany}
+                    className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-[#0877e8] px-6 text-sm font-black text-white hover:bg-[#066bd1] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {savingCompany ? (
+                      <>
+                        <Loader2 size={17} className="animate-spin" />
+                        A guardar...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 size={17} />
+                        Guardar alterações
+                      </>
+                    )}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
 
         {showEmployeeModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#101b3d]/65 p-3 backdrop-blur-sm sm:p-5">
