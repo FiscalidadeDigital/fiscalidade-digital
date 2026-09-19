@@ -464,10 +464,11 @@ export default function PayrollPage() {
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="relative space-y-7">
         {/* CABEÇALHO */}
-        <section>
-          <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <section className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-white via-white to-blue-50/70 p-6 shadow-[0_18px_55px_rgba(15,35,80,0.06)] lg:p-8">
+          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-100/50 blur-3xl" />
+          <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
             <div>
               <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
                 <span>Gestão</span>
@@ -480,7 +481,7 @@ export default function PayrollPage() {
               </div>
 
               <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-xl shadow-blue-600/25">
                   <Wallet size={23} />
                 </div>
 
@@ -547,8 +548,10 @@ export default function PayrollPage() {
                   h-11
                   items-center
                   gap-2
-                  rounded-xl
-                  bg-blue-600
+                  rounded-2xl
+                  bg-gradient-to-r
+                  from-blue-600
+                  to-indigo-600
                   px-5
                   text-sm
                   font-bold
@@ -594,7 +597,7 @@ export default function PayrollPage() {
         )}
 
         {/* SELEÇÃO DO PERÍODO */}
-        <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <section className="rounded-[1.5rem] border border-slate-200/80 bg-white p-6 shadow-[0_10px_35px_rgba(15,35,80,0.045)]">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
               <p className="text-xs font-black uppercase tracking-widest text-slate-400">
@@ -840,7 +843,7 @@ export default function PayrollPage() {
             </section>
 
             {/* ESTADO */}
-            <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <section className="rounded-[1.5rem] border border-slate-200/80 bg-white p-6 shadow-[0_10px_35px_rgba(15,35,80,0.045)]">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <p className="text-xs font-black uppercase tracking-widest text-slate-400">
@@ -970,10 +973,10 @@ export default function PayrollPage() {
             </section>
 
             {/* FUNCIONÁRIOS */}
-            <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <section className="overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,35,80,0.05)]">
               <div className="flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <h2 className="text-lg font-black text-slate-950">
+                  <h2 className="text-lg font-black tracking-tight text-slate-950">
                     Funcionários da folha
                   </h2>
 
@@ -1027,7 +1030,7 @@ export default function PayrollPage() {
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1100px]">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-slate-50/80 text-left">
+                    <tr className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50/40 text-left">
                       <TableHeader>
                         Funcionário
                       </TableHeader>
@@ -1285,7 +1288,7 @@ export default function PayrollPage() {
             {/* FLUXO */}
             <section>
               <div className="mb-4">
-                <h2 className="text-lg font-black text-slate-950">
+                <h2 className="text-lg font-black tracking-tight text-slate-950">
                   Fluxo da folha
                 </h2>
 
@@ -1596,7 +1599,7 @@ function SummaryCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+    <div className="group relative overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white p-5 shadow-[0_10px_35px_rgba(15,35,80,0.045)] transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_18px_45px_rgba(37,99,235,0.10)]">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="text-xs font-black uppercase tracking-wider text-slate-400">
@@ -1630,7 +1633,7 @@ function MiniMetric({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="flex items-center gap-4 rounded-[1.35rem] border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/80 p-5 shadow-[0_8px_28px_rgba(15,35,80,0.04)] transition hover:-translate-y-0.5 hover:shadow-md">
       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
         {icon}
       </div>
@@ -1782,7 +1785,7 @@ function ProcessStep({
   done: boolean;
 }) {
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+    <div className="rounded-[1.5rem] border border-slate-200/80 bg-white p-6 shadow-[0_10px_35px_rgba(15,35,80,0.045)]">
       <div className="flex items-start gap-4">
         <div
           className={`
