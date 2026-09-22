@@ -1,0 +1,3 @@
+﻿ALTER TABLE "CompanySettings"
+ADD COLUMN IF NOT EXISTS "whatsappEnabled" BOOLEAN NOT NULL DEFAULT false,
+ADD COLUMN IF NOT EXISTS "whatsappOptInAt" TIMESTAMP(3);

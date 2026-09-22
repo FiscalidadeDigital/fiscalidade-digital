@@ -247,6 +247,10 @@ model FiscalAlert {
   daysBefore       Int
   notificationSent Boolean  @default(false)
   emailSent        Boolean  @default(false)
+  smsSent          Boolean  @default(false)
+  smsStatus        String?
+  whatsappSent     Boolean  @default(false)
+  whatsappStatus   String?
   emailStatus      String?
   notificationId   String?
   sentAt           DateTime @default(now())
@@ -383,9 +387,12 @@ model SMSLog {
   id       String   @id @default(uuid())
   tenantId String
   phone    String
-  message  String
-  status   String
-  provider String?
+  message            String
+  status             String
+  provider           String?
+  channel            String   @default("SMS")
+  providerMessageId  String?
+  errorMessage       String?
   sentAt   DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -439,6 +446,8 @@ model CompanySettings {
   invoicePrefix         String?
   smsEnabled            Boolean @default(true)
   emailEnabled          Boolean @default(true)
+  whatsappEnabled       Boolean @default(false)
+  whatsappOptInAt       DateTime?
   aiEnabled             Boolean @default(true)
   fiscalAlertDaysBefore Int     @default(7)
   fiscalAlertsEnabled   Boolean @default(true)
