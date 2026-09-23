@@ -1,10 +1,16 @@
+import type {
+  Metadata,
+} from 'next';
 
 import './globals.css';
 
-import { AuthProvider } from '@/context/AuthContext';
+import {
+  AuthProvider,
+} from '@/context/AuthContext';
 
-export const metadata = {
+export const metadata: Metadata = {
   title: 'Fiscalidade Digital',
+
   description:
     'Sistema Fiscal Inteligente para Angola',
 
@@ -17,11 +23,11 @@ export const metadata = {
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
-    <html lang="pt">
+    <html lang="pt-AO">
       <body>
         <AuthProvider>
           {children}

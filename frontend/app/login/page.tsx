@@ -1,34 +1,67 @@
-
 'use client';
 
-import { FormEvent, useState } from 'react';
+import {
+  FormEvent,
+  useState,
+} from 'react';
+
 import Image from 'next/image';
 import Link from 'next/link';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react';
+
+import {
+  Eye,
+  EyeOff,
+  Lock,
+  Mail,
+} from 'lucide-react';
+
 import { useRouter } from 'next/navigation';
 
-import { login } from '@/services/auth';
-import { saveToken } from '@/lib/auth';
+import { useAuth } from '@/context/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const { login } = useAuth();
+
+  const [email, setEmail] =
+    useState('');
+
+  const [password, setPassword] =
+    useState('');
+
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [loading, setLoading] =
+    useState(false);
+
+  const [error, setError] =
+    useState('');
+
+  /* ==========================================================
+     LOGIN
+  ========================================================== */
 
   async function handleLogin(
     event: FormEvent<HTMLFormElement>,
   ) {
     event.preventDefault();
+
     setError('');
 
-    const normalizedEmail = email.trim().toLowerCase();
+    const normalizedEmail =
+      email.trim().toLowerCase();
+
+    /* ========================================================
+       VALIDAR EMAIL
+    ======================================================== */
 
     if (!normalizedEmail) {
-      setError('Introduza o seu email.');
+      setError(
+        'Introduza o seu email.',
+      );
+
       return;
     }
 
@@ -37,12 +70,22 @@ export default function LoginPage() {
         normalizedEmail,
       )
     ) {
-      setError('Introduza um email válido.');
+      setError(
+        'Introduza um email válido.',
+      );
+
       return;
     }
 
+    /* ========================================================
+       VALIDAR PASSWORD
+    ======================================================== */
+
     if (!password) {
-      setError('Introduza a sua palavra-passe.');
+      setError(
+        'Introduza a sua palavra-passe.',
+      );
+
       return;
     }
 
@@ -50,82 +93,153 @@ export default function LoginPage() {
       setError(
         'A palavra-passe deve ter pelo menos 6 caracteres.',
       );
+
       return;
     }
 
     setLoading(true);
 
     try {
-      const data = await login(
+      /*
+       * IMPORTANTE:
+       *
+       * Agora o login passa pelo AuthContext.
+       *
+       * Não usar:
+       *
+       * login() de services/auth
+       *
+       * nem:
+       *
+       * saveToken()
+       *
+       * nesta página.
+       */
+
+      await login(
         normalizedEmail,
         password,
       );
 
-      if (!data?.access_token) {
-        throw new Error(
-          'O servidor não devolveu um token de autenticação.',
-        );
-      }
+      /*
+       * Recuperar redirect da URL.
+       *
+       * Exemplo:
+       *
+       * /login?redirect=/dashboard
+       */
 
-      saveToken(data.access_token);
+      let redirect =
+        '/dashboard';
 
-      if (typeof window !== 'undefined') {
-        if (data.user) {
-          localStorage.setItem(
-            'user',
-            JSON.stringify(data.user),
-          );
-        }
-
-        if (data.tenant) {
-          localStorage.setItem(
-            'tenant',
-            JSON.stringify(data.tenant),
+      if (
+        typeof window !==
+        'undefined'
+      ) {
+        const params =
+          new URLSearchParams(
+            window.location.search,
           );
 
-          if (data.tenant.id) {
-            localStorage.setItem(
-              'tenantId',
-              data.tenant.id,
-            );
-          }
+        const requestedRedirect =
+          params.get(
+            'redirect',
+          );
+
+        /*
+         * Só aceitar redirects internos.
+         */
+
+        if (
+          requestedRedirect &&
+          requestedRedirect.startsWith(
+            '/',
+          ) &&
+          !requestedRedirect.startsWith(
+            '//',
+          )
+        ) {
+          redirect =
+            requestedRedirect;
         }
       }
 
-      router.push('/dashboard');
+      /*
+       * O AuthContext já atualizou:
+       *
+       * token
+       * user
+       * tenant
+       * isAuthenticated
+       *
+       * Agora podemos navegar.
+       */
+
+      router.replace(
+        redirect,
+      );
     } catch (err: unknown) {
-      console.error('Erro ao iniciar sessão:', err);
+      console.error(
+        'Erro ao iniciar sessão:',
+        err,
+      );
 
       let message =
         'Não foi possível iniciar sessão.';
+
+      /*
+       * Erro vindo do Axios/API.
+       */
 
       if (
         err &&
         typeof err === 'object' &&
         'response' in err
       ) {
-        const response = (
-          err as {
-            response?: {
-              data?: {
-                message?: string | string[];
+        const response =
+          (
+            err as {
+              response?: {
+                data?: {
+                  message?:
+                    | string
+                    | string[];
+                };
               };
-            };
-          }
-        ).response;
+            }
+          ).response;
 
-        const apiMessage = response?.data?.message;
+        const apiMessage =
+          response?.data?.message;
 
-        if (Array.isArray(apiMessage)) {
-          message = apiMessage.join(' ');
-        } else if (typeof apiMessage === 'string') {
-          message = apiMessage;
+        if (
+          Array.isArray(
+            apiMessage,
+          )
+        ) {
+          message =
+            apiMessage.join(
+              ' ',
+            );
+        } else if (
+          typeof apiMessage ===
+          'string'
+        ) {
+          message =
+            apiMessage;
         }
-      } else if (
+      }
+
+      /*
+       * Erro JavaScript normal.
+       */
+
+      else if (
         err instanceof Error &&
         err.message
       ) {
-        message = err.message;
+        message =
+          err.message;
       }
 
       setError(message);
@@ -134,12 +248,18 @@ export default function LoginPage() {
     }
   }
 
+  /* ==========================================================
+     INTERFACE
+  ========================================================== */
+
   return (
     <main className="min-h-screen bg-[#f7f8fc] text-[#202338]">
 
       <div className="flex min-h-screen flex-col lg:flex-row">
 
-        {/* PAINEL INSTITUCIONAL */}
+        {/* ====================================================
+            PAINEL INSTITUCIONAL
+        ===================================================== */}
 
         <section className="relative hidden overflow-hidden bg-[#26194e] lg:flex lg:w-[44%] xl:w-[46%]">
 
@@ -149,7 +269,12 @@ export default function LoginPage() {
 
           <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
 
-            <Link href="/" className="inline-block">
+            {/* LOGO */}
+
+            <Link
+              href="/"
+              className="inline-block"
+            >
               <Image
                 src="/logofiscalidade.png"
                 alt="Fiscalidade Digital"
@@ -159,6 +284,8 @@ export default function LoginPage() {
                 priority
               />
             </Link>
+
+            {/* TEXTO */}
 
             <div className="max-w-md">
 
@@ -187,8 +314,12 @@ export default function LoginPage() {
 
             </div>
 
+            {/* RODAPÉ */}
+
             <p className="text-xs text-white/40">
-              © {new Date().getFullYear()} Fiscalidade Digital.
+              ©{' '}
+              {new Date().getFullYear()}{' '}
+              Fiscalidade Digital.
               Todos os direitos reservados.
             </p>
 
@@ -196,7 +327,9 @@ export default function LoginPage() {
 
         </section>
 
-        {/* ÁREA DE LOGIN */}
+        {/* ====================================================
+            ÁREA DE LOGIN
+        ===================================================== */}
 
         <section className="flex flex-1 items-center justify-center px-5 py-10 sm:px-8">
 
@@ -279,9 +412,13 @@ export default function LoginPage() {
                     type="email"
                     value={email}
                     onChange={(event) => {
-                      setEmail(event.target.value);
+                      setEmail(
+                        event.target.value,
+                      );
 
-                      if (error) setError('');
+                      if (error) {
+                        setError('');
+                      }
                     }}
                     placeholder="seuemail@exemplo.com"
                     autoComplete="email"
@@ -293,7 +430,7 @@ export default function LoginPage() {
 
               </div>
 
-              {/* PALAVRA-PASSE */}
+              {/* PASSWORD */}
 
               <div>
 
@@ -330,12 +467,20 @@ export default function LoginPage() {
 
                   <input
                     id="password"
-                    type={showPassword ? 'text' : 'password'}
+                    type={
+                      showPassword
+                        ? 'text'
+                        : 'password'
+                    }
                     value={password}
                     onChange={(event) => {
-                      setPassword(event.target.value);
+                      setPassword(
+                        event.target.value,
+                      );
 
-                      if (error) setError('');
+                      if (error) {
+                        setError('');
+                      }
                     }}
                     placeholder="Introduza a sua palavra-passe"
                     autoComplete="current-password"
@@ -351,15 +496,24 @@ export default function LoginPage() {
                         : 'Mostrar palavra-passe'
                     }
                     onClick={() =>
-                      setShowPassword((current) => !current)
+                      setShowPassword(
+                        (current) =>
+                          !current,
+                      )
                     }
                     disabled={loading}
                     className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9b9fb2] transition hover:text-[#5940d7] disabled:opacity-50"
                   >
                     {showPassword ? (
-                      <EyeOff size={18} strokeWidth={1.7} />
+                      <EyeOff
+                        size={18}
+                        strokeWidth={1.7}
+                      />
                     ) : (
-                      <Eye size={18} strokeWidth={1.7} />
+                      <Eye
+                        size={18}
+                        strokeWidth={1.7}
+                      />
                     )}
                   </button>
 
@@ -377,8 +531,11 @@ export default function LoginPage() {
 
                 {loading ? (
                   <span className="flex items-center gap-3">
+
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+
                     A entrar...
+
                   </span>
                 ) : (
                   'Entrar na minha conta'

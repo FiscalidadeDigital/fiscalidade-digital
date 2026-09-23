@@ -10,66 +10,56 @@ import {
   type ReactNode,
 } from 'react';
 
-import {
-  usePathname,
-  useRouter,
-} from 'next/navigation';
-
-import {
-  getCurrentUser,
-  login as loginRequest,
-  register as registerRequest,
-  type AuthUser,
-  type Tenant,
-  type LoginResponse,
-  type RegisterData,
-  type RegisterResponse,
-} from '@/services/auth';
-
+import api from '@/services/api';
 import {
   getToken,
-  saveToken,
   removeToken,
+  saveToken,
 } from '@/lib/auth';
 
-// =====================================================
-// ROTAS PÚBLICAS
-// =====================================================
+/* ============================================================
+   TIPOS
+============================================================ */
 
-const PUBLIC_ROUTES = [
-  '/',
-  '/login',
-  '/register',
-  '/terms',
-  '/privacy',
-];
+export type User = {
+  id: string;
+  email: string;
+  name?: string;
+  role?: string;
+  isActive?: boolean;
+  tenantId?: string;
+  [key: string]: unknown;
+};
 
-function isPublicRoute(
-  pathname: string,
-): boolean {
-  return PUBLIC_ROUTES.some((route) => {
-    if (route === '/') {
-      return pathname === '/';
-    }
+export type Tenant = {
+  id: string;
+  name?: string;
+  nif?: string;
+  email?: string;
+  phone?: string;
+  [key: string]: unknown;
+};
 
-    return (
-      pathname === route ||
-      pathname.startsWith(`${route}/`)
-    );
-  });
-}
+export type LoginResponse = {
+  access_token: string;
+  user: User;
+  tenant: Tenant;
+};
 
-// =====================================================
-// TIPOS
-// =====================================================
+export type RegisterResponse = {
+  access_token?: string;
+  user?: User;
+  tenant?: Tenant;
+  message?: string;
+  [key: string]: unknown;
+};
 
-interface AuthContextValue {
-  user: AuthUser | null;
-
+export type AuthContextType = {
+  user: User | null;
   company: Tenant | null;
 
   loading: boolean;
-
+  initialized: boolean;
   isAuthenticated: boolean;
 
   login: (
@@ -78,93 +68,34 @@ interface AuthContextValue {
   ) => Promise<LoginResponse>;
 
   register: (
-    data: RegisterData,
+    data: Record<string, unknown>,
   ) => Promise<RegisterResponse>;
 
-  refreshSession: () => Promise<void>;
-
   logout: () => void;
-}
 
-// =====================================================
-// CONTEXT
-// =====================================================
+  refreshSession: () => Promise<void>;
+};
+
+/* ============================================================
+   CONTEXT
+============================================================ */
 
 const AuthContext =
-  createContext<AuthContextValue | undefined>(
+  createContext<AuthContextType | undefined>(
     undefined,
   );
 
-// =====================================================
-// ECRÃ DE CARREGAMENTO
-// =====================================================
-
-function SecurityLoadingScreen() {
-  return (
-    <main
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: '#f8fafc',
-        padding: '24px',
-      }}
-    >
-      <div
-        style={{
-          textAlign: 'center',
-          color: '#475569',
-        }}
-      >
-        <div
-          style={{
-            width: '40px',
-            height: '40px',
-            border: '4px solid #dbeafe',
-            borderTopColor: '#0284c7',
-            borderRadius: '50%',
-            animation:
-              'fiscalidade-spin 0.8s linear infinite',
-            margin: '0 auto 16px',
-          }}
-        />
-
-        <p
-          style={{
-            fontSize: '14px',
-            fontWeight: 600,
-          }}
-        >
-          A verificar a sua sessão...
-        </p>
-      </div>
-
-      <style>{`
-        @keyframes fiscalidade-spin {
-          to {
-            transform: rotate(360deg);
-          }
-        }
-      `}</style>
-    </main>
-  );
-}
-
-// =====================================================
-// PROVIDER
-// =====================================================
+/* ============================================================
+   PROVIDER
+============================================================ */
 
 export function AuthProvider({
   children,
 }: {
   children: ReactNode;
 }) {
-  const router = useRouter();
-  const pathname = usePathname();
-
   const [user, setUser] =
-    useState<AuthUser | null>(null);
+    useState<User | null>(null);
 
   const [company, setCompany] =
     useState<Tenant | null>(null);
@@ -172,15 +103,52 @@ export function AuthProvider({
   const [loading, setLoading] =
     useState(true);
 
-  const publicRoute =
-    isPublicRoute(pathname);
+  const [initialized, setInitialized] =
+    useState(false);
 
-  // ===================================================
-  // LIMPAR SESSÃO
-  // ===================================================
+  /* ==========================================================
+     GUARDAR SESSÃO
+  ========================================================== */
+
+  const saveSession = useCallback(
+    (
+      sessionUser: User,
+      sessionTenant: Tenant,
+    ) => {
+      setUser(sessionUser);
+      setCompany(sessionTenant);
+
+      if (
+        typeof window !== 'undefined'
+      ) {
+        localStorage.setItem(
+          'user',
+          JSON.stringify(sessionUser),
+        );
+
+        localStorage.setItem(
+          'tenant',
+          JSON.stringify(sessionTenant),
+        );
+
+        localStorage.setItem(
+          'tenantId',
+          sessionTenant.id,
+        );
+      }
+    },
+    [],
+  );
+
+  /* ==========================================================
+     LIMPAR SESSÃO
+  ========================================================== */
 
   const clearSession = useCallback(() => {
     removeToken();
+
+    setUser(null);
+    setCompany(null);
 
     if (
       typeof window !== 'undefined'
@@ -189,337 +157,369 @@ export function AuthProvider({
       localStorage.removeItem('tenant');
       localStorage.removeItem('tenantId');
     }
-
-    setUser(null);
-    setCompany(null);
   }, []);
 
-  // ===================================================
-  // VALIDAR SESSÃO
-  // ===================================================
+  /* ==========================================================
+     RECUPERAR SESSÃO
+  ========================================================== */
 
   const refreshSession =
     useCallback(async () => {
       const token = getToken();
 
+      /*
+       * Não existe token.
+       * Portanto não existe sessão para restaurar.
+       */
+
       if (!token) {
         setUser(null);
         setCompany(null);
         setLoading(false);
+        setInitialized(true);
+
         return;
       }
 
       try {
-        const session =
-          await getCurrentUser();
+        setLoading(true);
 
-        if (
-          !session ||
-          !session.user ||
-          !session.tenant
-        ) {
-          throw new Error(
-            'Resposta de sessão inválida.',
-          );
-        }
+        /*
+         * Consulta:
+         *
+         * GET /auth/me
+         */
 
-        setUser(session.user);
-        setCompany(session.tenant);
+        const response =
+          await api.get('/auth/me');
 
-        // Mantém os dados locais sincronizados
+        const data = response?.data;
+
+        /*
+         * O backend pode devolver:
+         *
+         * {
+         *   user,
+         *   tenant
+         * }
+         *
+         * ou, dependendo da implementação,
+         * o próprio user.
+         */
+
+        const currentUser =
+          data?.user ?? data;
+
+        const currentTenant =
+          data?.tenant ??
+          data?.company ??
+          data?.tenantData;
+
+        /*
+         * Se o backend não devolver os dois,
+         * tentamos recuperar o tenant do localStorage.
+         */
+
+        let tenantFromStorage:
+          | Tenant
+          | null = null;
+
         if (
           typeof window !== 'undefined'
         ) {
-          localStorage.setItem(
-            'user',
-            JSON.stringify(session.user),
-          );
+          const storedTenant =
+            localStorage.getItem(
+              'tenant',
+            );
 
-          localStorage.setItem(
-            'tenant',
-            JSON.stringify(session.tenant),
-          );
+          if (storedTenant) {
+            try {
+              tenantFromStorage =
+                JSON.parse(
+                  storedTenant,
+                );
+            } catch {
+              tenantFromStorage = null;
+            }
+          }
+        }
 
-          localStorage.setItem(
-            'tenantId',
-            session.tenant.id,
+        const finalTenant =
+          currentTenant ??
+          tenantFromStorage;
+
+        if (
+          !currentUser ||
+          !finalTenant
+        ) {
+          throw new Error(
+            'Sessão inválida.',
           );
         }
+
+        saveSession(
+          currentUser,
+          finalTenant,
+        );
       } catch (error) {
         console.error(
-          'Não foi possível validar a sessão:',
+          'Erro ao restaurar sessão:',
           error,
         );
 
         clearSession();
       } finally {
         setLoading(false);
+        setInitialized(true);
       }
-    }, [clearSession]);
+    }, [
+      clearSession,
+      saveSession,
+    ]);
 
-  // ===================================================
-  // INICIALIZAÇÃO
-  // ===================================================
-
-  useEffect(() => {
-    refreshSession();
-  }, [refreshSession]);
-
-  // ===================================================
-  // PROTEÇÃO GLOBAL DAS ROTAS
-  // ===================================================
-
-  useEffect(() => {
-    if (loading || publicRoute) {
-      return;
-    }
-
-    const token = getToken();
-
-    const authenticated =
-      Boolean(token) &&
-      Boolean(user) &&
-      Boolean(company);
-
-    if (!authenticated) {
-      clearSession();
-
-      const redirectPath =
-        pathname &&
-        pathname !== '/login'
-          ? `?redirect=${encodeURIComponent(
-              pathname,
-            )}`
-          : '';
-
-      router.replace(
-        `/login${redirectPath}`,
-      );
-    }
-  }, [
-    loading,
-    publicRoute,
-    pathname,
-    user,
-    company,
-    router,
-    clearSession,
-  ]);
-
-  // ===================================================
-  // LOGIN
-  // ===================================================
+  /* ==========================================================
+     LOGIN
+  ========================================================== */
 
   const login = useCallback(
     async (
       email: string,
       password: string,
     ): Promise<LoginResponse> => {
-      const response =
-        await loginRequest(
-          email,
-          password,
+      setLoading(true);
+
+      try {
+        /*
+         * POST /auth/login
+         */
+
+        const response =
+          await api.post(
+            '/auth/login',
+            {
+              email,
+              password,
+            },
+          );
+
+        const data =
+          response?.data as LoginResponse;
+
+        /*
+         * Verificar token.
+         */
+
+        if (
+          !data?.access_token
+        ) {
+          throw new Error(
+            'O servidor não devolveu um token de autenticação.',
+          );
+        }
+
+        /*
+         * Verificar utilizador.
+         */
+
+        if (!data?.user) {
+          throw new Error(
+            'O servidor não devolveu os dados do utilizador.',
+          );
+        }
+
+        /*
+         * Verificar empresa/tenant.
+         */
+
+        if (!data?.tenant) {
+          throw new Error(
+            'O servidor não devolveu os dados da empresa.',
+          );
+        }
+
+        /*
+         * Guardar TOKEN.
+         */
+
+        saveToken(
+          data.access_token,
         );
 
-      if (
-        !response ||
-        !response.access_token ||
-        !response.user ||
-        !response.tenant
-      ) {
-        throw new Error(
-          'O servidor não devolveu uma sessão válida.',
+        /*
+         * Guardar USER + TENANT
+         * no estado React e localStorage.
+         */
+
+        saveSession(
+          data.user,
+          data.tenant,
         );
+
+        /*
+         * A sessão já está inicializada.
+         */
+
+        setInitialized(true);
+
+        return data;
+      } catch (error) {
+        console.error(
+          'Erro no login:',
+          error,
+        );
+
+        clearSession();
+
+        throw error;
+      } finally {
+        setLoading(false);
       }
-
-      // ===============================================
-      // GUARDAR TOKEN
-      // ===============================================
-
-      saveToken(
-        response.access_token,
-      );
-
-      // ===============================================
-      // ATUALIZAR ESTADO GLOBAL
-      // ===============================================
-
-      setUser(response.user);
-
-      setCompany(response.tenant);
-
-      setLoading(false);
-
-      // ===============================================
-      // SINCRONIZAR LOCALSTORAGE
-      // ===============================================
-
-      if (
-        typeof window !== 'undefined'
-      ) {
-        localStorage.setItem(
-          'user',
-          JSON.stringify(
-            response.user,
-          ),
-        );
-
-        localStorage.setItem(
-          'tenant',
-          JSON.stringify(
-            response.tenant,
-          ),
-        );
-
-        localStorage.setItem(
-          'tenantId',
-          response.tenant.id,
-        );
-      }
-
-      return response;
     },
-    [],
+    [
+      clearSession,
+      saveSession,
+    ],
   );
 
-  // ===================================================
-  // REGISTO
-  // ===================================================
+  /* ==========================================================
+     REGISTO
+  ========================================================== */
 
   const register = useCallback(
     async (
-      data: RegisterData,
+      data: Record<string, unknown>,
     ): Promise<RegisterResponse> => {
-      const response =
-        await registerRequest(data);
+      setLoading(true);
 
-      if (
-        !response ||
-        !response.access_token ||
-        !response.user ||
-        !response.tenant
-      ) {
-        throw new Error(
-          'O servidor não devolveu uma sessão válida.',
+      try {
+        /*
+         * POST /auth/register
+         */
+
+        const response =
+          await api.post(
+            '/auth/register',
+            data,
+          );
+
+        const result =
+          response?.data as RegisterResponse;
+
+        /*
+         * Caso o backend faça login automático
+         * depois do registo.
+         */
+
+        if (
+          result?.access_token &&
+          result?.user &&
+          result?.tenant
+        ) {
+          saveToken(
+            result.access_token,
+          );
+
+          saveSession(
+            result.user,
+            result.tenant,
+          );
+        }
+
+        setInitialized(true);
+
+        return result;
+      } catch (error) {
+        console.error(
+          'Erro no registo:',
+          error,
         );
+
+        throw error;
+      } finally {
+        setLoading(false);
       }
-
-      // ===============================================
-      // GUARDAR TOKEN
-      // ===============================================
-
-      saveToken(
-        response.access_token,
-      );
-
-      // ===============================================
-      // ATUALIZAR ESTADO
-      // ===============================================
-
-      setUser(response.user);
-
-      setCompany(response.tenant);
-
-      setLoading(false);
-
-      // ===============================================
-      // SINCRONIZAR LOCALSTORAGE
-      // ===============================================
-
-      if (
-        typeof window !== 'undefined'
-      ) {
-        localStorage.setItem(
-          'user',
-          JSON.stringify(
-            response.user,
-          ),
-        );
-
-        localStorage.setItem(
-          'tenant',
-          JSON.stringify(
-            response.tenant,
-          ),
-        );
-
-        localStorage.setItem(
-          'tenantId',
-          response.tenant.id,
-        );
-      }
-
-      return response;
     },
-    [],
+    [saveSession],
   );
 
-  // ===================================================
-  // LOGOUT
-  // ===================================================
+  /* ==========================================================
+     LOGOUT
+  ========================================================== */
 
   const logout = useCallback(() => {
     clearSession();
 
-    router.replace('/login');
-  }, [
-    clearSession,
-    router,
-  ]);
+    setInitialized(true);
 
-  // ===================================================
-  // ESTADO DE AUTENTICAÇÃO
-  // ===================================================
+    if (
+      typeof window !== 'undefined'
+    ) {
+      window.location.href =
+        '/login';
+    }
+  }, [clearSession]);
+
+  /* ==========================================================
+     INICIALIZAÇÃO
+  ========================================================== */
+
+  useEffect(() => {
+    refreshSession();
+  }, [refreshSession]);
+
+  /* ==========================================================
+     AUTENTICAÇÃO
+  ========================================================== */
+
+  const token =
+    typeof window !== 'undefined'
+      ? getToken()
+      : null;
 
   const isAuthenticated =
+    Boolean(token) &&
     Boolean(user) &&
-    Boolean(company) &&
-    Boolean(getToken());
+    Boolean(company);
 
-  // ===================================================
-  // VALOR DO CONTEXT
-  // ===================================================
+  /* ==========================================================
+     VALUE
+  ========================================================== */
 
   const value =
-    useMemo<AuthContextValue>(
+    useMemo<AuthContextType>(
       () => ({
         user,
         company,
+
         loading,
+        initialized,
         isAuthenticated,
+
         login,
         register,
-        refreshSession,
+
         logout,
+        refreshSession,
       }),
       [
         user,
         company,
+
         loading,
+        initialized,
         isAuthenticated,
+
         login,
         register,
-        refreshSession,
+
         logout,
+        refreshSession,
       ],
     );
 
-  // ===================================================
-  // RENDERIZAÇÃO SEGURA
-  // ===================================================
-
-  if (
-    !publicRoute &&
-    (loading || !isAuthenticated)
-  ) {
-    return (
-      <AuthContext.Provider
-        value={value}
-      >
-        <SecurityLoadingScreen />
-      </AuthContext.Provider>
-    );
-  }
+  /* ==========================================================
+     PROVIDER
+  ========================================================== */
 
   return (
     <AuthContext.Provider
@@ -530,9 +530,9 @@ export function AuthProvider({
   );
 }
 
-// =====================================================
-// HOOK
-// =====================================================
+/* ============================================================
+   HOOK
+============================================================ */
 
 export function useAuth() {
   const context =
@@ -540,7 +540,7 @@ export function useAuth() {
 
   if (!context) {
     throw new Error(
-      'useAuth deve ser utilizado dentro de um AuthProvider.',
+      'useAuth deve ser usado dentro de um AuthProvider.',
     );
   }
 
