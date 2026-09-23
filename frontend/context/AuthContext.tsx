@@ -44,7 +44,9 @@ const PUBLIC_ROUTES = [
   '/privacy',
 ];
 
-function isPublicRoute(pathname: string): boolean {
+function isPublicRoute(
+  pathname: string,
+): boolean {
   return PUBLIC_ROUTES.some((route) => {
     if (route === '/') {
       return pathname === '/';
@@ -170,16 +172,19 @@ export function AuthProvider({
   const [loading, setLoading] =
     useState(true);
 
-  const publicRoute = isPublicRoute(pathname);
+  const publicRoute =
+    isPublicRoute(pathname);
 
   // ===================================================
-  // LIMPAR SESSÃO LOCALMENTE
+  // LIMPAR SESSÃO
   // ===================================================
 
   const clearSession = useCallback(() => {
     removeToken();
 
-    if (typeof window !== 'undefined') {
+    if (
+      typeof window !== 'undefined'
+    ) {
       localStorage.removeItem('user');
       localStorage.removeItem('tenant');
       localStorage.removeItem('tenantId');
@@ -193,42 +198,64 @@ export function AuthProvider({
   // VALIDAR SESSÃO
   // ===================================================
 
-  const refreshSession = useCallback(async () => {
-    const token = getToken();
+  const refreshSession =
+    useCallback(async () => {
+      const token = getToken();
 
-    if (!token) {
-      setUser(null);
-      setCompany(null);
-      setLoading(false);
-      return;
-    }
-
-    try {
-      const session = await getCurrentUser();
-
-      if (
-        !session ||
-        !session.user ||
-        !session.tenant
-      ) {
-        throw new Error(
-          'Resposta de sessão inválida.',
-        );
+      if (!token) {
+        setUser(null);
+        setCompany(null);
+        setLoading(false);
+        return;
       }
 
-      setUser(session.user);
-      setCompany(session.tenant);
-    } catch (error) {
-      console.error(
-        'Não foi possível validar a sessão:',
-        error,
-      );
+      try {
+        const session =
+          await getCurrentUser();
 
-      clearSession();
-    } finally {
-      setLoading(false);
-    }
-  }, [clearSession]);
+        if (
+          !session ||
+          !session.user ||
+          !session.tenant
+        ) {
+          throw new Error(
+            'Resposta de sessão inválida.',
+          );
+        }
+
+        setUser(session.user);
+        setCompany(session.tenant);
+
+        // Mantém os dados locais sincronizados
+        if (
+          typeof window !== 'undefined'
+        ) {
+          localStorage.setItem(
+            'user',
+            JSON.stringify(session.user),
+          );
+
+          localStorage.setItem(
+            'tenant',
+            JSON.stringify(session.tenant),
+          );
+
+          localStorage.setItem(
+            'tenantId',
+            session.tenant.id,
+          );
+        }
+      } catch (error) {
+        console.error(
+          'Não foi possível validar a sessão:',
+          error,
+        );
+
+        clearSession();
+      } finally {
+        setLoading(false);
+      }
+    }, [clearSession]);
 
   // ===================================================
   // INICIALIZAÇÃO
@@ -239,7 +266,7 @@ export function AuthProvider({
   }, [refreshSession]);
 
   // ===================================================
-  // PROTECÇÃO GLOBAL DAS ROTAS
+  // PROTEÇÃO GLOBAL DAS ROTAS
   // ===================================================
 
   useEffect(() => {
@@ -258,11 +285,16 @@ export function AuthProvider({
       clearSession();
 
       const redirectPath =
-        pathname && pathname !== '/login'
-          ? `?redirect=${encodeURIComponent(pathname)}`
+        pathname &&
+        pathname !== '/login'
+          ? `?redirect=${encodeURIComponent(
+              pathname,
+            )}`
           : '';
 
-      router.replace(`/login${redirectPath}`);
+      router.replace(
+        `/login${redirectPath}`,
+      );
     }
   }, [
     loading,
@@ -282,11 +314,12 @@ export function AuthProvider({
     async (
       email: string,
       password: string,
-    ) => {
-      const response = await loginRequest(
-        email,
-        password,
-      );
+    ): Promise<LoginResponse> => {
+      const response =
+        await loginRequest(
+          email,
+          password,
+        );
 
       if (
         !response ||
@@ -299,11 +332,50 @@ export function AuthProvider({
         );
       }
 
-      saveToken(response.access_token);
+      // ===============================================
+      // GUARDAR TOKEN
+      // ===============================================
+
+      saveToken(
+        response.access_token,
+      );
+
+      // ===============================================
+      // ATUALIZAR ESTADO GLOBAL
+      // ===============================================
 
       setUser(response.user);
+
       setCompany(response.tenant);
+
       setLoading(false);
+
+      // ===============================================
+      // SINCRONIZAR LOCALSTORAGE
+      // ===============================================
+
+      if (
+        typeof window !== 'undefined'
+      ) {
+        localStorage.setItem(
+          'user',
+          JSON.stringify(
+            response.user,
+          ),
+        );
+
+        localStorage.setItem(
+          'tenant',
+          JSON.stringify(
+            response.tenant,
+          ),
+        );
+
+        localStorage.setItem(
+          'tenantId',
+          response.tenant.id,
+        );
+      }
 
       return response;
     },
@@ -315,7 +387,9 @@ export function AuthProvider({
   // ===================================================
 
   const register = useCallback(
-    async (data: RegisterData) => {
+    async (
+      data: RegisterData,
+    ): Promise<RegisterResponse> => {
       const response =
         await registerRequest(data);
 
@@ -330,11 +404,50 @@ export function AuthProvider({
         );
       }
 
-      saveToken(response.access_token);
+      // ===============================================
+      // GUARDAR TOKEN
+      // ===============================================
+
+      saveToken(
+        response.access_token,
+      );
+
+      // ===============================================
+      // ATUALIZAR ESTADO
+      // ===============================================
 
       setUser(response.user);
+
       setCompany(response.tenant);
+
       setLoading(false);
+
+      // ===============================================
+      // SINCRONIZAR LOCALSTORAGE
+      // ===============================================
+
+      if (
+        typeof window !== 'undefined'
+      ) {
+        localStorage.setItem(
+          'user',
+          JSON.stringify(
+            response.user,
+          ),
+        );
+
+        localStorage.setItem(
+          'tenant',
+          JSON.stringify(
+            response.tenant,
+          ),
+        );
+
+        localStorage.setItem(
+          'tenantId',
+          response.tenant.id,
+        );
+      }
 
       return response;
     },
@@ -347,11 +460,15 @@ export function AuthProvider({
 
   const logout = useCallback(() => {
     clearSession();
+
     router.replace('/login');
-  }, [clearSession, router]);
+  }, [
+    clearSession,
+    router,
+  ]);
 
   // ===================================================
-  // VALOR DO CONTEXT
+  // ESTADO DE AUTENTICAÇÃO
   // ===================================================
 
   const isAuthenticated =
@@ -359,28 +476,33 @@ export function AuthProvider({
     Boolean(company) &&
     Boolean(getToken());
 
-  const value = useMemo<AuthContextValue>(
-    () => ({
-      user,
-      company,
-      loading,
-      isAuthenticated,
-      login,
-      register,
-      refreshSession,
-      logout,
-    }),
-    [
-      user,
-      company,
-      loading,
-      isAuthenticated,
-      login,
-      register,
-      refreshSession,
-      logout,
-    ],
-  );
+  // ===================================================
+  // VALOR DO CONTEXT
+  // ===================================================
+
+  const value =
+    useMemo<AuthContextValue>(
+      () => ({
+        user,
+        company,
+        loading,
+        isAuthenticated,
+        login,
+        register,
+        refreshSession,
+        logout,
+      }),
+      [
+        user,
+        company,
+        loading,
+        isAuthenticated,
+        login,
+        register,
+        refreshSession,
+        logout,
+      ],
+    );
 
   // ===================================================
   // RENDERIZAÇÃO SEGURA
@@ -391,14 +513,18 @@ export function AuthProvider({
     (loading || !isAuthenticated)
   ) {
     return (
-      <AuthContext.Provider value={value}>
+      <AuthContext.Provider
+        value={value}
+      >
         <SecurityLoadingScreen />
       </AuthContext.Provider>
     );
   }
 
   return (
-    <AuthContext.Provider value={value}>
+    <AuthContext.Provider
+      value={value}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -409,7 +535,8 @@ export function AuthProvider({
 // =====================================================
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
     throw new Error(

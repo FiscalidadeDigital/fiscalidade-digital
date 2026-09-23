@@ -1,4 +1,3 @@
-
 import api from './api';
 
 import { removeToken } from '@/lib/auth';
@@ -112,7 +111,10 @@ export const login = async (
     await api.post<LoginResponse>(
       '/auth/login',
       {
-        email: email.trim().toLowerCase(),
+        email: email
+          .trim()
+          .toLowerCase(),
+
         password,
       },
     );
@@ -138,22 +140,30 @@ export const register = async (
           data.ownerName.trim(),
 
         nif:
-          data.nif.trim().toUpperCase(),
+          data.nif
+            .trim()
+            .toUpperCase(),
 
         email:
-          data.email.trim().toLowerCase(),
+          data.email
+            .trim()
+            .toLowerCase(),
 
         phone:
-          data.phone?.trim() || undefined,
+          data.phone?.trim() ||
+          undefined,
 
         address:
-          data.address?.trim() || undefined,
+          data.address?.trim() ||
+          undefined,
 
         sector:
-          data.sector?.trim() || undefined,
+          data.sector?.trim() ||
+          undefined,
 
         companyType:
-          data.companyType?.trim() || undefined,
+          data.companyType?.trim() ||
+          undefined,
 
         employees:
           data.employees,

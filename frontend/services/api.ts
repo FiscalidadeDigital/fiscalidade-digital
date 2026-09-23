@@ -12,19 +12,28 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 
-  // O Render pode demorar a responder quando está a iniciar.
   timeout: 60000,
 });
 
+// =====================================================
+// REQUEST INTERCEPTOR
+// =====================================================
+
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
+  (
+    config: InternalAxiosRequestConfig,
+  ) => {
+    if (
+      typeof window !== 'undefined'
+    ) {
+      const token =
+        localStorage.getItem('token');
 
       if (token) {
-        const headers = AxiosHeaders.from(
-          config.headers,
-        );
+        const headers =
+          AxiosHeaders.from(
+            config.headers,
+          );
 
         headers.set(
           'Authorization',
@@ -43,6 +52,10 @@ api.interceptors.request.use(
   },
 );
 
+// =====================================================
+// RESPONSE INTERCEPTOR
+// =====================================================
+
 api.interceptors.response.use(
   (response) => response,
 
@@ -51,10 +64,21 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       typeof window !== 'undefined'
     ) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      localStorage.removeItem('tenant');
-      localStorage.removeItem('tenantId');
+      localStorage.removeItem(
+        'token',
+      );
+
+      localStorage.removeItem(
+        'user',
+      );
+
+      localStorage.removeItem(
+        'tenant',
+      );
+
+      localStorage.removeItem(
+        'tenantId',
+      );
     }
 
     return Promise.reject(error);
