@@ -10,7 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import { AuthGuard } from '@nestjs/passport';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 import { TaxType } from '@prisma/client';
 
@@ -33,9 +33,7 @@ interface AuthenticatedRequest
 }
 
 @Controller('payments')
-@UseGuards(
-  AuthGuard('jwt'),
-)
+@UseGuards(JwtAuthGuard)
 export class PaymentsController {
   constructor(
     private readonly paymentsService: PaymentsService,

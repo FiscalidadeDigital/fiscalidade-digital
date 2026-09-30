@@ -121,9 +121,9 @@ export class RegisterDto {
   @IsNotEmpty({
     message: 'A palavra-passe é obrigatória.',
   })
-  @MinLength(6, {
+  @MinLength(12, {
     message:
-      'A palavra-passe deve ter pelo menos 6 caracteres.',
+      'A palavra-passe deve ter pelo menos 12 caracteres.',
   })
   password!: string;
 
@@ -131,17 +131,20 @@ export class RegisterDto {
     message:
       'A aceitação dos termos deve ser verdadeira ou falsa.',
   })
+  @IsIn([true], { message: 'É necessário aceitar os termos.' })
   acceptTerms!: boolean;
 
   @IsBoolean({
     message:
       'A aceitação da política deve ser verdadeira ou falsa.',
   })
+  @IsIn([true], { message: 'É necessário aceitar a política de privacidade.' })
   acceptPrivacyPolicy!: boolean;
 
   @IsBoolean({
     message:
       'A confirmação das informações deve ser verdadeira ou falsa.',
   })
+  @IsIn([true], { message: 'É necessário confirmar as informações.' })
   confirmInformation!: boolean;
 }

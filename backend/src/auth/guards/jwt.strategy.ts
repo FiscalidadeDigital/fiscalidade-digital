@@ -1,23 +1,3 @@
-import { Injectable } from '@nestjs/common';
-import { PassportStrategy } from '@nestjs/passport';
-import { ExtractJwt, Strategy } from 'passport-jwt';
-
-@Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy) {
-  constructor() {
-    super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-      ignoreExpiration: false,
-      secretOrKey: process.env.JWT_SECRET,
-    });
-  }
-
-  async validate(payload: any) {
-    return {
-      userId: payload.sub,
-      tenantId: payload.tenantId,
-      email: payload.email,
-      role: payload.role,
-    };
-  }
-}
+// Compatibility export for any legacy imports. Keep a single strategy so
+// authenticated requests always use the database-backed session validation.
+export { JwtStrategy } from '../strategies/jwt.strategy';

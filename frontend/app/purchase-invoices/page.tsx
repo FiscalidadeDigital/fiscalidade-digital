@@ -1,74 +1,112 @@
 ﻿"use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Plus,
   Search,
   FileText,
-  CalendarDays,
   ChevronDown,
   X,
   Trash2,
   Save,
-  Upload,
 } from "lucide-react";
+import {
+  createPurchaseInvoice,
+  getPurchaseInvoices,
+} from "@/services/purchase-invoice";
+import {
+  getSuppliers,
+  type Supplier,
+} from "@/services/supplier";
 
 type InvoiceItem = {
   id: number;
   productName: string;
   quantity: string;
   unitPrice: string;
-  ivaRate: string;
 };
 
 type PurchaseInvoice = {
-  id: number;
+  id: string;
+  supplierId: string;
   invoiceNumber: string;
-  supplier: string;
-  supplierNif: string;
   issuedAt: string;
-  subtotal: number;
-  iva: number;
-  withholdingTax: number;
-  total: number;
-  status: "PENDING" | "REGISTERED";
+  subtotal: number | string;
+  iva: number | string;
+  withholdingTax: number | string;
+  total: number | string;
+  status: "PENDING" | "PAID" | "CANCELLED";
 };
-
-const initialInvoices: PurchaseInvoice[] = [];
 
 const emptyItem = (): InvoiceItem => ({
   id: Date.now() + Math.random(),
   productName: "",
   quantity: "1",
   unitPrice: "",
-  ivaRate: "14",
 });
 
-const formatCurrency = (value: number) =>
-  new Intl.NumberFormat("pt-AO", {
+const formatCurrency = (value: number | string) => {
+  const amount = Number(value);
+  if (!Number.isFinite(amount)) return "—";
+
+  return new Intl.NumberFormat("pt-AO", {
     style: "currency",
     currency: "AOA",
-    maximumFractionDigits: 0,
-  }).format(value || 0);
+    maximumFractionDigits: 2,
+  }).format(amount);
+};
 
 export default function PurchaseInvoicesPage() {
-  const [invoices, setInvoices] =
-    useState<PurchaseInvoice[]>(initialInvoices);
+  const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [saveError, setSaveError] = useState("");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [showModal, setShowModal] = useState(false);
 
   const [invoiceNumber, setInvoiceNumber] = useState("");
-  const [supplier, setSupplier] = useState("");
-  const [supplierNif, setSupplierNif] = useState("");
+  const [supplierId, setSupplierId] = useState("");
   const [issuedAt, setIssuedAt] = useState("");
+  const [ivaAmount, setIvaAmount] = useState("");
   const [withholdingTax, setWithholdingTax] = useState("0");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<InvoiceItem[]>([
     emptyItem(),
   ]);
+
+  const refreshData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError("");
+    try {
+      const [invoiceData, supplierData] = await Promise.all([
+        getPurchaseInvoices(),
+        getSuppliers(),
+      ]);
+      setInvoices(Array.isArray(invoiceData) ? invoiceData : []);
+      setSuppliers(supplierData);
+    } catch {
+      setLoadError(
+        "Não foi possível carregar as facturas e os fornecedores. Tente novamente.",
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshData();
+  }, [refreshData]);
+
+  const suppliersById = useMemo(
+    () => new Map(suppliers.map((entry) => [entry.id, entry])),
+    [suppliers],
+  );
 
   const filteredInvoices = useMemo(() => {
     return invoices.filter((invoice) => {
@@ -76,10 +114,10 @@ export default function PurchaseInvoicesPage() {
         invoice.invoiceNumber
           .toLowerCase()
           .includes(search.toLowerCase()) ||
-        invoice.supplier
+        (suppliersById.get(invoice.supplierId)?.name ?? "")
           .toLowerCase()
           .includes(search.toLowerCase()) ||
-        invoice.supplierNif.includes(search);
+        (suppliersById.get(invoice.supplierId)?.nif ?? "").includes(search);
 
       const matchesStatus =
         statusFilter === "ALL" ||
@@ -87,32 +125,10 @@ export default function PurchaseInvoicesPage() {
 
       return matchesSearch && matchesStatus;
     });
-  }, [invoices, search, statusFilter]);
+  }, [invoices, search, statusFilter, suppliersById]);
 
-  const subtotal = useMemo(() => {
-    return items.reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-
-      return sum + quantity * unitPrice;
-    }, 0);
-  }, [items]);
-
-  const iva = useMemo(() => {
-    return items.reduce((sum, item) => {
-      const quantity = Number(item.quantity) || 0;
-      const unitPrice = Number(item.unitPrice) || 0;
-      const rate = Number(item.ivaRate) || 0;
-
-      const base = quantity * unitPrice;
-
-      return sum + base * (rate / 100);
-    }, 0);
-  }, [items]);
-
-  const withholding = Number(withholdingTax) || 0;
-
-  const total = subtotal + iva - withholding;
+  const iva = Number(ivaAmount);
+  const withholding = Number(withholdingTax);
 
   const updateItem = (
     id: number,
@@ -152,53 +168,72 @@ export default function PurchaseInvoicesPage() {
 
   const resetForm = () => {
     setInvoiceNumber("");
-    setSupplier("");
-    setSupplierNif("");
+    setSupplierId("");
     setIssuedAt("");
-    setWithholdingTax("0");
+    setIvaAmount("");
+    setWithholdingTax("");
     setNotes("");
     setItems([emptyItem()]);
   };
 
-  const saveInvoice = () => {
+  const saveInvoice = async () => {
     if (
-      !invoiceNumber ||
-      !supplier ||
+      !invoiceNumber.trim() ||
+      !supplierId ||
       !issuedAt ||
+      ivaAmount.trim() === "" ||
+      withholdingTax.trim() === "" ||
+      !Number.isFinite(iva) ||
+      !Number.isFinite(withholding) ||
       items.some(
-        (item) =>
-          !item.productName ||
-          !item.quantity ||
-          !item.unitPrice,
+        (item) => !item.productName.trim() ||
+          !Number.isFinite(Number(item.quantity)) ||
+          Number(item.quantity) <= 0 ||
+          !Number.isFinite(Number(item.unitPrice)) ||
+          Number(item.unitPrice) < 0,
       )
     ) {
-      alert(
-        "Preencha os dados da factura e todos os itens.",
-      );
-
+      setSaveError("Preencha os dados da factura e confirme valores válidos em todos os itens.");
       return;
     }
 
-    const newInvoice: PurchaseInvoice = {
-      id: Date.now(),
-      invoiceNumber,
-      supplier,
-      supplierNif,
-      issuedAt,
-      subtotal,
-      iva,
-      withholdingTax: withholding,
-      total,
-      status: "REGISTERED",
-    };
+    if (iva < 0 || withholding < 0) {
+      setSaveError("IVA e retenção têm de ser valores não negativos.");
+      return;
+    }
 
-    setInvoices((current) => [
-      newInvoice,
-      ...current,
-    ]);
-
-    resetForm();
-    setShowModal(false);
+    setIsSaving(true);
+    setSaveError("");
+    try {
+      await createPurchaseInvoice({
+        supplierId,
+        invoiceNumber: invoiceNumber.trim(),
+        issuedAt,
+        iva,
+        withholdingTax: withholding,
+        notes: notes.trim() || undefined,
+        items: items.map((item) => ({
+          productName: item.productName.trim(),
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+        })),
+      });
+      await refreshData();
+      resetForm();
+      setShowModal(false);
+    } catch (error: unknown) {
+      const message =
+        typeof error === "object" && error !== null &&
+        "response" in error && typeof error.response === "object" &&
+        error.response !== null && "data" in error.response &&
+        typeof error.response.data === "object" && error.response.data !== null &&
+        "message" in error.response.data && typeof error.response.data.message === "string"
+          ? error.response.data.message
+          : "Não foi possível registar a factura. Verifique os dados e tente novamente.";
+      setSaveError(message);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -225,7 +260,11 @@ export default function PurchaseInvoicesPage() {
           </div>
 
           <button
-            onClick={() => setShowModal(true)}
+            onClick={() => {
+              setSaveError("");
+              setShowModal(true);
+            }}
+            disabled={isLoading || Boolean(loadError)}
             className="flex items-center justify-center gap-2 rounded-xl bg-[#5146e5] px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
           >
             <Plus size={19} />
@@ -241,7 +280,7 @@ export default function PurchaseInvoicesPage() {
             </p>
 
             <p className="mt-2 text-2xl font-bold text-[#0f1b3d]">
-              {invoices.length}
+              {isLoading ? "…" : loadError ? "—" : invoices.length}
             </p>
           </div>
 
@@ -251,10 +290,10 @@ export default function PurchaseInvoicesPage() {
             </p>
 
             <p className="mt-2 text-2xl font-bold text-[#0f1b3d]">
-              {formatCurrency(
+              {isLoading || loadError ? "—" : formatCurrency(
                 invoices.reduce(
                   (sum, invoice) =>
-                    sum + invoice.total,
+                    sum + Number(invoice.total),
                   0,
                 ),
               )}
@@ -267,10 +306,10 @@ export default function PurchaseInvoicesPage() {
             </p>
 
             <p className="mt-2 text-2xl font-bold text-[#0f1b3d]">
-              {formatCurrency(
+              {isLoading || loadError ? "—" : formatCurrency(
                 invoices.reduce(
                   (sum, invoice) =>
-                    sum + invoice.iva,
+                    sum + Number(invoice.iva),
                   0,
                 ),
               )}
@@ -308,11 +347,14 @@ export default function PurchaseInvoicesPage() {
                 <option value="ALL">
                   Todos os estados
                 </option>
-                <option value="REGISTERED">
-                  Registadas
-                </option>
                 <option value="PENDING">
                   Pendentes
+                </option>
+                <option value="PAID">
+                  Pagas
+                </option>
+                <option value="CANCELLED">
+                  Anuladas
                 </option>
               </select>
 
@@ -336,7 +378,21 @@ export default function PurchaseInvoicesPage() {
             </p>
           </div>
 
-          {filteredInvoices.length === 0 ? (
+          {isLoading ? (
+            <div className="px-6 py-16 text-center text-sm text-[#7180a0]">
+              A carregar facturas recebidas…
+            </div>
+          ) : loadError ? (
+            <div className="px-6 py-16 text-center">
+              <p role="alert" className="text-sm text-red-700">{loadError}</p>
+              <button
+                onClick={() => void refreshData()}
+                className="mt-4 rounded-xl border border-[#dfe4ee] px-4 py-2 text-sm font-semibold"
+              >
+                Tentar novamente
+              </button>
+            </div>
+          ) : filteredInvoices.length === 0 ? (
             <div className="px-6 py-20 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f0efff] text-[#5146e5]">
                 <FileText size={26} />
@@ -352,7 +408,10 @@ export default function PurchaseInvoicesPage() {
               </p>
 
               <button
-                onClick={() => setShowModal(true)}
+                onClick={() => {
+                  setSaveError("");
+                  setShowModal(true);
+                }}
                 className="mt-5 rounded-xl bg-[#5146e5] px-5 py-3 text-sm font-semibold text-white"
               >
                 Registar primeira factura
@@ -406,11 +465,11 @@ export default function PurchaseInvoicesPage() {
 
                         <td className="px-6 py-5">
                           <div className="font-medium text-[#24304f]">
-                            {invoice.supplier}
+                            {suppliersById.get(invoice.supplierId)?.name ?? "Fornecedor indisponível"}
                           </div>
 
                           <div className="text-xs text-[#8792aa]">
-                            {invoice.supplierNif ||
+                            {suppliersById.get(invoice.supplierId)?.nif ||
                               "NIF não informado"}
                           </div>
                         </td>
@@ -442,8 +501,18 @@ export default function PurchaseInvoicesPage() {
                         </td>
 
                         <td className="px-6 py-5">
-                          <span className="rounded-full bg-[#eafaf3] px-3 py-1.5 text-xs font-semibold text-[#0b9b68]">
-                            Registada
+                          <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                            invoice.status === "PAID"
+                              ? "bg-[#eafaf3] text-[#0b9b68]"
+                              : invoice.status === "CANCELLED"
+                                ? "bg-[#fff0f0] text-[#c33]"
+                                : "bg-[#fff6e5] text-[#986500]"
+                          }`}>
+                            {invoice.status === "PAID"
+                              ? "Paga"
+                              : invoice.status === "CANCELLED"
+                                ? "Anulada"
+                                : "Pendente"}
                           </span>
                         </td>
                       </tr>
@@ -482,6 +551,17 @@ export default function PurchaseInvoicesPage() {
             </div>
 
             <div className="space-y-7 p-6">
+              {saveError && (
+                <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
+                  {saveError}
+                </p>
+              )}
+
+              {suppliers.length === 0 && (
+                <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                  Não há fornecedores disponíveis nesta empresa. Crie um fornecedor antes de registar a factura.
+                </p>
+              )}
 
               {/* DADOS PRINCIPAIS */}
               <section>
@@ -528,41 +608,61 @@ export default function PurchaseInvoicesPage() {
                       Fornecedor *
                     </label>
 
-                    <input
-                      value={supplier}
-                      onChange={(e) =>
-                        setSupplier(e.target.value)
-                      }
-                      placeholder="Nome da empresa fornecedora"
-                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
-                    />
+                    {suppliers.length > 0 ? (
+                      <select
+                        value={supplierId}
+                        onChange={(e) => setSupplierId(e.target.value)}
+                        className="w-full rounded-xl border border-[#dfe4ee] bg-white px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
+                      >
+                        <option value="">Seleccione um fornecedor</option>
+                        {suppliers.map((entry) => (
+                          <option key={entry.id} value={entry.id}>
+                            {entry.name}{entry.nif ? ` — ${entry.nif}` : ""}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <p className="rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                        Registe primeiro um <Link href="/suppliers" className="font-semibold underline">fornecedor</Link>.
+                      </p>
+                    )}
                   </div>
 
                   <div>
                     <label className="mb-2 block text-sm font-medium">
                       NIF do fornecedor
                     </label>
+                    <p className="rounded-xl border border-[#dfe4ee] bg-[#fafbfe] px-4 py-3 text-sm text-[#56627e]">
+                      {suppliersById.get(supplierId)?.nif || "NIF não informado"}
+                    </p>
+                  </div>
 
+                  <div>
+                    <label className="mb-2 block text-sm font-medium">
+                      IVA indicado na factura (AOA) *
+                    </label>
                     <input
-                      value={supplierNif}
-                      onChange={(e) =>
-                        setSupplierNif(
-                          e.target.value,
-                        )
-                      }
-                      placeholder="500000000"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      required
+                      value={ivaAmount}
+                      onChange={(e) => setIvaAmount(e.target.value)}
+                      placeholder="0"
                       className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
                     />
                   </div>
 
                   <div>
                     <label className="mb-2 block text-sm font-medium">
-                      Retenção
+                      Retenção indicada na factura (AOA) *
                     </label>
 
                     <input
                       type="number"
                       min="0"
+                      step="0.01"
+                      required
                       value={withholdingTax}
                       onChange={(e) =>
                         setWithholdingTax(
@@ -574,19 +674,9 @@ export default function PurchaseInvoicesPage() {
                     />
                   </div>
 
-                  <div className="lg:col-span-2">
-                    <label className="mb-2 block text-sm font-medium">
-                      Documento
-                    </label>
-
-                    <button
-                      type="button"
-                      className="flex w-full items-center justify-center gap-2 rounded-xl border border-dashed border-[#cfd5e3] bg-[#fafbfe] px-4 py-3 text-sm text-[#65718c]"
-                    >
-                      <Upload size={17} />
-                      Anexar factura PDF
-                    </button>
-                  </div>
+                  <p className="text-xs text-[#7180a0] lg:col-span-2">
+                    Os valores de IVA e retenção são registados conforme o documento de origem; esta página não calcula nem valida taxas fiscais.
+                  </p>
                 </div>
               </section>
 
@@ -615,7 +705,7 @@ export default function PurchaseInvoicesPage() {
                 </div>
 
                 <div className="overflow-x-auto rounded-xl border border-[#e6e9f0]">
-                  <table className="w-full min-w-[800px]">
+                  <table className="w-full min-w-[700px]">
                     <thead className="bg-[#fafbfe]">
                       <tr className="text-left text-xs uppercase text-[#7a86a0]">
                         <th className="px-4 py-3">
@@ -627,25 +717,12 @@ export default function PurchaseInvoicesPage() {
                         <th className="px-4 py-3">
                           Preço unitário
                         </th>
-                        <th className="px-4 py-3">
-                          IVA %
-                        </th>
-                        <th className="px-4 py-3">
-                          Total
-                        </th>
                         <th />
                       </tr>
                     </thead>
 
                     <tbody>
-                      {items.map((item) => {
-                        const itemTotal =
-                          (Number(item.quantity) ||
-                            0) *
-                          (Number(item.unitPrice) ||
-                            0);
-
-                        return (
+                      {items.map((item) => (
                           <tr
                             key={item.id}
                             className="border-t border-[#eef0f5]"
@@ -671,6 +748,7 @@ export default function PurchaseInvoicesPage() {
                               <input
                                 type="number"
                                 min="0"
+                                step="0.001"
                                 value={
                                   item.quantity
                                 }
@@ -689,6 +767,7 @@ export default function PurchaseInvoicesPage() {
                               <input
                                 type="number"
                                 min="0"
+                                step="0.01"
                                 value={
                                   item.unitPrice
                                 }
@@ -705,30 +784,6 @@ export default function PurchaseInvoicesPage() {
                             </td>
 
                             <td className="px-4 py-3">
-                              <input
-                                type="number"
-                                min="0"
-                                value={
-                                  item.ivaRate
-                                }
-                                onChange={(e) =>
-                                  updateItem(
-                                    item.id,
-                                    "ivaRate",
-                                    e.target.value,
-                                  )
-                                }
-                                className="w-24 rounded-lg border border-[#dfe4ee] px-3 py-2.5 text-sm outline-none"
-                              />
-                            </td>
-
-                            <td className="px-4 py-3 font-semibold">
-                              {formatCurrency(
-                                itemTotal,
-                              )}
-                            </td>
-
-                            <td className="px-4 py-3">
                               <button
                                 type="button"
                                 onClick={() =>
@@ -742,56 +797,14 @@ export default function PurchaseInvoicesPage() {
                               </button>
                             </td>
                           </tr>
-                        );
-                      })}
+                      ))}
                     </tbody>
                   </table>
                 </div>
               </section>
 
-              {/* RESUMO */}
-              <section className="ml-auto max-w-md rounded-2xl bg-[#f8f8ff] p-5">
-                <div className="flex justify-between py-2 text-sm">
-                  <span className="text-[#7180a0]">
-                    Subtotal
-                  </span>
-
-                  <strong>
-                    {formatCurrency(subtotal)}
-                  </strong>
-                </div>
-
-                <div className="flex justify-between py-2 text-sm">
-                  <span className="text-[#7180a0]">
-                    IVA
-                  </span>
-
-                  <strong>
-                    {formatCurrency(iva)}
-                  </strong>
-                </div>
-
-                <div className="flex justify-between py-2 text-sm">
-                  <span className="text-[#7180a0]">
-                    Retenção
-                  </span>
-
-                  <strong>
-                    - {formatCurrency(withholding)}
-                  </strong>
-                </div>
-
-                <div className="my-2 border-t border-[#dedff2]" />
-
-                <div className="flex justify-between py-2">
-                  <span className="font-bold text-[#0f1b3d]">
-                    Total
-                  </span>
-
-                  <strong className="text-xl text-[#5146e5]">
-                    {formatCurrency(total)}
-                  </strong>
-                </div>
+              <section className="ml-auto max-w-md rounded-2xl bg-[#f8f8ff] p-5 text-sm text-[#56627e]">
+                O subtotal e o total apresentados depois do registo vêm da API. Esta página não estima impostos nem arredondamentos.
               </section>
 
               <div>
@@ -825,10 +838,11 @@ export default function PurchaseInvoicesPage() {
 
               <button
                 onClick={saveInvoice}
-                className="flex items-center gap-2 rounded-xl bg-[#5146e5] px-5 py-3 text-sm font-semibold text-white"
+                disabled={isSaving || suppliers.length === 0}
+                className="flex items-center gap-2 rounded-xl bg-[#5146e5] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={17} />
-                Registar factura
+                {isSaving ? "A registar…" : "Registar factura"}
               </button>
             </div>
           </div>

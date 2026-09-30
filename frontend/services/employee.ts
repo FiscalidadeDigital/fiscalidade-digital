@@ -43,6 +43,10 @@ export type Employee = {
 
   nif?: string | null;
   socialSecurityNumber?: string | null;
+  socialSecurityCategory?:
+    | 'STANDARD'
+    | 'RETIRED'
+    | 'SPECIAL';
 
   email?: string | null;
   phone?: string | null;
@@ -80,6 +84,10 @@ export type CreateEmployeeData = {
 
   nif?: string;
   socialSecurityNumber?: string;
+  socialSecurityCategory?:
+    | 'STANDARD'
+    | 'RETIRED'
+    | 'SPECIAL';
 
   email?: string;
   phone?: string;
@@ -100,6 +108,9 @@ export type CreateEmployeeData = {
 
   notes?: string;
 };
+
+export type UpdateEmployeeData =
+  Partial<CreateEmployeeData>;
 
 export type CreateEmployeeSalaryData = {
   baseSalary: number;
@@ -185,7 +196,7 @@ export async function createEmployee(
 
 export async function updateEmployee(
   id: string,
-  data: CreateEmployeeData,
+  data: UpdateEmployeeData,
 ): Promise<Employee> {
   const response =
     await api.patch(

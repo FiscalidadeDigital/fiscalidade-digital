@@ -8,6 +8,8 @@ import {
   Param,
   Post,
   Query,
+  Res,
+  StreamableFile,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -28,15 +30,17 @@ import {
 
 import * as fs from 'fs';
 
-import * as path from 'path';
-
 import {
   randomUUID,
 } from 'crypto';
 
 import {
   Request,
+  Response,
 } from 'express';
+
+import { createReadStream } from 'fs';
+import { getDocumentStorageDirectory } from './document-storage';
 
 import {
   JwtAuthGuard,
@@ -63,12 +67,7 @@ const CurrentUser =
   );
 
 function ensureUploadDirectory() {
-  const uploadDirectory =
-    path.join(
-      process.cwd(),
-      'uploads',
-      'documents',
-    );
+  const uploadDirectory = getDocumentStorageDirectory();
 
   if (
     !fs.existsSync(
@@ -115,10 +114,14 @@ export class DocumentController {
             file,
             callback,
           ) => {
+            const extensionByMimeType: Record<string, string> = {
+              'application/pdf': '.pdf',
+              'image/jpeg': '.jpg',
+              'image/png': '.png',
+              'image/webp': '.webp',
+            };
             const extension =
-              path.extname(
-                file.originalname,
-              );
+              extensionByMimeType[file.mimetype] || '.bin';
 
             const filename =
               `${randomUUID()}${extension}`;
@@ -285,6 +288,43 @@ export class DocumentController {
     return this.documentService.findOne(
       tenantId,
       id,
+    );
+  }
+
+  @Get(':id/content')
+  async getContent(
+    @CurrentUser() user: any,
+    @Param('id') id: string,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const file = await this.documentService.getFile(
+      user.tenantId,
+      id,
+    );
+    const safeName = file.originalName.replace(/[\r\n\"]/g, '_');
+    const safeMimeTypes = new Set([
+      'application/pdf',
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+    ]);
+    const contentType = safeMimeTypes.has(file.mimeType)
+      ? file.mimeType
+      : 'application/octet-stream';
+
+    response.set({
+      'Cache-Control': 'private, no-store',
+      'X-Content-Type-Options': 'nosniff',
+      'Content-Security-Policy': "default-src 'none'; sandbox",
+    });
+
+    return new StreamableFile(
+      createReadStream(file.path),
+      {
+        type: contentType,
+        disposition: `${contentType === 'application/octet-stream' ? 'attachment' : 'inline'}; filename*=UTF-8''${encodeURIComponent(safeName)}`,
+        length: file.size,
+      },
     );
   }
 

@@ -2,11 +2,10 @@
   AxiosHeaders,
   type InternalAxiosRequestConfig,
 } from 'axios';
+import { API_BASE_URL } from './api-base-url';
 
 const api = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL ||
-    'https://fiscalidade-digital-api.onrender.com',
+  baseURL: API_BASE_URL,
 
   headers: {
     'Content-Type': 'application/json',

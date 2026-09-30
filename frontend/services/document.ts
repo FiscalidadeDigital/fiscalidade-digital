@@ -18,7 +18,6 @@ export type DocumentInvoice = {
 
 export type FiscalDocument = {
   id: string;
-  tenantId: string;
 
   name: string;
   originalName: string;
@@ -29,9 +28,6 @@ export type FiscalDocument = {
 
   mimeType: string;
   size: number;
-
-  filePath: string;
-  fileUrl?: string | null;
 
   invoiceId?: string | null;
 
@@ -44,6 +40,16 @@ export type FiscalDocument = {
 export type DocumentSummary = {
   total: number;
   totalSize: number;
+
+  storage: {
+    unit: 'bytes';
+    enforcement: 'NOT_CONFIGURED' | 'ENFORCED';
+    usedBytes: string;
+    baseQuotaBytes: string | null;
+    additionalBytes: string;
+    effectiveQuotaBytes: string | null;
+    availableBytes: string | null;
+  };
 
   categories: {
     FACTURA: number;
@@ -65,38 +71,6 @@ export type UploadDocumentData = {
   category?: DocumentCategory;
   invoiceId?: string;
 };
-
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  'https://fiscalidade-digital-api.onrender.com';
-
-function buildFileUrl(
-  fileUrl?: string | null,
-): string | null {
-  if (!fileUrl) {
-    return null;
-  }
-
-  if (
-    fileUrl.startsWith('http://') ||
-    fileUrl.startsWith('https://')
-  ) {
-    return fileUrl;
-  }
-
-  return `${API_URL}${fileUrl}`;
-}
-
-function normalizeDocument(
-  document: FiscalDocument,
-): FiscalDocument {
-  return {
-    ...document,
-    fileUrl: buildFileUrl(
-      document.fileUrl,
-    ),
-  };
-}
 
 /**
  * Listar documentos
@@ -125,9 +99,7 @@ export async function getDocuments(
       },
     );
 
-  return response.data.map(
-    normalizeDocument,
-  );
+  return response.data;
 }
 
 /**
@@ -141,9 +113,7 @@ export async function getDocument(
       `/documents/${id}`,
     );
 
-  return normalizeDocument(
-    response.data,
-  );
+  return response.data;
 }
 
 /**
@@ -212,9 +182,7 @@ export async function uploadDocument(
       },
     );
 
-  return normalizeDocument(
-    response.data,
-  );
+  return response.data;
 }
 
 /**
@@ -257,13 +225,13 @@ export function formatDocumentSize(
   ).toFixed(1)} MB`;
 }
 
-/**
- * Obter URL pÃºblica do documento
- */
-export function getDocumentUrl(
-  document: FiscalDocument,
-): string | null {
-  return buildFileUrl(
-    document.fileUrl,
+export async function downloadDocument(
+  id: string,
+): Promise<Blob> {
+  const response = await api.get<Blob>(
+    `/documents/${id}/content`,
+    { responseType: 'blob' },
   );
+
+  return response.data;
 }

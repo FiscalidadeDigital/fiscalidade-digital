@@ -1,4 +1,5 @@
 ﻿import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { CreateEmployeeSalaryDto } from './dto/create-employee-salary.dto';
 import { CreateEmployeeDependentDto } from './dto/create-employee-dependent.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -150,6 +152,10 @@ export class EmployeeService {
                 ?.trim() ||
               null,
 
+            socialSecurityCategory:
+              dto.socialSecurityCategory ??
+              'STANDARD',
+
             email:
               dto.email?.trim() ||
               null,
@@ -194,6 +200,14 @@ export class EmployeeService {
             maritalStatus:
               dto.maritalStatus?.trim() ||
               null,
+
+            gender:
+              dto.gender?.trim() ||
+              null,
+
+            status:
+              dto.status ??
+              'ACTIVE',
 
             dependentCount:
               dto.dependentCount ??
@@ -322,7 +336,7 @@ export class EmployeeService {
   async update(
     tenantId: string,
     id: string,
-    dto: CreateEmployeeDto,
+    dto: UpdateEmployeeDto,
   ) {
     const employee =
       await this.prisma.employee.findFirst({
@@ -361,70 +375,64 @@ export class EmployeeService {
       },
 
       data: {
-        name:
-          dto.name.trim(),
-
-        nif:
-          dto.nif?.trim() ||
-          null,
-
-        socialSecurityNumber:
-          dto.socialSecurityNumber
-            ?.trim() ||
-          null,
-
-        email:
-          dto.email?.trim() ||
-          null,
-
-        phone:
-          dto.phone?.trim() ||
-          null,
-
-        address:
-          dto.address?.trim() ||
-          null,
-
-        birthDate:
-          dto.birthDate
-            ? new Date(
-                dto.birthDate,
-              )
+        ...(dto.name !== undefined && {
+          name: dto.name.trim(),
+        }),
+        ...(dto.nif !== undefined && {
+          nif: dto.nif?.trim() || null,
+        }),
+        ...(dto.socialSecurityNumber !== undefined && {
+          socialSecurityNumber:
+            dto.socialSecurityNumber?.trim() || null,
+        }),
+        ...(dto.socialSecurityCategory !== undefined && {
+          socialSecurityCategory: dto.socialSecurityCategory,
+        }),
+        ...(dto.email !== undefined && {
+          email: dto.email?.trim() || null,
+        }),
+        ...(dto.phone !== undefined && {
+          phone: dto.phone?.trim() || null,
+        }),
+        ...(dto.address !== undefined && {
+          address: dto.address?.trim() || null,
+        }),
+        ...(dto.birthDate !== undefined && {
+          birthDate: dto.birthDate
+            ? new Date(dto.birthDate)
             : null,
-
-        hireDate:
-          dto.hireDate
-            ? new Date(
-                dto.hireDate,
-              )
+        }),
+        ...(dto.hireDate !== undefined && {
+          hireDate: dto.hireDate
+            ? new Date(dto.hireDate)
             : null,
-
-        terminationDate:
-          dto.terminationDate
-            ? new Date(
-                dto.terminationDate,
-              )
+        }),
+        ...(dto.terminationDate !== undefined && {
+          terminationDate: dto.terminationDate
+            ? new Date(dto.terminationDate)
             : null,
-
-        jobTitle:
-          dto.jobTitle?.trim() ||
-          null,
-
-        department:
-          dto.department?.trim() ||
-          null,
-
-        maritalStatus:
-          dto.maritalStatus?.trim() ||
-          null,
-
-        dependentCount:
-          dto.dependentCount ??
-          0,
-
-        notes:
-          dto.notes?.trim() ||
-          null,
+        }),
+        ...(dto.jobTitle !== undefined && {
+          jobTitle: dto.jobTitle?.trim() || null,
+        }),
+        ...(dto.department !== undefined && {
+          department: dto.department?.trim() || null,
+        }),
+        ...(dto.maritalStatus !== undefined && {
+          maritalStatus: dto.maritalStatus?.trim() || null,
+        }),
+        ...(dto.gender !== undefined && {
+          gender: dto.gender?.trim() || null,
+        }),
+        ...(dto.dependentCount !== undefined && {
+          dependentCount: dto.dependentCount,
+        }),
+        ...(dto.notes !== undefined && {
+          notes: dto.notes?.trim() || null,
+        }),
+        ...(dto.status !== undefined && {
+          status: dto.status,
+        }),
       },
     });
   }
@@ -483,6 +491,27 @@ export class EmployeeService {
 
     return this.prisma.$transaction(
       async (transaction) => {
+        const effectiveFrom = new Date(dto.effectiveFrom);
+        const currentSalary =
+          await transaction.employeeSalary.findFirst({
+            where: {
+              employeeId,
+              active: true,
+            },
+            orderBy: {
+              effectiveFrom: 'desc',
+            },
+          });
+
+        if (
+          currentSalary &&
+          effectiveFrom <= currentSalary.effectiveFrom
+        ) {
+          throw new BadRequestException(
+            'A nova vigência salarial deve ser posterior à vigência activa.',
+          );
+        }
+
         await transaction.employeeSalary.updateMany({
           where: {
             employeeId,
@@ -491,7 +520,7 @@ export class EmployeeService {
 
           data: {
             active: false,
-            effectiveTo: new Date(),
+            effectiveTo: effectiveFrom,
           },
         });
 
@@ -527,9 +556,7 @@ export class EmployeeService {
               0,
 
             effectiveFrom:
-              new Date(
-                dto.effectiveFrom,
-              ),
+              effectiveFrom,
 
             active: true,
 

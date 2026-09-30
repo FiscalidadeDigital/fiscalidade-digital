@@ -6,12 +6,17 @@ import {
   Param,
   Patch,
   Post,
-  Req,
   UseGuards,
 } from '@nestjs/common';
 
+import { UserRole } from '@prisma/client';
+
 import { PurchaseInvoiceService } from './purchase-invoice.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
+import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 
 @Controller('purchase-invoice')
 @UseGuards(JwtAuthGuard)
@@ -26,9 +31,9 @@ export class PurchaseInvoiceController {
   // ============================================================
 
   @Get()
-  async findAll(@Req() req: any) {
+  async findAll(@CurrentUser() user: { tenantId: string }) {
     return this.purchaseInvoiceService.findAll(
-      req.user.tenantId,
+      user.tenantId,
     );
   }
 
@@ -38,9 +43,9 @@ export class PurchaseInvoiceController {
   // ============================================================
 
   @Get('stats')
-  async getStats(@Req() req: any) {
+  async getStats(@CurrentUser() user: { tenantId: string }) {
     return this.purchaseInvoiceService.getStats(
-      req.user.tenantId,
+      user.tenantId,
     );
   }
 
@@ -51,11 +56,11 @@ export class PurchaseInvoiceController {
 
   @Get(':id')
   async findOne(
-    @Req() req: any,
+    @CurrentUser() user: { tenantId: string },
     @Param('id') id: string,
   ) {
     return this.purchaseInvoiceService.findOne(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }
@@ -66,12 +71,13 @@ export class PurchaseInvoiceController {
   // ============================================================
 
   @Post()
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
   async create(
-    @Req() req: any,
-    @Body() dto: any,
+    @CurrentUser() user: { tenantId: string },
+    @Body() dto: CreatePurchaseInvoiceDto,
   ) {
     return this.purchaseInvoiceService.create(
-      req.user.tenantId,
+      user.tenantId,
       dto,
     );
   }
@@ -82,13 +88,14 @@ export class PurchaseInvoiceController {
   // ============================================================
 
   @Patch(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
   async update(
-    @Req() req: any,
+    @CurrentUser() user: { tenantId: string },
     @Param('id') id: string,
-    @Body() dto: any,
+    @Body() dto: UpdatePurchaseInvoiceDto,
   ) {
     return this.purchaseInvoiceService.update(
-      req.user.tenantId,
+      user.tenantId,
       id,
       dto,
     );
@@ -100,12 +107,13 @@ export class PurchaseInvoiceController {
   // ============================================================
 
   @Post(':id/pay')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async markAsPaid(
-    @Req() req: any,
+    @CurrentUser() user: { tenantId: string },
     @Param('id') id: string,
   ) {
     return this.purchaseInvoiceService.markAsPaid(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }
@@ -116,12 +124,13 @@ export class PurchaseInvoiceController {
   // ============================================================
 
   @Post(':id/cancel')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async cancel(
-    @Req() req: any,
+    @CurrentUser() user: { tenantId: string },
     @Param('id') id: string,
   ) {
     return this.purchaseInvoiceService.cancel(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }
@@ -132,12 +141,13 @@ export class PurchaseInvoiceController {
   // ============================================================
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async remove(
-    @Req() req: any,
+    @CurrentUser() user: { tenantId: string },
     @Param('id') id: string,
   ) {
     return this.purchaseInvoiceService.remove(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }

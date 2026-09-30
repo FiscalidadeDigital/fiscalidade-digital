@@ -119,8 +119,8 @@ export default function RegisterPage() {
 
     let score = 0;
 
-    if (password.length >= 6) score++;
-    if (password.length >= 10) score++;
+    if (password.length >= 12) score++;
+    if (password.length >= 16) score++;
     if (/[A-Z]/.test(password)) score++;
     if (/[0-9]/.test(password)) score++;
     if (/[^A-Za-z0-9]/.test(password)) score++;
@@ -170,9 +170,9 @@ export default function RegisterPage() {
       return false;
     }
 
-    if (form.password.length < 6) {
+    if (form.password.length < 12) {
       setError(
-        'A palavra-passe deve ter pelo menos 6 caracteres.',
+        'A palavra-passe deve ter pelo menos 12 caracteres.',
       );
       return false;
     }
@@ -417,26 +417,24 @@ export default function RegisterPage() {
   }
 
   const inputClass =
-    'h-12 w-full rounded-xl border border-[#e5e0ef] bg-white px-4 text-sm text-[#292342] outline-none transition placeholder:text-[#aaa3bd] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/10';
+    'h-12 w-full rounded-md border border-[#d9e0e7] bg-white px-4 text-sm text-[#172642] outline-none transition placeholder:text-[#94a3b8] focus:border-[#0b6f93] focus:ring-2 focus:ring-[#0b6f93]/10';
 
   const inputWithIconClass =
-    'h-12 w-full rounded-xl border border-[#e5e0ef] bg-white pl-11 pr-4 text-sm text-[#292342] outline-none transition placeholder:text-[#aaa3bd] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/10';
+    'h-12 w-full rounded-md border border-[#d9e0e7] bg-white pl-11 pr-4 text-sm text-[#172642] outline-none transition placeholder:text-[#94a3b8] focus:border-[#0b6f93] focus:ring-2 focus:ring-[#0b6f93]/10';
 
   return (
-    <main className="min-h-screen bg-[#f8f7fc] text-[#292342]">
+    <main className="fd-auth-page fd-theme-scope min-h-screen bg-[#f3f5f7] text-[#172642]">
       <div className="min-h-screen lg:grid lg:grid-cols-[380px_1fr]">
 
         {/* PAINEL LATERAL */}
 
-        <aside className="relative hidden overflow-hidden bg-[#292342] px-10 py-10 text-white lg:flex lg:flex-col lg:justify-between">
+        <aside className="hidden border-r border-[#173e57] bg-[#102f44] px-10 py-10 text-white lg:flex lg:flex-col lg:justify-between">
 
-          <div className="absolute -right-32 -top-32 h-96 w-96 rounded-full bg-[#5940d7]/30 blur-3xl" />
-
-          <div className="relative z-10">
+          <div>
 
             <Link
               href="/"
-              className="flex items-center gap-3"
+              className="inline-flex w-fit items-center rounded-md bg-white px-3 py-2"
             >
               <img
                 src="/logofiscalidade.png"
@@ -447,21 +445,20 @@ export default function RegisterPage() {
 
             <div className="mt-24 max-w-xs">
 
-              <span className="text-sm font-medium text-[#c9bfff]">
-                Fiscalidade Digital
+              <span className="text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc4d3]">
+                Registo empresarial
               </span>
 
-              <h1 className="mt-4 text-4xl font-bold leading-tight">
-                Comece a organizar a sua empresa.
+              <h1 className="mt-4 text-4xl font-semibold leading-tight tracking-tight">
+                Configure a conta da sua empresa.
               </h1>
 
-              <p className="mt-5 text-sm leading-7 text-[#c8c3d8]">
-                Crie a sua conta e tenha num único
-                ambiente as informações fiscais,
-                financeiras e administrativas da sua empresa.
+              <p className="mt-5 text-sm leading-7 text-[#c5d8e0]">
+                O registo recolhe os dados necessários para criar a empresa,
+                o acesso inicial e o enquadramento fiscal.
               </p>
 
-              <div className="mt-10 space-y-5">
+              <div className="mt-10 space-y-4 border-l border-[#6b9aab] pl-5">
 
                 {[
                   'Dados fiscais organizados',
@@ -470,12 +467,8 @@ export default function RegisterPage() {
                 ].map((item) => (
                   <div
                     key={item}
-                    className="flex items-center gap-3 text-sm text-[#e5e1f0]"
+                    className="flex items-center gap-3 text-sm text-[#dbe9ee]"
                   >
-                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#5940d7]">
-                      <Check size={14} />
-                    </span>
-
                     {item}
                   </div>
                 ))}
@@ -484,7 +477,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <div className="relative z-10 text-xs text-[#aaa3bd]">
+          <div className="text-xs text-[#83a9b8]">
             © {new Date().getFullYear()} Fiscalidade Digital
           </div>
         </aside>
@@ -509,7 +502,7 @@ export default function RegisterPage() {
 
               <Link
                 href="/login"
-                className="text-sm font-medium text-[#5940d7]"
+                className="text-sm font-medium text-[#0b6f93]"
               >
                 Iniciar sessão
               </Link>
@@ -520,15 +513,15 @@ export default function RegisterPage() {
 
             <div className="mb-8">
 
-              <div className="mb-3 text-sm font-semibold text-[#5940d7]">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#0b6f93]">
                 Passo {step} de 3
               </div>
 
-              <h2 className="text-3xl font-bold tracking-tight text-[#292342] sm:text-4xl">
+              <h2 className="text-3xl font-bold tracking-tight text-[#172642] sm:text-4xl">
                 {getStepTitle()}
               </h2>
 
-              <p className="mt-2 text-sm leading-6 text-[#817a96]">
+              <p className="mt-2 text-sm leading-6 text-[#66758d]">
                 {getStepDescription()}
               </p>
 
@@ -538,7 +531,7 @@ export default function RegisterPage() {
 
             <div className="mb-8">
 
-              <div className="mb-3 flex items-center justify-between text-xs text-[#817a96]">
+              <div className="mb-3 flex items-center justify-between text-xs text-[#66758d]">
                 <span>Configuração da conta</span>
 
                 <span>
@@ -546,9 +539,9 @@ export default function RegisterPage() {
                 </span>
               </div>
 
-              <div className="h-2 overflow-hidden rounded-full bg-[#e6e1ef]">
+              <div className="h-1 overflow-hidden bg-[#d9e0e7]">
                 <div
-                  className="h-full rounded-full bg-[#5940d7] transition-all duration-300"
+                  className="h-full bg-[#0b6f93] transition-all duration-300"
                   style={{
                     width: `${(step / 3) * 100}%`,
                   }}
@@ -570,15 +563,15 @@ export default function RegisterPage() {
                       key={label}
                       className={`flex items-center gap-2 text-xs ${
                         active
-                          ? 'text-[#5940d7]'
-                          : 'text-[#aaa3bd]'
+                          ? 'text-[#0b6f93]'
+                          : 'text-[#94a3b8]'
                       }`}
                     >
                       <span
-                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border ${
+                        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border ${
                           active
-                            ? 'border-[#5940d7] bg-[#5940d7]/10'
-                            : 'border-[#e5e0ef]'
+                            ? 'border-[#0b6f93] bg-[#eaf4f8]'
+                            : 'border-[#d9e0e7]'
                         }`}
                       >
                         {current < step ? (
@@ -599,7 +592,7 @@ export default function RegisterPage() {
             {/* MENSAGEM DE ERRO */}
 
             {error && (
-              <div className="mb-6 flex items-start gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
+              <div className="mb-6 flex items-start gap-3 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-6 text-red-700">
                 <AlertCircle
                   size={18}
                   className="mt-0.5 shrink-0"
@@ -612,7 +605,7 @@ export default function RegisterPage() {
             {/* MENSAGEM DE SUCESSO */}
 
             {success && (
-              <div className="mb-6 flex items-start gap-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">
+              <div className="mb-6 flex items-start gap-3 rounded-md border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm leading-6 text-emerald-700">
                 <Check
                   size={18}
                   className="mt-0.5 shrink-0"
@@ -626,7 +619,7 @@ export default function RegisterPage() {
 
             <form
               onSubmit={handleSubmit}
-              className="rounded-3xl border border-[#e8e3f0] bg-white p-5 shadow-[0_15px_50px_rgba(45,32,80,0.06)] sm:p-8"
+              className="rounded-lg border border-[#d9e0e7] bg-white p-5 sm:p-8"
             >
 
               {/* ETAPA 1 */}
@@ -635,14 +628,14 @@ export default function RegisterPage() {
                 <div className="space-y-5">
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Nome do responsável
                     </label>
 
                     <div className="relative">
                       <User
                         size={18}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa3bd]"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"
                       />
 
                       <input
@@ -662,14 +655,14 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Email
                     </label>
 
                     <div className="relative">
                       <Mail
                         size={18}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa3bd]"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"
                       />
 
                       <input
@@ -689,14 +682,14 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Telefone
                     </label>
 
                     <div className="relative">
                       <Phone
                         size={18}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa3bd]"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"
                       />
 
                       <input
@@ -716,14 +709,14 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Palavra-passe
                     </label>
 
                     <div className="relative">
                       <Lock
                         size={18}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa3bd]"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"
                       />
 
                       <input
@@ -739,8 +732,8 @@ export default function RegisterPage() {
                             event.target.value,
                           )
                         }
-                        placeholder="Mínimo de 6 caracteres"
-                        className="h-12 w-full rounded-xl border border-[#e5e0ef] bg-white pl-11 pr-12 text-sm text-[#292342] outline-none transition placeholder:text-[#aaa3bd] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/10"
+                        placeholder="Mínimo de 12 caracteres"
+                        className="h-12 w-full rounded-md border border-[#d9e0e7] bg-white pl-11 pr-12 text-sm text-[#172642] outline-none transition placeholder:text-[#94a3b8] focus:border-[#0b6f93] focus:ring-4 focus:ring-[#0b6f93]/10"
                         autoComplete="new-password"
                       />
 
@@ -751,7 +744,7 @@ export default function RegisterPage() {
                             (current) => !current,
                           )
                         }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#817a96]"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#66758d]"
                         aria-label={
                           showPassword
                             ? 'Ocultar palavra-passe'
@@ -777,17 +770,17 @@ export default function RegisterPage() {
                                 className={`h-1.5 flex-1 rounded-full ${
                                   number <=
                                   passwordStrength.value
-                                    ? 'bg-[#5940d7]'
-                                    : 'bg-[#e8e3f0]'
+                                    ? 'bg-[#0b6f93]'
+                                    : 'bg-[#d9e0e7]'
                                 }`}
                               />
                             ),
                           )}
                         </div>
 
-                        <p className="mt-2 text-xs text-[#817a96]">
+                        <p className="mt-2 text-xs text-[#66758d]">
                           Força da palavra-passe:{' '}
-                          <span className="font-semibold text-[#5940d7]">
+                          <span className="font-semibold text-[#0b6f93]">
                             {passwordStrength.label}
                           </span>
                         </p>
@@ -797,14 +790,14 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Confirmar palavra-passe
                     </label>
 
                     <div className="relative">
                       <Lock
                         size={18}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa3bd]"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"
                       />
 
                       <input
@@ -821,7 +814,7 @@ export default function RegisterPage() {
                           )
                         }
                         placeholder="Repita a palavra-passe"
-                        className="h-12 w-full rounded-xl border border-[#e5e0ef] bg-white pl-11 pr-12 text-sm text-[#292342] outline-none transition placeholder:text-[#aaa3bd] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/10"
+                        className="h-12 w-full rounded-md border border-[#d9e0e7] bg-white pl-11 pr-12 text-sm text-[#172642] outline-none transition placeholder:text-[#94a3b8] focus:border-[#0b6f93] focus:ring-4 focus:ring-[#0b6f93]/10"
                         autoComplete="new-password"
                       />
 
@@ -832,7 +825,7 @@ export default function RegisterPage() {
                             (current) => !current,
                           )
                         }
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#817a96]"
+                        className="absolute right-4 top-1/2 -translate-y-1/2 text-[#66758d]"
                         aria-label={
                           showConfirmPassword
                             ? 'Ocultar confirmação'
@@ -857,14 +850,14 @@ export default function RegisterPage() {
                 <div className="space-y-5">
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Nome da empresa
                     </label>
 
                     <div className="relative">
                       <Building2
                         size={18}
-                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#aaa3bd]"
+                        className="absolute left-4 top-1/2 -translate-y-1/2 text-[#94a3b8]"
                       />
 
                       <input
@@ -883,7 +876,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       NIF da empresa
                     </label>
 
@@ -904,7 +897,7 @@ export default function RegisterPage() {
                   <div className="grid gap-5 sm:grid-cols-2">
 
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                      <label className="mb-2 block text-sm font-medium text-[#334155]">
                         Sector de actividade
                       </label>
 
@@ -923,7 +916,7 @@ export default function RegisterPage() {
                     </div>
 
                     <div>
-                      <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                      <label className="mb-2 block text-sm font-medium text-[#334155]">
                         Tipo de empresa
                       </label>
 
@@ -986,7 +979,7 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Número de funcionários
                     </label>
 
@@ -1005,14 +998,14 @@ export default function RegisterPage() {
                   </div>
 
                   <div>
-                    <label className="mb-2 block text-sm font-medium text-[#4d4764]">
+                    <label className="mb-2 block text-sm font-medium text-[#334155]">
                       Morada da empresa
                     </label>
 
                     <div className="relative">
                       <MapPin
                         size={18}
-                        className="absolute left-4 top-4 text-[#aaa3bd]"
+                        className="absolute left-4 top-4 text-[#94a3b8]"
                       />
 
                       <textarea
@@ -1025,7 +1018,7 @@ export default function RegisterPage() {
                         }
                         placeholder="Endereço da empresa"
                         rows={3}
-                        className="w-full resize-none rounded-xl border border-[#e5e0ef] bg-white py-3 pl-11 pr-4 text-sm text-[#292342] outline-none transition placeholder:text-[#aaa3bd] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/10"
+                        className="w-full resize-none rounded-md border border-[#d9e0e7] bg-white py-3 pl-11 pr-4 text-sm text-[#172642] outline-none transition placeholder:text-[#94a3b8] focus:border-[#0b6f93] focus:ring-4 focus:ring-[#0b6f93]/10"
                       />
                     </div>
                   </div>
@@ -1039,11 +1032,11 @@ export default function RegisterPage() {
                 <div className="space-y-6">
 
                   <div>
-                    <h3 className="text-lg font-semibold text-[#292342]">
+                    <h3 className="text-lg font-semibold text-[#172642]">
                       Seleccione o regime fiscal
                     </h3>
 
-                    <p className="mt-2 text-sm leading-6 text-[#817a96]">
+                    <p className="mt-2 text-sm leading-6 text-[#66758d]">
                       Escolha o enquadramento fiscal inicial
                       da sua empresa.
                     </p>
@@ -1052,10 +1045,10 @@ export default function RegisterPage() {
                   <div className="space-y-3">
 
                     <label
-                      className={`block cursor-pointer rounded-2xl border p-5 transition ${
+                      className={`block cursor-pointer rounded-lg border p-5 transition ${
                         form.regime === 'GERAL'
-                          ? 'border-[#5940d7] bg-[#5940d7]/5'
-                          : 'border-[#e5e0ef] bg-[#faf9fd] hover:border-[#c9c0dd]'
+                          ? 'border-[#0b6f93] bg-[#0b6f93]/5'
+                          : 'border-[#d9e0e7] bg-[#f8fafc] hover:border-[#a7bdc7]'
                       }`}
                     >
                       <input
@@ -1077,7 +1070,7 @@ export default function RegisterPage() {
                         <span
                           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                             form.regime === 'GERAL'
-                              ? 'border-[#5940d7] bg-[#5940d7]'
+                              ? 'border-[#0b6f93] bg-[#0b6f93]'
                               : 'border-[#cfc9dd]'
                           }`}
                         >
@@ -1087,11 +1080,11 @@ export default function RegisterPage() {
                         </span>
 
                         <div>
-                          <h4 className="font-semibold text-[#292342]">
+                          <h4 className="font-semibold text-[#172642]">
                             Regime Geral
                           </h4>
 
-                          <p className="mt-1 text-sm leading-6 text-[#817a96]">
+                          <p className="mt-1 text-sm leading-6 text-[#66758d]">
                             Enquadramento fiscal geral
                             para empresas elegíveis.
                           </p>
@@ -1101,10 +1094,10 @@ export default function RegisterPage() {
                     </label>
 
                     <label
-                      className={`block cursor-pointer rounded-2xl border p-5 transition ${
+                      className={`block cursor-pointer rounded-lg border p-5 transition ${
                         form.regime === 'SIMPLIFICADO'
-                          ? 'border-[#5940d7] bg-[#5940d7]/5'
-                          : 'border-[#e5e0ef] bg-[#faf9fd] hover:border-[#c9c0dd]'
+                          ? 'border-[#0b6f93] bg-[#0b6f93]/5'
+                          : 'border-[#d9e0e7] bg-[#f8fafc] hover:border-[#a7bdc7]'
                       }`}
                     >
                       <input
@@ -1128,7 +1121,7 @@ export default function RegisterPage() {
                         <span
                           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border ${
                             form.regime === 'SIMPLIFICADO'
-                              ? 'border-[#5940d7] bg-[#5940d7]'
+                              ? 'border-[#0b6f93] bg-[#0b6f93]'
                               : 'border-[#cfc9dd]'
                           }`}
                         >
@@ -1138,11 +1131,11 @@ export default function RegisterPage() {
                         </span>
 
                         <div>
-                          <h4 className="font-semibold text-[#292342]">
+                          <h4 className="font-semibold text-[#172642]">
                             Regime Simplificado
                           </h4>
 
-                          <p className="mt-1 text-sm leading-6 text-[#817a96]">
+                          <p className="mt-1 text-sm leading-6 text-[#66758d]">
                             Enquadramento simplificado
                             para actividades elegíveis.
                           </p>
@@ -1155,7 +1148,7 @@ export default function RegisterPage() {
 
                   {/* CONFIRMAÇÕES OBRIGATÓRIAS */}
 
-                  <div className="space-y-4 rounded-2xl border border-[#e5e0ef] bg-[#faf9fd] p-5">
+                  <div className="space-y-4 rounded-lg border border-[#d9e0e7] bg-[#f8fafc] p-5">
 
                     <label className="flex cursor-pointer items-start gap-3">
                       <input
@@ -1164,15 +1157,15 @@ export default function RegisterPage() {
                         onChange={(event) =>
                           updateField('acceptTerms', event.target.checked)
                         }
-                        className="mt-1 h-4 w-4 accent-[#5940d7]"
+                        className="mt-1 h-4 w-4 accent-[#0b6f93]"
                       />
 
-                      <span className="text-sm leading-6 text-[#4d4764]">
+                      <span className="text-sm leading-6 text-[#334155]">
                         Aceito os{' '}
                         <Link
                           href="/terms"
                           target="_blank"
-                          className="font-semibold text-[#5940d7] underline"
+                          className="font-semibold text-[#0b6f93] underline"
                         >
                           Termos de Utilização
                         </Link>
@@ -1187,15 +1180,15 @@ export default function RegisterPage() {
                         onChange={(event) =>
                           updateField('acceptPrivacyPolicy', event.target.checked)
                         }
-                        className="mt-1 h-4 w-4 accent-[#5940d7]"
+                        className="mt-1 h-4 w-4 accent-[#0b6f93]"
                       />
 
-                      <span className="text-sm leading-6 text-[#4d4764]">
+                      <span className="text-sm leading-6 text-[#334155]">
                         Aceito a{' '}
                         <Link
                           href="/privacy"
                           target="_blank"
-                          className="font-semibold text-[#5940d7] underline"
+                          className="font-semibold text-[#0b6f93] underline"
                         >
                           Política de Privacidade
                         </Link>
@@ -1210,10 +1203,10 @@ export default function RegisterPage() {
                         onChange={(event) =>
                           updateField('confirmInformation', event.target.checked)
                         }
-                        className="mt-1 h-4 w-4 accent-[#5940d7]"
+                        className="mt-1 h-4 w-4 accent-[#0b6f93]"
                       />
 
-                      <span className="text-sm leading-6 text-[#4d4764]">
+                      <span className="text-sm leading-6 text-[#334155]">
                         Confirmo que as informações fornecidas são verdadeiras e correctas.
                       </span>
                     </label>
@@ -1222,70 +1215,70 @@ export default function RegisterPage() {
 
                   {/* RESUMO */}
 
-                  <div className="rounded-2xl border border-[#e5e0ef] bg-[#faf9fd] p-5">
+                  <div className="rounded-lg border border-[#d9e0e7] bg-[#f8fafc] p-5">
 
-                    <h3 className="mb-5 text-sm font-semibold text-[#292342]">
+                    <h3 className="mb-5 text-sm font-semibold text-[#172642]">
                       Resumo do cadastro
                     </h3>
 
                     <div className="grid gap-5 text-sm sm:grid-cols-2">
 
                       <div>
-                        <p className="text-xs text-[#aaa3bd]">
+                        <p className="text-xs text-[#94a3b8]">
                           Responsável
                         </p>
 
-                        <p className="mt-1 break-words text-[#4d4764]">
+                        <p className="mt-1 break-words text-[#334155]">
                           {form.ownerName || '—'}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-[#aaa3bd]">
+                        <p className="text-xs text-[#94a3b8]">
                           Email
                         </p>
 
-                        <p className="mt-1 break-words text-[#4d4764]">
+                        <p className="mt-1 break-words text-[#334155]">
                           {form.email || '—'}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-[#aaa3bd]">
+                        <p className="text-xs text-[#94a3b8]">
                           Empresa
                         </p>
 
-                        <p className="mt-1 break-words text-[#4d4764]">
+                        <p className="mt-1 break-words text-[#334155]">
                           {form.companyName || '—'}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-[#aaa3bd]">
+                        <p className="text-xs text-[#94a3b8]">
                           NIF
                         </p>
 
-                        <p className="mt-1 text-[#4d4764]">
+                        <p className="mt-1 text-[#334155]">
                           {form.nif || '—'}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-[#aaa3bd]">
+                        <p className="text-xs text-[#94a3b8]">
                           Funcionários
                         </p>
 
-                        <p className="mt-1 text-[#4d4764]">
+                        <p className="mt-1 text-[#334155]">
                           {form.employees || '0'}
                         </p>
                       </div>
 
                       <div>
-                        <p className="text-xs text-[#aaa3bd]">
+                        <p className="text-xs text-[#94a3b8]">
                           Regime fiscal
                         </p>
 
-                        <p className="mt-1 text-[#4d4764]">
+                        <p className="mt-1 text-[#334155]">
                           {form.regime || '—'}
                         </p>
                       </div>
@@ -1294,10 +1287,10 @@ export default function RegisterPage() {
 
                   </div>
 
-                  <div className="flex items-start gap-3 rounded-xl bg-[#f3f0fb] p-4 text-xs leading-5 text-[#716b86]">
+                  <div className="flex items-start gap-3 rounded-md bg-[#eef6f8] p-4 text-xs leading-5 text-[#526174]">
                     <ShieldCheck
                       size={18}
-                      className="mt-0.5 shrink-0 text-[#5940d7]"
+                      className="mt-0.5 shrink-0 text-[#0b6f93]"
                     />
 
                     <p>
@@ -1318,7 +1311,7 @@ export default function RegisterPage() {
                     type="button"
                     onClick={previousStep}
                     disabled={loading}
-                    className="inline-flex h-12 items-center gap-2 rounded-xl border border-[#e5e0ef] bg-white px-4 text-sm font-medium text-[#716b86] transition hover:border-[#5940d7] hover:text-[#5940d7] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-12 items-center gap-2 rounded-md border border-[#d9e0e7] bg-white px-4 text-sm font-medium text-[#526174] transition hover:border-[#0b6f93] hover:text-[#0b6f93] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <ArrowLeft size={17} />
                     Voltar
@@ -1326,7 +1319,7 @@ export default function RegisterPage() {
                 ) : (
                   <Link
                     href="/login"
-                    className="text-sm font-medium text-[#817a96] transition hover:text-[#5940d7]"
+                    className="text-sm font-medium text-[#66758d] transition hover:text-[#0b6f93]"
                   >
                     Já tenho uma conta
                   </Link>
@@ -1337,7 +1330,7 @@ export default function RegisterPage() {
                     type="button"
                     onClick={nextStep}
                     disabled={loading}
-                    className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#5940d7] px-6 text-sm font-semibold text-white shadow-lg shadow-[#5940d7]/20 transition hover:bg-[#4932bd] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-12 items-center gap-2 rounded-md bg-[#0b6f93] px-6 text-sm font-semibold text-white transition hover:bg-[#085b79] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     Continuar
                     <ArrowRight size={17} />
@@ -1346,7 +1339,7 @@ export default function RegisterPage() {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="inline-flex h-12 items-center gap-2 rounded-xl bg-[#5940d7] px-6 text-sm font-semibold text-white shadow-lg shadow-[#5940d7]/20 transition hover:bg-[#4932bd] disabled:cursor-not-allowed disabled:opacity-50"
+                    className="inline-flex h-12 items-center gap-2 rounded-md bg-[#0b6f93] px-6 text-sm font-semibold text-white transition hover:bg-[#085b79] disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     {loading ? (
                       <>
@@ -1368,7 +1361,7 @@ export default function RegisterPage() {
 
             {/* RODAPÉ */}
 
-            <div className="mt-6 flex flex-col items-center justify-between gap-3 text-xs text-[#aaa3bd] sm:flex-row">
+            <div className="mt-6 flex flex-col items-center justify-between gap-3 text-xs text-[#94a3b8] sm:flex-row">
 
               <span>
                 Os seus dados são tratados com segurança.
@@ -1378,7 +1371,7 @@ export default function RegisterPage() {
 
                 <Link
                   href="/login"
-                  className="transition hover:text-[#5940d7]"
+                  className="transition hover:text-[#0b6f93]"
                 >
                   Iniciar sessão
                 </Link>

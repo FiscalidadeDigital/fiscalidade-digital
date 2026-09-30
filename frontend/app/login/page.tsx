@@ -253,7 +253,7 @@ export default function LoginPage() {
   ========================================================== */
 
   return (
-    <main className="min-h-screen bg-[#f7f8fc] text-[#202338]">
+    <main className="fd-auth-page fd-theme-scope min-h-screen bg-[#f3f5f7] text-[#172642]">
 
       <div className="flex min-h-screen flex-col lg:flex-row">
 
@@ -261,19 +261,15 @@ export default function LoginPage() {
             PAINEL INSTITUCIONAL
         ===================================================== */}
 
-        <section className="relative hidden overflow-hidden bg-[#26194e] lg:flex lg:w-[44%] xl:w-[46%]">
+        <section className="hidden border-r border-[#173e57] bg-[#102f44] lg:flex lg:w-[42%] xl:w-[44%]">
 
-          <div className="absolute -bottom-32 -left-32 h-96 w-96 rounded-full bg-[#9e4f95]/20 blur-3xl" />
-
-          <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#5940d7]/20 blur-3xl" />
-
-          <div className="relative z-10 flex w-full flex-col justify-between p-12 xl:p-16">
+          <div className="flex w-full flex-col justify-between p-12 xl:p-16">
 
             {/* LOGO */}
 
             <Link
               href="/"
-              className="inline-block"
+              className="inline-flex w-fit rounded-md bg-white px-3 py-2"
             >
               <Image
                 src="/logofiscalidade.png"
@@ -289,34 +285,33 @@ export default function LoginPage() {
 
             <div className="max-w-md">
 
-              <p className="mb-5 text-sm font-medium uppercase tracking-[0.18em] text-white/50">
-                Fiscalidade Digital
+              <p className="mb-5 text-xs font-semibold uppercase tracking-[0.16em] text-[#9fc4d3]">
+                Área empresarial
               </p>
 
-              <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-5xl">
-                A sua gestão fiscal,
+              <h1 className="text-4xl font-semibold leading-tight tracking-tight text-white xl:text-[44px]">
+                Gestão fiscal e operacional
                 <br />
-                num só lugar.
+                da sua empresa.
               </h1>
 
-              <p className="mt-6 max-w-sm text-base leading-7 text-white/65">
-                Organize as obrigações fiscais
-                e acompanhe a gestão da sua
-                empresa com simplicidade.
+              <p className="mt-6 max-w-sm text-base leading-7 text-[#c5d8e0]">
+                Aceda às obrigações, facturação,
+                salários e documentos associados
+                à sua empresa.
               </p>
 
-              <div className="mt-10 h-px w-20 bg-white/30" />
+              <div className="mt-10 h-px w-16 bg-[#6b9aab]" />
 
-              <p className="mt-5 text-sm text-white/50">
-                Uma solução digital para empresas
-                e profissionais em Angola.
+              <p className="mt-5 max-w-sm text-sm leading-6 text-[#9fc4d3]">
+                Utilize apenas as credenciais da sua conta empresarial.
               </p>
 
             </div>
 
             {/* RODAPÉ */}
 
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-[#83a9b8]">
               ©{' '}
               {new Date().getFullYear()}{' '}
               Fiscalidade Digital.
@@ -356,16 +351,16 @@ export default function LoginPage() {
 
             <div className="mb-9">
 
-              <p className="mb-3 text-sm font-medium text-[#5940d7]">
+              <p className="mb-3 text-xs font-semibold uppercase tracking-[0.14em] text-[#0b6f93]">
                 Área reservada
               </p>
 
-              <h2 className="text-3xl font-semibold tracking-tight text-[#202338] sm:text-[34px]">
-                Bem-vindo de volta
+              <h2 className="text-3xl font-semibold tracking-tight text-[#172642] sm:text-[34px]">
+                Iniciar sessão
               </h2>
 
-              <p className="mt-3 text-[15px] leading-6 text-[#85899c]">
-                Entre na sua conta para continuar.
+              <p className="mt-3 text-[15px] leading-6 text-[#66758d]">
+                Introduza os dados da sua conta empresarial.
               </p>
 
             </div>
@@ -375,7 +370,7 @@ export default function LoginPage() {
             {error && (
               <div
                 role="alert"
-                className="mb-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-600"
+                className="mb-6 rounded-md border border-red-200 bg-red-50 px-4 py-3 text-sm leading-5 text-red-700"
               >
                 {error}
               </div>
@@ -423,7 +418,7 @@ export default function LoginPage() {
                     placeholder="seuemail@exemplo.com"
                     autoComplete="email"
                     disabled={loading}
-                    className="h-14 w-full rounded-xl border border-[#e4e5ed] bg-white pl-11 pr-4 text-sm text-[#202338] outline-none transition placeholder:text-[#b5b8c6] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="h-12 w-full rounded-md border border-[#d9e0e7] bg-white pl-11 pr-4 text-sm text-[#172642] outline-none transition placeholder:text-[#9aa6b5] focus:border-[#0b6f93] focus:ring-2 focus:ring-[#0b6f93]/10 disabled:cursor-not-allowed disabled:opacity-60"
                   />
 
                 </div>
@@ -450,7 +445,7 @@ export default function LoginPage() {
                         'A recuperação de palavra-passe será disponibilizada em breve.',
                       )
                     }
-                    className="text-xs font-medium text-[#5940d7] transition hover:text-[#411260]"
+                    className="text-xs font-medium text-[#0b6f93] transition hover:text-[#085b79]"
                   >
                     Esqueceu-se?
                   </button>
@@ -485,7 +480,7 @@ export default function LoginPage() {
                     placeholder="Introduza a sua palavra-passe"
                     autoComplete="current-password"
                     disabled={loading}
-                    className="h-14 w-full rounded-xl border border-[#e4e5ed] bg-white pl-11 pr-12 text-sm text-[#202338] outline-none transition placeholder:text-[#b5b8c6] focus:border-[#5940d7] focus:ring-4 focus:ring-[#5940d7]/[0.08] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="h-12 w-full rounded-md border border-[#d9e0e7] bg-white pl-11 pr-12 text-sm text-[#172642] outline-none transition placeholder:text-[#9aa6b5] focus:border-[#0b6f93] focus:ring-2 focus:ring-[#0b6f93]/10 disabled:cursor-not-allowed disabled:opacity-60"
                   />
 
                   <button
@@ -502,7 +497,7 @@ export default function LoginPage() {
                       )
                     }
                     disabled={loading}
-                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#9b9fb2] transition hover:text-[#5940d7] disabled:opacity-50"
+                    className="absolute right-4 top-1/2 -translate-y-1/2 text-[#8794a5] transition hover:text-[#0b6f93] disabled:opacity-50"
                   >
                     {showPassword ? (
                       <EyeOff
@@ -526,7 +521,7 @@ export default function LoginPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="flex h-14 w-full items-center justify-center rounded-xl bg-[#5940d7] text-sm font-semibold text-white shadow-[0_8px_20px_rgba(89,64,215,0.16)] transition hover:bg-[#4b34c2] active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-60"
+                className="flex h-12 w-full items-center justify-center rounded-md bg-[#0b6f93] text-sm font-semibold text-white transition-colors hover:bg-[#085b79] disabled:cursor-not-allowed disabled:opacity-60"
               >
 
                 {loading ? (
@@ -538,7 +533,7 @@ export default function LoginPage() {
 
                   </span>
                 ) : (
-                  'Entrar na minha conta'
+                  'Entrar'
                 )}
 
               </button>
@@ -549,13 +544,13 @@ export default function LoginPage() {
 
             <div className="mt-9 text-center">
 
-              <p className="text-sm text-[#85899c]">
+              <p className="text-sm text-[#66758d]">
                 Ainda não tem uma conta?
               </p>
 
               <Link
                 href="/register"
-                className="mt-2 inline-block text-sm font-semibold text-[#5940d7] transition hover:text-[#411260]"
+                className="mt-2 inline-block text-sm font-semibold text-[#0b6f93] transition hover:text-[#085b79]"
               >
                 Criar conta empresarial
               </Link>
@@ -568,7 +563,7 @@ export default function LoginPage() {
 
               <Link
                 href="/"
-                className="text-xs text-[#a3a6b6] transition hover:text-[#5940d7]"
+                className="text-xs text-[#7c899a] transition hover:text-[#0b6f93]"
               >
                 Voltar ao início
               </Link>

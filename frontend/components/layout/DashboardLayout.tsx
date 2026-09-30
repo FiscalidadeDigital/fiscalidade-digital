@@ -7,17 +7,15 @@ import {
   CalendarDays,
   Calculator,
   CreditCard,
+  FileSpreadsheet,
   FileText,
-  HelpCircle,
   Landmark,
   LayoutDashboard,
   Library,
   LogOut,
   Menu,
   Package,
-  Plug,
   ReceiptText,
-  Search,
   Settings,
   ShieldAlert,
   ShieldCheck,
@@ -26,7 +24,6 @@ import {
   Users,
   WalletCards,
   X,
-  ChevronDown,
   Loader2,
 } from 'lucide-react';
 
@@ -162,6 +159,12 @@ const navigationSections = [
         href: '/reports',
         icon: FileText,
       },
+
+      {
+        label: 'SAF-T contabilístico',
+        href: '/accounting/saft',
+        icon: FileSpreadsheet,
+      },
     ],
   },
 
@@ -225,11 +228,6 @@ const companyNavigation = [
     icon: Settings,
   },
 
-  {
-    label: 'Integrações',
-    href: '/integrations',
-    icon: Plug,
-  },
 ];
 
 /* =========================================================
@@ -396,6 +394,24 @@ export default function DashboardLayout({
   const companyNif =
     currentCompany?.nif?.trim() ||
     'NIF não disponível';
+
+  const currentNavigation = [
+    ...navigationSections.flatMap(
+      (section) =>
+        section.items.map((item) => ({
+          ...item,
+          section: section.title,
+        })),
+    ),
+    ...companyNavigation.map((item) => ({
+      ...item,
+      section: 'Empresa',
+    })),
+  ].find(
+    (item) =>
+      pathname === item.href ||
+      pathname.startsWith(`${item.href}/`),
+  );
 
   /* =======================================================
      INICIAIS
@@ -624,18 +640,15 @@ export default function DashboardLayout({
           select-none
           items-center
           gap-3
-          rounded-xl
+          rounded-md
           px-3.5
 
           ${
             active
               ? `
-                bg-gradient-to-r
-                from-[#eef7ff]
-                to-[#ecfbff]
+                bg-[#eaf4f8]
                 font-semibold
-                text-[#0877e8]
-                shadow-[inset_0_0_0_1px_rgba(20,153,225,0.08)]
+                text-[#075f86]
               `
               : `
                 text-[#405275]
@@ -658,10 +671,7 @@ export default function DashboardLayout({
               h-6
               w-[3px]
               -translate-y-1/2
-              rounded-r-full
-              bg-gradient-to-b
-              from-[#1976f3]
-              to-[#12c9e8]
+              bg-[#0787ad]
             "
           />
         )}
@@ -678,8 +688,8 @@ export default function DashboardLayout({
 
             ${
               active
-                ? 'bg-white shadow-sm'
-                : 'group-hover:bg-white group-hover:shadow-sm'
+                ? 'text-[#075f86]'
+                : 'group-hover:text-[#075f86]'
             }
 
             transition-[background-color,box-shadow]
@@ -694,9 +704,8 @@ export default function DashboardLayout({
                 : 1.8
             }
             className="
-              transition-transform
+              transition-colors
               duration-150
-              group-hover:scale-[1.04]
             "
           />
         </span>
@@ -776,26 +785,7 @@ export default function DashboardLayout({
             gap-3
           "
         >
-          <div
-            className="
-              relative
-              flex
-              h-10
-              w-10
-              shrink-0
-              items-center
-              justify-center
-              rounded-xl
-              bg-gradient-to-br
-              from-[#1976f3]
-              via-[#079fe5]
-              to-[#12c9e8]
-              shadow-[0_8px_20px_rgba(25,118,243,0.20)]
-              transition-transform
-              duration-150
-              group-hover:scale-[1.03]
-            "
-          >
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white">
             <img
               src="/logofiscalidade.png"
               alt="Fiscalidade Digital"
@@ -885,7 +875,7 @@ export default function DashboardLayout({
             w-full
             items-center
             gap-3
-            rounded-2xl
+            rounded-lg
             border
             border-[#e8eef6]
             bg-[#fbfdff]
@@ -901,14 +891,11 @@ export default function DashboardLayout({
               shrink-0
               items-center
               justify-center
-              rounded-xl
-              bg-gradient-to-br
-              from-[#1878ed]
-              to-[#12bde7]
+              rounded-md
+              bg-[#0b6f93]
               text-[11px]
               font-bold
               text-white
-              shadow-sm
             "
           >
             {initials}
@@ -945,13 +932,6 @@ export default function DashboardLayout({
             </div>
           </div>
 
-          <ChevronDown
-            size={15}
-            className="
-              shrink-0
-              text-[#b0bac9]
-            "
-          />
         </div>
       </div>
 
@@ -1118,10 +1098,6 @@ export default function DashboardLayout({
         </div>
       </div>
 
-      {/* =================================================
-          EVITE MULTAS
-      ================================================= */}
-
       <div
         className="
           shrink-0
@@ -1130,127 +1106,43 @@ export default function DashboardLayout({
           pt-2
         "
       >
-        <div
+        <Link
+          href="/obligations"
+          prefetch
+          onClick={() =>
+            handleNavigation(
+              '/obligations',
+              mobile,
+            )
+          }
           className="
-            relative
-            min-h-[145px]
-            overflow-hidden
-            rounded-2xl
-            bg-gradient-to-br
-            from-[#09295e]
-            via-[#0b3977]
-            to-[#087ea8]
-            p-4
-            text-white
-            shadow-[0_12px_28px_rgba(8,55,105,0.16)]
+            flex
+            items-start
+            gap-3
+            rounded-md
+            border
+            border-[#dbe5ed]
+            bg-[#f7fafc]
+            p-3
+            text-[#203451]
+            transition-colors
+            hover:border-[#b7d3df]
+            hover:bg-[#eef6f8]
           "
         >
-          <div
-            className="
-              pointer-events-none
-              absolute
-              inset-0
-              opacity-20
-            "
-          >
-            <div
-              className="
-                absolute
-                -bottom-10
-                -right-8
-                h-28
-                w-28
-                rounded-full
-                border
-                border-white/30
-              "
-            />
-          </div>
-
-          <div
-            className="
-              relative
-              z-10
-            "
-          >
-            <div
-              className="
-                flex
-                items-center
-                gap-2
-                text-[12px]
-                font-bold
-              "
-            >
-              <ShieldAlert
-                size={16}
-                className="
-                  text-[#5ee7f4]
-                "
-              />
-
-              Evite multas
-            </div>
-
-            <p
-              className="
-                mt-2
-                max-w-[175px]
-                text-[10px]
-                leading-5
-                text-white/70
-              "
-            >
-              Mantenha as obrigações
-              fiscais da sua empresa
-              sempre em dia.
-            </p>
-
-            <Link
-              href="/obligations"
-              prefetch
-              onClick={() =>
-                handleNavigation(
-                  '/obligations',
-                  mobile,
-                )
-              }
-              className="
-                mt-3
-                inline-flex
-                items-center
-                gap-1.5
-                rounded-lg
-                border
-                border-white/10
-                bg-white/10
-                px-3
-                py-2
-                text-[10px]
-                font-semibold
-                transition-colors
-                duration-150
-                hover:border-white/20
-                hover:bg-white/20
-              "
-            >
-              Ver obrigações
-              <span>→</span>
-            </Link>
-          </div>
-
           <ShieldAlert
-            size={55}
-            strokeWidth={1.2}
-            className="
-              absolute
-              bottom-2
-              right-3
-              text-[#5ee7f4]
-              opacity-25
-            "
+            size={17}
+            className="mt-0.5 shrink-0 text-[#0b6f93]"
           />
-        </div>
+          <div>
+            <div className="text-[12px] font-semibold">
+              Obrigações fiscais
+            </div>
+            <p className="mt-0.5 text-[10px] leading-4 text-[#718099]">
+              Consulte prazos e estados de cumprimento.
+            </p>
+          </div>
+        </Link>
       </div>
     </div>
   );
@@ -1262,8 +1154,10 @@ export default function DashboardLayout({
   return (
     <div
       className="
+        fd-app-shell
+        fd-theme-scope
         min-h-screen
-        bg-[#f6f9fc]
+        bg-[#f3f5f7]
         text-[#101b3d]
       "
     >
@@ -1281,10 +1175,7 @@ export default function DashboardLayout({
           z-[100]
           h-[2px]
           origin-left
-          bg-gradient-to-r
-          from-[#1976f3]
-          via-[#079fe5]
-          to-[#12c9e8]
+          bg-[#0787ad]
           transition-all
           duration-200
           ${
@@ -1301,6 +1192,7 @@ export default function DashboardLayout({
 
       <aside
         className="
+          fd-sidebar
           fixed
           bottom-0
           left-0
@@ -1329,7 +1221,6 @@ export default function DashboardLayout({
           inset-0
           z-[60]
           bg-[#06142d]/45
-          backdrop-blur-[3px]
           lg:hidden
           transition-opacity
           duration-200
@@ -1353,6 +1244,7 @@ export default function DashboardLayout({
 
       <aside
         className={`
+          fd-sidebar
           fixed
           bottom-0
           left-0
@@ -1398,14 +1290,14 @@ export default function DashboardLayout({
 
         <header
           className="
+            fd-topbar
             sticky
             top-0
             z-40
-            h-[76px]
+            h-[68px]
             border-b
             border-[#e7edf5]
-            bg-white/95
-            backdrop-blur-xl
+            bg-white
           "
         >
           <div
@@ -1449,66 +1341,23 @@ export default function DashboardLayout({
               <Menu size={20} />
             </button>
 
-            {/* PESQUISA */}
+            {/* CONTEXTO DA PÁGINA */}
 
             <div
               className="
-                hidden
-                max-w-[560px]
+                min-w-0
                 flex-1
+                items-center
                 md:flex
               "
             >
-              <div
-                className="
-                  group
-                  flex
-                  h-[44px]
-                  w-full
-                  items-center
-                  gap-3
-                  rounded-xl
-                  border
-                  border-[#e0e7f0]
-                  bg-[#f8fafd]
-                  px-4
-                  text-[#8b99b2]
-                  transition-[border-color,background-color,box-shadow]
-                  duration-150
-                  focus-within:border-[#9edff2]
-                  focus-within:bg-white
-                  focus-within:shadow-[0_0_0_4px_rgba(18,189,231,0.07)]
-                "
-              >
-                <Search
-                  size={18}
-                  className="
-                    transition-colors
-                    duration-150
-                    group-focus-within:text-[#079fe5]
-                  "
-                />
-
-                <span className="text-[13px]">
-                  Pesquisar no sistema...
-                </span>
-
-                <div
-                  className="
-                    ml-auto
-                    rounded-md
-                    border
-                    border-[#e3e8f0]
-                    bg-white
-                    px-2
-                    py-1
-                    text-[10px]
-                    font-medium
-                    text-[#8a97ad]
-                  "
-                >
-                  Ctrl K
-                </div>
+              <div className="min-w-0">
+                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#78879d]">
+                  {currentNavigation?.section ?? 'Fiscalidade Digital'}
+                </p>
+                <p className="truncate text-[14px] font-semibold text-[#172642]">
+                  {currentNavigation?.label ?? 'Área empresarial'}
+                </p>
               </div>
             </div>
 
@@ -1522,33 +1371,6 @@ export default function DashboardLayout({
                 sm:gap-3
               "
             >
-              {/* AJUDA */}
-
-              <button
-                type="button"
-                className="
-                  hidden
-                  h-10
-                  w-10
-                  items-center
-                  justify-center
-                  rounded-xl
-                  text-[#34476d]
-                  transition-colors
-                  duration-150
-                  hover:bg-[#f3f8fc]
-                  hover:text-[#0877e8]
-                  sm:flex
-                "
-                aria-label="Ajuda"
-                title="Ajuda"
-              >
-                <HelpCircle
-                  size={20}
-                  strokeWidth={1.8}
-                />
-              </button>
-
               {/* NOTIFICAÇÕES */}
 
               <Link
@@ -1656,27 +1478,16 @@ export default function DashboardLayout({
                     shrink-0
                     items-center
                     justify-center
-                    rounded-xl
-                    bg-gradient-to-br
-                    from-[#1976f3]
-                    to-[#10bfe7]
+                    rounded-md
+                    bg-[#0b6f93]
                     text-[11px]
                     font-bold
                     text-white
-                    shadow-[0_6px_16px_rgba(25,118,243,0.18)]
                   "
                 >
                   {initials}
                 </div>
 
-                <ChevronDown
-                  size={15}
-                  className="
-                    hidden
-                    text-[#73839f]
-                    sm:block
-                  "
-                />
               </Link>
             </div>
           </div>
@@ -1688,19 +1499,19 @@ export default function DashboardLayout({
 
         <main
           className="
-            min-h-[calc(100vh-76px)]
-            px-5
-            py-6
-            lg:px-8
-            lg:py-7
+            fd-main
+            min-h-[calc(100vh-68px)]
+            px-4
+            py-5
+            sm:px-6
+            lg:px-7
+            lg:py-6
           "
         >
           <div
             key={pathname}
             className="
               dashboard-page-content
-              transform-gpu
-              will-change-[opacity,transform]
             "
           >
             {children}
@@ -1715,8 +1526,8 @@ export default function DashboardLayout({
         }
 
         .dashboard-page-content {
-          animation: dashboard-page-enter 260ms cubic-bezier(0.22, 1, 0.36, 1) both;
-          contain: layout paint;
+          animation: dashboard-page-enter 160ms ease-out both;
+          contain: layout;
         }
 
         ::view-transition-old(root) {

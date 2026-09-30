@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -31,6 +33,10 @@ import { NotificationModule } from './notification/notification.module';
 import { MailModule } from './mail/mail.module';
 
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AdminModule } from './admin/admin.module';
+import { AccountingSaftModule } from './accounting-saft/accounting-saft.module';
+import { SubscriptionAccessModule } from './subscription-access/subscription-access.module';
+import { UsersModule } from './users/users.module';
 
 @Module({
   imports: [
@@ -44,6 +50,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
 
     ScheduleModule.forRoot(),
 
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 120 },
+    ]),
+
     // ==========================================================
     // BASE
     // ==========================================================
@@ -56,6 +66,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 
     AuthModule,
     CompanyModule,
+    UsersModule,
 
     // ==========================================================
     // DADOS OPERACIONAIS
@@ -101,6 +112,12 @@ import { DashboardModule } from './dashboard/dashboard.module';
     MailModule,
 
     DashboardModule,
+    AdminModule,
+    AccountingSaftModule,
+    SubscriptionAccessModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

@@ -25,6 +25,13 @@ model Tenant {
   companyType   String?
   employeeCount Int?
   retentionRate Float        @default(0)
+  /// Quota base atribuída explicitamente pelo plano. Null significa que a
+  /// capacidade comercial ainda não foi configurada para este tenant.
+  storageBaseQuotaBytes BigInt? @db.BigInt
+  /// Capacidade adicional atribuída separadamente da quota base.
+  storageAdditionalBytes BigInt  @default(0) @db.BigInt
+  /// Contador autoritativo actualizado na mesma transacção do documento.
+  storageUsedBytes       BigInt  @default(0) @db.BigInt
 
   aiQuestions      AIQuestion[]
   auditLogs        AuditLog[]
@@ -76,6 +83,49 @@ model User {
   @@index([tenantId])
 }
 
+/// Conta administrativa da plataforma. Não pertence a nenhum tenant e usa um
+/// fluxo de autenticação separado das contas empresariais.
+model PlatformAdmin {
+  id                  String            @id @default(uuid())
+  email               String            @unique
+  password            String
+  name                String
+  role                PlatformAdminRole @default(SUPER_ADMIN)
+  isActive            Boolean           @default(true)
+  mustChangePassword  Boolean           @default(true)
+  failedLoginAttempts Int               @default(0)
+  lockedUntil         DateTime?
+  lastLoginAt         DateTime?
+  passwordChangedAt   DateTime?
+  tokenVersion        Int               @default(0)
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+
+  auditLogs PlatformAuditLog[]
+
+  @@index([isActive])
+}
+
+/// Registo separado de operações administrativas globais. Não reutiliza o
+/// AuditLog empresarial porque este exige tenantId.
+model PlatformAuditLog {
+  id         String   @id @default(uuid())
+  adminId    String?
+  action     String
+  targetType String?
+  targetId   String?
+  metadata   Json?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime @default(now())
+
+  admin PlatformAdmin? @relation(fields: [adminId], references: [id], onDelete: SetNull)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+}
+
 model Client {
   id        String   @id @default(uuid())
   tenantId  String
@@ -100,11 +150,14 @@ model Product {
   name        String
   description String?
   price       Float
+  priceAmount Decimal? @db.Decimal(20, 2)
   ivaRate     Float    @default(14)
   createdAt   DateTime @default(now())
   code        String?
   isActive    Boolean  @default(true)
   stock       Float?
+  stockAmount Decimal? @db.Decimal(20, 4)
+  unit        String   @default("UN")
   updatedAt   DateTime @updatedAt
 
   invoiceItems         InvoiceItem[]
@@ -120,9 +173,15 @@ model Invoice {
   clientId       String
   invoiceNumber  String
   subtotal       Float
+  subtotalAmount Decimal?      @db.Decimal(20, 2)
   iva            Float
+  ivaAmount      Decimal?      @db.Decimal(20, 2)
   withholdingTax Float         @default(0)
+  withholdingTaxAmount Decimal? @db.Decimal(20, 2)
   total          Float
+  totalAmount    Decimal?      @db.Decimal(20, 2)
+  taxRuleVersion String?
+  taxCalculationStatus String  @default("LEGACY_UNVERIFIED")
   status         InvoiceStatus @default(PENDING)
   notes          String?
   createdAt      DateTime      @default(now())
@@ -146,8 +205,12 @@ model InvoiceItem {
   invoiceId   String
   productName String
   quantity    Float
+  quantityAmount Decimal? @db.Decimal(20, 4)
   unitPrice   Float
+  unitPriceAmount Decimal? @db.Decimal(20, 2)
   total       Float
+  totalAmount Decimal? @db.Decimal(20, 2)
+  unit        String  @default("UN")
   productId   String?
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -217,6 +280,7 @@ model FiscalObligation {
   description      String?
   dueDate          DateTime
   amount           Float?
+  amountValue      Decimal?         @db.Decimal(18, 2)
   createdAt        DateTime         @default(now())
   status           ObligationStatus @default(PENDING)
   title            String
@@ -469,7 +533,8 @@ model Supplier {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  purchaseInvoices PurchaseInvoice[]
 
   @@index([tenantId])
   @@index([nif])
@@ -492,7 +557,9 @@ model PurchaseInvoice {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant   Tenant                @relation(fields: [tenantId], references: [id])
+  supplier Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  items    PurchaseInvoiceItem[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
@@ -510,7 +577,8 @@ model PurchaseInvoiceItem {
   unitPrice         Float
   total             Float
 
-  product Product? @relation(fields: [productId], references: [id])
+  purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
+  product         Product?        @relation(fields: [productId], references: [id])
 
   @@index([purchaseInvoiceId])
   @@index([productId])
@@ -619,6 +687,7 @@ model Employee {
   gender               String?
   dependentCount       Int            @default(0)
   status               EmployeeStatus @default(ACTIVE)
+  socialSecurityCategory SocialSecurityCategory @default(STANDARD)
   notes                String?
   createdAt            DateTime       @default(now())
   updatedAt            DateTime       @updatedAt
@@ -683,9 +752,12 @@ model Payroll {
   employeeCount         Int           @default(0)
   grossAmount           Decimal       @default(0) @db.Decimal(18, 2)
   socialSecurityAmount  Decimal       @default(0) @db.Decimal(18, 2)
+  employerSocialSecurityAmount Decimal @default(0) @db.Decimal(18, 2)
   irtAmount             Decimal       @default(0) @db.Decimal(18, 2)
   otherDeductionsAmount Decimal       @default(0) @db.Decimal(18, 2)
   netAmount             Decimal       @default(0) @db.Decimal(18, 2)
+  taxRuleVersion        String?
+  calculationStatus     String?
   processedAt           DateTime?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
@@ -706,6 +778,7 @@ model PayrollItem {
   employeeName         String
   employeeNif          String?
   socialSecurityNumber String?
+  socialSecurityCategory SocialSecurityCategory @default(STANDARD)
   dependentCount       Int      @default(0)
   baseSalary           Decimal  @default(0) @db.Decimal(18, 2)
   foodAllowance        Decimal  @default(0) @db.Decimal(18, 2)
@@ -717,10 +790,15 @@ model PayrollItem {
   grossAmount          Decimal  @default(0) @db.Decimal(18, 2)
   socialSecurityBase   Decimal  @default(0) @db.Decimal(18, 2)
   socialSecurityAmount Decimal  @default(0) @db.Decimal(18, 2)
+  employeeSocialSecurityRate Decimal @default(0) @db.Decimal(7, 6)
+  employerSocialSecurityRate Decimal @default(0) @db.Decimal(7, 6)
+  employerSocialSecurityAmount Decimal @default(0) @db.Decimal(18, 2)
   irtTaxableAmount     Decimal  @default(0) @db.Decimal(18, 2)
   irtAmount            Decimal  @default(0) @db.Decimal(18, 2)
   otherDeductions      Decimal  @default(0) @db.Decimal(18, 2)
   netAmount            Decimal  @default(0) @db.Decimal(18, 2)
+  taxRuleVersion       String?
+  calculationStatus   String?
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
@@ -761,6 +839,10 @@ enum UserRole {
   ADMIN
   ACCOUNTANT
   VIEWER
+}
+
+enum PlatformAdminRole {
+  SUPER_ADMIN
 }
 
 enum TenantStatus {
@@ -863,6 +945,7 @@ enum PaymentStatus {
   PAID
   FAILED
   EXPIRED
+  REFUNDED
 }
 
 enum LegislationCategory {
@@ -893,6 +976,12 @@ enum EmployeeStatus {
   INACTIVE
   SUSPENDED
   TERMINATED
+}
+
+enum SocialSecurityCategory {
+  STANDARD
+  RETIRED
+  SPECIAL
 }
 
 enum PayrollStatus {

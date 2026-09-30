@@ -1,9 +1,14 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { CreateProductDto } from './dto/create-product.dto';
+import { UpdateProductDto } from './dto/update-product.dto';
+import { SearchProductsDto } from './dto/search-products.dto';
 
 @Injectable()
 export class ProductService {
@@ -17,24 +22,32 @@ export class ProductService {
 
   async create(
     tenantId: string,
-    body: any,
+    body: CreateProductDto,
   ) {
-    const name =
-      typeof body?.name === 'string'
-        ? body.name.trim()
-        : '';
-
-    if (!name) {
-      throw new Error(
-        'O nome do produto é obrigatório.',
-      );
-    }
-
     return this.prisma.product.create({
       data: {
-        ...body,
         tenantId,
-        name,
+        name: body.name.trim(),
+        description: body.description?.trim() || null,
+        price: body.price,
+        priceAmount: new Prisma.Decimal(String(body.price)).toDecimalPlaces(
+          2,
+          Prisma.Decimal.ROUND_HALF_UP,
+        ),
+        ivaRate: body.ivaRate,
+        code: body.code?.trim() || null,
+        isActive: body.isActive,
+        stock: body.stock,
+        stockAmount:
+          body.stock === undefined
+            ? undefined
+            : body.stock === null
+              ? null
+              : new Prisma.Decimal(String(body.stock)).toDecimalPlaces(
+                  4,
+                  Prisma.Decimal.ROUND_HALF_UP,
+                ),
+        unit: body.unit ?? 'UN',
       },
     });
   }
@@ -55,6 +68,51 @@ export class ProductService {
         createdAt: 'desc',
       },
     });
+  }
+
+  async findPage(tenantId: string, query: SearchProductsDto) {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const search = query.search?.trim();
+    const where: Prisma.ProductWhereInput = {
+      tenantId,
+      ...(query.status ? { isActive: query.status === 'ACTIVE' } : {}),
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { code: { contains: search, mode: 'insensitive' } },
+              { description: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const orderBy = {
+      [query.sortBy ?? 'name']: query.sortDirection ?? 'asc',
+    } as Prisma.ProductOrderByWithRelationInput;
+
+    const [total, products, active, inactive] = await this.prisma.$transaction([
+      this.prisma.product.count({ where }),
+      this.prisma.product.findMany({
+        where,
+        orderBy,
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      this.prisma.product.count({ where: { tenantId, isActive: true } }),
+      this.prisma.product.count({ where: { tenantId, isActive: false } }),
+    ]);
+
+    return {
+      data: products,
+      summary: { total: active + inactive, active, inactive },
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    };
   }
 
   // =====================================================
@@ -89,38 +147,50 @@ export class ProductService {
   async update(
     tenantId: string,
     id: string,
-    body: any,
+    body: UpdateProductDto,
   ) {
     await this.findOne(
       tenantId,
       id,
     );
 
-    const data = {
-      ...body,
-    };
-
-    // Nunca permitir alterar a empresa
-    // através do body enviado pelo frontend.
-    delete data.tenantId;
-    delete data.id;
-    delete data.createdAt;
-    delete data.updatedAt;
-
-    if (
-      data.name !== undefined &&
-      typeof data.name === 'string'
-    ) {
-      data.name =
-        data.name.trim();
-    }
-
     return this.prisma.product.update({
       where: {
         id,
       },
 
-      data,
+      data: {
+        name: body.name?.trim(),
+        description:
+          body.description === undefined
+            ? undefined
+            : body.description?.trim() || null,
+        price: body.price,
+        priceAmount:
+          body.price === undefined
+            ? undefined
+            : new Prisma.Decimal(String(body.price)).toDecimalPlaces(
+                2,
+                Prisma.Decimal.ROUND_HALF_UP,
+              ),
+        ivaRate: body.ivaRate,
+        code:
+          body.code === undefined
+            ? undefined
+            : body.code?.trim() || null,
+        isActive: body.isActive,
+        stock: body.stock,
+        stockAmount:
+          body.stock === undefined
+            ? undefined
+            : body.stock === null
+              ? null
+              : new Prisma.Decimal(String(body.stock)).toDecimalPlaces(
+                  4,
+                  Prisma.Decimal.ROUND_HALF_UP,
+                ),
+        unit: body.unit,
+      },
     });
   }
 
@@ -136,6 +206,17 @@ export class ProductService {
       tenantId,
       id,
     );
+
+    const [invoiceItems, purchaseInvoiceItems] = await Promise.all([
+      this.prisma.invoiceItem.count({ where: { productId: id } }),
+      this.prisma.purchaseInvoiceItem.count({ where: { productId: id } }),
+    ]);
+
+    if (invoiceItems + purchaseInvoiceItems > 0) {
+      throw new ConflictException(
+        'O produto não pode ser eliminado porque está associado a documentos.',
+      );
+    }
 
     return this.prisma.product.delete({
       where: {
@@ -168,6 +249,12 @@ export class ProductService {
         OR: [
           {
             name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+          {
+            code: {
               contains: search,
               mode: 'insensitive',
             },

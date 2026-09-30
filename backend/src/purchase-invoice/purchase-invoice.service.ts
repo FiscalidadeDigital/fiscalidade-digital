@@ -10,6 +10,8 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ObligationsService } from '../obligations/obligations.service';
+import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
+import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 
 @Injectable()
 export class PurchaseInvoiceService {
@@ -24,7 +26,7 @@ export class PurchaseInvoiceService {
 
   async create(
     tenantId: string,
-    dto: any,
+    dto: CreatePurchaseInvoiceDto,
   ) {
     const tenant =
       await this.prisma.tenant.findUnique({
@@ -34,10 +36,6 @@ export class PurchaseInvoiceService {
 
         select: {
           id: true,
-          name: true,
-          nif: true,
-          regime: true,
-          retentionRate: true,
         },
       });
 
@@ -175,101 +173,14 @@ export class PurchaseInvoiceService {
       );
     }
 
-    // ==========================================================
-    // IVA
-    //
-    // REGIME GERAL:
-    // 14%
-    //
-    // REGIME SIMPLIFICADO:
-    // a obrigação fiscal será calculada
-    // pelo regime simplificado no
-    // ObligationsService.
-    //
-    // A factura continua a guardar
-    // o IVA documental quando existir.
-    // ==========================================================
-
-    const providedIva =
-      dto.iva !== undefined &&
-      dto.iva !== null
-        ? Number(dto.iva)
-        : null;
-
-    let iva = 0;
+    // Os montantes fiscais são transcritos da factura de origem.
+    // Este serviço não infere taxas a partir do regime da empresa.
+    const iva = Number(dto.iva);
+    const withholdingTax = Number(dto.withholdingTax);
 
     if (
-      providedIva !== null
-    ) {
-      if (
-        !Number.isFinite(
-          providedIva,
-        ) ||
-        providedIva < 0
-      ) {
-        throw new BadRequestException(
-          'O IVA informado é inválido.',
-        );
-      }
-
-      iva =
-        this.round(
-          providedIva,
-        );
-    } else {
-      /*
-       * No Regime Geral usamos a taxa
-       * normal de 14%.
-       *
-       * No Simplificado não usamos a
-       * factura como obrigação de IVA
-       * simplificado; o cálculo da obrigação
-       * será feito sobre a facturação
-       * efectivamente recebida.
-       */
-
-      if (
-        tenant.regime ===
-        'GERAL'
-      ) {
-        iva =
-          this.round(
-            subtotal * 0.14,
-          );
-      } else {
-        iva = 0;
-      }
-    }
-
-    // ==========================================================
-    // RETENÇÃO
-    // ==========================================================
-
-    const configuredRetentionRate =
-      Number(
-        tenant.retentionRate ?? 0,
-      );
-
-    const retentionRate =
-      configuredRetentionRate > 0
-        ? configuredRetentionRate /
-          100
-        : 0;
-
-    const withholdingTax =
-      dto.withholdingTax !== undefined &&
-      dto.withholdingTax !== null
-        ? this.round(
-            Number(
-              dto.withholdingTax,
-            ),
-          )
-        : this.round(
-            subtotal *
-              retentionRate,
-          );
-
-    if (
+      !Number.isFinite(iva) ||
+      iva < 0 ||
       !Number.isFinite(
         withholdingTax,
       ) ||
@@ -659,7 +570,7 @@ export class PurchaseInvoiceService {
   async update(
     tenantId: string,
     id: string,
-    dto: any,
+    dto: UpdatePurchaseInvoiceDto,
   ) {
     const purchase =
       await this.prisma.purchaseInvoice.findFirst({
@@ -747,44 +658,12 @@ export class PurchaseInvoiceService {
         ),
       );
 
-    const tenant =
-      await this.prisma.tenant.findUnique({
-        where: {
-          id: tenantId,
-        },
-
-        select: {
-          regime: true,
-          retentionRate: true,
-        },
-      });
-
-    if (!tenant) {
-      throw new NotFoundException(
-        'Empresa não encontrada.',
-      );
-    }
-
     const iva =
       dto.iva !== undefined
         ? this.round(
             Number(dto.iva),
           )
-        : tenant.regime ===
-            'GERAL'
-          ? this.round(
-              subtotal * 0.14,
-            )
-          : this.round(
-              Number(
-                purchase.iva,
-              ),
-            );
-
-    const configuredRetention =
-      Number(
-        tenant.retentionRate ?? 0,
-      );
+        : Number(purchase.iva);
 
     const withholdingTax =
       dto.withholdingTax !==
@@ -794,14 +673,19 @@ export class PurchaseInvoiceService {
               dto.withholdingTax,
             ),
           )
-        : this.round(
-            subtotal *
-              (configuredRetention >
-              0
-                ? configuredRetention /
-                  100
-                : 0),
-          );
+        : Number(purchase.withholdingTax);
+
+    if (
+      !Number.isFinite(iva) ||
+      iva < 0 ||
+      !Number.isFinite(withholdingTax) ||
+      withholdingTax < 0 ||
+      withholdingTax > subtotal
+    ) {
+      throw new BadRequestException(
+        'Os valores documentais de IVA/retenção são inválidos para o subtotal.',
+      );
+    }
 
     const total =
       this.round(

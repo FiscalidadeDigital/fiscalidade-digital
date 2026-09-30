@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Injectable,
   Logger,
 } from '@nestjs/common';
@@ -56,31 +57,10 @@ export class AlertsService {
     );
 
     try {
-      const obligations =
-        await this.prisma.fiscalObligation.findMany({
-          where: {
-            alertEnabled: true,
-
-            status: {
-              not: 'PAID',
-            },
-          },
-
-          include: {
-            tenant: {
-              include: {
-                companySettings: true,
-              },
-            },
-          },
-
-          orderBy: {
-            dueDate: 'asc',
-          },
-        });
+      const obligations = await this.findEligibleObligations();
 
       this.logger.log(
-        `${obligations.length} obriga????o(??es) encontrada(s) para verifica????o.`,
+        'Obrigações elegíveis carregadas para verificação.',
       );
 
       for (const obligation of obligations) {
@@ -94,10 +74,7 @@ export class AlertsService {
       );
     } catch (error) {
       this.logger.error(
-        'Erro geral ao verificar prazos fiscais.',
-        error instanceof Error
-          ? error.stack
-          : String(error),
+        'Falha ao verificar prazos fiscais.',
       );
     }
   }
@@ -152,7 +129,7 @@ export class AlertsService {
           });
 
           this.logger.warn(
-            `Obriga????o atrasada: ${obligation.title}`,
+            'Uma obrigação fiscal passou da data de vencimento.',
           );
         }
 
@@ -192,10 +169,7 @@ export class AlertsService {
       );
     } catch (error) {
       this.logger.error(
-        `Erro ao processar obriga????o ${obligation.title}.`,
-        error instanceof Error
-          ? error.stack
-          : String(error),
+        'Falha ao processar uma obrigação fiscal.',
       );
     }
   }
@@ -303,11 +277,11 @@ export class AlertsService {
         });
 
       this.logger.log(
-        `Novo alerta fiscal criado: ${obligation.title} - ${diffDays} dias.`,
+        'Novo alerta fiscal criado.',
       );
     } else {
       this.logger.log(
-        `Alerta existente encontrado: ${obligation.title} - ${diffDays} dias. Verificando canais pendentes.`,
+        'Alerta fiscal existente verificado.',
       );
     }
 
@@ -377,14 +351,11 @@ export class AlertsService {
         };
 
         this.logger.log(
-          `Notifica????o interna criada: ${obligation.title} - ${diffDays} dias.`,
+          'Notificação fiscal interna criada.',
         );
       } catch (error) {
         this.logger.error(
-          `Erro ao criar notifica????o interna para ${obligation.title}.`,
-          error instanceof Error
-            ? error.stack
-            : String(error),
+          'Falha ao criar notificação fiscal interna.',
         );
       }
     }
@@ -446,7 +417,7 @@ export class AlertsService {
     });
 
     this.logger.log(
-      `Alerta fiscal processado: ${obligation.title} - ${this.getDaysDescription(diffDays)}.`,
+      'Alerta fiscal processado.',
     );
   }
 
@@ -508,7 +479,7 @@ export class AlertsService {
       });
 
       this.logger.warn(
-        `Empresa ${obligation.tenant?.name} n??o possui e-mail cadastrado.`,
+        'A empresa não possui endereço de e-mail configurado para alertas.',
       );
 
       return;
@@ -537,11 +508,11 @@ export class AlertsService {
             obligation.tenantId,
 
           email:
-            companyEmail,
+            this.maskEmail(companyEmail),
 
-          subject,
+          subject: 'Alerta fiscal',
 
-          body,
+          body: null,
 
           status:
             'SENT',
@@ -563,13 +534,10 @@ export class AlertsService {
       });
 
       this.logger.log(
-        `E-mail enviado: ${companyEmail} - ${obligation.title}.`,
+        'E-mail de alerta enviado.',
       );
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : String(error);
+    } catch {
+      const errorMessage = 'Falha de entrega do fornecedor.';
 
       /*
        * Guardamos o erro para permitir
@@ -581,11 +549,11 @@ export class AlertsService {
             obligation.tenantId,
 
           email:
-            companyEmail,
+            this.maskEmail(companyEmail),
 
-          subject,
+          subject: 'Alerta fiscal',
 
-          body,
+          body: null,
 
           status:
             'FAILED',
@@ -607,10 +575,7 @@ export class AlertsService {
       });
 
       this.logger.error(
-        `Falha ao enviar e-mail para ${companyEmail}.`,
-        error instanceof Error
-          ? error.stack
-          : String(error),
+        'Falha ao enviar e-mail de alerta.',
       );
     }
   }
@@ -673,7 +638,7 @@ export class AlertsService {
       });
 
       this.logger.warn(
-        `Empresa ${obligation.tenant?.name} n??o possui telefone cadastrado para SMS.`,
+        'SMS não enviado porque não existe telefone configurado.',
       );
 
       return;
@@ -697,10 +662,9 @@ export class AlertsService {
           tenantId:
             obligation.tenantId,
 
-          phone,
+          phone: this.maskPhone(phone),
 
-          message:
-            smsMessage,
+          message: 'Alerta fiscal',
 
           status:
             'SENT',
@@ -734,13 +698,11 @@ export class AlertsService {
       });
 
       this.logger.log(
-        `SMS enviado para ${phone}: ${obligation.title}.`,
+        'SMS de alerta enviado.',
       );
-    } catch (error) {
+    } catch {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : String(error);
+        'Falha de entrega do fornecedor.';
 
       /*
        * O erro fica registado.
@@ -753,10 +715,9 @@ export class AlertsService {
           tenantId:
             obligation.tenantId,
 
-          phone,
+          phone: this.maskPhone(phone),
 
-          message:
-            smsMessage,
+          message: 'Alerta fiscal',
 
           status:
             'FAILED',
@@ -789,10 +750,7 @@ export class AlertsService {
       });
 
       this.logger.error(
-        `Falha ao enviar SMS para ${phone}.`,
-        error instanceof Error
-          ? error.stack
-          : String(error),
+        'Falha ao enviar SMS de alerta.',
       );
     }
   }
@@ -863,7 +821,7 @@ export class AlertsService {
       });
 
       this.logger.log(
-        `WhatsApp n??o enviado para ${obligation.tenant?.name}: opt-in n??o confirmado.`,
+        'WhatsApp não enviado porque falta consentimento registado.',
       );
 
       return;
@@ -885,7 +843,7 @@ export class AlertsService {
       });
 
       this.logger.warn(
-        `Empresa ${obligation.tenant?.name} n??o possui telefone para WhatsApp.`,
+        'WhatsApp não enviado porque não existe telefone configurado.',
       );
 
       return;
@@ -913,13 +871,9 @@ export class AlertsService {
           tenantId:
             obligation.tenantId,
 
-          phone,
+          phone: this.maskPhone(phone),
 
-          message:
-            this.buildWhatsAppLogMessage(
-              obligation.title,
-              diffDays,
-            ),
+          message: 'Alerta fiscal',
 
           status:
             'SENT',
@@ -953,26 +907,20 @@ export class AlertsService {
       });
 
       this.logger.log(
-        `WhatsApp enviado para ${phone}: ${obligation.title}.`,
+        'Mensagem WhatsApp de alerta enviada.',
       );
-    } catch (error) {
+    } catch {
       const errorMessage =
-        error instanceof Error
-          ? error.message
-          : String(error);
+        'Falha de entrega do fornecedor.';
 
       await this.prisma.sMSLog.create({
         data: {
           tenantId:
             obligation.tenantId,
 
-          phone,
+          phone: this.maskPhone(phone),
 
-          message:
-            this.buildWhatsAppLogMessage(
-              obligation.title,
-              diffDays,
-            ),
+          message: 'Alerta fiscal',
 
           status:
             'FAILED',
@@ -1005,10 +953,7 @@ export class AlertsService {
       });
 
       this.logger.error(
-        `Falha ao enviar WhatsApp para ${phone}.`,
-        error instanceof Error
-          ? error.stack
-          : String(error),
+        'Falha ao enviar mensagem WhatsApp de alerta.',
       );
     }
   }
@@ -1018,18 +963,45 @@ export class AlertsService {
    *
    * Ser?? ??til para testes e administra????o.
    */
-  async runManualCheck(): Promise<{
+  async runManualCheck(tenantId: string): Promise<{
     success: boolean;
     message: string;
+    processed: number;
   }> {
-    await this.checkFiscalDeadlines();
+    if (!tenantId) {
+      throw new BadRequestException('Empresa autenticada não identificada.');
+    }
+
+    const obligations = await this.findEligibleObligations(tenantId);
+
+    for (const obligation of obligations) {
+      await this.processObligation(obligation);
+    }
 
     return {
       success: true,
-
       message:
         'Verifica????o manual de alertas executada com sucesso.',
+      processed: obligations.length,
     };
+  }
+
+  private findEligibleObligations(tenantId?: string) {
+    return this.prisma.fiscalObligation.findMany({
+      where: {
+        ...(tenantId ? { tenantId } : {}),
+        alertEnabled: true,
+        status: { not: 'PAID' },
+      },
+      include: {
+        tenant: {
+          include: {
+            companySettings: true,
+          },
+        },
+      },
+      orderBy: { dueDate: 'asc' },
+    });
   }
 
   /**
@@ -1308,5 +1280,18 @@ Gest??o Fiscal Inteligente`;
     );
 
     return result;
+  }
+
+  private maskEmail(email: string): string {
+    const [localPart, domain] = email.split('@');
+    if (!localPart || !domain) {
+      return '***';
+    }
+    return `${localPart.slice(0, 1)}***@${domain}`;
+  }
+
+  private maskPhone(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    return digits.length > 2 ? `***${digits.slice(-2)}` : '***';
   }
 }

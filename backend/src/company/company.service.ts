@@ -3,7 +3,28 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { UpdateCompanyDto } from './dto/update-company.dto';
+
+const COMPANY_SELECT = {
+  id: true,
+  name: true,
+  nif: true,
+  email: true,
+  phone: true,
+  address: true,
+  sector: true,
+  status: true,
+  planType: true,
+  trialEndsAt: true,
+  createdAt: true,
+  updatedAt: true,
+  regime: true,
+  companyType: true,
+  employeeCount: true,
+  retentionRate: true,
+} satisfies Prisma.TenantSelect;
 
 @Injectable()
 export class CompanyService {
@@ -17,6 +38,7 @@ export class CompanyService {
         where: {
           id: tenantId,
         },
+        select: COMPANY_SELECT,
       });
 
     if (!company) {
@@ -30,7 +52,7 @@ export class CompanyService {
 
   async updateCompany(
     tenantId: string,
-    body: any,
+    body: UpdateCompanyDto,
   ) {
     const company =
       await this.prisma.tenant.findUnique({
@@ -49,27 +71,18 @@ export class CompanyService {
       where: {
         id: tenantId,
       },
+      select: COMPANY_SELECT,
 
       data: {
-        name: body.name,
-        nif: body.nif,
-        email: body.email,
-        phone: body.phone,
-        address: body.address,
-        sector: body.sector,
-        companyType: body.companyType,
-
-        employeeCount:
-          body.employeeCount !== undefined
-            ? Number(body.employeeCount)
-            : undefined,
-
+        name: typeof body.name === 'string' ? body.name.trim() || undefined : undefined,
+        nif: typeof body.nif === 'string' ? body.nif.trim() || undefined : undefined,
+        email: typeof body.email === 'string' ? body.email.trim().toLowerCase() || undefined : undefined,
+        phone: typeof body.phone === 'string' ? body.phone.trim() || null : undefined,
+        address: typeof body.address === 'string' ? body.address.trim() || null : undefined,
+        sector: typeof body.sector === 'string' ? body.sector.trim() || null : undefined,
+        companyType: body.companyType || undefined,
+        employeeCount: body.employeeCount,
         regime: body.regime,
-
-        retentionRate:
-          body.retentionRate !== undefined
-            ? Number(body.retentionRate)
-            : undefined,
       },
     });
   }

@@ -6,17 +6,29 @@
   Param,
   Patch,
   Post,
-  Req,
   UseGuards,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 
 import { EmployeeService } from './employee.service';
 
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { CreateEmployeeSalaryDto } from './dto/create-employee-salary.dto';
 import { CreateEmployeeDependentDto } from './dto/create-employee-dependent.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+
+const EMPLOYEE_ACCESS_ROLES = [
+  UserRole.OWNER,
+  UserRole.ADMIN,
+  UserRole.ACCOUNTANT,
+];
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard)
@@ -30,54 +42,59 @@ export class EmployeeController {
   // =========================================================
 
   @Post()
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
   create(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateEmployeeDto,
   ) {
     return this.employeeService.create(
-      req.user.tenantId,
+      user.tenantId,
       dto,
     );
   }
 
   @Get()
-  findAll(@Req() req: any) {
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
+  findAll(@CurrentUser() user: CurrentUserPayload) {
     return this.employeeService.findAll(
-      req.user.tenantId,
+      user.tenantId,
     );
   }
 
   @Get(':id')
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
   findOne(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.employeeService.findOne(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }
 
   @Patch(':id')
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
   update(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
-    @Body() dto: CreateEmployeeDto,
+    @Body() dto: UpdateEmployeeDto,
   ) {
     return this.employeeService.update(
-      req.user.tenantId,
+      user.tenantId,
       id,
       dto,
     );
   }
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   remove(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.employeeService.remove(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }
@@ -87,25 +104,27 @@ export class EmployeeController {
   // =========================================================
 
   @Post(':id/salaries')
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
   addSalary(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
     @Body() dto: CreateEmployeeSalaryDto,
   ) {
     return this.employeeService.addSalary(
-      req.user.tenantId,
+      user.tenantId,
       id,
       dto,
     );
   }
 
   @Get(':id/salaries')
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
   getSalaries(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.employeeService.getSalaries(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }
@@ -115,25 +134,27 @@ export class EmployeeController {
   // =========================================================
 
   @Post(':id/dependents')
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
   addDependent(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
     @Body() dto: CreateEmployeeDependentDto,
   ) {
     return this.employeeService.addDependent(
-      req.user.tenantId,
+      user.tenantId,
       id,
       dto,
     );
   }
 
   @Get(':id/dependents')
+  @Roles(...EMPLOYEE_ACCESS_ROLES)
   getDependents(
-    @Req() req: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.employeeService.getDependents(
-      req.user.tenantId,
+      user.tenantId,
       id,
     );
   }

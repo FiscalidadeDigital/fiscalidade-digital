@@ -3,8 +3,6 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 
-import { join } from 'path';
-import * as express from 'express';
 import helmet from 'helmet';
 
 async function bootstrap() {
@@ -35,17 +33,6 @@ async function bootstrap() {
         enableImplicitConversion: true,
       },
     }),
-  );
-
-  // =========================================================
-  // FICHEIROS UPLOAD
-  // =========================================================
-
-  app.use(
-    '/uploads',
-    express.static(
-      join(process.cwd(), 'uploads'),
-    ),
   );
 
   // =========================================================
@@ -105,21 +92,8 @@ async function bootstrap() {
         return callback(null, true);
       }
 
-      // Permitir URLs de deployment da Vercel
-      // relacionadas com o projeto Fiscalidade Digital.
-      const isFiscalidadeVercelDomain =
-        /^https:\/\/fiscalidade-digital(?:-[a-z0-9-]+)?\.vercel\.app$/i.test(
-          requestOrigin,
-        );
-
-      if (isFiscalidadeVercelDomain) {
-        return callback(null, true);
-      }
-
       return callback(
-        new Error(
-          `Origem não autorizada pelo CORS: ${requestOrigin}`,
-        ),
+        new Error('Origem não autorizada pelo CORS.'),
         false,
       );
     },

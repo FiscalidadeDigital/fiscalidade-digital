@@ -96,6 +96,7 @@ const initialForm: CreateEmployeeData = {
   name: '',
   nif: '',
   socialSecurityNumber: '',
+  socialSecurityCategory: 'STANDARD',
   email: '',
   phone: '',
   address: '',
@@ -489,6 +490,10 @@ export default function EmployeesPage() {
               ?.trim() ||
             undefined,
 
+          socialSecurityCategory:
+            form.socialSecurityCategory ||
+            'STANDARD',
+
           email:
             form.email?.trim() ||
             undefined,
@@ -846,6 +851,37 @@ export default function EmployeesPage() {
                       saving
                     }
                   />
+                </div>
+
+                <div className="employees-field">
+                  <label htmlFor="social-security-category">
+                    Enquadramento contributivo
+                  </label>
+
+                  <select
+                    id="social-security-category"
+                    value={
+                      form.socialSecurityCategory ||
+                      'STANDARD'
+                    }
+                    onChange={(event) =>
+                      updateField(
+                        'socialSecurityCategory',
+                        event.target.value,
+                      )
+                    }
+                    disabled={saving}
+                  >
+                    <option value="STANDARD">
+                      Trabalhador por conta de outrem
+                    </option>
+                    <option value="RETIRED">
+                      Trabalhador reformado
+                    </option>
+                    <option value="SPECIAL">
+                      Regime especial (requer configuração)
+                    </option>
+                  </select>
                 </div>
 
               </div>
@@ -1448,6 +1484,20 @@ export default function EmployeesPage() {
 
               <div className="employees-info-field">
                 <label>
+                  Enquadramento contributivo
+                </label>
+
+                <strong>
+                  {employee.socialSecurityCategory === 'RETIRED'
+                    ? 'Trabalhador reformado'
+                    : employee.socialSecurityCategory === 'SPECIAL'
+                      ? 'Regime especial'
+                      : 'Trabalhador por conta de outrem'}
+                </strong>
+              </div>
+
+              <div className="employees-info-field">
+                <label>
                   Número do funcionário
                 </label>
 
@@ -1677,7 +1727,7 @@ export default function EmployeesPage() {
   return (
     <>
       <DashboardLayout>
-        <div className="employees-page">
+        <div className="employees-page fd-workspace-page fd-theme-scope">
 
           <style jsx global>{`
 
@@ -1688,35 +1738,20 @@ export default function EmployeesPage() {
             .employees-page {
               width: 100%;
               min-height: 100%;
-              color: #0f172a;
+              max-width: 1440px;
+              margin: 0 auto;
+              color: var(--fd-text-primary);
             }
 
             .employees-hero {
               position: relative;
-              overflow: hidden;
               display: flex;
               align-items: flex-end;
               justify-content: space-between;
               gap: 24px;
-              padding: 28px;
+              padding: 0 0 20px;
               margin-bottom: 20px;
-              border: 1px solid #e3eaf5;
-              border-radius: 24px;
-              background:
-                radial-gradient(
-                  circle at 90% 10%,
-                  rgba(6, 182, 212, .13),
-                  transparent 28%
-                ),
-                radial-gradient(
-                  circle at 70% 100%,
-                  rgba(37, 99, 235, .09),
-                  transparent 32%
-                ),
-                #ffffff;
-              box-shadow:
-                0 8px 35px
-                rgba(15, 23, 42, .045);
+              border-bottom: 1px solid var(--fd-border);
             }
 
             .employees-hero-content {
@@ -1745,20 +1780,20 @@ export default function EmployeesPage() {
 
             .employees-hero h1 {
               margin: 0;
-              font-size: 36px;
-              line-height: 1.1;
-              font-weight: 850;
-              letter-spacing: -.04em;
+              font-size: 28px;
+              line-height: 1.2;
+              font-weight: 650;
+              letter-spacing: -.025em;
             }
 
             .employees-hero h1 span {
-              color: #2563eb;
+              color: inherit;
             }
 
             .employees-description {
               max-width: 620px;
               margin-top: 9px;
-              color: #64748b;
+              color: var(--fd-text-secondary);
               font-size: 13px;
               line-height: 1.6;
             }
@@ -1781,33 +1816,21 @@ export default function EmployeesPage() {
               gap: 8px;
               min-height: 43px;
               padding: 0 16px;
-              border-radius: 11px;
+              border-radius: 6px;
               font-size: 12px;
               font-weight: 750;
               cursor: pointer;
-              transition: all .18s ease;
+              transition: background-color .15s ease, border-color .15s ease;
             }
 
             .employees-primary-button {
               border: 1px solid transparent;
-              background:
-                linear-gradient(
-                  135deg,
-                  #2563eb,
-                  #0ea5e9
-                );
+              background: var(--fd-primary);
               color: #fff;
-              box-shadow:
-                0 8px 20px
-                rgba(37, 99, 235, .20);
             }
 
             .employees-primary-button:hover {
-              transform:
-                translateY(-1px);
-              box-shadow:
-                0 12px 25px
-                rgba(37, 99, 235, .28);
+              background: var(--fd-primary-hover);
             }
 
             .employees-primary-button:disabled {
@@ -1817,15 +1840,14 @@ export default function EmployeesPage() {
             }
 
             .employees-secondary-button {
-              border:
-                1px solid #e2e8f0;
-              background: #fff;
-              color: #64748b;
+              border: 1px solid var(--fd-border);
+              background: var(--fd-surface);
+              color: var(--fd-text-secondary);
             }
 
             .employees-secondary-button:hover {
-              background: #f8fafc;
-              color: #334155;
+              background: var(--fd-surface-muted);
+              color: var(--fd-text-primary);
             }
 
             .employees-secondary-button:disabled {
@@ -1844,7 +1866,7 @@ export default function EmployeesPage() {
               gap: 12px;
               padding: 12px 15px;
               margin-bottom: 16px;
-              border-radius: 13px;
+              border-radius: 6px;
               font-size: 12px;
             }
 
@@ -1868,20 +1890,23 @@ export default function EmployeesPage() {
               display: grid;
               grid-template-columns:
                 repeat(4, minmax(0, 1fr));
-              gap: 13px;
+              gap: 0;
               margin-bottom: 19px;
+              border: 1px solid var(--fd-border);
+              background: var(--fd-surface);
             }
 
             .employees-metric {
-              min-height: 120px;
-              padding: 18px;
-              border:
-                1px solid #e5eaf2;
-              border-radius: 17px;
-              background: #fff;
-              box-shadow:
-                0 5px 22px
-                rgba(15, 23, 42, .035);
+              min-height: 92px;
+              padding: 17px;
+              border: 0;
+              border-right: 1px solid var(--fd-border);
+              border-radius: 0;
+              background: transparent;
+            }
+
+            .employees-metric:last-child {
+              border-right: 0;
             }
 
             .employees-metric-top {
@@ -1904,22 +1929,22 @@ export default function EmployeesPage() {
               justify-content: center;
               width: 37px;
               height: 37px;
-              border-radius: 11px;
-              color: #2563eb;
-              background: #eff6ff;
+              border-radius: 0;
+              color: var(--fd-muted) !important;
+              background: transparent !important;
             }
 
             .employees-metric-value {
               margin-top: 12px;
-              color: #0f172a;
-              font-size: 24px;
-              font-weight: 850;
+              color: var(--fd-text-primary);
+              font-size: 21px;
+              font-weight: 650;
               letter-spacing: -.035em;
             }
 
             .employees-metric-detail {
               margin-top: 6px;
-              color: #94a3b8;
+              color: var(--fd-muted);
               font-size: 10px;
             }
 
@@ -1929,13 +1954,9 @@ export default function EmployeesPage() {
 
             .employees-workspace {
               overflow: hidden;
-              border:
-                1px solid #e3e9f2;
-              border-radius: 20px;
-              background: #fff;
-              box-shadow:
-                0 6px 25px
-                rgba(15, 23, 42, .035);
+              border: 1px solid var(--fd-border);
+              border-radius: 0;
+              background: var(--fd-surface);
             }
 
             .employees-toolbar {
@@ -1945,7 +1966,7 @@ export default function EmployeesPage() {
               gap: 14px;
               padding: 15px;
               border-bottom:
-                1px solid #edf1f6;
+                1px solid var(--fd-border);
             }
 
             .employees-search {
@@ -1956,17 +1977,15 @@ export default function EmployeesPage() {
               min-height: 43px;
               padding: 0 12px;
               border:
-                1px solid #e2e8f0;
-              border-radius: 11px;
-              background: #f8fafc;
+                1px solid var(--fd-border);
+              border-radius: 6px;
+              background: var(--fd-input);
             }
 
             .employees-search:focus-within {
-              border-color: #93c5fd;
-              background: #fff;
-              box-shadow:
-                0 0 0 4px
-                rgba(37, 99, 235, .07);
+              border-color: var(--fd-primary);
+              background: var(--fd-input);
+              box-shadow: 0 0 0 3px var(--fd-focus);
             }
 
             .employees-search svg {
@@ -1999,10 +2018,10 @@ export default function EmployeesPage() {
               min-height: 43px;
               padding: 0 30px 0 11px;
               border:
-                1px solid #e2e8f0;
-              border-radius: 11px;
-              background: #fff;
-              color: #334155;
+                1px solid var(--fd-border);
+              border-radius: 6px;
+              background: var(--fd-input);
+              color: var(--fd-text-primary);
               font-size: 11px;
               font-weight: 650;
               outline: none;
@@ -2014,9 +2033,9 @@ export default function EmployeesPage() {
               justify-content: space-between;
               padding: 11px 17px;
               border-bottom:
-                1px solid #edf1f6;
-              background: #fbfcfe;
-              color: #64748b;
+                1px solid var(--fd-border);
+              background: var(--fd-table-header);
+              color: var(--fd-text-secondary);
               font-size: 10px;
             }
 
@@ -2037,9 +2056,9 @@ export default function EmployeesPage() {
             .employees-table th {
               padding: 12px 17px;
               border-bottom:
-                1px solid #edf1f6;
-              background: #fbfcfe;
-              color: #94a3b8;
+                1px solid var(--fd-border);
+              background: var(--fd-table-header);
+              color: var(--fd-text-secondary);
               font-size: 9px;
               font-weight: 800;
               text-align: left;
@@ -2050,14 +2069,14 @@ export default function EmployeesPage() {
             .employees-table td {
               padding: 14px 17px;
               border-bottom:
-                1px solid #f1f5f9;
-              color: #475569;
+                1px solid var(--fd-border);
+              color: var(--fd-text-secondary);
               font-size: 11px;
               vertical-align: middle;
             }
 
             .employees-table tbody tr:hover {
-              background: #f8fbff;
+              background: var(--fd-surface-muted);
             }
 
             /* =====================================================
@@ -2077,20 +2096,15 @@ export default function EmployeesPage() {
               width: 38px;
               height: 38px;
               flex-shrink: 0;
-              border-radius: 11px;
-              background:
-                linear-gradient(
-                  135deg,
-                  #dbeafe,
-                  #cffafe
-                );
-              color: #1d4ed8;
+              border-radius: 6px;
+              background: var(--fd-surface-muted);
+              color: var(--fd-primary);
               font-size: 10px;
               font-weight: 850;
             }
 
             .employees-person-name {
-              color: #0f172a;
+              color: var(--fd-text-primary);
               font-size: 11px;
               font-weight: 800;
             }
@@ -2102,7 +2116,7 @@ export default function EmployeesPage() {
             }
 
             .employees-salary {
-              color: #0f172a;
+              color: var(--fd-text-primary);
               font-weight: 800;
               white-space: nowrap;
             }
@@ -2117,7 +2131,7 @@ export default function EmployeesPage() {
               gap: 6px;
               padding: 5px 8px;
               border: 1px solid;
-              border-radius: 999px;
+              border-radius: 5px;
               font-size: 9px;
               font-weight: 800;
             }
@@ -2251,12 +2265,6 @@ export default function EmployeesPage() {
               background:
                 rgba(15, 23, 42, .58) !important;
 
-              backdrop-filter:
-                blur(7px) !important;
-
-              -webkit-backdrop-filter:
-                blur(7px) !important;
-
               animation:
                 employeesBackdropIn
                 .18s ease-out;
@@ -2291,16 +2299,16 @@ export default function EmployeesPage() {
               overflow: hidden !important;
 
               border:
-                1px solid #e2e8f0 !important;
+                1px solid var(--fd-border) !important;
 
-              border-radius: 22px !important;
+              border-radius: 8px !important;
 
               background:
-                #ffffff !important;
+                var(--fd-surface-raised) !important;
 
               box-shadow:
-                0 35px 100px
-                rgba(2, 8, 23, .32) !important;
+                0 24px 60px
+                rgba(2, 8, 23, .28) !important;
 
               animation:
                 employeesModalIn
@@ -2341,10 +2349,10 @@ export default function EmployeesPage() {
                 19px 22px !important;
 
               border-bottom:
-                1px solid #edf1f6 !important;
+                1px solid var(--fd-border) !important;
 
               background:
-                #ffffff !important;
+                var(--fd-surface-raised) !important;
 
               flex-shrink: 0 !important;
             }
@@ -2366,21 +2374,14 @@ export default function EmployeesPage() {
 
               flex-shrink: 0 !important;
 
-              border-radius: 12px !important;
-
-              background:
-                linear-gradient(
-                  135deg,
-                  #dbeafe,
-                  #cffafe
-                ) !important;
-
-              color: #2563eb !important;
+              border-radius: 6px !important;
+              background: var(--fd-surface-muted) !important;
+              color: var(--fd-primary) !important;
             }
 
             .employees-modal-title {
               margin: 0 !important;
-              color: #0f172a !important;
+              color: var(--fd-text-primary) !important;
               font-size: 18px !important;
               line-height: 1.2 !important;
               font-weight: 850 !important;
@@ -2388,7 +2389,7 @@ export default function EmployeesPage() {
 
             .employees-modal-subtitle {
               margin: 4px 0 0 !important;
-              color: #94a3b8 !important;
+              color: var(--fd-muted) !important;
               font-size: 10px !important;
             }
 
@@ -2403,12 +2404,12 @@ export default function EmployeesPage() {
               flex-shrink: 0 !important;
 
               border:
-                1px solid #e2e8f0 !important;
+                1px solid var(--fd-border) !important;
 
-              border-radius: 10px !important;
+              border-radius: 6px !important;
 
-              background: #ffffff !important;
-              color: #64748b !important;
+              background: var(--fd-surface) !important;
+              color: var(--fd-text-secondary) !important;
 
               cursor: pointer !important;
             }
@@ -2435,7 +2436,7 @@ export default function EmployeesPage() {
 
               box-sizing: border-box !important;
 
-              background: #ffffff !important;
+              background: var(--fd-surface-raised) !important;
             }
 
             .employees-form-section {
@@ -2449,7 +2450,7 @@ export default function EmployeesPage() {
 
               margin-bottom: 12px !important;
 
-              color: #334155 !important;
+              color: var(--fd-text-primary) !important;
 
               font-size: 10px !important;
               font-weight: 850 !important;
@@ -2461,7 +2462,7 @@ export default function EmployeesPage() {
             .employees-section-title span {
               flex: 1 !important;
               height: 1px !important;
-              background: #edf1f6 !important;
+              background: var(--fd-border) !important;
             }
 
             .employees-form-grid {
@@ -2487,7 +2488,7 @@ export default function EmployeesPage() {
             }
 
             .employees-field label {
-              color: #475569 !important;
+              color: var(--fd-text-secondary) !important;
               font-size: 10px !important;
               font-weight: 750 !important;
             }
@@ -2500,15 +2501,15 @@ export default function EmployeesPage() {
               box-sizing: border-box !important;
 
               border:
-                1px solid #e2e8f0 !important;
+                1px solid var(--fd-border) !important;
 
-              border-radius: 10px !important;
+              border-radius: 6px !important;
 
               outline: none !important;
 
-              background: #f8fafc !important;
+              background: var(--fd-input) !important;
 
-              color: #0f172a !important;
+              color: var(--fd-text-primary) !important;
 
               font-family:
                 inherit !important;
@@ -2530,12 +2531,9 @@ export default function EmployeesPage() {
 
             .employees-field input:focus,
             .employees-field textarea:focus {
-              border-color: #60a5fa !important;
-              background: #ffffff !important;
-
-              box-shadow:
-                0 0 0 4px
-                rgba(37, 99, 235, .07) !important;
+              border-color: var(--fd-primary) !important;
+              background: var(--fd-input) !important;
+              box-shadow: 0 0 0 3px var(--fd-focus) !important;
             }
 
             .employees-field input:disabled,
@@ -2561,16 +2559,10 @@ export default function EmployeesPage() {
               box-sizing: border-box !important;
 
               border:
-                1px solid #bfdbfe !important;
+                1px solid var(--fd-border) !important;
 
-              border-radius: 11px !important;
-
-              background:
-                linear-gradient(
-                  135deg,
-                  #eff6ff,
-                  #f0fdfa
-                ) !important;
+              border-radius: 6px !important;
+              background: var(--fd-surface-muted) !important;
             }
 
             .employees-auto-number-icon {
@@ -2585,20 +2577,20 @@ export default function EmployeesPage() {
 
               border-radius: 9px !important;
 
-              background: #ffffff !important;
-              color: #2563eb !important;
+              background: var(--fd-surface) !important;
+              color: var(--fd-primary) !important;
             }
 
             .employees-auto-number strong {
               display: block !important;
-              color: #1e3a8a !important;
+              color: var(--fd-text-primary) !important;
               font-size: 11px !important;
               font-weight: 800 !important;
             }
 
             .employees-auto-number p {
               margin: 3px 0 0 !important;
-              color: #64748b !important;
+              color: var(--fd-text-secondary) !important;
               font-size: 9px !important;
               line-height: 1.5 !important;
             }
@@ -2617,7 +2609,7 @@ export default function EmployeesPage() {
               margin-top: 4px !important;
 
               border-top:
-                1px solid #edf1f6 !important;
+                1px solid var(--fd-border) !important;
             }
 
             /* =====================================================
@@ -2640,16 +2632,9 @@ export default function EmployeesPage() {
 
               flex-shrink: 0 !important;
 
-              border-radius: 13px !important;
-
-              background:
-                linear-gradient(
-                  135deg,
-                  #dbeafe,
-                  #cffafe
-                ) !important;
-
-              color: #1d4ed8 !important;
+              border-radius: 6px !important;
+              background: var(--fd-surface-muted) !important;
+              color: var(--fd-primary) !important;
 
               font-size: 11px !important;
               font-weight: 850 !important;
@@ -2667,22 +2652,16 @@ export default function EmployeesPage() {
               padding: 16px !important;
 
               border:
-                1px solid #e2e8f0 !important;
+                1px solid var(--fd-border) !important;
 
-              border-radius: 15px !important;
-
-              background:
-                linear-gradient(
-                  135deg,
-                  #f8fbff,
-                  #ffffff
-                ) !important;
+              border-radius: 6px !important;
+              background: var(--fd-surface-muted) !important;
             }
 
             .employees-profile-number {
               grid-column: 1 / -1 !important;
 
-              color: #2563eb !important;
+              color: var(--fd-primary) !important;
 
               font-size: 9px !important;
               font-weight: 850 !important;
@@ -2692,13 +2671,13 @@ export default function EmployeesPage() {
             }
 
             .employees-profile-name {
-              color: #0f172a !important;
+              color: var(--fd-text-primary) !important;
               font-size: 14px !important;
               font-weight: 850 !important;
             }
 
             .employees-profile-role {
-              color: #64748b !important;
+              color: var(--fd-text-secondary) !important;
               font-size: 10px !important;
             }
 
@@ -2849,22 +2828,12 @@ export default function EmployeesPage() {
 
             <div className="employees-hero-content">
 
-              <div className="employees-eyebrow">
-                <span className="employees-eyebrow-dot" />
-
-                Gestão de pessoal
-              </div>
-
               <h1>
                 Funcionários
-                <span>.</span>
               </h1>
 
               <p className="employees-description">
-                Centralize colaboradores,
-                remunerações e informações
-                necessárias para uma gestão
-                fiscal organizada.
+                Consulte vínculos, remunerações, dependentes e estado laboral.
               </p>
 
             </div>
@@ -2899,7 +2868,7 @@ export default function EmployeesPage() {
                   size={16}
                 />
 
-                Novo funcionário
+                Adicionar funcionário
               </button>
 
             </div>

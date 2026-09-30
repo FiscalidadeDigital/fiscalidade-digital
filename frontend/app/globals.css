@@ -65,6 +65,23 @@ button {
 }
 
 :root {
+          --fd-background: #f3f5f7;
+          --fd-surface: #ffffff;
+          --fd-surface-raised: #ffffff;
+          --fd-surface-muted: #f7f9fb;
+          --fd-border: #dce3ea;
+          --fd-text-primary: #172642;
+          --fd-text-secondary: #5f6f84;
+          --fd-muted: #8491a3;
+          --fd-primary: #0b6f93;
+          --fd-primary-hover: #085b79;
+          --fd-success: #047857;
+          --fd-warning: #a16207;
+          --fd-danger: #b42318;
+          --fd-focus: rgba(11, 111, 147, 0.2);
+          --fd-input: #ffffff;
+          --fd-table-header: #f7f9fb;
+          --fd-overlay: rgba(6, 20, 45, 0.55);
           --navy: #17294d;
           --navy-deep: #10203f;
           --purple: #079dcc;
@@ -78,6 +95,99 @@ button {
           --light-text: #8994a8;
           --border: #e8e9ef;
           --soft: #f5fbfd;
+        }
+
+        html[data-theme='dark'] {
+          --fd-background: #111820;
+          --fd-surface: #18222c;
+          --fd-surface-raised: #202c37;
+          --fd-surface-muted: #141d26;
+          --fd-border: #33414e;
+          --fd-text-primary: #edf2f7;
+          --fd-text-secondary: #b7c2ce;
+          --fd-muted: #8d9baa;
+          --fd-primary: #49a8c7;
+          --fd-primary-hover: #63b6d0;
+          --fd-success: #5cc995;
+          --fd-warning: #e6b85c;
+          --fd-danger: #f58a83;
+          --fd-focus: rgba(73, 168, 199, 0.28);
+          --fd-input: #131c25;
+          --fd-table-header: #141d26;
+          --fd-overlay: rgba(3, 8, 14, 0.72);
+        }
+
+        html[data-theme='dark'] body {
+          background: var(--fd-background);
+          color: var(--fd-text-primary);
+        }
+
+        .fd-app-shell,
+        .fd-main,
+        .fd-auth-page {
+          background: var(--fd-background) !important;
+          color: var(--fd-text-primary);
+        }
+
+        .fd-sidebar,
+        .fd-topbar {
+          background: var(--fd-surface) !important;
+          border-color: var(--fd-border) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope .bg-white {
+          background-color: var(--fd-surface) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope .bg-slate-50,
+        html[data-theme='dark'] .fd-theme-scope .bg-slate-50\/70,
+        html[data-theme='dark'] .fd-theme-scope .bg-slate-100 {
+          background-color: var(--fd-surface-muted) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope .border-slate-100,
+        html[data-theme='dark'] .fd-theme-scope .border-slate-200,
+        html[data-theme='dark'] .fd-theme-scope .border-slate-200\/80,
+        html[data-theme='dark'] .fd-theme-scope .border-slate-300 {
+          border-color: var(--fd-border) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope .text-slate-950,
+        html[data-theme='dark'] .fd-theme-scope .text-slate-900,
+        html[data-theme='dark'] .fd-theme-scope .text-slate-800,
+        html[data-theme='dark'] .fd-theme-scope .text-slate-700 {
+          color: var(--fd-text-primary) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope .text-slate-600,
+        html[data-theme='dark'] .fd-theme-scope .text-slate-500,
+        html[data-theme='dark'] .fd-theme-scope .text-slate-400 {
+          color: var(--fd-text-secondary) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope input,
+        html[data-theme='dark'] .fd-theme-scope select,
+        html[data-theme='dark'] .fd-theme-scope textarea {
+          background: var(--fd-input) !important;
+          border-color: var(--fd-border) !important;
+          color: var(--fd-text-primary) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope input::placeholder,
+        html[data-theme='dark'] .fd-theme-scope textarea::placeholder {
+          color: var(--fd-muted) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope table thead {
+          background: var(--fd-table-header) !important;
+        }
+
+        html[data-theme='dark'] .fd-theme-scope tbody tr:hover {
+          background: var(--fd-surface-raised) !important;
+        }
+
+        html[data-theme='dark'] .fd-auth-page > div > section:last-child {
+          background: var(--fd-background);
         }
 
         * {

@@ -14,6 +14,7 @@ import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Throttle } from '@nestjs/throttler';
 
 @Controller('auth')
 export class AuthController {
@@ -25,6 +26,7 @@ export class AuthController {
   // REGISTO DE EMPRESA
   // =========================================================
 
+  @Throttle({ default: { limit: 3, ttl: 60 * 60 * 1000 } })
   @Post('register')
   register(
     @Body() dto: RegisterDto,
@@ -36,6 +38,7 @@ export class AuthController {
   // LOGIN
   // =========================================================
 
+  @Throttle({ default: { limit: 10, ttl: 15 * 60 * 1000 } })
   @Post('login')
   login(
     @Body() dto: LoginDto,

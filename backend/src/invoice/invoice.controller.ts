@@ -5,16 +5,36 @@
   Param,
   Patch,
   Post,
+  Query,
   Res,
   UseGuards,
 } from '@nestjs/common';
 
 import type { Response } from 'express';
+import { UserRole } from '@prisma/client';
 
 import { InvoiceService } from './invoice.service';
 import { CreateInvoiceDto } from './dto/create-invoice.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { InvoiceQueryDto } from './dto/invoice-query.dto';
+
+const INVOICE_READ_ROLES = [
+  UserRole.OWNER,
+  UserRole.ADMIN,
+  UserRole.ACCOUNTANT,
+  UserRole.VIEWER,
+];
+
+const INVOICE_WRITE_ROLES = [
+  UserRole.OWNER,
+  UserRole.ADMIN,
+  UserRole.ACCOUNTANT,
+];
 
 @Controller('invoice')
 @UseGuards(JwtAuthGuard)
@@ -24,8 +44,9 @@ export class InvoiceController {
   ) {}
 
   @Post()
+  @Roles(...INVOICE_WRITE_ROLES)
   create(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateInvoiceDto,
   ) {
     return this.invoiceService.create(
@@ -35,17 +56,24 @@ export class InvoiceController {
   }
 
   @Get()
+  @Roles(...INVOICE_READ_ROLES)
   findAll(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: InvoiceQueryDto,
   ) {
+    if (query.page !== undefined) {
+      return this.invoiceService.findPage(user.tenantId, query);
+    }
+
     return this.invoiceService.findAll(
       user.tenantId,
     );
   }
 
   @Get('dashboard/stats')
+  @Roles(...INVOICE_READ_ROLES)
   getDashboardStats(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.invoiceService.getDashboardStats(
       user.tenantId,
@@ -53,8 +81,9 @@ export class InvoiceController {
   }
 
   @Get(':id')
+  @Roles(...INVOICE_READ_ROLES)
   findOne(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.invoiceService.findOne(
@@ -64,8 +93,9 @@ export class InvoiceController {
   }
 
   @Patch(':id/pay')
+  @Roles(...INVOICE_WRITE_ROLES)
   markAsPaid(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.invoiceService.markAsPaid(
@@ -75,8 +105,9 @@ export class InvoiceController {
   }
 
   @Patch(':id/cancel')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   cancel(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.invoiceService.cancel(
@@ -86,8 +117,9 @@ export class InvoiceController {
   }
 
   @Get(':id/pdf')
+  @Roles(...INVOICE_READ_ROLES)
   generatePdf(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
     @Res() res: Response,
   ) {

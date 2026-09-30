@@ -1,0 +1,12 @@
+{
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": "test/.*\\.integration-spec\\.ts$",
+  "testTimeout": 30000,
+  "setupFiles": ["reflect-metadata"],
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "clearMocks": true
+}

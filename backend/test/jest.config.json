@@ -1,0 +1,11 @@
+{
+  "rootDir": "..",
+  "testEnvironment": "node",
+  "testRegex": ".*\\.(spec|e2e-spec)\\.ts$",
+  "setupFiles": ["reflect-metadata"],
+  "moduleFileExtensions": ["js", "json", "ts"],
+  "transform": {
+    "^.+\\.(t|j)s$": "ts-jest"
+  },
+  "clearMocks": true
+}

@@ -12,6 +12,7 @@ import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 
 import { ObligationsService } from '../obligations/obligations.service';
+import { calculateTrialEnd } from '../common/config/trial-policy';
 
 @Injectable()
 export class AuthService {
@@ -48,31 +49,8 @@ export class AuthService {
         10,
       );
 
-    // =====================================================
-    // RETENÇÃO
-    // =====================================================
-
-    let retentionRate = 0;
-
-    if (
-      String(dto.companyType || '')
-        .trim()
-        .toUpperCase() ===
-      'SERVICOS'
-    ) {
-      retentionRate = 6.5;
-    }
-
-    // =====================================================
-    // REGIME
-    // =====================================================
-
-    const regime =
-      String(
-        dto.regime || 'GERAL',
-      )
-        .trim()
-        .toUpperCase();
+    const trialStartedAt = new Date();
+    const trialEndsAt = calculateTrialEnd(trialStartedAt);
 
     // =====================================================
     // EMPRESA
@@ -100,18 +78,18 @@ export class AuthService {
             dto.sector || null,
 
           companyType:
-            dto.companyType ||
-            'COMERCIO',
+            dto.companyType,
 
           employeeCount:
             Number(
               dto.employees,
             ) || 0,
 
-          regime:
-            regime as any,
+          createdAt: trialStartedAt,
+          trialEndsAt,
 
-          retentionRate,
+          regime:
+            dto.regime,
         },
       });
 
@@ -186,15 +164,7 @@ export class AuthService {
         },
       });
 
-      this.logger.log(
-        [
-          'CONFIGURAÇÕES DA EMPRESA CRIADAS',
-          `Empresa: ${tenant.name}`,
-          `Tenant: ${tenant.id}`,
-          'Alertas: ATIVOS',
-          'E-mail: ATIVO',
-        ].join(' | '),
-      );
+      this.logger.log('Configurações iniciais da empresa criadas.');
 
       // ===================================================
       // OBRIGAÇÕES FISCAIS
@@ -218,26 +188,9 @@ export class AuthService {
             tenant.id,
           );
 
-        this.logger.log(
-          [
-            'OBRIGAÇÕES FISCAIS SINCRONIZADAS',
-            `Empresa: ${tenant.name}`,
-            `NIF: ${tenant.nif}`,
-            `Regime: ${tenant.regime}`,
-            `Ano: ${obligationsResult?.year ?? new Date().getFullYear()}`,
-            `Regras AGT: ${obligationsResult?.calendarRules ?? 0}`,
-            `Criadas: ${obligationsResult?.created ?? 0}`,
-            `Atualizadas: ${obligationsResult?.updated ?? 0}`,
-            `Atrasadas: ${obligationsResult?.late ?? 0}`,
-          ].join(' | '),
-        );
+        this.logger.log('Sincronização inicial de obrigações concluída.');
       } catch (error) {
-        this.logger.error(
-          `Erro ao sincronizar obrigações da empresa ${tenant.name}.`,
-          error instanceof Error
-            ? error.stack
-            : String(error),
-        );
+        this.logger.error('Falha na sincronização inicial de obrigações.');
 
         obligationsResult = {
           success:
@@ -411,12 +364,7 @@ export class AuthService {
           },
         });
       } catch (rollbackError) {
-        this.logger.error(
-          'Falha ao remover empresa após erro no registo.',
-          rollbackError instanceof Error
-            ? rollbackError.stack
-            : String(rollbackError),
-        );
+        this.logger.error('Falha no rollback do registo de empresa.');
       }
 
       throw error;
