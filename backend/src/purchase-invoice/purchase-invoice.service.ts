@@ -1,11 +1,13 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
 
 import {
   InvoiceStatus,
+  Prisma,
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -26,6 +28,7 @@ export class PurchaseInvoiceService {
 
   async create(
     tenantId: string,
+    _createdById: string,
     dto: CreatePurchaseInvoiceDto,
   ) {
     const tenant =
@@ -109,6 +112,49 @@ export class PurchaseInvoiceService {
       }
     }
 
+    const productIds = [
+      ...new Set(
+        dto.items
+          .map((item) => item.productId)
+          .filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const products = productIds.length
+      ? await this.prisma.product.findMany({
+          where: { tenantId, id: { in: productIds }, isActive: true },
+          select: { id: true, name: true, price: true, priceAmount: true, unit: true },
+        })
+      : [];
+    if (products.length !== productIds.length) {
+      throw new NotFoundException(
+        'Um dos produtos não existe, está inactivo ou pertence a outra empresa.',
+      );
+    }
+    const productsById = new Map(products.map((product) => [product.id, product]));
+    const items = dto.items.map((item) => {
+      const product = item.productId ? productsById.get(item.productId) : undefined;
+      return {
+        productId: product?.id ?? null,
+        productName: product?.name ?? item.productName.trim(),
+        quantity: new Prisma.Decimal(item.quantity),
+        unitPrice: new Prisma.Decimal(
+          product?.priceAmount?.toString() ?? product?.price ?? item.unitPrice,
+        ),
+        unit: product?.unit ?? item.unit ?? 'UN',
+      };
+    });
+
+    const originalDocumentId = dto.originalDocumentId?.trim() || null;
+    if (originalDocumentId) {
+      const originalDocument = await this.prisma.document.findFirst({
+        where: { id: originalDocumentId, tenantId },
+        select: { id: true },
+      });
+      if (!originalDocument) {
+        throw new NotFoundException('O documento original não pertence à empresa.');
+      }
+    }
+
     // ==========================================================
     // DATA
     // ==========================================================
@@ -150,22 +196,11 @@ export class PurchaseInvoiceService {
     // SUBTOTAL
     // ==========================================================
 
-    const subtotal =
-      this.round(
-        dto.items.reduce(
-          (
-            total: number,
-            item: any,
-          ) => {
-            return (
-              total +
-              Number(item.quantity) *
-                Number(item.unitPrice)
-            );
-          },
-          0,
-        ),
-      );
+    const subtotalAmount = items.reduce(
+      (total, item) => total.plus(item.quantity.mul(item.unitPrice)),
+      new Prisma.Decimal(0),
+    ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const subtotal = subtotalAmount.toNumber();
 
     if (subtotal < 0) {
       throw new BadRequestException(
@@ -175,8 +210,12 @@ export class PurchaseInvoiceService {
 
     // Os montantes fiscais são transcritos da factura de origem.
     // Este serviço não infere taxas a partir do regime da empresa.
-    const iva = Number(dto.iva);
-    const withholdingTax = Number(dto.withholdingTax);
+    const ivaAmount = new Prisma.Decimal(dto.iva)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const withholdingTaxAmount = new Prisma.Decimal(dto.withholdingTax)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const iva = ivaAmount.toNumber();
+    const withholdingTax = withholdingTaxAmount.toNumber();
 
     if (
       !Number.isFinite(iva) ||
@@ -204,12 +243,12 @@ export class PurchaseInvoiceService {
     // TOTAL
     // ==========================================================
 
-    const total =
-      this.round(
-        subtotal +
-          iva -
-          withholdingTax,
-      );
+    const totalAmount = subtotalAmount
+      .plus(ivaAmount)
+      .minus(withholdingTaxAmount)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const total = totalAmount.toNumber();
+    const currency = (dto.currency ?? 'AOA').trim().toUpperCase();
 
     // ==========================================================
     // NÚMERO DA FACTURA
@@ -231,6 +270,7 @@ export class PurchaseInvoiceService {
       await this.prisma.purchaseInvoice.findFirst({
         where: {
           tenantId,
+          supplierId: supplier.id,
           invoiceNumber,
         },
 
@@ -241,7 +281,7 @@ export class PurchaseInvoiceService {
 
     if (existing) {
       throw new BadRequestException(
-        `A factura ${invoiceNumber} já está registada.`,
+        `A factura ${invoiceNumber} deste fornecedor já está registada.`,
       );
     }
 
@@ -263,12 +303,24 @@ export class PurchaseInvoiceService {
                 invoiceNumber,
 
                 subtotal,
+                subtotalAmount,
 
                 iva,
+                ivaAmount,
 
                 withholdingTax,
+                withholdingTaxAmount,
 
                 total,
+                totalAmount,
+
+                currency,
+
+                reference: dto.reference?.trim() || null,
+
+                createdById: _createdById,
+
+                originalDocumentId,
 
                 status:
                   InvoiceStatus.PENDING,
@@ -291,44 +343,49 @@ export class PurchaseInvoiceService {
           // ====================================================
 
           for (
-            const item of dto.items
+            const item of items
           ) {
             await tx.purchaseInvoiceItem.create({
               data: {
                 purchaseInvoiceId:
                   created.id,
 
-                productName:
-                  String(
-                    item.productName,
-                  ).trim(),
+                productId: item.productId,
 
-                quantity:
-                  Number(
-                    item.quantity,
-                  ),
+                productName: item.productName,
 
-                unitPrice:
-                  Number(
-                    item.unitPrice,
-                  ),
+                quantity: item.quantity.toNumber(),
+                quantityAmount: item.quantity,
 
-                total:
-                  this.round(
-                    Number(
-                      item.quantity,
-                    ) *
-                      Number(
-                        item.unitPrice,
-                      ),
-                  ),
+                unitPrice: item.unitPrice.toNumber(),
+                unitPriceAmount: item.unitPrice,
+
+                total: item.quantity
+                  .mul(item.unitPrice)
+                  .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+                  .toNumber(),
+                totalAmount: item.quantity
+                  .mul(item.unitPrice)
+                  .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+
+                unit: item.unit,
               },
             });
           }
 
           return created;
         },
-      );
+      ).catch((error: unknown) => {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          throw new ConflictException(
+            `A factura ${invoiceNumber} deste fornecedor já está registada.`,
+          );
+        }
+        throw error;
+      });
 
     // ==========================================================
     // SINCRONIZAR FISCALIDADE

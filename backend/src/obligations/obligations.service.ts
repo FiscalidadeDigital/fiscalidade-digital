@@ -7,6 +7,7 @@
 
 import {
   FiscalRegime,
+  InvoiceDocumentType,
   ObligationStatus,
   ObligationType,
   Prisma,
@@ -921,6 +922,8 @@ export class ObligationsService {
               tenantId:
                 tenant.id,
 
+              documentType: InvoiceDocumentType.NORMAL,
+
               issuedAt: {
                 gte:
                   start,
@@ -980,18 +983,12 @@ export class ObligationsService {
             },
           });
 
-        const ivaDedutivel =
-          purchases.reduce(
-            (
-              sum,
-              purchase,
-            ) =>
-              sum +
-              this.number(
-                purchase.iva,
-              ),
-            0,
-          );
+        /*
+         * O IVA indicado numa factura de fornecedor é suportado,
+         * mas não se torna dedutível até existir classificação e
+         * regra fiscal confirmadas pelo motor central.
+         */
+        const ivaDedutivel = 0;
 
         /*
          * IVA a entregar:

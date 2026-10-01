@@ -33,10 +33,10 @@ describe('PurchaseInvoiceController', () => {
 
   it('uses the authenticated tenant and explicit roles for write operations', () => {
     const dto = {} as CreatePurchaseInvoiceDto;
-    controller.create({ tenantId: 'tenant-a' }, dto);
+    controller.create({ tenantId: 'tenant-a', userId: 'user-a' }, dto);
     controller.update({ tenantId: 'tenant-a' }, 'invoice-1', {} as UpdatePurchaseInvoiceDto);
 
-    expect(service.create).toHaveBeenCalledWith('tenant-a', dto);
+    expect(service.create).toHaveBeenCalledWith('tenant-a', 'user-a', dto);
     expect(service.update).toHaveBeenCalledWith('tenant-a', 'invoice-1', {});
     expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.create))
       .toEqual([UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT]);

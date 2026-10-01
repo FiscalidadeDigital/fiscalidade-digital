@@ -73,11 +73,12 @@ export class PurchaseInvoiceController {
   @Post()
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
   async create(
-    @CurrentUser() user: { tenantId: string },
+    @CurrentUser() user: { tenantId: string; userId: string },
     @Body() dto: CreatePurchaseInvoiceDto,
   ) {
     return this.purchaseInvoiceService.create(
       user.tenantId,
+      user.userId,
       dto,
     );
   }

@@ -7,6 +7,8 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  IsUUID,
+  Matches,
   MaxLength,
   Min,
   ValidateNested,
@@ -30,6 +32,20 @@ export class CreatePurchaseInvoiceDto {
   @IsOptional()
   @IsDateString()
   dueDate?: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Z]{3}$/)
+  currency?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reference?: string;
+
+  @IsOptional()
+  @IsUUID()
+  originalDocumentId?: string;
 
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })

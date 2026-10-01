@@ -544,6 +544,12 @@ export class InvoiceService {
       include: {
         client: true,
         items: true,
+        convertedInvoice: {
+          select: {
+            id: true,
+            invoiceNumber: true,
+          },
+        },
       },
 
       orderBy: {
@@ -669,6 +675,12 @@ export class InvoiceService {
         include: {
           client: true,
           items: true,
+          convertedInvoice: {
+            select: {
+              id: true,
+              invoiceNumber: true,
+            },
+          },
         },
       });
 
@@ -868,6 +880,7 @@ export class InvoiceService {
       await this.prisma.invoice.findMany({
         where: {
           tenantId,
+          documentType: InvoiceDocumentType.NORMAL,
         },
 
         select: {

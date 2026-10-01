@@ -155,6 +155,12 @@ const navigationSections = [
       },
 
       {
+        label: 'Pro Formas',
+        href: '/pro-formas',
+        icon: FileText,
+      },
+
+      {
         label: 'Relatórios',
         href: '/reports',
         icon: FileText,

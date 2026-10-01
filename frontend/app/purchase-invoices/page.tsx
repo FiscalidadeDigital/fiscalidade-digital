@@ -259,17 +259,26 @@ export default function PurchaseInvoicesPage() {
             </p>
           </div>
 
-          <button
-            onClick={() => {
-              setSaveError("");
-              setShowModal(true);
-            }}
-            disabled={isLoading || Boolean(loadError)}
-            className="flex items-center justify-center gap-2 rounded-xl bg-[#5146e5] px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
-          >
-            <Plus size={19} />
-            Nova factura recebida
-          </button>
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href="/purchase-invoices/import"
+              className="flex items-center justify-center gap-2 rounded-xl border border-[#d9ddec] bg-white px-5 py-3 text-sm font-semibold text-[#273558] shadow-sm transition hover:border-[#5146e5]"
+            >
+              <FileText size={18} />
+              Importar documento
+            </Link>
+            <button
+              onClick={() => {
+                setSaveError("");
+                setShowModal(true);
+              }}
+              disabled={isLoading || Boolean(loadError)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-[#5146e5] px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
+            >
+              <Plus size={19} />
+              Nova factura recebida
+            </button>
+          </div>
         </div>
 
         {/* RESUMO */}

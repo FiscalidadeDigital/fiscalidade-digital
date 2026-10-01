@@ -18,6 +18,7 @@ export type CreateInvoiceInput = {
 };
 
 export type InvoiceStatus = 'PENDING' | 'PAID' | 'CANCELLED';
+export type InvoiceDocumentType = 'NORMAL' | 'PRO_FORMA';
 
 export type Invoice = {
   id: string;
@@ -34,6 +35,9 @@ export type Invoice = {
   totalAmount?: string | null;
   taxRuleVersion?: string | null;
   taxCalculationStatus?: string;
+  documentType: InvoiceDocumentType;
+  sourceProFormaId?: string | null;
+  convertedInvoice?: { id: string; invoiceNumber: string } | null;
   status: InvoiceStatus;
   notes: string | null;
   createdAt: string;
@@ -98,12 +102,18 @@ export async function createInvoice(data: CreateInvoiceInput): Promise<Invoice> 
   return response.data;
 }
 
+export async function createProForma(data: CreateInvoiceInput): Promise<Invoice> {
+  const response = await api.post<Invoice>('/invoice/pro-forma', data);
+  return response.data;
+}
+
 export async function getInvoices(): Promise<Invoice[]> {
   const response = await api.get<Invoice[]>('/invoice');
   return response.data;
 }
 
 export async function getInvoicePage(query: {
+  documentType?: InvoiceDocumentType;
   search?: string;
   status?: InvoiceStatus | '';
   page: number;
@@ -116,6 +126,11 @@ export async function getInvoicePage(query: {
       Object.entries(query).filter(([, value]) => value !== '' && value !== undefined),
     ),
   });
+  return response.data;
+}
+
+export async function convertProForma(id: string): Promise<Invoice> {
+  const response = await api.post<Invoice>(`/invoice/${id}/convert`);
   return response.data;
 }
 

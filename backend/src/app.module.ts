@@ -16,6 +16,7 @@ import { SupplierModule } from './supplier/supplier.module';
 
 import { InvoiceModule } from './invoice/invoice.module';
 import { PurchaseInvoiceModule } from './purchase-invoice/purchase-invoice.module';
+import { PurchaseInvoiceImportModule } from './purchase-invoice-import/purchase-invoice-import.module';
 
 import { FiscalCalendarModule } from './fiscal-calendar/fiscal-calendar.module';
 import { FiscalEngineModule } from './fiscal-engine/fiscal-engine.module';
@@ -83,6 +84,7 @@ import { UsersModule } from './users/users.module';
 
     InvoiceModule,
     PurchaseInvoiceModule,
+    PurchaseInvoiceImportModule,
 
     // ==========================================================
     // MOTOR FISCAL

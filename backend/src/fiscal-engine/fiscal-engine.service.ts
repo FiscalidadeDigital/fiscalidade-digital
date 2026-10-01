@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 
 import {
+  InvoiceDocumentType,
   ObligationStatus,
   TaxRuleOperation,
   TaxType,
@@ -101,6 +102,8 @@ export class FiscalEngineService {
       this.prisma.invoice.findMany({
         where: {
           tenantId,
+
+          documentType: InvoiceDocumentType.NORMAL,
 
           status: {
             not: 'CANCELLED',
@@ -406,7 +409,7 @@ export class FiscalEngineService {
             purchase.issuedAt,
 
           sourceType:
-            'PURCHASE_INVOICE_IVA',
+            'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
 
           sourceId:
             purchase.id,
@@ -428,9 +431,7 @@ export class FiscalEngineService {
            * IVA potencialmente dedutível.
            */
           deductibleAmount:
-            this.round(
-              iva,
-            ),
+            0,
 
           withheldAmount:
             0,
@@ -755,6 +756,7 @@ export class FiscalEngineService {
           'INVOICE_IVA',
           'INVOICE_IVA_SIMPLIFICADO',
           'PURCHASE_INVOICE_IVA',
+          'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
           'PAYROLL_IRT',
           'PAYROLL_SS',
           'INDUSTRIAL_PROVISIONAL',

@@ -22,8 +22,10 @@ import { getClients, type Client } from '@/services/client';
 import { getCompany } from '@/services/company';
 import {
   createInvoice,
+  createProForma,
   getInvoiceApiError,
   type Invoice,
+  type InvoiceDocumentType,
 } from '@/services/invoice';
 import {
   getProducts,
@@ -86,12 +88,19 @@ function formatCents(cents: number | null) {
   })} Kz`;
 }
 
-export default function InvoiceComposer() {
+export default function InvoiceComposer({
+  documentType = 'NORMAL',
+}: {
+  documentType?: InvoiceDocumentType;
+}) {
   const router = useRouter();
   const { user, initialized } = useAuth();
   const canCreate = ['OWNER', 'ADMIN', 'ACCOUNTANT'].includes(
     user?.role?.toUpperCase() ?? '',
   );
+  const isProForma = documentType === 'PRO_FORMA';
+  const collectionHref = isProForma ? '/pro-formas' : '/invoices';
+  const documentLabel = isProForma ? 'Pro Forma' : 'factura';
 
   const [company, setCompany] = useState<Tenant | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
@@ -109,8 +118,8 @@ export default function InvoiceComposer() {
   const [created, setCreated] = useState<Invoice | null>(null);
 
   useEffect(() => {
-    if (initialized && !canCreate) router.replace('/invoices');
-  }, [canCreate, initialized, router]);
+    if (initialized && !canCreate) router.replace(collectionHref);
+  }, [canCreate, collectionHref, initialized, router]);
 
   useEffect(() => {
     let active = true;
@@ -222,7 +231,7 @@ export default function InvoiceComposer() {
 
     setSaving(true);
     try {
-      const invoice = await createInvoice({
+      const invoice = await (isProForma ? createProForma : createInvoice)({
         clientId,
         notes: notes.trim() || undefined,
         items: items.map((item) => ({
@@ -236,7 +245,7 @@ export default function InvoiceComposer() {
       setCreated(invoice);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (submitError: unknown) {
-      setError(getInvoiceApiError(submitError, 'Não foi possível emitir a factura.'));
+      setError(getInvoiceApiError(submitError, `Não foi possível registar ${isProForma ? 'a Pro Forma' : 'a factura'}.`));
     } finally {
       setSaving(false);
     }
@@ -255,28 +264,28 @@ export default function InvoiceComposer() {
       <main className="mx-auto max-w-7xl space-y-6 pb-12">
         <header className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-3">
-            <button type="button" onClick={() => router.push('/invoices')} className="mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:focus:ring-sky-900/40" aria-label="Voltar às facturas">
+            <button type="button" onClick={() => router.push(collectionHref)} className="mt-1 grid h-10 w-10 shrink-0 place-items-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 focus:outline-none focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800 dark:focus:ring-sky-900/40" aria-label={`Voltar a ${isProForma ? 'Pro Formas' : 'facturas'}`}>
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700 dark:text-sky-400">Facturação</p>
-              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">Emitir factura</h1>
-              <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Registe o cliente e as linhas. Numeração, impostos e total são determinados pelo servidor.</p>
+              <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950 dark:text-white">{isProForma ? 'Criar Pro Forma' : 'Emitir factura'}</h1>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500 dark:text-slate-400">{isProForma ? 'Registe uma proposta comercial. O documento será numerado na série PF e não produz efeito fiscal definitivo.' : 'Registe o cliente e as linhas. Numeração, impostos e total são determinados pelo servidor.'}</p>
             </div>
           </div>
         </header>
 
         {created && (
           <section className="flex flex-col gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 sm:flex-row sm:items-center sm:justify-between dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-100" role="status">
-            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">Factura {created.invoiceNumber} registada</p><p className="mt-1 text-sm opacity-80">Total calculado pelo servidor: {formatCents(toScaledInteger(String(created.totalAmount ?? created.total), 2))}.</p></div></div>
-            <button type="button" onClick={() => router.push('/invoices')} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">Ver facturas</button>
+            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">{isProForma ? 'Pro Forma' : 'Factura'} {created.invoiceNumber} registada</p><p className="mt-1 text-sm opacity-80">{isProForma ? 'Documento preliminar guardado sem efeito fiscal definitivo.' : `Total calculado pelo servidor: ${formatCents(toScaledInteger(String(created.totalAmount ?? created.total), 2))}.`}</p></div></div>
+            <button type="button" onClick={() => router.push(isProForma ? `/pro-formas/${created.id}` : '/invoices')} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">{isProForma ? 'Abrir Pro Forma' : 'Ver facturas'}</button>
           </section>
         )}
 
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-200" role="alert">{error}</div>}
 
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900 dark:bg-amber-950/30">
-          <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400" /><div><p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Documento interno em validação fiscal</p><p className="mt-1 text-sm text-amber-800 dark:text-amber-200">A plataforma ainda não confirma certificação nem submissão electrónica à AGT. A classificação fiscal de cada artigo deve ser revista antes de uso oficial.</p></div></div>
+          <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-400" /><div><p className="text-sm font-semibold text-amber-950 dark:text-amber-100">{isProForma ? 'Documento preliminar — não constitui factura fiscal definitiva' : 'Documento interno em validação fiscal'}</p><p className="mt-1 text-sm text-amber-800 dark:text-amber-200">{isProForma ? 'O total é comercial. Qualquer IVA apresentado antes da conversão é apenas estimativa; não é IVA liquidado, obrigação, declaração nem pagamento.' : 'A plataforma ainda não confirma certificação nem submissão electrónica à AGT. A classificação fiscal de cada artigo deve ser revista antes de uso oficial.'}</p></div></div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900">
@@ -327,10 +336,10 @@ export default function InvoiceComposer() {
 
         <section className="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
           <label className="rounded-xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">Observações<textarea value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} rows={6} placeholder="Informação adicional para este documento" className="mt-2 w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-950 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:focus:ring-sky-900/40" /></label>
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"><Calculator className="h-4 w-4" /></span><div><h2 className="font-semibold text-slate-950 dark:text-white">Pré-visualização</h2><p className="text-xs text-slate-500">Subtotal das linhas</p></div></div><p className="mt-6 text-2xl font-bold text-slate-950 dark:text-white">{formatCents(subtotalCents)}</p><p className="mt-3 text-xs leading-5 text-slate-500">IVA, retenção e total final são calculados no backend. Esta pré-visualização não é uma liquidação fiscal.</p></div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-300"><Calculator className="h-4 w-4" /></span><div><h2 className="font-semibold text-slate-950 dark:text-white">Pré-visualização</h2><p className="text-xs text-slate-500">{isProForma ? 'Total comercial estimado' : 'Subtotal das linhas'}</p></div></div><p className="mt-6 text-2xl font-bold text-slate-950 dark:text-white">{formatCents(subtotalCents)}</p><p className="mt-3 text-xs leading-5 text-slate-500">{isProForma ? 'IVA fiscal final e retenção fiscal final permanecem em zero nesta Pro Forma. A conversão recalcula os impostos no backend.' : 'IVA, retenção e total final são calculados no backend. Esta pré-visualização não é uma liquidação fiscal.'}</p></div>
         </section>
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => router.push('/invoices')} disabled={saving} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Cancelar</button><button type="button" onClick={() => void submit()} disabled={saving || clients.length === 0 || Boolean(created)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{saving ? 'A registar…' : 'Registar factura'}</button></div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => router.push(collectionHref)} disabled={saving} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:bg-slate-800">Cancelar</button><button type="button" onClick={() => void submit()} disabled={saving || clients.length === 0 || Boolean(created)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{saving ? 'A registar…' : `Registar ${documentLabel}`}</button></div>
       </main>
     </DashboardLayout>
   );

@@ -57,6 +57,7 @@ model Tenant {
   taxTransactions  TaxTransaction[]
   users            User[]
   documents        Document[]
+  purchaseInvoiceImports PurchaseInvoiceImport[]
 
   @@index([nif])
   @@index([regime])
@@ -77,7 +78,9 @@ model User {
   phone            String?
   twoFactorEnabled Boolean   @default(false)
 
-  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenant                  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdPurchaseInvoices PurchaseInvoice[] @relation("PurchaseInvoiceCreatedBy")
+  uploadedPurchaseInvoiceImports PurchaseInvoiceImport[] @relation("PurchaseInvoiceImportUploadedBy")
 
   @@unique([email, tenantId])
   @@index([tenantId])
@@ -554,6 +557,14 @@ model PurchaseInvoice {
   iva            Float         @default(0)
   withholdingTax Float         @default(0)
   total          Float
+  subtotalAmount Decimal?      @db.Decimal(20, 2)
+  ivaAmount      Decimal?      @db.Decimal(20, 2)
+  withholdingTaxAmount Decimal? @db.Decimal(20, 2)
+  totalAmount    Decimal?      @db.Decimal(20, 2)
+  currency       String        @default("AOA") @db.VarChar(3)
+  reference      String?
+  createdById    String?
+  originalDocumentId String?   @unique
   status         InvoiceStatus @default(PENDING)
   notes          String?
   pdfUrl         String?
@@ -562,15 +573,44 @@ model PurchaseInvoice {
   createdAt      DateTime      @default(now())
   updatedAt      DateTime      @updatedAt
 
-  tenant   Tenant                @relation(fields: [tenantId], references: [id])
-  supplier Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  items    PurchaseInvoiceItem[]
+  tenant           Tenant                @relation(fields: [tenantId], references: [id])
+  supplier         Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy        User?                 @relation("PurchaseInvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  originalDocument Document?             @relation("PurchaseInvoiceSourceDocument", fields: [originalDocumentId], references: [id], onDelete: SetNull)
+  confirmedImport PurchaseInvoiceImport? @relation("PurchaseInvoiceImportConfirmation")
+  items            PurchaseInvoiceItem[]
 
-  @@unique([tenantId, invoiceNumber])
+  @@unique([tenantId, supplierId, invoiceNumber])
   @@index([tenantId])
   @@index([supplierId])
   @@index([issuedAt])
   @@index([status])
+  @@index([createdById])
+}
+
+model PurchaseInvoiceImport {
+  id                         String                      @id @default(uuid())
+  tenantId                   String
+  documentId                 String                      @unique
+  uploadedById               String
+  status                     PurchaseInvoiceImportStatus @default(UPLOADED)
+  extractionProvider         String                      @default("MANUAL")
+  providerVersion            String?
+  rawExtraction              Json?
+  candidateData              Json?
+  errorCode                  String?
+  errorMessage               String?
+  confirmedPurchaseInvoiceId String?                     @unique
+  createdAt                  DateTime                    @default(now())
+  updatedAt                  DateTime                    @updatedAt
+
+  tenant                   Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  document                 Document         @relation("PurchaseInvoiceImportDocument", fields: [documentId], references: [id], onDelete: Restrict)
+  uploadedBy               User             @relation("PurchaseInvoiceImportUploadedBy", fields: [uploadedById], references: [id], onDelete: Restrict)
+  confirmedPurchaseInvoice PurchaseInvoice? @relation("PurchaseInvoiceImportConfirmation", fields: [confirmedPurchaseInvoiceId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, status])
+  @@index([uploadedById])
 }
 
 model PurchaseInvoiceItem {
@@ -581,6 +621,10 @@ model PurchaseInvoiceItem {
   quantity          Float
   unitPrice         Float
   total             Float
+  quantityAmount    Decimal? @db.Decimal(20, 4)
+  unitPriceAmount   Decimal? @db.Decimal(20, 2)
+  totalAmount       Decimal? @db.Decimal(20, 2)
+  unit              String   @default("UN")
 
   purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Cascade)
   product         Product?        @relation(fields: [productId], references: [id])
@@ -832,6 +876,8 @@ model Document {
 
   tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  purchaseInvoiceSource PurchaseInvoice? @relation("PurchaseInvoiceSourceDocument")
+  purchaseInvoiceImport PurchaseInvoiceImport? @relation("PurchaseInvoiceImportDocument")
 
   @@index([tenantId])
   @@index([category])
@@ -1012,4 +1058,13 @@ enum DocumentCategory {
   COMPROVATIVO
   RELATORIO
   OUTROS
+}
+
+enum PurchaseInvoiceImportStatus {
+  UPLOADED
+  PROCESSING
+  REVIEW_REQUIRED
+  READY
+  CONFIRMED
+  FAILED
 }
