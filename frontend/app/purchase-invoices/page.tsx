@@ -537,11 +537,11 @@ export default function PurchaseInvoicesPage() {
       {/* MODAL */}
       {showModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f1b3d]/40 p-4 backdrop-blur-sm">
-          <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+          <div role="dialog" aria-modal="true" aria-labelledby="purchase-invoice-title" className="max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
 
             <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#eef0f5] bg-white px-6 py-5">
               <div>
-                <h2 className="text-xl font-bold text-[#0f1b3d]">
+                <h2 id="purchase-invoice-title" className="text-xl font-bold text-[#0f1b3d]">
                   Nova factura recebida
                 </h2>
 
@@ -559,7 +559,7 @@ export default function PurchaseInvoicesPage() {
               </button>
             </div>
 
-            <div className="space-y-7 p-6">
+            <div className="space-y-6 p-5 sm:p-6">
               {saveError && (
                 <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700">
                   {saveError}
@@ -578,7 +578,7 @@ export default function PurchaseInvoicesPage() {
                   Dados da factura
                 </h3>
 
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:grid-cols-2">
 
                   <div>
                     <label className="mb-2 block text-sm font-medium">
@@ -612,7 +612,7 @@ export default function PurchaseInvoicesPage() {
                     />
                   </div>
 
-                  <div className="lg:col-span-2">
+                  <div className="md:col-span-2">
                     <label className="mb-2 block text-sm font-medium">
                       Fornecedor *
                     </label>
@@ -683,7 +683,7 @@ export default function PurchaseInvoicesPage() {
                     />
                   </div>
 
-                  <p className="text-xs text-[#7180a0] lg:col-span-2">
+                  <p className="text-xs text-[#7180a0] md:col-span-2">
                     Os valores de IVA e retenção são registados conforme o documento de origem; esta página não calcula nem valida taxas fiscais.
                   </p>
                 </div>
@@ -812,8 +812,9 @@ export default function PurchaseInvoicesPage() {
                 </div>
               </section>
 
-              <section className="ml-auto max-w-md rounded-2xl bg-[#f8f8ff] p-5 text-sm text-[#56627e]">
-                O subtotal e o total apresentados depois do registo vêm da API. Esta página não estima impostos nem arredondamentos.
+              <section aria-label="Totais e impostos" className="rounded-xl border border-[#e6e9f0] bg-[#fafbfe] p-4 text-sm text-[#56627e]">
+                <h3 className="font-bold text-[#0f1b3d]">Totais, IVA e retenção</h3>
+                <p className="mt-1">O subtotal e o total definitivos são calculados pela API. IVA e retenção são os valores indicados no documento do fornecedor.</p>
               </section>
 
               <div>

@@ -13,7 +13,20 @@ export type PurchaseInvoiceImport = {
   id: string;
   status: PurchaseInvoiceImportStatus;
   extractionProvider: string;
-  candidateData: unknown | null;
+  candidateData: {
+    supplierName?: string | null;
+    supplierNif?: string | null;
+    invoiceNumber?: string | null;
+    issuedAt?: string | null;
+    dueDate?: string | null;
+    currency?: string | null;
+    items?: Array<{ description?: string | null; quantity?: string | null; unitPrice?: string | null }>;
+    subtotal?: string | null;
+    vatSupported?: string | null;
+    withholdingTax?: string | null;
+    total?: string | null;
+    confidence?: number | null;
+  } | null;
   document: { id: string; originalName: string; mimeType: string; size: number };
   confirmedPurchaseInvoiceId: string | null;
   confirmedPurchaseInvoice?: { id: string; invoiceNumber: string } | null;

@@ -69,6 +69,8 @@ export class DashboardService {
       declarations,
       revenues,
       payments,
+      purchaseInvoiceSummary,
+      pendingPurchaseInvoiceImports,
     ] = await Promise.all([
       // ========================================================
       // EMPRESA
@@ -248,6 +250,19 @@ export class DashboardService {
 
         orderBy: {
           paidAt: 'asc',
+        },
+      }),
+
+      this.prisma.purchaseInvoice.aggregate({
+        where: { tenantId },
+        _count: { id: true },
+        _sum: { totalAmount: true, total: true, ivaAmount: true, iva: true },
+      }),
+
+      this.prisma.purchaseInvoiceImport.count({
+        where: {
+          tenantId,
+          status: { in: ['UPLOADED', 'PROCESSING', 'REVIEW_REQUIRED', 'READY'] },
         },
       }),
     ]);
@@ -1230,6 +1245,18 @@ export class DashboardService {
 
         products:
           productCount,
+
+        purchaseInvoices:
+          purchaseInvoiceSummary._count.id,
+
+        purchaseInvoiceTotal:
+          this.round(this.number(purchaseInvoiceSummary._sum.totalAmount ?? purchaseInvoiceSummary._sum.total)),
+
+        purchaseInvoiceVatSupported:
+          this.round(this.number(purchaseInvoiceSummary._sum.ivaAmount ?? purchaseInvoiceSummary._sum.iva)),
+
+        purchaseInvoiceImportsPendingReview:
+          pendingPurchaseInvoiceImports,
 
         iva:
           this.round(

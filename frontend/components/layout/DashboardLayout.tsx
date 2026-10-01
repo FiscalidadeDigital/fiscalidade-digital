@@ -155,6 +155,12 @@ const navigationSections = [
       },
 
       {
+        label: 'Facturas Recebidas',
+        href: '/purchase-invoices',
+        icon: FileText,
+      },
+
+      {
         label: 'Pro Formas',
         href: '/pro-formas',
         icon: FileText,

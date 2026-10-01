@@ -121,6 +121,10 @@ interface DashboardData {
 
     clients?: number;
     products?: number;
+    purchaseInvoices?: number;
+    purchaseInvoiceTotal?: number;
+    purchaseInvoiceVatSupported?: number;
+    purchaseInvoiceImportsPendingReview?: number;
 
     iva?: number;
     irt?: number;
@@ -623,6 +627,10 @@ export default function DashboardPage() {
         ?.totalRevenue,
     );
 
+  const purchaseInvoices = toNumber(dashboard.metrics?.purchaseInvoices);
+  const purchaseInvoiceTotal = toNumber(dashboard.metrics?.purchaseInvoiceTotal);
+  const pendingPurchaseImports = toNumber(dashboard.metrics?.purchaseInvoiceImportsPendingReview);
+
   return (
     <DashboardLayout
       company={company}
@@ -878,6 +886,16 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        <section className="mb-6 flex flex-col gap-3 rounded-xl border border-[#e5e9f0] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[#111b3b]">Facturas recebidas</p>
+            <p className="mt-1 text-xs text-[#7180a2]">{purchaseInvoices} registadas · compras no valor de {formatCurrency(purchaseInvoiceTotal)}{pendingPurchaseImports > 0 ? ` · ${pendingPurchaseImports} em revisão` : ''}</p>
+          </div>
+          <Link href="/purchase-invoices" className="inline-flex items-center gap-2 self-start text-sm font-semibold text-[#087fb3] hover:underline">
+            Abrir facturas recebidas <ArrowRight size={15} />
+          </Link>
+        </section>
 
         {/* ==================================================
             ERRO
