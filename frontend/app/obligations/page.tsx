@@ -24,6 +24,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 
 import {
   Obligation,
+  ObligationCalculationQuality,
   ObligationStatus,
   getObligations,
   syncObligations,
@@ -245,6 +246,21 @@ const statusLabel = (
 
     default:
       return 'Pendente';
+  }
+};
+
+const calculationQuality = (
+  quality?: ObligationCalculationQuality,
+) => {
+  switch (quality) {
+    case 'CONFIRMED':
+      return { label: 'Confirmado', className: 'bg-emerald-50 text-emerald-700' };
+    case 'CALCULATED':
+      return { label: 'Calculado', className: 'bg-blue-50 text-blue-700' };
+    case 'ESTIMATE':
+      return { label: 'Estimativa', className: 'bg-slate-100 text-slate-700' };
+    default:
+      return { label: 'Revisão necessária', className: 'bg-amber-50 text-amber-700' };
   }
 };
 
@@ -2099,6 +2115,10 @@ export default function ObligationsPage() {
                       obligation.description,
                     );
 
+                  const quality = calculationQuality(
+                    obligation.calculation?.quality,
+                  );
+
                   return (
                     <div
                       key={
@@ -2210,6 +2230,12 @@ export default function ObligationsPage() {
                                 {typeLabel(
                                   obligation.type,
                                 )}
+                              </span>
+
+                              <span
+                                className={`rounded-md px-2 py-1 text-[9px] font-bold ${quality.className}`}
+                              >
+                                {quality.label}
                               </span>
                             </div>
 
@@ -2345,6 +2371,39 @@ export default function ObligationsPage() {
                               >
                                 {description}
                               </p>
+                            )}
+
+                            {obligation.calculation && (
+                              <details className="mt-3 max-w-[650px] rounded-lg border border-[#eef0f5] bg-[#fafbfe] px-3 py-2 text-[10px] text-[#65718a]">
+                                <summary className="cursor-pointer font-semibold text-[#526080]">
+                                  Como este valor foi calculado
+                                </summary>
+                                <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                                  <span>Período: {obligation.calculation.period || obligation.period || '—'}</span>
+                                  <span>Origem: {obligation.calculation.origin?.calendarTitle || 'Calendário fiscal'}</span>
+                                  {obligation.calculation.amounts && (
+                                    <>
+                                      <span>Base: {formatCurrency(obligation.calculation.amounts.taxableAmount)}</span>
+                                      <span>Imposto apurado: {formatCurrency(obligation.calculation.amounts.taxDueAmount)}</span>
+                                      <span>Dedução confirmada: {formatCurrency(obligation.calculation.amounts.deductibleAmount)}</span>
+                                      <span>Resultado: {formatCurrency(obligation.calculation.amounts.finalAmount)}</span>
+                                    </>
+                                  )}
+                                </div>
+                                {obligation.calculation.message && (
+                                  <p className="mt-2 leading-5">{obligation.calculation.message}</p>
+                                )}
+                                {obligation.calculation.rule?.sourceUrl && (
+                                  <a
+                                    className="mt-2 inline-block font-semibold text-[#5146e5] hover:underline"
+                                    href={obligation.calculation.rule.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    Consultar fonte da regra
+                                  </a>
+                                )}
+                              </details>
                             )}
                           </div>
                         </div>

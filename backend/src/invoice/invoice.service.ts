@@ -13,6 +13,7 @@ import { InvoiceDocumentType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ObligationsService } from '../obligations/obligations.service';
+import { FiscalEngineService } from '../fiscal-engine/fiscal-engine.service';
 import {
   resolveInvoiceVatPolicy,
   SIMPLIFIED_IVA_INVOICE_MENTION,
@@ -33,6 +34,7 @@ export class InvoiceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly obligationsService: ObligationsService,
+    private readonly fiscalEngineService: FiscalEngineService,
   ) {}
 
   // ============================================================
@@ -434,6 +436,7 @@ export class InvoiceService {
     tenantId: string,
   ) {
     try {
+      await this.fiscalEngineService.syncTenant(tenantId);
       const result =
         await this.obligationsService.syncCompany(
           tenantId,

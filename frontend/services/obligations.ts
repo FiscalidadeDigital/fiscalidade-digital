@@ -37,6 +37,12 @@ export type ObligationStatus =
   | 'PAID'
   | 'LATE';
 
+export type ObligationCalculationQuality =
+  | 'CALCULATED'
+  | 'REVIEW_REQUIRED'
+  | 'ESTIMATE'
+  | 'CONFIRMED';
+
 export type FiscalRegime =
   | 'GERAL'
   | 'SIMPLIFICADO'
@@ -146,6 +152,26 @@ export type Obligation = {
   updatedAt: string;
 
   fiscalCalendar?: FiscalCalendar | null;
+
+  calculation?: {
+    quality: ObligationCalculationQuality;
+    calculatedAt?: string | null;
+    calculationStatus?: string | null;
+    period?: string | null;
+    ruleVersion?: string | null;
+    snapshot?: Record<string, unknown> | null;
+    amounts?: {
+      taxableAmount: number;
+      taxDueAmount: number;
+      deductibleAmount: number;
+      withheldAmount: number;
+      adjustmentsAmount: number;
+      finalAmount: number;
+    } | null;
+    origin?: { taxType?: string | null; calendarTitle?: string | null; dueDate?: string | null };
+    rule?: { reference?: string | null; source?: string | null; sourceUrl?: string | null };
+    message?: string;
+  };
 };
 
 // ============================================================

@@ -1,303 +1,94 @@
-﻿import {
+import {
   BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { FiscalRegime, Prisma } from '@prisma/client';
 
-import {
-  CalculateIvaDto,
-  IvaOperation,
-} from '../dto/calculate-iva.dto';
-
-import {
-  FiscalRegime,
-} from '@prisma/client';
-
+import { CalculateIvaDto, IvaOperation } from '../dto/calculate-iva.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import {
+  IVA_LEGAL_SOURCE,
+  IVA_RATES_FROM_2023_12_28,
+} from '../../fiscal-rules/iva-rules';
+
+const asDisplayNumber = (value: Prisma.Decimal) =>
+  Number(value.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toFixed(2));
 
 @Injectable()
 export class IvaEngine {
-  // =====================================================
-  // TAXAS DE IVA
-  // =====================================================
+  constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Regime Geral
-   *
-   * Taxa geral do IVA em Angola.
-   */
-  private readonly GENERAL_IVA_RATE = 0.14;
-
-  /**
-   * Regime Simplificado
-   *
-   * Taxa utilizada no apuramento do IVA do
-   * Regime Simplificado.
-   */
-  private readonly SIMPLIFIED_IVA_RATE = 0.07;
-
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
-
-  // =====================================================
-  // CALCULAR IVA
-  // =====================================================
-
-  async calculate(
-    tenantId: string,
-    dto: CalculateIvaDto,
-  ) {
-    // ===================================================
-    // VALIDAR EMPRESA
-    // ===================================================
-
+  async calculate(tenantId: string, dto: CalculateIvaDto) {
     if (!tenantId) {
-      throw new BadRequestException(
-        'Empresa autenticada não identificada.',
-      );
+      throw new BadRequestException('Empresa autenticada não identificada.');
     }
-
-    // ===================================================
-    // VALIDAR DADOS
-    // ===================================================
 
     if (!dto) {
-      throw new BadRequestException(
-        'Dados do cálculo não enviados.',
-      );
+      throw new BadRequestException('Dados do cálculo não enviados.');
     }
 
-    // ===================================================
-    // VALIDAR VALOR
-    // ===================================================
-
-    const amount = Number(dto.amount);
-
-    if (
-      !Number.isFinite(amount) ||
-      amount < 0
-    ) {
-      throw new BadRequestException(
-        'O valor da operação deve ser um número válido.',
-      );
+    let amount: Prisma.Decimal;
+    try {
+      amount = new Prisma.Decimal(dto.amount);
+    } catch {
+      throw new BadRequestException('O valor da operação deve ser um número válido.');
     }
 
-    // ===================================================
-    // OBTER EMPRESA
-    // ===================================================
+    if (!amount.isFinite() || amount.isNegative()) {
+      throw new BadRequestException('O valor da operação deve ser um número válido.');
+    }
 
-    const tenant =
-      await this.prisma.tenant.findUnique({
-        where: {
-          id: tenantId,
-        },
-
-        select: {
-          id: true,
-          name: true,
-          nif: true,
-          regime: true,
-        },
-      });
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: tenantId },
+      select: { id: true, name: true, nif: true, regime: true },
+    });
 
     if (!tenant) {
-      throw new NotFoundException(
-        'Empresa não encontrada.',
-      );
+      throw new NotFoundException('Empresa não encontrada.');
     }
 
-    // ===================================================
-    // EXPORTAÇÃO
-    //
-    // Exportações são tratadas com taxa de IVA 0%
-    // neste calculador.
-    // ===================================================
-
-    if (
-      dto.operation === IvaOperation.EXPORT
-    ) {
-      return {
-        success: true,
-
-        tenantId,
-
-        company: {
-          id: tenant.id,
-          name: tenant.name,
-          nif: tenant.nif,
-        },
-
-        regime: tenant.regime,
-
-        operation: dto.operation,
-
-        amount,
-
-        taxableBase: amount,
-
-        rate: 0,
-
-        ratePercent: 0,
-
-        iva: 0,
-
-        deductibleIva: 0,
-
-        total: amount,
-
-        currency: 'AOA',
-
-        productType:
-          dto.productType || null,
-
-        description:
-          dto.description || null,
-
-        message:
-          'Operação de exportação calculada com taxa de IVA de 0%.',
-      };
-    }
-
-    // ===================================================
-    // DETERMINAR TAXA PELO REGIME
-    // ===================================================
-
-    const isSimplified =
-      tenant.regime ===
-      FiscalRegime.SIMPLIFICADO;
-
-    const rate =
+    const isSimplified = tenant.regime === FiscalRegime.SIMPLIFICADO;
+    const rate = new Prisma.Decimal(
       isSimplified
-        ? this.SIMPLIFIED_IVA_RATE
-        : this.GENERAL_IVA_RATE;
+        ? IVA_RATES_FROM_2023_12_28.simplifiedSettlement
+        : IVA_RATES_FROM_2023_12_28.general,
+    );
+    const hasLineClassification = Boolean(dto.productType?.trim());
+    const isPurchase =
+      dto.operation === IvaOperation.PURCHASE || dto.operation === IvaOperation.IMPORT;
+    const preview = amount.mul(rate);
+    const requiresReview = !hasLineClassification || dto.operation === IvaOperation.EXPORT;
 
-    // ===================================================
-    // COMPRAS / IMPORTAÇÕES
-    //
-    // O IVA suportado numa compra não deve ser tratado
-    // como IVA liquidado ao cliente.
-    //
-    // Retornamos o valor como IVA suportado/dedutível
-    // para o cálculo isolado.
-    // ===================================================
-
-    if (
-      dto.operation === IvaOperation.PURCHASE ||
-      dto.operation === IvaOperation.IMPORT
-    ) {
-      const iva =
-        amount * rate;
-
-      return {
-        success: true,
-
-        tenantId,
-
-        company: {
-          id: tenant.id,
-          name: tenant.name,
-          nif: tenant.nif,
-        },
-
-        regime: tenant.regime,
-
-        operation: dto.operation,
-
-        amount,
-
-        taxableBase: amount,
-
-        rate,
-
-        ratePercent:
-          rate * 100,
-
-        iva: 0,
-
-        supportedIva: iva,
-
-        deductibleIva:
-          isSimplified
-            ? 0
-            : iva,
-
-        total:
-          amount + iva,
-
-        currency: 'AOA',
-
-        productType:
-          dto.productType || null,
-
-        description:
-          dto.description || null,
-
-        message:
-          isSimplified
-            ? 'Operação de aquisição calculada no contexto do Regime Simplificado. A dedução depende das regras e documentação aplicáveis.'
-            : 'IVA suportado na aquisição calculado para efeitos de apuramento do IVA dedutível.',
-      };
-    }
-
-    // ===================================================
-    // VENDA / PRESTAÇÃO DE SERVIÇOS
-    // ===================================================
-
-    const iva =
-      amount * rate;
-
-    const total =
-      amount + iva;
-
-    // ===================================================
-    // RESULTADO
-    // ===================================================
-
+    // A calculator result is a review aid only. It never records or confirms
+    // a fiscal deduction; that decision is made from the reviewed purchase.
     return {
       success: true,
-
       tenantId,
-
-      company: {
-        id: tenant.id,
-        name: tenant.name,
-        nif: tenant.nif,
-      },
-
+      company: { id: tenant.id, name: tenant.name, nif: tenant.nif },
       regime: tenant.regime,
-
-      operation:
-        dto.operation,
-
-      amount,
-
-      taxableBase:
-        amount,
-
-      rate,
-
-      ratePercent:
-        rate * 100,
-
-      iva,
-
+      operation: dto.operation,
+      amount: asDisplayNumber(amount),
+      taxableBase: asDisplayNumber(amount),
+      rate: asDisplayNumber(rate),
+      ratePercent: asDisplayNumber(rate.mul(100)),
+      iva: isPurchase ? 0 : asDisplayNumber(preview),
+      supportedIva: isPurchase ? asDisplayNumber(preview) : 0,
       deductibleIva: 0,
-
-      total,
-
+      total: asDisplayNumber(isPurchase ? amount.plus(preview) : amount.plus(preview)),
       currency: 'AOA',
-
-      productType:
-        dto.productType || null,
-
-      description:
-        dto.description || null,
-
-      message:
-        isSimplified
-          ? 'Cálculo efectuado à taxa de 7% do Regime Simplificado. No apuramento periódico devem ser consideradas as operações efectivamente recebidas e as deduções permitidas.'
-          : 'Cálculo efectuado à taxa geral de IVA de 14%.',
+      productType: dto.productType || null,
+      description: dto.description || null,
+      calculationStatus: requiresReview ? 'REVIEW_REQUIRED' : 'PREVIEW_ONLY',
+      ruleVersion: isSimplified
+        ? 'AO-CIVA-LEI-14-23-ART19-B-69B-69C'
+        : 'AO-CIVA-LEI-14-23-ART19-A',
+      legalSource: IVA_LEGAL_SOURCE.officialUrl,
+      message: isPurchase
+        ? 'IVA suportado indicado para revisão. Não é IVA dedutível até existir confirmação humana e documentação válida.'
+        : requiresReview
+          ? 'Prévia de IVA sujeita a revisão: faltam classificação fiscal suficiente ou enquadramento específico da operação.'
+          : 'Prévia de IVA. A liquidação final depende da classificação fiscal e da documentação da operação.',
     };
   }
 }

@@ -2255,7 +2255,7 @@ export class ObligationsService {
       };
     }
 
-    return this.prisma.fiscalObligation.findMany({
+    const obligations = await this.prisma.fiscalObligation.findMany({
       where,
 
       include: {
@@ -2279,6 +2279,12 @@ export class ObligationsService {
         },
       ],
     });
+
+    return Promise.all(
+      obligations.map((obligation) =>
+        this.withCalculationContext(tenantId, obligation),
+      ),
+    );
   }
 
   // ============================================================
@@ -2506,7 +2512,104 @@ export class ObligationsService {
       );
     }
 
-    return obligation;
+    return this.withCalculationContext(tenantId, obligation);
+  }
+
+  /**
+   * Exposes the calculation provenance without trusting an identifier supplied
+   * by the client. Legacy obligations without an assessment stay reviewable
+   * instead of being labelled as confirmed.
+   */
+  private async withCalculationContext(tenantId: string, obligation: any) {
+    const taxType =
+      obligation.fiscalCalendar?.taxType ??
+      this.mapObligationTypeToTaxType(obligation.type);
+    const year = Number(String(obligation.period ?? obligation.dueDate.getUTCFullYear()).slice(0, 4));
+
+    if (!taxType || !Number.isInteger(year)) {
+      return {
+        ...obligation,
+        calculation: {
+          quality: 'REVIEW_REQUIRED',
+          message: 'Não existe regra fiscal estruturada para explicar este valor.',
+        },
+      };
+    }
+
+    const assessment = await this.prisma.taxAssessment.findFirst({
+      where: {
+        tenantId,
+        taxType,
+        year,
+        period: obligation.period ?? undefined,
+      },
+      orderBy: { calculatedAt: 'desc' },
+    });
+
+    const hasPendingVat =
+      taxType === TaxType.IVA
+        ? (await this.prisma.taxTransaction.count({
+            where: {
+              tenantId,
+              taxType: TaxType.IVA,
+              period: obligation.period ?? undefined,
+              sourceType: 'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
+            },
+          })) > 0
+        : false;
+
+    const quality =
+      taxType === TaxType.INDUSTRIAL
+        ? 'REVIEW_REQUIRED'
+        : !assessment || hasPendingVat
+          ? 'REVIEW_REQUIRED'
+          : 'CALCULATED';
+
+    return {
+      ...obligation,
+      calculation: {
+        quality,
+        calculatedAt: assessment?.calculatedAt ?? null,
+        calculationStatus: assessment?.calculationStatus ?? quality,
+        period: assessment?.period ?? obligation.period ?? null,
+        ruleVersion: assessment?.ruleVersion ?? null,
+        snapshot: assessment?.calculationSnapshot ?? null,
+        amounts: assessment
+          ? {
+              taxableAmount: assessment.taxableAmountValue ?? assessment.taxableAmount,
+              taxDueAmount: assessment.taxDueAmountValue ?? assessment.taxDueAmount,
+              deductibleAmount: assessment.deductibleAmountValue ?? assessment.deductibleAmount,
+              withheldAmount: assessment.withheldAmountValue ?? assessment.withheldAmount,
+              adjustmentsAmount: assessment.adjustmentsAmountValue ?? assessment.adjustmentsAmount,
+              finalAmount: assessment.finalAmountValue ?? assessment.finalAmount,
+            }
+          : null,
+        origin: {
+          taxType,
+          calendarTitle: obligation.fiscalCalendar?.title ?? null,
+          dueDate: obligation.dueDate,
+        },
+        rule: {
+          reference:
+            assessment?.legalReference ??
+            obligation.fiscalCalendar?.officialReference ??
+            null,
+          source: obligation.fiscalCalendar?.source ?? null,
+          sourceUrl:
+            assessment?.officialSource ??
+            obligation.fiscalCalendar?.sourceUrl ??
+            null,
+        },
+        message:
+          taxType === TaxType.INDUSTRIAL
+            ? 'Revisão necessária: o sistema não dispõe de matéria colectável fiscal suficiente para um apuramento definitivo.'
+            : hasPendingVat
+              ? 'Há IVA suportado indicado pendente de revisão; esse valor não foi deduzido.'
+              : assessment
+                ? 'Valor agregado a partir das fontes internas e da regra de calendário associada.'
+                : 'Ainda não existe uma avaliação fiscal para este período.',
+      },
+    };
   }
 
   // ============================================================

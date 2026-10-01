@@ -5,11 +5,13 @@ import { PurchaseInvoiceService } from './purchase-invoice.service';
 
 import { PrismaModule } from '../prisma/prisma.module';
 import { ObligationsModule } from '../obligations/obligations.module';
+import { FiscalEngineModule } from '../fiscal-engine/fiscal-engine.module';
 
 @Module({
   imports: [
     PrismaModule,
     ObligationsModule,
+    FiscalEngineModule,
   ],
 
   controllers: [

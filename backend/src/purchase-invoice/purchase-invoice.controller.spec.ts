@@ -6,6 +6,7 @@ import { plainToInstance } from 'class-transformer';
 import { validate } from 'class-validator';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
+import { UpdatePurchaseInvoiceVatDeductibilityDto } from './dto/update-purchase-invoice-vat-deductibility.dto';
 import { REQUIRED_ROLES_KEY } from '../common/decorators/roles.decorator';
 
 describe('PurchaseInvoiceController', () => {
@@ -13,6 +14,7 @@ describe('PurchaseInvoiceController', () => {
   const service = {
     create: jest.fn(),
     update: jest.fn(),
+    updateVatDeductibility: jest.fn(),
     markAsPaid: jest.fn(),
     cancel: jest.fn(),
     remove: jest.fn(),
@@ -35,9 +37,14 @@ describe('PurchaseInvoiceController', () => {
     const dto = {} as CreatePurchaseInvoiceDto;
     controller.create({ tenantId: 'tenant-a', userId: 'user-a' }, dto);
     controller.update({ tenantId: 'tenant-a' }, 'invoice-1', {} as UpdatePurchaseInvoiceDto);
+    const review = { status: 'DEDUCTIBLE', reason: 'Documento validado.' } as UpdatePurchaseInvoiceVatDeductibilityDto;
+    controller.updateVatDeductibility({ tenantId: 'tenant-a', userId: 'user-a' }, 'invoice-1', review);
 
     expect(service.create).toHaveBeenCalledWith('tenant-a', 'user-a', dto);
     expect(service.update).toHaveBeenCalledWith('tenant-a', 'invoice-1', {});
+    expect(service.updateVatDeductibility).toHaveBeenCalledWith('tenant-a', 'user-a', 'invoice-1', review);
+    expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.updateVatDeductibility))
+      .toEqual([UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT]);
     expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.create))
       .toEqual([UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT]);
     expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.markAsPaid))
@@ -76,6 +83,19 @@ describe('PurchaseInvoiceController', () => {
       items: [],
     });
 
+    expect(await validate(invalid)).not.toHaveLength(0);
+  });
+
+  it('accepts only explicit VAT review states', async () => {
+    const valid = plainToInstance(UpdatePurchaseInvoiceVatDeductibilityDto, {
+      status: 'DEDUCTIBLE',
+      reason: 'Documento validado.',
+    });
+    const invalid = plainToInstance(UpdatePurchaseInvoiceVatDeductibilityDto, {
+      status: 'OCR_APPROVED',
+    });
+
+    expect(await validate(valid)).toHaveLength(0);
     expect(await validate(invalid)).not.toHaveLength(0);
   });
 });

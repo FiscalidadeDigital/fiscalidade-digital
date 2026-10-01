@@ -561,6 +561,10 @@ model PurchaseInvoice {
   ivaAmount      Decimal?      @db.Decimal(20, 2)
   withholdingTaxAmount Decimal? @db.Decimal(20, 2)
   totalAmount    Decimal?      @db.Decimal(20, 2)
+  vatDeductibilityStatus String @default("PENDING_REVIEW")
+  vatDeductibilityReason String?
+  vatReviewedAt DateTime?
+  vatReviewedById String?
   currency       String        @default("AOA") @db.VarChar(3)
   reference      String?
   createdById    String?
@@ -646,6 +650,15 @@ model TaxTransaction {
   taxAmount        Float            @default(0)
   deductibleAmount Float            @default(0)
   withheldAmount   Float            @default(0)
+  baseAmountValue       Decimal? @db.Decimal(20, 2)
+  taxAmountValue        Decimal? @db.Decimal(20, 2)
+  deductibleAmountValue Decimal? @db.Decimal(20, 2)
+  withheldAmountValue   Decimal? @db.Decimal(20, 2)
+  calculationStatus String @default("LEGACY_UNVERIFIED")
+  ruleVersion       String?
+  legalReference    String?
+  officialSource    String?
+  calculationDetails Json?
   description      String?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
@@ -672,6 +685,19 @@ model TaxAssessment {
   withheldAmount    Float    @default(0)
   adjustmentsAmount Float    @default(0)
   finalAmount       Float    @default(0)
+  taxableAmountValue     Decimal? @db.Decimal(20, 2)
+  taxDueAmountValue      Decimal? @db.Decimal(20, 2)
+  deductibleAmountValue  Decimal? @db.Decimal(20, 2)
+  withheldAmountValue    Decimal? @db.Decimal(20, 2)
+  adjustmentsAmountValue Decimal? @db.Decimal(20, 2)
+  finalAmountValue       Decimal? @db.Decimal(20, 2)
+  creditAmountValue      Decimal? @db.Decimal(20, 2)
+  payableAmountValue     Decimal? @db.Decimal(20, 2)
+  calculationStatus String @default("LEGACY_UNVERIFIED")
+  ruleVersion       String?
+  legalReference    String?
+  officialSource    String?
+  calculationSnapshot Json?
   status            String   @default("DRAFT")
   calculatedAt      DateTime @default(now())
   updatedAt         DateTime @updatedAt

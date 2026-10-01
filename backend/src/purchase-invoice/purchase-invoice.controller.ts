@@ -17,6 +17,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
+import { UpdatePurchaseInvoiceVatDeductibilityDto } from './dto/update-purchase-invoice-vat-deductibility.dto';
 
 @Controller('purchase-invoice')
 @UseGuards(JwtAuthGuard)
@@ -87,6 +88,21 @@ export class PurchaseInvoiceController {
   // ACTUALIZAR FACTURA
   // PATCH /purchase-invoice/:id
   // ============================================================
+
+  @Patch(':id/vat-deductibility')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  async updateVatDeductibility(
+    @CurrentUser() user: { tenantId: string; userId: string },
+    @Param('id') id: string,
+    @Body() dto: UpdatePurchaseInvoiceVatDeductibilityDto,
+  ) {
+    return this.purchaseInvoiceService.updateVatDeductibility(
+      user.tenantId,
+      user.userId,
+      id,
+      dto,
+    );
+  }
 
   @Patch(':id')
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)

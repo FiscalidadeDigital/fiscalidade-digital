@@ -17,7 +17,9 @@ describe('InvoiceService paged list', () => {
       ]),
     } as unknown as PrismaService;
     const obligations = {} as ObligationsService;
-    const service = new InvoiceService(prisma, obligations);
+    const service = new InvoiceService(prisma, obligations, {
+      syncTenant: jest.fn(),
+    } as any);
 
     const result = await service.findPage('tenant-a', {
       search: 'cliente',

@@ -12,14 +12,20 @@ import {
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ObligationsService } from '../obligations/obligations.service';
+import { FiscalEngineService } from '../fiscal-engine/fiscal-engine.service';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
+import {
+  PurchaseVatDeductibilityStatus,
+  UpdatePurchaseInvoiceVatDeductibilityDto,
+} from './dto/update-purchase-invoice-vat-deductibility.dto';
 
 @Injectable()
 export class PurchaseInvoiceService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly obligationsService: ObligationsService,
+    private readonly fiscalEngineService: FiscalEngineService,
   ) {}
 
   // ============================================================
@@ -390,19 +396,12 @@ export class PurchaseInvoiceService {
     // ==========================================================
     // SINCRONIZAR FISCALIDADE
     //
-    // A compra passa imediatamente a poder
-    // alimentar:
-    //
-    // - IVA dedutível
-    // - retenções
-    // - transacções fiscais
-    // - avaliações fiscais
-    // - obrigações
+    // A compra é IVA indicado pendente por omissão. O motor fiscal preserva
+    // essa separação e só deduz depois de revisão humana explícita.
     // ==========================================================
 
-    await this.obligationsService.syncCompany(
-      tenantId,
-    );
+    await this.fiscalEngineService.syncTenant(tenantId, issuedAt.getUTCFullYear());
+    await this.obligationsService.syncCompany(tenantId);
 
     return this.findOne(
       tenantId,
@@ -494,6 +493,48 @@ export class PurchaseInvoiceService {
     };
   }
 
+  /**
+   * A reviewed purchase may become a deduction candidate. OCR/imports cannot
+   * call this method; the authenticated tenant and reviewer are always passed
+   * by the protected controller.
+   */
+  async updateVatDeductibility(
+    tenantId: string,
+    reviewerId: string,
+    id: string,
+    dto: UpdatePurchaseInvoiceVatDeductibilityDto,
+  ) {
+    const purchase = await this.prisma.purchaseInvoice.findFirst({
+      where: { id, tenantId },
+      select: { id: true, status: true, issuedAt: true },
+    });
+    if (!purchase) {
+      throw new NotFoundException('Factura de compra não encontrada.');
+    }
+    if (purchase.status === InvoiceStatus.CANCELLED) {
+      throw new BadRequestException('Uma factura cancelada não pode gerar IVA dedutível.');
+    }
+
+    const reviewed = dto.status === 'DEDUCTIBLE' || dto.status === 'NON_DEDUCTIBLE';
+    await this.prisma.purchaseInvoice.update({
+      where: { id: purchase.id },
+      data: {
+        vatDeductibilityStatus: dto.status as PurchaseVatDeductibilityStatus,
+        vatDeductibilityReason: dto.reason?.trim() || null,
+        vatReviewedAt: reviewed ? new Date() : null,
+        vatReviewedById: reviewed ? reviewerId : null,
+      },
+    });
+
+    await this.fiscalEngineService.syncTenant(
+      tenantId,
+      purchase.issuedAt.getUTCFullYear(),
+    );
+    await this.obligationsService.syncCompany(tenantId);
+
+    return this.findOne(tenantId, purchase.id);
+  }
+
   // ============================================================
   // MARCAR COMO PAGA
   // ============================================================
@@ -547,9 +588,11 @@ export class PurchaseInvoiceService {
       },
     });
 
-    await this.obligationsService.syncCompany(
+    await this.fiscalEngineService.syncTenant(
       tenantId,
+      purchase.issuedAt.getUTCFullYear(),
     );
+    await this.obligationsService.syncCompany(tenantId);
 
     return this.findOne(
       tenantId,
@@ -610,9 +653,11 @@ export class PurchaseInvoiceService {
       },
     });
 
-    await this.obligationsService.syncCompany(
+    await this.fiscalEngineService.syncTenant(
       tenantId,
+      purchase.issuedAt.getUTCFullYear(),
     );
+    await this.obligationsService.syncCompany(tenantId);
 
     return this.findOne(
       tenantId,
@@ -845,9 +890,11 @@ export class PurchaseInvoiceService {
       },
     );
 
-    await this.obligationsService.syncCompany(
+    await this.fiscalEngineService.syncTenant(
       tenantId,
+      purchase.issuedAt.getUTCFullYear(),
     );
+    await this.obligationsService.syncCompany(tenantId);
 
     return this.findOne(
       tenantId,
@@ -904,9 +951,11 @@ export class PurchaseInvoiceService {
       },
     );
 
-    await this.obligationsService.syncCompany(
+    await this.fiscalEngineService.syncTenant(
       tenantId,
+      purchase.issuedAt.getUTCFullYear(),
     );
+    await this.obligationsService.syncCompany(tenantId);
 
     return {
       success: true,

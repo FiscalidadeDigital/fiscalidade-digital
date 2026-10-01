@@ -967,6 +967,12 @@ export default function SimulatorPage() {
             {ivaResult && (
               <div className="mt-7 pt-6 border-t border-slate-100">
 
+                {ivaResult.calculationStatus === 'REVIEW_REQUIRED' && (
+                  <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    Este resultado é uma prévia. A classificação fiscal e a documentação da operação precisam de revisão antes de qualquer liquidação ou dedução.
+                  </div>
+                )}
+
                 <ResultTitle
                   title="Resultado do cálculo"
                   badge={
@@ -1192,13 +1198,13 @@ export default function SimulatorPage() {
 
           <SimulatorCard
             title="Imposto Industrial"
-            subtitle="Estimativa baseada em receitas e custos"
+            subtitle="Verificação de informação necessária ao apuramento"
             icon={
               <Factory size={23} />
             }
             iconClass="bg-emerald-50 text-emerald-600"
             borderClass="border-emerald-100"
-            rate="25%"
+            rate="Revisão"
           >
 
             <div className="mb-6 rounded-2xl bg-emerald-50/60 border border-emerald-100 p-4">
@@ -1217,8 +1223,7 @@ export default function SimulatorPage() {
                   </p>
 
                   <p className="text-xs text-slate-500 leading-5 mt-1">
-                    Informe as receitas e os custos para
-                    estimar a matéria colectável e o imposto.
+                    As receitas e custos são apenas contexto. O apuramento exige matéria colectável, ajustamentos e suporte contabilístico.
                   </p>
 
                 </div>
@@ -1262,6 +1267,12 @@ export default function SimulatorPage() {
             {industrialResult && (
               <div className="mt-7 pt-6 border-t border-slate-100">
 
+                {industrialResult.calculationStatus === 'REVIEW_REQUIRED' && (
+                  <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+                    {industrialResult.message || 'Revisão necessária antes de calcular o Imposto Industrial.'}
+                  </div>
+                )}
+
                 <ResultTitle
                   title="Resultado do cálculo"
                   badge="Industrial"
@@ -1298,39 +1309,20 @@ export default function SimulatorPage() {
                   />
 
                   <ResultRow
-                    label="Matéria colectável"
-                    value={`${money(
-                      resultValue(
-                        industrialResult,
-                        'materiaColectavel',
-                      ),
-                    )} AOA`}
+                    label="Estado"
+                    value={industrialResult.calculationStatus === 'REVIEW_REQUIRED' ? 'Revisão necessária' : 'Disponível'}
                     emphasized
-                  />
-
-                  <ResultRow
-                    label="Taxa aplicada"
-                    value={`${money(
-                      resultValue(
-                        industrialResult,
-                        'ratePercent',
-                      ),
-                    )}%`}
                   />
 
                 </div>
 
-                <ResultHighlight
-                  label="Imposto estimado"
-                  value={`${money(
-                    resultValue(
-                      industrialResult,
-                      'imposto',
-                      'estimatedTax',
-                    ),
-                  )} AOA`}
-                  className="bg-emerald-50 border-emerald-100 text-emerald-600"
-                />
+                {industrialResult.calculationStatus !== 'REVIEW_REQUIRED' && (
+                  <ResultHighlight
+                    label="Resultado"
+                    value="Disponível após validação"
+                    className="bg-emerald-50 border-emerald-100 text-emerald-600"
+                  />
+                )}
 
                 <ClearButton
                   onClick={clearIndustrial}
