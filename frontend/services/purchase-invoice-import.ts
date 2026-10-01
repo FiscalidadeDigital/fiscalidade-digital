@@ -20,7 +20,7 @@ export type PurchaseInvoiceImport = {
     issuedAt?: string | null;
     dueDate?: string | null;
     currency?: string | null;
-    items?: Array<{ description?: string | null; quantity?: string | null; unitPrice?: string | null }>;
+    items?: Array<{ description?: string | null; quantity?: string | null; unitPrice?: string | null; lineTotal?: string | null; productCode?: string | null }>;
     subtotal?: string | null;
     vatSupported?: string | null;
     withholdingTax?: string | null;

@@ -66,15 +66,18 @@ describe('invoice extraction providers', () => {
   it('maps the Veryfi v8 invoice response without making it authoritative', async () => {
     const previousFetch = global.fetch;
     const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: async () => ({
-      invoice_number: 'VFY-001', date: '2026-10-01', due_date: '2026-10-31', currency_code: 'AOA', subtotal: 1000.05, tax: 140.01, total: 1140.06,
+      invoice_number: '1655', date: '2025-09-16', due_date: '2025-10-16', currency_code: 'AOA', subtotal: 600262, tax: 84036.68, total: 684298.68,
       vendor: { name: 'Fornecedor Veryfi', vat_number: '5000000000' },
-      line_items: [{ description: 'Serviço', quantity: 2, price: 500.025, total: 1000.05, sku: 'SERV-1' }],
+      line_items: [{ description: 'Serviço A', quantity: 2, price: 100000, total: 200000, sku: 'SERV-1' }, { description: 'Serviço B', quantity: 1, unit_price: 400262, total: 400262, sku: 'SERV-2' }],
     }) });
     global.fetch = fetchMock as unknown as typeof fetch;
     try {
       const candidate = await new VeryfiInvoiceExtractionProvider('client-id', 'client-secret', 'username', 'api-key').extract({ id: 'document-1', originalName: 'supplier.pdf', mimeType: 'application/pdf', content: Buffer.from('private document') });
-      expect(candidate).toEqual(expect.objectContaining({ invoiceNumber: 'VFY-001', issuedAt: '2026-10-01', dueDate: '2026-10-31', supplierName: 'Fornecedor Veryfi', supplierNif: '5000000000', subtotal: '1000.05', vatSupported: '140.01', total: '1140.06', currency: 'AOA' }));
-      expect(candidate?.items).toEqual([expect.objectContaining({ description: 'Serviço', quantity: '2', unitPrice: '500.025', lineTotal: '1000.05', productCode: 'SERV-1' })]);
+      expect(candidate).toEqual(expect.objectContaining({ invoiceNumber: '1655', issuedAt: '2025-09-16', dueDate: '2025-10-16', supplierName: 'Fornecedor Veryfi', supplierNif: '5000000000', subtotal: '600262', vatSupported: '84036.68', total: '684298.68', currency: 'AOA' }));
+      expect(candidate?.items).toEqual([
+        expect.objectContaining({ description: 'Serviço A', quantity: '2', unitPrice: '100000', lineTotal: '200000', productCode: 'SERV-1' }),
+        expect.objectContaining({ description: 'Serviço B', quantity: '1', unitPrice: '400262', lineTotal: '400262', productCode: 'SERV-2' }),
+      ]);
       expect(candidate?.provenance).toEqual(expect.objectContaining({ provider: 'veryfi', apiVersion: 'v8' }));
       expect(fetchMock).toHaveBeenCalledWith('https://api.veryfi.com/api/v8/partner/documents', expect.objectContaining({ headers: expect.objectContaining({ 'client-id': 'client-id', authorization: 'apikey username:api-key' }) }));
     } finally { global.fetch = previousFetch; }
