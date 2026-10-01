@@ -1,39 +1,73 @@
-const configuredApiUrl = process.env.NEXT_PUBLIC_API_URL?.trim();
-
-/**
- * Fallback exclusivo do frontend publicado no domínio oficial. A variável de
- * ambiente continua a ser a configuração recomendada para cada ambiente.
- */
-const OFFICIAL_FRONTEND_HOSTS = new Set([
-  'fiscalidadedigital.ao',
-  'www.fiscalidadedigital.ao',
-]);
-
-const OFFICIAL_BACKEND_URL =
+const PRODUCTION_API_URL =
   'https://fiscalidade-digital-api.onrender.com';
 
-function officialBrowserFallback(): string | undefined {
-  if (typeof window === 'undefined') return undefined;
-  return OFFICIAL_FRONTEND_HOSTS.has(window.location.hostname)
-    ? OFFICIAL_BACKEND_URL
-    : undefined;
+const LOCAL_API_URL =
+  'http://localhost:3001';
+
+function normalizeApiUrl(value: string): string {
+  return value.trim().replace(/\/+$/, '');
+}
+
+function getConfiguredApiUrl(): string | null {
+  const configured =
+    process.env.NEXT_PUBLIC_API_URL?.trim();
+
+  if (!configured) {
+    return null;
+  }
+
+  return normalizeApiUrl(configured);
+}
+
+function isBrowser(): boolean {
+  return typeof window !== 'undefined';
+}
+
+function isLocalHostname(hostname: string): boolean {
+  return (
+    hostname === 'localhost' ||
+    hostname === '127.0.0.1' ||
+    hostname === '::1'
+  );
 }
 
 /**
- * Does not run validation during module import, so static Next.js rendering
- * remains independent of a runtime API URL. Consumers call this immediately
- * before a real HTTP request.
+ * Resolve a URL base da API da Fiscalidade Digital.
+ *
+ * Prioridade:
+ * 1. NEXT_PUBLIC_API_URL
+ * 2. localhost:3001 em desenvolvimento local
+ * 3. API oficial de produção no Render
  */
 export function getApiBaseUrl(): string {
-  const apiUrl = configuredApiUrl || officialBrowserFallback();
-  if (!apiUrl) {
-    throw new Error(
-      'NEXT_PUBLIC_API_URL não está configurada. Defina a URL explícita do backend para este ambiente.',
-    );
+  const configured = getConfiguredApiUrl();
+
+  if (configured) {
+    return configured;
   }
-  return apiUrl.replace(/\/+$/, '');
+
+  if (isBrowser()) {
+    const hostname = window.location.hostname;
+
+    if (isLocalHostname(hostname)) {
+      return LOCAL_API_URL;
+    }
+  }
+
+  if (process.env.NODE_ENV === 'development') {
+    return LOCAL_API_URL;
+  }
+
+  return PRODUCTION_API_URL;
 }
 
-/** Available for Axios setup only; may be undefined during build/prerender. */
-export const API_BASE_URL = configuredApiUrl?.replace(/\/+$/, '')
-  || officialBrowserFallback();
+/**
+ * Compatibilidade com módulos que importam API_BASE_URL.
+ */
+export const API_BASE_URL =
+  getConfiguredApiUrl() ??
+  (process.env.NODE_ENV === 'development'
+    ? LOCAL_API_URL
+    : PRODUCTION_API_URL);
+
+export default getApiBaseUrl;

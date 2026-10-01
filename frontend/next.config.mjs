@@ -2,6 +2,7 @@
 const nextConfig = {
   distDir: process.env.NEXT_DIST_DIR || '.next',
   experimental: {
+    workerThreads: true,
     webpackBuildWorker: false,
   },
   async redirects() {

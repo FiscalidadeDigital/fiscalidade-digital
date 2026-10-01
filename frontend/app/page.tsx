@@ -4,179 +4,1463 @@ import Link from 'next/link';
 import { useState } from 'react';
 import {
   ArrowRight,
-  Bell,
-  Building2,
+  Calculator,
   CalendarDays,
   Check,
   ChevronDown,
-  FileScan,
   FileText,
-  LockKeyhole,
   Menu,
-  ReceiptText,
+  Receipt,
   ShieldCheck,
+  Users,
+  WalletCards,
   X,
 } from 'lucide-react';
 
-const navigation = [
-  { label: 'Produto', href: '#produto' },
-  { label: 'Como funciona', href: '#como-funciona' },
-  { label: 'Segurança', href: '#seguranca' },
-  { label: 'FAQ', href: '#faq' },
+/* =========================================================
+   IMAGENS REAIS EXISTENTES EM /public
+========================================================= */
+
+const partnerLogos = [
+  { name: 'yas', image: '/yas.jpg' },
+  { name: 'mabak', image: '/mabak.jpg' },
+  { name: 'Yash Hub', image: '/yashhublogo.jpg' },
+  { name: 'Rede Canais', image: '/imageslogo.jfif' },
+  { name: 'Acelera', image: '/aceleralogo.jpg' },
+  { name: 'Ignition', image: '/Ignitionlogo.png' },
 ];
 
-const productAreas = [
+const teamMembers = [
+
   {
-    title: 'Obrigações fiscais',
-    detail: 'Calendário, prazos e acompanhamento das obrigações registadas para a empresa.',
-    icon: CalendarDays,
+    name: 'Desiderio',
+    image: '/Desiderio.jpeg',
   },
   {
+    name: 'Edgar',
+    image: '/edgar.jpg',
+  },
+  {
+    name: 'Francisco',
+    image: '/Francisco.jpeg',
+  },
+  {
+    name: 'Anildo',
+    image: '/Anildodev.jpg',
+  },
+];
+
+const features = [
+  {
+    icon: Receipt,
+    number: '01',
     title: 'Facturação',
-    detail: 'Gestão operacional de facturas emitidas e propostas comerciais no mesmo ambiente.',
-    icon: ReceiptText,
+    description:
+      'Emita e acompanhe facturas e Pro Forma, com clientes, produtos, valores e documentos organizados num único ambiente.',
   },
   {
-    title: 'Facturas recebidas',
-    detail: 'Importe documentos de fornecedores, reveja os dados e registe a informação confirmada.',
-    icon: FileScan,
+    icon: Calculator,
+    number: '02',
+    title: 'Impostos',
+    description:
+      'Acompanhe IVA e outros cálculos fiscais com base na informação registada na operação da empresa.',
   },
   {
-    title: 'Documentos privados',
-    detail: 'Arquivo associado à empresa para manter os documentos de trabalho organizados.',
-    icon: FileText,
+    icon: CalendarDays,
+    number: '03',
+    title: 'Obrigações',
+    description:
+      'Acompanhe IVA, IRT, INSS e outras obrigações por período, prazo, valor e estado.',
   },
   {
-    title: 'Alertas',
-    detail: 'Acompanhe prazos, pendências e pontos que exigem atenção.',
-    icon: Bell,
+    icon: Users,
+    number: '04',
+    title: 'Folha salarial',
+    description:
+      'Registe funcionários, processe salários e acompanhe IRT e contribuições para a Segurança Social de forma integrada.',
   },
   {
-    title: 'Simuladores e relatórios',
-    detail: 'Ferramentas disponíveis para apoiar a leitura da operação e a preparação do trabalho.',
-    icon: Building2,
+    icon: WalletCards,
+    number: '05',
+    title: 'Compras',
+    description:
+      'Registe compras e fornecedores, importe facturas e reveja os dados antes da sua utilização fiscal.',
+  },
+  {
+    icon: ShieldCheck,
+    number: '06',
+    title: 'Gestão fiscal',
+    description:
+      'Gere SAF-T, acompanhe documentos, impostos, obrigações e indicadores fiscais a partir de uma visão centralizada.',
   },
 ];
 
-const workflow = [
-  ['01', 'Centralize', 'Documentos, empresas e operações num espaço de trabalho organizado.'],
-  ['02', 'Acompanhe', 'Obrigações, prazos e alertas numa visão contínua da actividade.'],
-  ['03', 'Reveja', 'Dados de facturas recebidas antes de os transformar em registos.'],
-  ['04', 'Decida', 'Consulte o que está pendente e prepare os próximos passos.'],
+const challenges = [
+  {
+    number: '01',
+    title: 'Informação espalhada',
+    description:
+      'Facturas, documentos, dados fiscais e informação da empresa ficam distribuídos por diferentes ficheiros e ferramentas.',
+  },
+  {
+    number: '02',
+    title: 'Demasiado trabalho manual',
+    description:
+      'Lançamentos repetitivos, cálculos e conferências consomem tempo que poderia ser dedicado ao crescimento da empresa.',
+  },
+  {
+    number: '03',
+    title: 'Prazos e obrigações',
+    description:
+      'IVA, IRT, INSS e outras obrigações exigem acompanhamento dos períodos, valores, estados e prazos.',
+  },
+  {
+    number: '04',
+    title: 'Pouca visão do negócio',
+    description:
+      'Sem informação centralizada, torna-se mais difícil perceber rapidamente o que foi facturado, comprado, pago e o que ainda exige atenção.',
+  },
 ];
 
-const safeguards = [
-  ['Dados separados por empresa', 'A informação é organizada por empresa para apoiar a separação das operações.'],
-  ['Acesso autenticado', 'O acesso à plataforma depende de uma sessão válida.'],
-  ['Documentos privados', 'Os documentos são tratados como conteúdo privado da empresa.'],
-  ['Perfis e permissões', 'As operações são orientadas pelos perfis disponíveis na conta.'],
-  ['Rastreabilidade', 'Registos importantes mantêm contexto para revisão operacional.'],
+const benefits = [
+  'Facturação e documentos organizados',
+  'Impostos e obrigações acompanhados',
+  'IRT, INSS e IVA integrados',
+  'SAF-T e informação fiscal centralizados',
 ];
 
 const faqs = [
-  ['O que é a Fiscalidade Digital?', 'É uma plataforma para organizar facturação, documentos, obrigações e acompanhamento fiscal das empresas em Angola.'],
-  ['Para quem é indicada?', 'Para empresas e equipas que precisam de reunir a informação fiscal e operacional num só ambiente de trabalho.'],
-  ['Posso gerir mais de uma empresa?', 'A plataforma prevê gestão por empresa. A disponibilidade concreta depende da configuração e das permissões da sua conta.'],
-  ['Os documentos ficam privados?', 'Os documentos são associados à empresa e o acesso é feito através da plataforma autenticada.'],
-  ['Como funciona a importação de facturas?', 'Carregue o documento, reveja os dados extraídos quando existirem e confirme manualmente antes de registar a factura recebida.'],
-  ['Posso acompanhar obrigações fiscais?', 'Sim. O módulo de obrigações permite acompanhar períodos, prazos e estados registados na plataforma.'],
+  {
+    question: 'O que é a Fiscalidade Digital?',
+    answer:
+      'É uma plataforma de gestão fiscal e empresarial desenvolvida para empresas em Angola. Reúne facturação, SAF-T, compras, fornecedores, impostos, obrigações, folha salarial, clientes, produtos e documentos num único ambiente.',
+  },
+  {
+    question: 'A plataforma acompanha a realidade fiscal da empresa?',
+    answer:
+      'Sim. O sistema utiliza o regime fiscal associado à empresa para organizar as informações e obrigações aplicáveis.',
+  },
+  {
+    question: 'Consigo acompanhar IVA, IRT, INSS e obrigações fiscais?',
+    answer:
+      'Sim. A plataforma apresenta as obrigações associadas à empresa, incluindo período, prazo, valor e estado.',
+  },
+  {
+    question: 'A folha salarial calcula e acompanha IRT e INSS?',
+    answer:
+      'Sim. Os dados dos funcionários e da folha salarial são utilizados no cálculo do IRT e da Segurança Social.',
+  },
+  {
+    question: 'A Fiscalidade Digital serve apenas para contabilistas?',
+    answer:
+      'Não. A plataforma foi pensada para empresas e equipas que precisam de organizar e acompanhar a sua informação fiscal.',
+  },
 ];
 
-function Brand() {
+function Logo() {
   return (
-    <Link href="/" className="inline-flex items-center gap-3" aria-label="Fiscalidade Digital — início">
-      <img src="/logofiscalidade.png" alt="" className="h-9 w-auto" />
-      <span className="hidden text-sm font-bold tracking-tight text-slate-950 sm:block">Fiscalidade Digital</span>
+    <Link
+      href="/"
+      className="brand-logo"
+      aria-label="Fiscalidade Digital"
+    >
+      <img
+        src="/logofiscalidade.png"
+        alt="Fiscalidade Digital"
+      />
     </Link>
   );
 }
 
-function ProductPreview() {
+function SectionLabel({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   return (
-    <div className="relative mx-auto w-full max-w-2xl border border-slate-200 bg-white p-3 shadow-[0_24px_60px_rgba(15,23,42,0.12)] sm:p-4">
-      <div className="flex items-center justify-between border-b border-slate-200 px-2 pb-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
-        <span>Visão operacional</span><span className="text-sky-700">Empresa activa</span>
+    <div className="section-label">
+      <span className="section-dot" />
+      {children}
+    </div>
+  );
+}
+
+function HeroArtwork() {
+  return (
+    <div className="hero-artwork">
+      <div className="art-glow art-glow-one" />
+      <div className="art-glow art-glow-two" />
+
+      <div className="shape-grid shape-grid-left">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
       </div>
-      <div className="grid gap-3 pt-3 sm:grid-cols-[1.2fr_.8fr]">
-        <section className="border border-slate-200 p-4">
-          <p className="text-xs font-semibold text-slate-950">Próximas acções</p>
-          <div className="mt-4 space-y-3">
-            {['Rever factura recebida', 'Confirmar informação de documento', 'Acompanhar obrigação do período'].map((item, index) => (
-              <div className="flex items-start gap-3" key={item}>
-                <span className={`mt-0.5 grid h-5 w-5 shrink-0 place-items-center border text-[10px] font-bold ${index === 0 ? 'border-sky-700 bg-sky-700 text-white' : 'border-slate-300 text-slate-500'}`}>{index + 1}</span>
-                <div><p className="text-xs font-medium text-slate-800">{item}</p><p className="mt-1 text-[11px] text-slate-500">Em acompanhamento</p></div>
-              </div>
-            ))}
+
+      <div className="shape-grid shape-grid-right">
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </div>
+
+      <div className="art-main">
+        <div className="art-main-line">
+          <span />
+          <span />
+          <span />
+        </div>
+
+        <div className="art-main-content">
+          <div className="art-mini-label">
+            <FileText size={13} />
+            Gestão fiscal
           </div>
-        </section>
-        <section className="bg-slate-950 p-4 text-slate-100">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-300">Documentos</p>
-          <p className="mt-3 text-lg font-semibold">Revisão antes do registo.</p>
-          <p className="mt-3 text-xs leading-5 text-slate-300">Importe uma factura, confira os dados propostos e mantenha a decisão final na sua equipa.</p>
-          <div className="mt-6 border-t border-slate-700 pt-3 text-[11px] text-slate-300">Dados privados por empresa</div>
-        </section>
+
+          <h3>
+            Simplifique
+            <br />
+            a gestão da
+            <br />
+            sua empresa.
+          </h3>
+
+          <div className="art-lines">
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+
+        <div className="art-bottom">
+          <div>
+            <small>Obrigações</small>
+            <strong>Organizadas</strong>
+          </div>
+
+          <div>
+            <small>Impostos</small>
+            <strong>Acompanhados</strong>
+          </div>
+        </div>
+      </div>
+
+      <div className="art-floating art-floating-top">
+        <div className="art-icon">
+          <Calculator size={17} />
+        </div>
+
+        <div>
+          <strong>Impostos</strong>
+          <span>Fiscalidade num só lugar</span>
+        </div>
+      </div>
+
+      <div className="art-floating art-floating-left">
+        <div className="art-icon">
+          <CalendarDays size={17} />
+        </div>
+
+        <div>
+          <strong>Obrigações</strong>
+          <span>Prazos organizados</span>
+        </div>
+      </div>
+
+      <div className="art-floating art-floating-right">
+        <div className="art-icon">
+          <Users size={17} />
+        </div>
+
+        <div>
+          <strong>Folha salarial</strong>
+          <span>IRT integrado</span>
+        </div>
+      </div>
+
+      <div className="art-pill">
+        <span />
+        Pensado para empresas em Angola
+      </div>
+    </div>
+  );
+}
+
+function PlatformArtwork() {
+  return (
+    <div className="platform-art">
+      <div className="platform-decoration platform-decoration-one" />
+      <div className="platform-decoration platform-decoration-two" />
+
+      <div className="platform-panel">
+        <div className="platform-header">
+          <div>
+            <span>Fiscalidade Digital</span>
+            <strong>Gestão da empresa</strong>
+          </div>
+
+          <div className="platform-active">
+            <span />
+            Activo
+          </div>
+        </div>
+
+        <div className="platform-cards">
+          <div className="platform-small-card">
+            <Receipt size={17} />
+            <span>Facturação</span>
+            <strong>Organizada</strong>
+          </div>
+
+          <div className="platform-small-card">
+            <Calculator size={17} />
+            <span>Impostos</span>
+            <strong>Centralizados</strong>
+          </div>
+
+          <div className="platform-small-card">
+            <CalendarDays size={17} />
+            <span>Obrigações</span>
+            <strong>Acompanhadas</strong>
+          </div>
+
+          <div className="platform-small-card">
+            <Users size={17} />
+            <span>Salários</span>
+            <strong>Integrados</strong>
+          </div>
+        </div>
+
+        <div className="platform-list">
+          <div className="platform-list-title">
+            <span>Áreas da empresa</span>
+            <small>Fiscalidade</small>
+          </div>
+
+          <div className="platform-list-row">
+            <span>IVA</span>
+            <span>Obrigações</span>
+            <b>Activo</b>
+          </div>
+
+          <div className="platform-list-row">
+            <span>IRT</span>
+            <span>Folha salarial</span>
+            <b>Integrado</b>
+          </div>
+
+          <div className="platform-list-row">
+            <span>Compras</span>
+            <span>Fornecedores</span>
+            <b>Organizado</b>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
 export default function HomePage() {
-  const [menuOpen, setMenuOpen] = useState(false);
-  const [openFaq, setOpenFaq] = useState(0);
+  const [mobileMenu, setMobileMenu] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(0);
+
+  const closeMobileMenu = () => {
+    setMobileMenu(false);
+  };
 
   return (
-    <main className="min-h-screen bg-[#f7f8fa] font-sans text-slate-950">
-      <style jsx global>{`
-        @keyframes fd-landing-enter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
-        .fd-landing-enter { animation: fd-landing-enter 600ms ease-out both; }
-        @media (prefers-reduced-motion: reduce) { .fd-landing-enter { animation: none; } }
-      `}</style>
+    <main className="site">
 
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-[#f7f8fa]/95 backdrop-blur-sm">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-5 lg:px-8">
-          <Brand />
-          <nav className="hidden items-center gap-7 lg:flex" aria-label="Navegação principal">
-            {navigation.map((item) => <a key={item.href} href={item.href} className="text-sm font-medium text-slate-600 transition hover:text-slate-950">{item.label}</a>)}
+
+      {/* =====================================================
+          NAVBAR
+      ===================================================== */}
+
+      <header className="navbar-wrap">
+        <div className="container">
+          <nav className="navbar">
+            <Logo />
+
+            <div className="nav-links">
+              <div className="nav-item">
+                <button
+                  type="button"
+                  className="nav-trigger"
+                >
+                  Soluções
+                  <ChevronDown size={14} />
+                </button>
+
+                <div className="nav-dropdown">
+                  <a href="#solucao">
+                    Gestão fiscal
+                  </a>
+
+                  <a href="#funcionalidades">
+                    Facturação
+                  </a>
+
+                  <a href="#funcionalidades">
+                    Obrigações fiscais
+                  </a>
+
+                  <a href="#funcionalidades">
+                    Folha salarial
+                  </a>
+                </div>
+              </div>
+
+              <div className="nav-item">
+                <button
+                  type="button"
+                  className="nav-trigger"
+                >
+                  Produtos
+                  <ChevronDown size={14} />
+                </button>
+
+                <div className="nav-dropdown">
+                  <a href="#funcionalidades">
+                    Fiscalidade
+                  </a>
+
+                  <a href="#funcionalidades">
+                    Facturação
+                  </a>
+
+                  <a href="#funcionalidades">
+                    Compras
+                  </a>
+
+                  <a href="#funcionalidades">
+                    Salários
+                  </a>
+                </div>
+              </div>
+
+              <div className="nav-item">
+                <button
+                  type="button"
+                  className="nav-trigger"
+                >
+                  Recursos
+                  <ChevronDown size={14} />
+                </button>
+
+                <div className="nav-dropdown">
+                  <a href="#funcionalidades">
+                    Funcionalidades
+                  </a>
+
+                  <a href="#faq">
+                    Perguntas frequentes
+                  </a>
+
+                  <a href="#sobre">
+                    Sobre a plataforma
+                  </a>
+                </div>
+              </div>
+
+              <a
+                className="nav-trigger"
+                href="#sobre"
+              >
+                Sobre nós
+              </a>
+
+              <a
+                className="nav-trigger"
+                href="#contacto"
+              >
+                Contacte-nos
+              </a>
+            </div>
+
+            <div className="nav-actions">
+              <Link
+                href="/login"
+                className="login-link"
+              >
+                Entrar
+              </Link>
+
+              <Link
+                href="/register"
+                className="primary-button"
+              >
+                Criar conta
+                <ArrowRight size={16} />
+              </Link>
+            </div>
+
+            <button
+              type="button"
+              className="mobile-menu-button"
+              aria-label={
+                mobileMenu
+                  ? 'Fechar menu'
+                  : 'Abrir menu'
+              }
+              onClick={() =>
+                setMobileMenu(
+                  (value) => !value,
+                )
+              }
+            >
+              {mobileMenu ? (
+                <X size={20} />
+              ) : (
+                <Menu size={20} />
+              )}
+            </button>
           </nav>
-          <div className="hidden items-center gap-4 lg:flex"><Link href="/login" className="text-sm font-semibold text-slate-700 hover:text-slate-950">Entrar</Link><Link href="/register" className="inline-flex items-center gap-2 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-sky-800">Começar agora <ArrowRight className="h-4 w-4" /></Link></div>
-          <button type="button" className="grid h-10 w-10 place-items-center border border-slate-300 lg:hidden" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)}>{menuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}</button>
+
+          {mobileMenu && (
+            <div className="mobile-menu">
+              <a
+                href="#solucao"
+                onClick={closeMobileMenu}
+              >
+                Soluções
+              </a>
+
+              <a
+                href="#funcionalidades"
+                onClick={closeMobileMenu}
+              >
+                Produtos
+              </a>
+
+              <a
+                href="#faq"
+                onClick={closeMobileMenu}
+              >
+                Recursos
+              </a>
+
+              <a
+                href="#sobre"
+                onClick={closeMobileMenu}
+              >
+                Sobre nós
+              </a>
+
+              <a
+                href="#contacto"
+                onClick={closeMobileMenu}
+              >
+                Contacte-nos
+              </a>
+
+              <Link
+                href="/login"
+                onClick={closeMobileMenu}
+              >
+                Entrar
+              </Link>
+
+              <Link
+                href="/register"
+                className="mobile-cta"
+                onClick={closeMobileMenu}
+              >
+                Criar conta
+              </Link>
+            </div>
+          )}
         </div>
-        {menuOpen && <nav className="border-t border-slate-200 bg-[#f7f8fa] px-5 py-5 lg:hidden" aria-label="Navegação móvel"><div className="mx-auto grid max-w-7xl gap-1">{navigation.map((item) => <a key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className="border-b border-slate-200 py-3 text-sm font-semibold text-slate-800">{item.label}</a>)}<Link href="/login" className="pt-4 text-sm font-semibold text-slate-700">Entrar</Link><Link href="/register" className="mt-3 inline-flex w-fit items-center gap-2 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white">Começar agora <ArrowRight className="h-4 w-4" /></Link></div></nav>}
       </header>
 
-      <section className="border-b border-slate-200">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 py-16 sm:py-20 lg:grid-cols-[.9fr_1.1fr] lg:px-8 lg:py-28">
-          <div className="fd-landing-enter self-center">
-            <p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-800">Fiscalidade Digital · Angola</p>
-            <h1 className="mt-5 max-w-xl text-4xl font-semibold leading-[1.05] tracking-[-0.04em] text-slate-950 sm:text-5xl lg:text-6xl">Fiscalidade empresarial, organizada num só lugar.</h1>
-            <p className="mt-6 max-w-lg text-base leading-7 text-slate-600 sm:text-lg">Acompanhe obrigações, facturação, documentos e alertas com uma visão mais clara da operação da sua empresa.</p>
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="inline-flex items-center justify-center gap-2 bg-sky-800 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900">Começar agora <ArrowRight className="h-4 w-4" /></Link><a href="#como-funciona" className="inline-flex items-center justify-center border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-950">Ver como funciona</a></div>
-            <p className="mt-5 text-xs leading-5 text-slate-500">Pensado para a realidade fiscal das empresas em Angola.</p>
+      {/* =====================================================
+          HERO
+      ===================================================== */}
+
+      <section className="hero-section">
+        <div className="container hero-grid">
+          <div className="hero-copy">
+            <div className="eyebrow">
+              <span />
+              FISCALIDADE DIGITAL
+            </div>
+
+            <h1 className="hero-title">
+              A gestão fiscal
+              <br />
+              da sua empresa
+              <br />
+              <span className="highlight">
+                num só lugar.
+              </span>
+            </h1>
+
+            <p className="hero-description">
+              Uma plataforma criada para empresas
+              em Angola organizarem facturação,
+              impostos, obrigações, compras e
+              salários com mais clareza e controlo.
+            </p>
+
+            <div className="hero-actions">
+              <Link
+                href="/register"
+                className="primary-button"
+              >
+                Criar conta
+                <ArrowRight size={17} />
+              </Link>
+
+              <a
+                href="#solucao"
+                className="hero-secondary"
+              >
+                Conhecer a plataforma
+              </a>
+            </div>
+
+            <div className="hero-checks">
+              <div className="hero-check">
+                <Check size={14} />
+                Pensado para empresas em Angola
+              </div>
+
+              <div className="hero-check">
+                <Check size={14} />
+                Fiscalidade num só lugar
+              </div>
+
+              <div className="hero-check">
+                <Check size={14} />
+                Controlo e organização
+              </div>
+            </div>
           </div>
-          <div className="fd-landing-enter [animation-delay:120ms]"><ProductPreview /></div>
+
+          <HeroArtwork />
         </div>
       </section>
 
-      <section className="mx-auto grid max-w-7xl gap-10 px-5 py-16 lg:grid-cols-[.78fr_1.22fr] lg:px-8 lg:py-24">
-        <div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-800">O dia a dia</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Quando tudo está disperso, os prazos deixam de estar visíveis.</h2></div>
-        <div className="grid gap-x-10 gap-y-7 sm:grid-cols-2">{['Prazos fiscais espalhados por folhas e mensagens.', 'Documentos difíceis de localizar no momento certo.', 'Facturação separada do acompanhamento fiscal.', 'Pendências descobertas tarde demais.'].map((item) => <p key={item} className="border-t border-slate-300 pt-4 text-sm leading-6 text-slate-600">{item}</p>)}</div>
+      {/* =====================================================
+          PARCEIROS
+      ===================================================== */}
+
+      <section className="partners-section">
+        <div className="container">
+          <p className="partners-title">
+            PARCEIROS E ECOSSISTEMA
+          </p>
+
+          <div className="partners-window">
+            <div className="partners-track">
+              {[0, 1].map((groupIndex) => (
+                <div
+                  className="partners-group"
+                  key={`partners-group-${groupIndex}`}
+                  aria-hidden={groupIndex === 1}
+                >
+                  {partnerLogos.map((partner, index) => (
+                    <div
+                      className="partner-item"
+                      key={`${groupIndex}-${partner.name}-${index}`}
+                      title={partner.name}
+                    >
+                      <img
+                        src={partner.image}
+                        alt={groupIndex === 1 ? '' : partner.name}
+                        loading={groupIndex === 0 ? 'eager' : 'lazy'}
+                      />
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </section>
 
-      <section id="produto" className="border-y border-slate-200 bg-white">
-        <div className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24"><div className="max-w-2xl"><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-800">Produto</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">O trabalho fiscal e operacional, na mesma conversa.</h2><p className="mt-4 text-base leading-7 text-slate-600">Uma estrutura de produto para acompanhar o que foi emitido, recebido, guardado e o que requer acção.</p></div><div className="mt-12 grid border-l border-t border-slate-200 sm:grid-cols-2 lg:grid-cols-3">{productAreas.map((area) => { const Icon = area.icon; return <article key={area.title} className="min-h-52 border-b border-r border-slate-200 p-6 transition hover:bg-slate-50"><Icon className="h-5 w-5 text-sky-800" /><h3 className="mt-8 text-lg font-semibold text-slate-950">{area.title}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{area.detail}</p></article>; })}</div></div>
+      {/* =====================================================
+          SOBRE
+      ===================================================== */}
+
+      <section
+        id="sobre"
+        className="about-section"
+      >
+        <div className="container about-grid">
+          <div>
+            <SectionLabel>
+              SOBRE A FISCALIDADE DIGITAL
+            </SectionLabel>
+
+            <h2 className="section-title">
+              Tecnologia criada para
+              <span className="purple">
+                {' '}
+                simplificar
+              </span>{' '}
+              a fiscalidade.
+            </h2>
+          </div>
+
+          <div>
+            <p className="section-description">
+              A Fiscalidade Digital é uma
+              plataforma tecnológica pensada
+              para simplificar a gestão fiscal
+              das empresas em Angola.
+            </p>
+
+            <p className="section-description">
+              A plataforma reúne diferentes áreas
+              da operação empresarial num único
+              ambiente, permitindo acompanhar
+              informação fiscal e administrativa
+              de forma mais organizada.
+            </p>
+
+            <div className="about-note">
+              Menos informação espalhada.
+              Mais organização para acompanhar
+              a realidade da empresa.
+            </div>
+          </div>
+        </div>
+
+        <div className="container">
+          <div className="about-visual">
+            <div className="about-number">
+              01
+            </div>
+
+            <h3>
+              Um espaço único para acompanhar
+              a realidade fiscal da sua empresa.
+            </h3>
+
+            <p>
+              Facturação, impostos, obrigações,
+              salários e compras podem ser
+              acompanhados dentro da mesma
+              plataforma.
+            </p>
+
+            <img
+              src="/logofiscalidade.png"
+              alt=""
+              className="about-brand-mark"
+              aria-hidden="true"
+            />
+          </div>
+        </div>
       </section>
 
-      <section id="como-funciona" className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24"><div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr]"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-800">Como funciona</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">Um processo claro para o trabalho que se repete todos os meses.</h2></div><ol className="border-t border-slate-300">{workflow.map(([number, title, detail]) => <li key={number} className="grid gap-3 border-b border-slate-300 py-5 sm:grid-cols-[4rem_1fr_1.3fr]"><span className="text-xs font-bold tracking-[0.12em] text-sky-800">{number}</span><h3 className="font-semibold text-slate-950">{title}</h3><p className="text-sm leading-6 text-slate-600">{detail}</p></li>)}</ol></div>
-        <div className="mt-14 border-y border-slate-200 py-10 lg:mt-20"><div className="grid gap-8 md:grid-cols-[.8fr_1.2fr]"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-800">Facturas recebidas</p><h3 className="mt-3 text-2xl font-semibold tracking-[-0.02em]">Importe uma factura. Reveja os dados. Registe.</h3></div><div className="grid grid-cols-4 gap-2 text-center text-xs font-semibold text-slate-700"><span className="border border-slate-300 px-2 py-4">Upload</span><span className="border border-slate-300 px-2 py-4">Extracção</span><span className="border border-slate-300 px-2 py-4">Revisão</span><span className="border border-slate-950 bg-slate-950 px-2 py-4 text-white">Confirmação</span></div></div><p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">A extracção facilita o preenchimento. A revisão humana mantém a confirmação do documento sob controlo da sua equipa.</p></div>
+      {/* =====================================================
+          DESAFIO
+      ===================================================== */}
+
+      <section className="challenge-section">
+        <div className="container">
+          <div className="challenge-header">
+            <SectionLabel>
+              O DESAFIO
+            </SectionLabel>
+
+            <h2 className="section-title">
+              A gestão fiscal não precisa
+              <span className="purple">
+                {' '}
+                ser complicada.
+              </span>
+            </h2>
+
+            <p className="section-description">
+              Empresas lidam diariamente com
+              informação fiscal, documentos,
+              obrigações e processos administrativos.
+              A organização desses elementos é
+              essencial para uma gestão mais clara.
+            </p>
+          </div>
+
+          <div className="challenge-grid">
+            {challenges.map((challenge) => (
+              <article
+                className="challenge-card"
+                key={challenge.number}
+              >
+                <span className="challenge-index">
+                  {challenge.number}
+                </span>
+
+                <h3>
+                  {challenge.title}
+                </h3>
+
+                <p>
+                  {challenge.description}
+                </p>
+              </article>
+            ))}
+          </div>
+        </div>
       </section>
 
-      <section id="seguranca" className="bg-slate-950 text-white"><div className="mx-auto max-w-7xl px-5 py-16 lg:px-8 lg:py-24"><div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr]"><div><ShieldCheck className="h-6 w-6 text-sky-300" /><p className="mt-8 text-xs font-bold uppercase tracking-[0.16em] text-sky-300">Segurança e controlo</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] sm:text-4xl">Uma base de trabalho feita para informação sensível.</h2><p className="mt-5 max-w-md text-base leading-7 text-slate-300">O produto organiza dados empresariais e documentos com controlo de acesso e separação por empresa.</p></div><div className="divide-y divide-slate-700 border-y border-slate-700">{safeguards.map(([title, detail]) => <div key={title} className="grid gap-3 py-5 sm:grid-cols-[1fr_1.25fr]"><h3 className="text-sm font-semibold text-white">{title}</h3><p className="text-sm leading-6 text-slate-300">{detail}</p></div>)}</div></div></div></section>
+      {/* =====================================================
+          SOLUÇÃO
+      ===================================================== */}
 
-      <section id="faq" className="mx-auto max-w-4xl px-5 py-16 lg:py-24"><div className="max-w-xl"><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-800">FAQ</p><h2 className="mt-4 text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">Perguntas antes de começar.</h2></div><div className="mt-10 border-y border-slate-300">{faqs.map(([question, answer], index) => { const isOpen = index === openFaq; return <div key={question} className="border-b border-slate-300 last:border-0"><button type="button" className="flex w-full items-center justify-between gap-5 py-5 text-left" aria-expanded={isOpen} onClick={() => setOpenFaq(isOpen ? -1 : index)}><span className="text-sm font-semibold text-slate-900 sm:text-base">{question}</span><ChevronDown className={`h-5 w-5 shrink-0 text-slate-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} /></button>{isOpen && <p className="max-w-2xl pb-5 text-sm leading-6 text-slate-600">{answer}</p>}</div>; })}</div></section>
+      <section
+        id="solucao"
+        className="solution-section"
+      >
+        <div className="container solution-grid">
+          <div className="solution-copy">
+            <SectionLabel>
+              A NOSSA SOLUÇÃO
+            </SectionLabel>
 
-      <section className="border-y border-slate-200 bg-white"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 px-5 py-14 sm:flex-row sm:items-end lg:px-8 lg:py-20"><div><p className="text-xs font-bold uppercase tracking-[0.16em] text-sky-800">Fiscalidade Digital</p><h2 className="mt-4 max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-slate-950 sm:text-4xl">Menos tempo à procura de informação. Mais controlo sobre a operação fiscal.</h2></div><div className="flex shrink-0 flex-col gap-3 sm:flex-row"><Link href="/register" className="inline-flex items-center justify-center gap-2 bg-sky-800 px-5 py-3 text-sm font-semibold text-white transition hover:bg-sky-900">Começar agora <ArrowRight className="h-4 w-4" /></Link><Link href="/login" className="inline-flex items-center justify-center border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-800 transition hover:border-slate-950">Entrar na plataforma</Link></div></div></section>
+            <h2 className="section-title">
+              Uma plataforma para
+              <span className="purple">
+                {' '}
+                acompanhar tudo.
+              </span>
+            </h2>
 
-      <footer className="mx-auto max-w-7xl px-5 py-10 lg:px-8"><div className="grid gap-9 border-b border-slate-200 pb-10 sm:grid-cols-2 lg:grid-cols-4"><div><Brand /><p className="mt-4 max-w-xs text-sm leading-6 text-slate-600">Gestão fiscal e operacional organizada para empresas em Angola.</p></div><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Produto</p><div className="mt-4 grid gap-3 text-sm text-slate-600"><a href="#produto">Funcionalidades</a><a href="#como-funciona">Como funciona</a><a href="#seguranca">Segurança</a></div></div><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Conta</p><div className="mt-4 grid gap-3 text-sm text-slate-600"><Link href="/login">Entrar</Link><Link href="/register">Começar agora</Link></div></div><div><p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-500">Legal</p><div className="mt-4 grid gap-3 text-sm text-slate-600"><Link href="/privacy">Privacidade</Link><Link href="/terms">Termos</Link></div></div></div><div className="flex flex-col gap-2 pt-6 text-xs text-slate-500 sm:flex-row sm:justify-between"><span>© {new Date().getFullYear()} Fiscalidade Digital</span><span>Angola</span></div></footer>
+            <p className="section-description">
+              A Fiscalidade Digital conecta os
+              principais processos fiscais e
+              administrativos da empresa para
+              criar uma visão mais organizada
+              do negócio.
+            </p>
+
+            <div className="solution-list">
+              {benefits.map((benefit) => (
+                <div
+                  className="solution-item"
+                  key={benefit}
+                >
+                  <div className="solution-check">
+                    <Check size={13} />
+                  </div>
+
+                  <span>
+                    {benefit}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <PlatformArtwork />
+        </div>
+      </section>
+
+      {/* =====================================================
+          FUNCIONALIDADES
+      ===================================================== */}
+
+      <section
+        id="funcionalidades"
+        className="features-section"
+      >
+        <div className="container">
+          <div className="features-heading">
+            <SectionLabel>
+              FUNCIONALIDADES
+            </SectionLabel>
+
+            <h2 className="section-title">
+              Tudo o que a empresa precisa,
+              <span className="purple">
+                {' '}
+                num só espaço.
+              </span>
+            </h2>
+
+            <p className="section-description">
+              Módulos pensados para acompanhar
+              diferentes áreas da gestão empresarial
+              e fiscal.
+            </p>
+          </div>
+
+          <div className="features-grid">
+            {features.map((feature) => {
+              const Icon = feature.icon;
+
+              return (
+                <article
+                  className="feature-card"
+                  key={feature.number}
+                >
+                  <div className="feature-top">
+                    <div className="feature-icon">
+                      <Icon size={19} />
+                    </div>
+
+                    <span className="feature-number">
+                      {feature.number}
+                    </span>
+                  </div>
+
+                  <h3>
+                    {feature.title}
+                  </h3>
+
+                  <p>
+                    {feature.description}
+                  </p>
+                </article>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          GESTÃO FISCAL
+      ===================================================== */}
+
+      <section className="fiscal-section">
+        <div className="container fiscal-grid">
+          <div className="fiscal-visual">
+            <div className="fiscal-core-card">
+              <div className="fiscal-core-top">
+                <div className="fiscal-core-icon">
+                  <Calculator size={22} />
+                </div>
+
+                <div>
+                  <small>
+                    Plataforma integrada
+                  </small>
+
+                  <strong>
+                    Gestão fiscal
+                  </strong>
+                </div>
+              </div>
+
+              <div className="fiscal-core-list">
+                <div className="fiscal-core-row">
+                  <div>
+                    <div className="fiscal-row-icon">
+                      <Receipt size={14} />
+                    </div>
+
+                    <span>
+                      Facturação
+                    </span>
+                  </div>
+
+                  <b>
+                    Integrada
+                  </b>
+                </div>
+
+                <div className="fiscal-core-row">
+                  <div>
+                    <div className="fiscal-row-icon">
+                      <Calculator size={14} />
+                    </div>
+
+                    <span>
+                      Impostos
+                    </span>
+                  </div>
+
+                  <b>
+                    Centralizados
+                  </b>
+                </div>
+
+                <div className="fiscal-core-row">
+                  <div>
+                    <div className="fiscal-row-icon">
+                      <CalendarDays size={14} />
+                    </div>
+
+                    <span>
+                      Obrigações
+                    </span>
+                  </div>
+
+                  <b>
+                    Acompanhadas
+                  </b>
+                </div>
+
+                <div className="fiscal-core-row">
+                  <div>
+                    <div className="fiscal-row-icon">
+                      <Users size={14} />
+                    </div>
+
+                    <span>
+                      Folha salarial
+                    </span>
+                  </div>
+
+                  <b>
+                    Integrada
+                  </b>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <SectionLabel>
+              GESTÃO INTEGRADA
+            </SectionLabel>
+
+            <h2 className="section-title">
+              Os processos da empresa
+              <span className="purple">
+                {' '}
+                ligados entre si.
+              </span>
+            </h2>
+
+            <p className="section-description">
+              A plataforma foi estruturada para
+              permitir que diferentes áreas da
+              empresa trabalhem com informação
+              organizada e conectada.
+            </p>
+
+            <div className="fiscal-points">
+              <div className="fiscal-point">
+                <strong>
+                  Obrigações
+                </strong>
+
+                <span>
+                  Acompanhe períodos, prazos,
+                  valores e estados.
+                </span>
+              </div>
+
+              <div className="fiscal-point">
+                <strong>
+                  Impostos
+                </strong>
+
+                <span>
+                  Centralize os cálculos fiscais
+                  associados à empresa.
+                </span>
+              </div>
+
+              <div className="fiscal-point">
+                <strong>
+                  Salários
+                </strong>
+
+                <span>
+                  Ligue a folha salarial ao
+                  cálculo do IRT.
+                </span>
+              </div>
+
+              <div className="fiscal-point">
+                <strong>
+                  Facturação
+                </strong>
+
+                <span>
+                  Organize facturas e informação
+                  da actividade empresarial.
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          BENEFÍCIOS
+      ===================================================== */}
+
+      <section className="benefits-section">
+        <div className="container benefits-grid">
+          <div>
+            <SectionLabel>
+              BENEFÍCIOS
+            </SectionLabel>
+
+            <h2 className="section-title">
+              Mais controlo.
+              <br />
+              Mais clareza.
+              <br />
+              <span className="purple">
+                Menos complicação.
+              </span>
+            </h2>
+
+            <p className="section-description">
+              A tecnologia deve facilitar a gestão
+              da empresa, não criar mais trabalho.
+            </p>
+          </div>
+
+          <div className="benefits-list">
+            {benefits.map(
+              (benefit, index) => (
+                <div
+                  className="benefit-item"
+                  key={benefit}
+                >
+                  <span className="benefit-item-number">
+                    0{index + 1}
+                  </span>
+
+                  <h3>
+                    {benefit}
+                  </h3>
+                </div>
+              ),
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          EQUIPA
+      ===================================================== */}
+
+      <section className="team-section">
+        <div className="container">
+          <div className="team-heading">
+            <SectionLabel>
+              A EQUIPA
+            </SectionLabel>
+
+            <h2 className="section-title">
+              Pessoas por trás da
+              <span className="purple">
+                {' '}
+                tecnologia.
+              </span>
+            </h2>
+
+            <p className="section-description">
+              A Fiscalidade Digital é construída
+              por pessoas focadas em tecnologia,
+              organização e soluções digitais
+              para empresas.
+            </p>
+          </div>
+
+          <div className="team-grid">
+            {teamMembers.map((member) => (
+              <article
+                className="team-card"
+                key={member.name}
+              >
+                <img
+                  src={member.image}
+                  alt={member.name}
+                  className="team-photo"
+                  loading="lazy"
+                />
+
+                <div className="team-info">
+                  <strong>
+                    {member.name}
+                  </strong>
+
+                  <span>
+                    Fiscalidade Digital
+                  </span>
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          CONFIANÇA
+      ===================================================== */}
+
+      <section className="trust-section">
+        <div className="container trust-grid">
+          <div>
+            <SectionLabel>
+              CONFIANÇA
+            </SectionLabel>
+
+            <h2 className="section-title">
+              Os dados da sua empresa
+              <span className="purple">
+                {' '}
+                merecem cuidado.
+              </span>
+            </h2>
+
+            <p className="section-description">
+              A plataforma foi estruturada para
+              trabalhar com empresas separadas,
+              permitindo que cada organização
+              tenha o seu próprio espaço e os seus
+              próprios dados.
+            </p>
+          </div>
+
+          <div className="trust-panel">
+            <div className="trust-panel-top">
+              <div className="trust-icon">
+                <ShieldCheck size={23} />
+              </div>
+
+              <h3>
+                Dados organizados por empresa
+              </h3>
+            </div>
+
+            <p>
+              A informação é apresentada de forma
+              centralizada para facilitar o trabalho
+              diário e o acompanhamento da empresa.
+            </p>
+
+            <div className="trust-lines">
+              <div className="trust-line">
+                <Check size={14} />
+                Empresa e dados separados
+              </div>
+
+              <div className="trust-line">
+                <Check size={14} />
+                Acesso autenticado
+              </div>
+
+              <div className="trust-line">
+                <Check size={14} />
+                Informação organizada por módulos
+              </div>
+
+              <div className="trust-line">
+                <Check size={14} />
+                Fiscalidade num só lugar
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          FAQ
+      ===================================================== */}
+
+      <section
+        id="faq"
+        className="faq-section"
+      >
+        <div className="container faq-layout">
+          <div>
+            <SectionLabel>
+              PERGUNTAS
+            </SectionLabel>
+
+            <h2 className="section-title">
+              Perguntas
+              <span className="purple">
+                {' '}
+                frequentes.
+              </span>
+            </h2>
+
+            <p className="section-description">
+              Algumas respostas sobre a plataforma
+              e a forma como foi pensada para
+              empresas em Angola.
+            </p>
+          </div>
+
+          <div className="faq-list">
+            {faqs.map((faq, index) => {
+              const isOpen =
+                openFaq === index;
+
+              return (
+                <div
+                  className="faq-item"
+                  key={faq.question}
+                >
+                  <button
+                    type="button"
+                    className={`faq-question ${
+                      isOpen ? 'open' : ''
+                    }`}
+                    onClick={() =>
+                      setOpenFaq(
+                        isOpen
+                          ? null
+                          : index,
+                      )
+                    }
+                  >
+                    <span>
+                      {faq.question}
+                    </span>
+
+                    <ChevronDown size={18} />
+                  </button>
+
+                  {isOpen && (
+                    <div className="faq-answer">
+                      {faq.answer}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          CTA
+      ===================================================== */}
+
+      <section
+        id="contacto"
+        className="final-cta"
+      >
+        <div className="container final-cta-inner">
+          <SectionLabel>
+            FISCALIDADE DIGITAL
+          </SectionLabel>
+
+          <h2>
+            Simplifique a gestão fiscal
+            <br />
+            da sua empresa
+            <span>.</span>
+          </h2>
+
+          <p>
+            Organize a informação da sua empresa
+            e tenha uma visão mais clara da sua
+            gestão fiscal através de uma única
+            plataforma.
+          </p>
+
+          <div className="hero-actions">
+            <Link
+              href="/register"
+              className="primary-button"
+            >
+              Criar conta
+              <ArrowRight size={17} />
+            </Link>
+
+            <a
+              href="mailto:contacto@fiscalidadedigital.ao"
+              className="hero-secondary"
+            >
+              Contacte-nos
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* =====================================================
+          FOOTER
+      ===================================================== */}
+
+      <footer className="footer">
+        <div className="container">
+          <div className="footer-top">
+            <div className="footer-brand">
+              <div className="footer-logo-wrap">
+                <Logo />
+              </div>
+
+              <p>
+                Tecnologia para simplificar a
+                gestão fiscal das empresas em
+                Angola.
+              </p>
+            </div>
+
+            <div className="footer-column">
+              <h4>
+                Plataforma
+              </h4>
+
+              <a href="#solucao">
+                Solução
+              </a>
+
+              <a href="#funcionalidades">
+                Funcionalidades
+              </a>
+
+              <a href="#faq">
+                Perguntas
+              </a>
+            </div>
+
+            <div className="footer-column">
+              <h4>
+                Empresa
+              </h4>
+
+              <a href="#sobre">
+                Sobre nós
+              </a>
+
+              <a href="#contacto">
+                Contacte-nos
+              </a>
+
+              <a href="#sobre">
+                Equipa
+              </a>
+            </div>
+
+            <div className="footer-column">
+              <h4>
+                Conta
+              </h4>
+
+              <Link href="/login">
+                Entrar
+              </Link>
+
+              <Link href="/register">
+                Criar conta
+              </Link>
+            </div>
+          </div>
+
+          <div className="footer-bottom">
+            <span>
+              © {new Date().getFullYear()} Fiscalidade
+              Digital. Todos os direitos reservados.
+            </span>
+
+            <span>
+              Angola
+            </span>
+          </div>
+        </div>
+      </footer>
     </main>
   );
 }
