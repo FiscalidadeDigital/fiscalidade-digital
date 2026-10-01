@@ -47,4 +47,16 @@ describe('InvoiceService paged list', () => {
       ivaInvoicedAmount: '1500.25',
     });
   });
+
+  it('keeps PDF lookup scoped to the authenticated tenant', async () => {
+    const findFirst = jest.fn().mockResolvedValue(null);
+    const prisma = { invoice: { findFirst } } as unknown as PrismaService;
+    const service = new InvoiceService(prisma, {} as ObligationsService, { syncTenant: jest.fn() } as any);
+
+    await expect(service.generatePdf('tenant-a', 'invoice-b', {} as any)).rejects.toThrow('Factura não encontrada.');
+    expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'invoice-b', tenantId: 'tenant-a' },
+      include: expect.objectContaining({ client: true, tenant: true }),
+    }));
+  });
 });
