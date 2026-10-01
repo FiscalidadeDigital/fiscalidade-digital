@@ -1,3 +1,5 @@
+import { Prisma } from '@prisma/client';
+
 export type InvoiceExtractionCandidate = {
   supplierName?: string | null;
   supplierNif?: string | null;
@@ -12,6 +14,15 @@ export type InvoiceExtractionCandidate = {
   withholdingTax?: string | null;
   confidence?: number | null;
   fieldConfidence?: Record<string, number>;
+  reconciliation?: {
+    status: 'MATCHED' | 'MISMATCH' | 'INCOMPLETE';
+    lineTotal: string | null;
+    documentSubtotal: string | null;
+    vatSupported: string | null;
+    documentTotal: string | null;
+    difference: string | null;
+    documentTotalDifference: string | null;
+  };
   provenance?: { provider: string; model: string; apiVersion: string; extractedAt: string };
 };
 
@@ -165,8 +176,10 @@ type AzureField = { content?: string; confidence?: number; valueCurrency?: { amo
 type AzureAnalyzeResponse = { status?: string; analyzeResult?: { documents?: Array<{ fields?: Record<string, AzureField> }> } };
 type VeryfiResponse = {
   invoice_number?: unknown; date?: unknown; due_date?: unknown; subtotal?: unknown; tax?: unknown; total?: unknown; currency_code?: unknown;
-  vat_number?: unknown; vendor?: { name?: unknown; vat_number?: unknown; reg_number?: unknown };
-  line_items?: Array<{ description?: unknown; quantity?: unknown; price?: unknown; unit_price?: unknown; total?: unknown; sku?: unknown }>;
+  vat_number?: unknown; supplier_tax_id?: unknown; vendor?: { name?: unknown; vat_number?: unknown; reg_number?: unknown };
+  line_items?: Array<{
+    id?: unknown; line_id?: unknown; description?: unknown; quantity?: unknown; price?: unknown; unit_price?: unknown; total?: unknown; sku?: unknown;
+  }>;
 };
 
 function mapAzureInvoice(response: AzureAnalyzeResponse, model: string, apiVersion: string): InvoiceExtractionCandidate | null {
@@ -200,19 +213,41 @@ function mapAzureInvoice(response: AzureAnalyzeResponse, model: string, apiVersi
 function mapVeryfiInvoice(value: unknown): InvoiceExtractionCandidate | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
   const invoice = value as VeryfiResponse;
-  const text = (item: unknown) => typeof item === 'string' ? item.slice(0, 500) : null;
-  const amount = (item: unknown) => typeof item === 'number' ? numberString(item) : normalizeAmount(text(item));
+  const text = (item: unknown) => typeof item === 'string' ? item.trim().slice(0, 500) || null : null;
+  const amount = (item: unknown) => decimalString(item);
   const vendor = invoice.vendor && typeof invoice.vendor === 'object' ? invoice.vendor : {};
-  const items = Array.isArray(invoice.line_items) ? invoice.line_items.slice(0, 100).map((line) => ({
-    description: text(line.description), quantity: amount(line.quantity), unitPrice: amount(line.unit_price) ?? amount(line.price),
-    lineTotal: amount(line.total), productCode: text(line.sku),
-  })) : [];
+  const seenSourceLines = new Set<string>();
+  const items = Array.isArray(invoice.line_items) ? invoice.line_items.slice(0, 100).flatMap((line) => {
+    // Veryfi exposes the semantic fields directly. Do not derive one from
+    // another: an OCR extraction is a candidate for human review, not an
+    // accounting calculation.
+    const item = {
+      description: text(line.description),
+      quantity: amount(line.quantity),
+      unitPrice: amount(line.unit_price) ?? amount(line.price),
+      lineTotal: amount(line.total),
+      productCode: text(line.sku),
+    };
+    const sourceId = sourceIdentifier(line.id) ?? sourceIdentifier(line.line_id);
+    const fingerprint = [
+      normalizeLineDescription(item.description), item.quantity ?? '', item.unitPrice ?? '', item.lineTotal ?? '', item.productCode ?? '',
+    ].join('|');
+    // A matching OCR source identifier plus an identical semantic payload is
+    // strong evidence of an OCR duplicate. Identical descriptions or amounts
+    // by themselves remain separate, because they can be legitimate lines.
+    const duplicateKey = sourceId ? `${sourceId}|${fingerprint}` : null;
+    if (duplicateKey && seenSourceLines.has(duplicateKey)) return [];
+    if (duplicateKey) seenSourceLines.add(duplicateKey);
+    return [item];
+  }) : [];
+  const subtotal = amount(invoice.subtotal);
   const hasData = Boolean(text(invoice.invoice_number) || text(vendor.name) || amount(invoice.total) || items.length);
   if (!hasData) return null;
   return {
     invoiceNumber: text(invoice.invoice_number), issuedAt: text(invoice.date), dueDate: text(invoice.due_date),
-    supplierName: text(vendor.name), supplierNif: text(vendor.vat_number) ?? text(invoice.vat_number) ?? text(vendor.reg_number),
-    subtotal: amount(invoice.subtotal), vatSupported: amount(invoice.tax), total: amount(invoice.total), currency: text(invoice.currency_code), items,
+    supplierName: text(vendor.name), supplierNif: text(vendor.vat_number) ?? text(invoice.supplier_tax_id) ?? text(invoice.vat_number) ?? text(vendor.reg_number),
+    subtotal, vatSupported: amount(invoice.tax), total: amount(invoice.total), currency: text(invoice.currency_code), items,
+    reconciliation: reconcileLineTotals(items, subtotal, amount(invoice.tax), amount(invoice.total)),
     provenance: { provider: 'veryfi', model: 'receipts-invoices', apiVersion: 'v8', extractedAt: new Date().toISOString() },
   };
 }
@@ -233,9 +268,66 @@ function sanitizeCandidate(value: unknown): InvoiceExtractionCandidate | null {
 }
 
 function azureAmount(field?: AzureField) { return normalizeAmount(field?.content) ?? numberString(field?.valueCurrency?.amount) ?? numberString(field?.valueNumber); }
-function numberString(value?: number) { return typeof value === 'number' && Number.isFinite(value) ? value.toString() : null; }
+function numberString(value?: number) { return typeof value === 'number' && Number.isFinite(value) ? decimalString(value) : null; }
 function boundedText(value?: string) { return typeof value === 'string' ? value.slice(0, 500) : null; }
-function normalizeAmount(value?: string | null) { return value && /^\d{1,15}(?:[.,]\d{1,4})?$/.test(value.trim()) ? value.trim().replace(',', '.') : null; }
+function normalizeAmount(value?: string | null) { return decimalString(value); }
+function decimalString(value: unknown) {
+  if (typeof value !== 'number' && typeof value !== 'string') return null;
+  if (typeof value === 'number' && !Number.isFinite(value)) return null;
+  const normalized = normalizeDecimalText(String(value));
+  if (!normalized) return null;
+  try { new Prisma.Decimal(normalized); return normalized; } catch { return null; }
+}
+function normalizeDecimalText(value: string) {
+  const compact = value.trim().replace(/\s/g, '');
+  if (!compact || !/^-?[\d.,]+$/.test(compact)) return null;
+  const comma = compact.lastIndexOf(',');
+  const dot = compact.lastIndexOf('.');
+  if (comma >= 0 && dot >= 0) {
+    const decimalSeparator = comma > dot ? ',' : '.';
+    const thousandsSeparator = decimalSeparator === ',' ? /\./g : /,/g;
+    const normalized = compact.replace(thousandsSeparator, '').replace(decimalSeparator, '.');
+    return /^-?\d+(?:\.\d+)?$/.test(normalized) ? normalized : null;
+  }
+  // With one separator, a three-digit group is treated as a grouping
+  // separator ("1.000" and "1,000"). Other single separators remain a
+  // decimal separator ("1000.50" and "1000,50"). This is deterministic
+  // and avoids silently changing a supplied field into another field.
+  if (/^-?\d{1,3}([.,]\d{3})+$/.test(compact)) return compact.replace(/[.,]/g, '');
+  const normalized = compact.replace(',', '.');
+  return /^-?\d+(?:\.\d+)?$/.test(normalized) ? normalized : null;
+}
+function normalizeLineDescription(value?: string | null) { return (value ?? '').trim().replace(/\s+/g, ' ').toLocaleUpperCase(); }
+function sourceIdentifier(value: unknown) { return typeof value === 'string' || (typeof value === 'number' && Number.isFinite(value)) ? String(value).trim() || null : null; }
+function reconcileLineTotals(
+  items: Array<{ lineTotal?: string | null }>,
+  documentSubtotal: string | null,
+  vatSupported: string | null,
+  documentTotal: string | null,
+): NonNullable<InvoiceExtractionCandidate['reconciliation']> {
+  const lineTotals = items.map((item) => item.lineTotal).filter((value): value is string => Boolean(value));
+  const lineTotal = lineTotals.length ? sumDecimals(lineTotals) : null;
+  const lineDifference = lineTotal && documentSubtotal ? new Prisma.Decimal(lineTotal).minus(documentSubtotal).abs() : null;
+  const documentTotalDifference = documentSubtotal && vatSupported && documentTotal
+    ? new Prisma.Decimal(documentSubtotal).plus(vatSupported).minus(documentTotal).abs()
+    : null;
+  if (!lineTotals.length || lineTotals.length !== items.length || !documentSubtotal) {
+    return {
+      status: lineDifference?.greaterThan('0.01') || documentTotalDifference?.greaterThan('0.01') ? 'MISMATCH' : 'INCOMPLETE',
+      lineTotal, documentSubtotal, vatSupported, documentTotal,
+      difference: lineDifference?.toString() ?? null,
+      documentTotalDifference: documentTotalDifference?.toString() ?? null,
+    };
+  }
+  const difference = lineDifference as Prisma.Decimal;
+  return {
+    status: difference.greaterThan('0.01') || documentTotalDifference?.greaterThan('0.01') ? 'MISMATCH' : documentTotalDifference ? 'MATCHED' : 'INCOMPLETE',
+    lineTotal, documentSubtotal, vatSupported, documentTotal,
+    difference: difference.toString(),
+    documentTotalDifference: documentTotalDifference?.toString() ?? null,
+  };
+}
+function sumDecimals(values: string[]) { return values.reduce((sum, value) => sum.plus(value), new Prisma.Decimal(0)).toString(); }
 function averageConfidence(values: Record<string, number>) { const numbers = Object.values(values).filter((item) => item >= 0 && item <= 1); return numbers.length ? numbers.reduce((sum, item) => sum + item, 0) / numbers.length : null; }
 function isSecureEndpoint(value: string) { try { const url = new URL(value); return url.protocol === 'https:' || (url.protocol === 'http:' && ['localhost', '127.0.0.1', '::1'].includes(url.hostname)); } catch { return false; } }
 function isOperationLocationForEndpoint(value: string, endpoint: string) { try { return new URL(value).host === new URL(endpoint).host; } catch { return false; } }

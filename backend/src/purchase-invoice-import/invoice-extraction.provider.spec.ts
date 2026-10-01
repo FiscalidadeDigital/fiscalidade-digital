@@ -63,23 +63,47 @@ describe('invoice extraction providers', () => {
     } finally { global.fetch = previousFetch; }
   });
 
-  it('maps the Veryfi v8 invoice response without making it authoritative', async () => {
+  it('maps and conservatively deduplicates the observed Veryfi v8 invoice shape without making it authoritative', async () => {
     const previousFetch = global.fetch;
     const fetchMock = jest.fn().mockResolvedValue({ ok: true, json: async () => ({
       invoice_number: '1655', date: '2025-09-16', due_date: '2025-10-16', currency_code: 'AOA', subtotal: 600262, tax: 84036.68, total: 684298.68,
-      vendor: { name: 'Fornecedor Veryfi', vat_number: '5000000000' },
-      line_items: [{ description: 'Serviço A', quantity: 2, price: 100000, total: 200000, sku: 'SERV-1' }, { description: 'Serviço B', quantity: 1, unit_price: 400262, total: 400262, sku: 'SERV-2' }],
+      vendor: { name: 'Neuce Industria de Tintas de Angola' }, supplier_tax_id: '5403096361',
+      line_items: [
+        { id: 'page-1-line-1', description: 'NEUCERAPID PRIMER', quantity: '2', unit_price: '100000', total: '200000', sku: 'TIN-01' },
+        { id: 'page-1-line-2', description: 'NEUCERAPID F16 - Esmalte', quantity: 1, price: 400262, total: 400262, sku: 'TIN-02' },
+        { id: 'page-1-line-1', description: 'NEUCERAPID PRIMER', quantity: '2', unit_price: '100000', total: '200000', sku: 'TIN-01' },
+      ],
     }) });
     global.fetch = fetchMock as unknown as typeof fetch;
     try {
       const candidate = await new VeryfiInvoiceExtractionProvider('client-id', 'client-secret', 'username', 'api-key').extract({ id: 'document-1', originalName: 'supplier.pdf', mimeType: 'application/pdf', content: Buffer.from('private document') });
-      expect(candidate).toEqual(expect.objectContaining({ invoiceNumber: '1655', issuedAt: '2025-09-16', dueDate: '2025-10-16', supplierName: 'Fornecedor Veryfi', supplierNif: '5000000000', subtotal: '600262', vatSupported: '84036.68', total: '684298.68', currency: 'AOA' }));
+      expect(candidate).toEqual(expect.objectContaining({ invoiceNumber: '1655', issuedAt: '2025-09-16', dueDate: '2025-10-16', supplierName: 'Neuce Industria de Tintas de Angola', supplierNif: '5403096361', subtotal: '600262', vatSupported: '84036.68', total: '684298.68', currency: 'AOA' }));
       expect(candidate?.items).toEqual([
-        expect.objectContaining({ description: 'Serviço A', quantity: '2', unitPrice: '100000', lineTotal: '200000', productCode: 'SERV-1' }),
-        expect.objectContaining({ description: 'Serviço B', quantity: '1', unitPrice: '400262', lineTotal: '400262', productCode: 'SERV-2' }),
+        expect.objectContaining({ description: 'NEUCERAPID PRIMER', quantity: '2', unitPrice: '100000', lineTotal: '200000', productCode: 'TIN-01' }),
+        expect.objectContaining({ description: 'NEUCERAPID F16 - Esmalte', quantity: '1', unitPrice: '400262', lineTotal: '400262', productCode: 'TIN-02' }),
       ]);
+      expect(candidate?.reconciliation).toEqual({ status: 'MATCHED', lineTotal: '600262', documentSubtotal: '600262', vatSupported: '84036.68', documentTotal: '684298.68', difference: '0', documentTotalDifference: '0' });
       expect(candidate?.provenance).toEqual(expect.objectContaining({ provider: 'veryfi', apiVersion: 'v8' }));
       expect(fetchMock).toHaveBeenCalledWith('https://api.veryfi.com/api/v8/partner/documents', expect.objectContaining({ headers: expect.objectContaining({ 'client-id': 'client-id', authorization: 'apikey username:api-key' }) }));
+    } finally { global.fetch = previousFetch; }
+  });
+
+  it('keeps inconsistent Veryfi candidates separate and flags them for mandatory review', async () => {
+    const previousFetch = global.fetch;
+    global.fetch = jest.fn().mockResolvedValue({ ok: true, json: async () => ({
+      invoice_number: '1655', date: '2025-09-16', subtotal: '600262', tax: '84036.68', total: '684298.68',
+      vendor: { name: 'Neuce Industria de Tintas de Angola', vat_number: '5403096361' },
+      line_items: [
+        { id: 'page-1-line-1', description: 'NEUCERAPID PRIMER', quantity: '2', unit_price: '100000', total: '200000' },
+        { id: 'page-2-line-1', description: 'NEUCERAPID PRIMER', quantity: '2', unit_price: '100000', total: '200000' },
+        { id: 'page-2-line-2', description: 'Diluente 200', unit_price: '26 887,526', total: '26 887,526' },
+      ],
+    }) }) as unknown as typeof fetch;
+    try {
+      const candidate = await new VeryfiInvoiceExtractionProvider('client-id', 'client-secret', 'username', 'api-key').extract({ id: 'document-1', originalName: 'supplier.pdf', mimeType: 'application/pdf', content: Buffer.from('private document') });
+      expect(candidate?.items).toHaveLength(3);
+      expect(candidate?.items?.[2]).toEqual(expect.objectContaining({ description: 'Diluente 200', quantity: null, unitPrice: '26887.526', lineTotal: '26887.526' }));
+      expect(candidate?.reconciliation).toEqual({ status: 'MISMATCH', lineTotal: '426887.526', documentSubtotal: '600262', vatSupported: '84036.68', documentTotal: '684298.68', difference: '173374.474', documentTotalDifference: '0' });
     } finally { global.fetch = previousFetch; }
   });
 

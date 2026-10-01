@@ -26,6 +26,15 @@ export type PurchaseInvoiceImport = {
     withholdingTax?: string | null;
     total?: string | null;
     confidence?: number | null;
+    reconciliation?: {
+      status: 'MATCHED' | 'MISMATCH' | 'INCOMPLETE';
+      lineTotal: string | null;
+      documentSubtotal: string | null;
+      vatSupported: string | null;
+      documentTotal: string | null;
+      difference: string | null;
+      documentTotalDifference: string | null;
+    };
   } | null;
   document: { id: string; originalName: string; mimeType: string; size: number };
   confirmedPurchaseInvoiceId: string | null;
