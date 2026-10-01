@@ -7,6 +7,8 @@ import {
 
 import {
   InvoiceStatus,
+  PurchaseInvoiceDocumentStatus,
+  PurchaseInvoicePaymentStatus,
   Prisma,
 } from '@prisma/client';
 
@@ -19,6 +21,7 @@ import {
   PurchaseVatDeductibilityStatus,
   UpdatePurchaseInvoiceVatDeductibilityDto,
 } from './dto/update-purchase-invoice-vat-deductibility.dto';
+import { CreatePurchaseInvoicePaymentDto } from './dto/create-purchase-invoice-payment.dto';
 
 @Injectable()
 export class PurchaseInvoiceService {
@@ -330,6 +333,10 @@ export class PurchaseInvoiceService {
 
                 status:
                   InvoiceStatus.PENDING,
+                documentStatus: originalDocumentId
+                  ? PurchaseInvoiceDocumentStatus.REVIEW_REQUIRED
+                  : PurchaseInvoiceDocumentStatus.PENDING,
+                paymentStatus: PurchaseInvoicePaymentStatus.UNPAID,
 
                 notes:
                   dto.notes || null,
@@ -416,41 +423,16 @@ export class PurchaseInvoiceService {
   async findAll(
     tenantId: string,
   ) {
-    const purchases =
-      await this.prisma.purchaseInvoice.findMany({
-        where: {
-          tenantId,
-        },
-
-        orderBy: {
-          issuedAt: 'desc',
-        },
-      });
-
-    const result = [];
-
-    for (
-      const purchase of purchases
-    ) {
-      const items =
-        await this.prisma.purchaseInvoiceItem.findMany({
-          where: {
-            purchaseInvoiceId:
-              purchase.id,
-          },
-
-          orderBy: {
-            id: 'asc',
-          },
-        });
-
-      result.push({
-        ...purchase,
-        items,
-      });
-    }
-
-    return result;
+    const purchases = await this.prisma.purchaseInvoice.findMany({
+      where: { tenantId },
+      include: {
+        supplier: { select: { id: true, name: true, nif: true } },
+        items: { orderBy: { id: 'asc' } },
+        confirmedImport: { select: { extractionProvider: true } },
+      },
+      orderBy: { issuedAt: 'desc' },
+    });
+    return purchases.map((purchase) => this.withBalance(purchase));
   }
 
   // ============================================================
@@ -461,13 +443,21 @@ export class PurchaseInvoiceService {
     tenantId: string,
     id: string,
   ) {
-    const purchase =
-      await this.prisma.purchaseInvoice.findFirst({
-        where: {
-          id,
-          tenantId,
+    const purchase = await this.prisma.purchaseInvoice.findFirst({
+      where: { id, tenantId },
+      include: {
+        supplier: { select: { id: true, name: true, nif: true } },
+        items: { include: { product: { select: { id: true, name: true } } }, orderBy: { id: 'asc' } },
+        payments: {
+          include: { createdBy: { select: { id: true, name: true } } },
+          orderBy: [{ paymentDate: 'desc' }, { createdAt: 'desc' }],
         },
-      });
+        createdBy: { select: { id: true, name: true } },
+        validatedBy: { select: { id: true, name: true } },
+        rejectedBy: { select: { id: true, name: true } },
+        confirmedImport: { select: { extractionProvider: true } },
+      },
+    });
 
     if (!purchase) {
       throw new NotFoundException(
@@ -475,22 +465,84 @@ export class PurchaseInvoiceService {
       );
     }
 
-    const items =
-      await this.prisma.purchaseInvoiceItem.findMany({
-        where: {
-          purchaseInvoiceId:
-            purchase.id,
-        },
+    return this.withBalance(purchase);
+  }
 
-        orderBy: {
-          id: 'asc',
-        },
+  async validate(tenantId: string, userId: string, id: string) {
+    const purchase = await this.prisma.purchaseInvoice.findFirst({
+      where: { id, tenantId },
+      include: { items: true, supplier: { select: { id: true } } },
+    });
+    if (!purchase) throw new NotFoundException('Factura de compra não encontrada.');
+    if (purchase.documentStatus !== PurchaseInvoiceDocumentStatus.PENDING && purchase.documentStatus !== PurchaseInvoiceDocumentStatus.REVIEW_REQUIRED) {
+      throw new BadRequestException('A factura não está num estado que permita validação.');
+    }
+    if (!purchase.invoiceNumber.trim() || !purchase.supplier || !purchase.items.length) {
+      throw new BadRequestException('A factura não possui todos os dados obrigatórios.');
+    }
+    const authoritativeSubtotal = purchase.items.reduce(
+      (sum, item) => sum.plus(new Prisma.Decimal(item.quantityAmount?.toString() ?? item.quantity).mul(item.unitPriceAmount?.toString() ?? item.unitPrice)),
+      new Prisma.Decimal(0),
+    ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const iva = new Prisma.Decimal(purchase.ivaAmount?.toString() ?? purchase.iva);
+    const withholding = new Prisma.Decimal(purchase.withholdingTaxAmount?.toString() ?? purchase.withholdingTax);
+    const total = authoritativeSubtotal.plus(iva).minus(withholding).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    await this.prisma.purchaseInvoice.update({
+      where: { id: purchase.id },
+      data: {
+        subtotal: authoritativeSubtotal.toNumber(), subtotalAmount: authoritativeSubtotal,
+        total: total.toNumber(), totalAmount: total,
+        documentStatus: PurchaseInvoiceDocumentStatus.VALIDATED,
+        validatedAt: new Date(), validatedById: userId,
+        rejectedAt: null, rejectedById: null, rejectionReason: null,
+      },
+    });
+    await this.syncFiscal(tenantId, purchase.issuedAt);
+    return this.findOne(tenantId, purchase.id);
+  }
+
+  async reject(tenantId: string, userId: string, id: string, reason: string) {
+    const purchase = await this.prisma.purchaseInvoice.findFirst({ where: { id, tenantId } });
+    if (!purchase) throw new NotFoundException('Factura de compra não encontrada.');
+    if (purchase.documentStatus !== PurchaseInvoiceDocumentStatus.PENDING && purchase.documentStatus !== PurchaseInvoiceDocumentStatus.REVIEW_REQUIRED) {
+      throw new BadRequestException('A factura não está num estado que permita rejeição.');
+    }
+    const normalizedReason = reason.trim();
+    if (!normalizedReason) throw new BadRequestException('Indique o motivo da rejeição.');
+    await this.prisma.purchaseInvoice.update({
+      where: { id: purchase.id },
+      data: { documentStatus: PurchaseInvoiceDocumentStatus.REJECTED, rejectedAt: new Date(), rejectedById: userId, rejectionReason: normalizedReason },
+    });
+    await this.syncFiscal(tenantId, purchase.issuedAt);
+    return this.findOne(tenantId, purchase.id);
+  }
+
+  async addPayment(tenantId: string, userId: string, id: string, dto: CreatePurchaseInvoicePaymentDto) {
+    const paymentDate = new Date(dto.paymentDate);
+    if (Number.isNaN(paymentDate.getTime())) throw new BadRequestException('A data do pagamento é inválida.');
+    const amount = new Prisma.Decimal(dto.amount).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    if (amount.lte(0)) throw new BadRequestException('O pagamento deve ser superior a zero.');
+
+    await this.prisma.$transaction(async (tx) => {
+      const rows = await tx.$queryRaw<Array<{ id: string }>>`SELECT "id" FROM "PurchaseInvoice" WHERE "id" = ${id} AND "tenantId" = ${tenantId} FOR UPDATE`;
+      if (!rows.length) throw new NotFoundException('Factura de compra não encontrada.');
+      const purchase = await tx.purchaseInvoice.findFirst({ where: { id, tenantId } });
+      if (!purchase) throw new NotFoundException('Factura de compra não encontrada.');
+      if (purchase.documentStatus !== PurchaseInvoiceDocumentStatus.VALIDATED) {
+        throw new BadRequestException('Só é possível pagar uma factura validada.');
+      }
+      const total = new Prisma.Decimal(purchase.totalAmount?.toString() ?? purchase.total);
+      const paid = new Prisma.Decimal(purchase.paidAmount);
+      const balance = total.minus(paid);
+      if (amount.gt(balance)) throw new BadRequestException('O pagamento não pode exceder o saldo por pagar.');
+      const newPaid = paid.plus(amount).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      const paymentStatus = newPaid.eq(total) ? PurchaseInvoicePaymentStatus.PAID : PurchaseInvoicePaymentStatus.PARTIALLY_PAID;
+      await tx.purchaseInvoicePayment.create({
+        data: { tenantId, purchaseInvoiceId: id, amount, paymentDate, method: dto.method, reference: dto.reference?.trim() || null, notes: dto.notes?.trim() || null, createdById: userId },
       });
-
-    return {
-      ...purchase,
-      items,
-    };
+      await tx.purchaseInvoice.update({ where: { id }, data: { paidAmount: newPaid, paymentStatus, status: paymentStatus === PurchaseInvoicePaymentStatus.PAID ? InvoiceStatus.PAID : InvoiceStatus.PENDING } });
+    });
+    return this.findOne(tenantId, id);
   }
 
   /**
@@ -536,71 +588,6 @@ export class PurchaseInvoiceService {
   }
 
   // ============================================================
-  // MARCAR COMO PAGA
-  // ============================================================
-
-  async markAsPaid(
-    tenantId: string,
-    id: string,
-  ) {
-    const purchase =
-      await this.prisma.purchaseInvoice.findFirst({
-        where: {
-          id,
-          tenantId,
-        },
-      });
-
-    if (!purchase) {
-      throw new NotFoundException(
-        'Factura de compra não encontrada.',
-      );
-    }
-
-    if (
-      purchase.status ===
-      InvoiceStatus.CANCELLED
-    ) {
-      throw new BadRequestException(
-        'Uma factura cancelada não pode ser marcada como paga.',
-      );
-    }
-
-    if (
-      purchase.status ===
-      InvoiceStatus.PAID
-    ) {
-      return this.findOne(
-        tenantId,
-        id,
-      );
-    }
-
-    await this.prisma.purchaseInvoice.update({
-      where: {
-        id:
-          purchase.id,
-      },
-
-      data: {
-        status:
-          InvoiceStatus.PAID,
-      },
-    });
-
-    await this.fiscalEngineService.syncTenant(
-      tenantId,
-      purchase.issuedAt.getUTCFullYear(),
-    );
-    await this.obligationsService.syncCompany(tenantId);
-
-    return this.findOne(
-      tenantId,
-      id,
-    );
-  }
-
-  // ============================================================
   // CANCELAR
   // ============================================================
 
@@ -623,8 +610,7 @@ export class PurchaseInvoiceService {
     }
 
     if (
-      purchase.status ===
-      InvoiceStatus.PAID
+      new Prisma.Decimal(purchase.paidAmount).gt(0)
     ) {
       throw new BadRequestException(
         'Uma factura de compra paga não pode ser cancelada directamente.',
@@ -632,8 +618,7 @@ export class PurchaseInvoiceService {
     }
 
     if (
-      purchase.status ===
-      InvoiceStatus.CANCELLED
+      purchase.documentStatus === PurchaseInvoiceDocumentStatus.CANCELLED
     ) {
       return this.findOne(
         tenantId,
@@ -650,6 +635,7 @@ export class PurchaseInvoiceService {
       data: {
         status:
           InvoiceStatus.CANCELLED,
+        documentStatus: PurchaseInvoiceDocumentStatus.CANCELLED,
       },
     });
 
@@ -689,20 +675,12 @@ export class PurchaseInvoiceService {
     }
 
     if (
-      purchase.status ===
-      InvoiceStatus.PAID
+      purchase.documentStatus === PurchaseInvoiceDocumentStatus.VALIDATED ||
+      purchase.documentStatus === PurchaseInvoiceDocumentStatus.CANCELLED ||
+      new Prisma.Decimal(purchase.paidAmount).gt(0)
     ) {
       throw new BadRequestException(
-        'Uma factura de compra paga não pode ser editada.',
-      );
-    }
-
-    if (
-      purchase.status ===
-      InvoiceStatus.CANCELLED
-    ) {
-      throw new BadRequestException(
-        'Uma factura de compra cancelada não pode ser editada.',
+        'Uma factura validada, cancelada ou com pagamentos não pode ser editada.',
       );
     }
 
@@ -742,59 +720,49 @@ export class PurchaseInvoiceService {
       );
     }
 
-    const subtotal =
-      this.round(
-        items.reduce(
-          (
-            total: number,
-            item: any,
-          ) =>
-            total +
-            Number(
-              item.quantity,
-            ) *
-              Number(
-                item.unitPrice,
-              ),
-          0,
-        ),
-      );
+    const subtotalAmount = items.reduce(
+      (sum, item) => sum.plus(
+        new Prisma.Decimal('quantityAmount' in item && item.quantityAmount ? item.quantityAmount.toString() : item.quantity)
+          .mul('unitPriceAmount' in item && item.unitPriceAmount ? item.unitPriceAmount.toString() : item.unitPrice),
+      ),
+      new Prisma.Decimal(0),
+    ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
-    const iva =
+    const ivaAmount =
       dto.iva !== undefined
-        ? this.round(
-            Number(dto.iva),
-          )
-        : Number(purchase.iva);
+        ? new Prisma.Decimal(dto.iva).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+        : new Prisma.Decimal(purchase.ivaAmount?.toString() ?? purchase.iva);
 
-    const withholdingTax =
+    const withholdingTaxAmount =
       dto.withholdingTax !==
       undefined
-        ? this.round(
-            Number(
-              dto.withholdingTax,
-            ),
-          )
-        : Number(purchase.withholdingTax);
+        ? new Prisma.Decimal(dto.withholdingTax).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+        : new Prisma.Decimal(purchase.withholdingTaxAmount?.toString() ?? purchase.withholdingTax);
 
     if (
-      !Number.isFinite(iva) ||
-      iva < 0 ||
-      !Number.isFinite(withholdingTax) ||
-      withholdingTax < 0 ||
-      withholdingTax > subtotal
+      ivaAmount.lt(0) ||
+      withholdingTaxAmount.lt(0) ||
+      withholdingTaxAmount.gt(subtotalAmount)
     ) {
       throw new BadRequestException(
         'Os valores documentais de IVA/retenção são inválidos para o subtotal.',
       );
     }
 
-    const total =
-      this.round(
-        subtotal +
-          iva -
-          withholdingTax,
-      );
+    const requestedProductIds = Array.isArray(dto.items)
+      ? [...new Set(dto.items.map((item) => item.productId).filter((value): value is string => Boolean(value)))]
+      : [];
+    if (requestedProductIds.length) {
+      const ownedProducts = await this.prisma.product.count({
+        where: { tenantId, id: { in: requestedProductIds }, isActive: true },
+      });
+      if (ownedProducts !== requestedProductIds.length) {
+        throw new NotFoundException('Um dos produtos não existe, está inactivo ou pertence a outra empresa.');
+      }
+    }
+
+    const totalAmount = subtotalAmount.plus(ivaAmount).minus(withholdingTaxAmount)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
     await this.prisma.$transaction(
       async (tx) => {
@@ -811,13 +779,14 @@ export class PurchaseInvoiceService {
               dto.invoiceNumber ||
               purchase.invoiceNumber,
 
-            subtotal,
-
-            iva,
-
-            withholdingTax,
-
-            total,
+            subtotal: subtotalAmount.toNumber(),
+            subtotalAmount,
+            iva: ivaAmount.toNumber(),
+            ivaAmount,
+            withholdingTax: withholdingTaxAmount.toNumber(),
+            withholdingTaxAmount,
+            total: totalAmount.toNumber(),
+            totalAmount,
 
             notes:
               dto.notes ??
@@ -864,25 +833,14 @@ export class PurchaseInvoiceService {
                     item.productName,
                   ).trim(),
 
-                quantity:
-                  Number(
-                    item.quantity,
-                  ),
-
-                unitPrice:
-                  Number(
-                    item.unitPrice,
-                  ),
-
-                total:
-                  this.round(
-                    Number(
-                      item.quantity,
-                    ) *
-                      Number(
-                        item.unitPrice,
-                      ),
-                  ),
+                quantity: new Prisma.Decimal(item.quantity).toNumber(),
+                quantityAmount: new Prisma.Decimal(item.quantity),
+                unitPrice: new Prisma.Decimal(item.unitPrice).toNumber(),
+                unitPriceAmount: new Prisma.Decimal(item.unitPrice),
+                total: new Prisma.Decimal(item.quantity).mul(item.unitPrice).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
+                totalAmount: new Prisma.Decimal(item.quantity).mul(item.unitPrice).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+                productId: item.productId ?? null,
+                unit: item.unit ?? 'UN',
               },
             });
           }
@@ -925,8 +883,9 @@ export class PurchaseInvoiceService {
     }
 
     if (
-      purchase.status ===
-      InvoiceStatus.PAID
+      purchase.documentStatus === PurchaseInvoiceDocumentStatus.VALIDATED ||
+      purchase.documentStatus === PurchaseInvoiceDocumentStatus.CANCELLED ||
+      new Prisma.Decimal(purchase.paidAmount).gt(0)
     ) {
       throw new BadRequestException(
         'Uma factura de compra paga não deve ser apagada. Cancele-a.',
@@ -982,15 +941,17 @@ export class PurchaseInvoiceService {
           iva: true,
           withholdingTax: true,
           total: true,
-          status: true,
+          totalAmount: true,
+          paidAmount: true,
+          documentStatus: true,
         },
       });
 
     const active =
       purchases.filter(
         (item) =>
-          item.status !==
-          InvoiceStatus.CANCELLED,
+          item.documentStatus !== PurchaseInvoiceDocumentStatus.CANCELLED &&
+          item.documentStatus !== PurchaseInvoiceDocumentStatus.REJECTED,
       );
 
     return {
@@ -1063,6 +1024,13 @@ export class PurchaseInvoiceService {
             0,
           ),
         ),
+      totalOutstanding: active.reduce(
+        (sum, item) => sum.plus(
+          new Prisma.Decimal(item.totalAmount?.toString() ?? item.total)
+            .minus(item.paidAmount),
+        ),
+        new Prisma.Decimal(0),
+      ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toNumber(),
     };
   }
 
@@ -1094,5 +1062,28 @@ export class PurchaseInvoiceService {
       (value + Number.EPSILON) *
         100,
     ) / 100;
+  }
+
+  private withBalance<T extends {
+    total: number;
+    totalAmount: Prisma.Decimal | null;
+    paidAmount: Prisma.Decimal;
+    confirmedImport?: { extractionProvider: string } | null;
+  }>(purchase: T) {
+    const total = new Prisma.Decimal(purchase.totalAmount?.toString() ?? purchase.total);
+    const paidAmount = new Prisma.Decimal(purchase.paidAmount);
+    return {
+      ...purchase,
+      paidAmount: paidAmount.toFixed(2),
+      balance: Prisma.Decimal.max(total.minus(paidAmount), 0).toFixed(2),
+      origin: purchase.confirmedImport
+        ? purchase.confirmedImport.extractionProvider === 'MANUAL' ? 'IMPORT' : 'OCR'
+        : 'MANUAL',
+    };
+  }
+
+  private async syncFiscal(tenantId: string, issuedAt: Date) {
+    await this.fiscalEngineService.syncTenant(tenantId, issuedAt.getUTCFullYear());
+    await this.obligationsService.syncCompany(tenantId);
   }
 }

@@ -142,9 +142,7 @@ export class FiscalEngineService {
         where: {
           tenantId,
 
-          status: {
-            not: 'CANCELLED',
-          },
+          documentStatus: 'VALIDATED',
 
           issuedAt: {
             gte: start,
@@ -160,6 +158,7 @@ export class FiscalEngineService {
           issuedAt: true,
           invoiceNumber: true,
           status: true,
+          documentStatus: true,
           vatDeductibilityStatus: true,
         },
 

@@ -83,6 +83,9 @@ describe('Purchase invoice import HTTP', () => {
   afterAll(async () => {
     if (prisma && tenantAId && tenantBId) {
       const tenantIds = [tenantAId, tenantBId];
+      await prisma.taxAssessment.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await prisma.taxTransaction.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await prisma.fiscalObligation.deleteMany({ where: { tenantId: { in: tenantIds } } });
       await prisma.purchaseInvoiceImport.deleteMany({ where: { tenantId: { in: tenantIds } } });
       await prisma.purchaseInvoice.deleteMany({ where: { tenantId: { in: tenantIds } } });
       await prisma.document.deleteMany({ where: { tenantId: { in: tenantIds } } });

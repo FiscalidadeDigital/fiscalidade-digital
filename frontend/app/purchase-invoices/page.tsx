@@ -15,6 +15,7 @@ import {
 import {
   createPurchaseInvoice,
   getPurchaseInvoices,
+  type PurchaseInvoice,
 } from "@/services/purchase-invoice";
 import {
   getSuppliers,
@@ -26,18 +27,6 @@ type InvoiceItem = {
   productName: string;
   quantity: string;
   unitPrice: string;
-};
-
-type PurchaseInvoice = {
-  id: string;
-  supplierId: string;
-  invoiceNumber: string;
-  issuedAt: string;
-  subtotal: number | string;
-  iva: number | string;
-  withholdingTax: number | string;
-  total: number | string;
-  status: "PENDING" | "PAID" | "CANCELLED";
 };
 
 const emptyItem = (): InvoiceItem => ({
@@ -121,7 +110,7 @@ export default function PurchaseInvoicesPage() {
 
       const matchesStatus =
         statusFilter === "ALL" ||
-        invoice.status === statusFilter;
+        invoice.documentStatus === statusFilter;
 
       return matchesSearch && matchesStatus;
     });
@@ -282,7 +271,7 @@ export default function PurchaseInvoicesPage() {
         </div>
 
         {/* RESUMO */}
-        <div className="mb-6 grid gap-4 md:grid-cols-3">
+        <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-[#e7eaf2] bg-white p-5">
             <p className="text-sm text-[#7a86a0]">
               Facturas registadas
@@ -291,6 +280,11 @@ export default function PurchaseInvoicesPage() {
             <p className="mt-2 text-2xl font-bold text-[#0f1b3d]">
               {isLoading ? "…" : loadError ? "—" : invoices.length}
             </p>
+          </div>
+
+          <div className="rounded-2xl border border-[#e7eaf2] bg-white p-5">
+            <p className="text-sm text-[#7a86a0]">Por pagar</p>
+            <p className="mt-2 text-2xl font-bold text-[#0f1b3d]">{isLoading || loadError ? "—" : formatCurrency(invoices.filter(invoice => !["REJECTED", "CANCELLED"].includes(invoice.documentStatus)).reduce((sum, invoice) => sum + Number(invoice.balance), 0))}</p>
           </div>
 
           <div className="rounded-2xl border border-[#e7eaf2] bg-white p-5">
@@ -359,6 +353,10 @@ export default function PurchaseInvoicesPage() {
                 <option value="PENDING">
                   Pendentes
                 </option>
+                <option value="REVIEW_REQUIRED">Em revisão</option>
+                <option value="VALIDATED">Validadas</option>
+                <option value="REJECTED">Rejeitadas</option>
+                <option value="CANCELLED">Canceladas</option>
                 <option value="PAID">
                   Pagas
                 </option>
@@ -428,7 +426,7 @@ export default function PurchaseInvoicesPage() {
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[850px]">
+              <table className="w-full min-w-[1100px]">
                 <thead>
                   <tr className="border-b border-[#eef0f5] bg-[#fafbfe] text-left text-xs uppercase tracking-wide text-[#7a86a0]">
                     <th className="px-6 py-4">
@@ -441,9 +439,6 @@ export default function PurchaseInvoicesPage() {
                       Data
                     </th>
                     <th className="px-6 py-4">
-                      Subtotal
-                    </th>
-                    <th className="px-6 py-4">
                       IVA
                     </th>
                     <th className="px-6 py-4">
@@ -452,6 +447,8 @@ export default function PurchaseInvoicesPage() {
                     <th className="px-6 py-4">
                       Estado
                     </th>
+                    <th className="px-6 py-4">Pagamento</th>
+                    <th className="px-6 py-4">Saldo</th>
                   </tr>
                 </thead>
 
@@ -463,9 +460,9 @@ export default function PurchaseInvoicesPage() {
                         className="border-b border-[#f0f2f6] last:border-0"
                       >
                         <td className="px-6 py-5">
-                          <div className="font-semibold text-[#0f1b3d]">
+                          <Link href={`/purchase-invoices/${invoice.id}`} className="font-semibold text-[#0f1b3d] hover:text-[#5146e5]">
                             {invoice.invoiceNumber}
-                          </div>
+                          </Link>
 
                           <div className="text-xs text-[#8792aa]">
                             Documento recebido
@@ -493,12 +490,6 @@ export default function PurchaseInvoicesPage() {
 
                         <td className="px-6 py-5 text-sm font-medium">
                           {formatCurrency(
-                            invoice.subtotal,
-                          )}
-                        </td>
-
-                        <td className="px-6 py-5 text-sm font-medium">
-                          {formatCurrency(
                             invoice.iva,
                           )}
                         </td>
@@ -511,19 +502,14 @@ export default function PurchaseInvoicesPage() {
 
                         <td className="px-6 py-5">
                           <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                            invoice.status === "PAID"
-                              ? "bg-[#eafaf3] text-[#0b9b68]"
-                              : invoice.status === "CANCELLED"
-                                ? "bg-[#fff0f0] text-[#c33]"
-                                : "bg-[#fff6e5] text-[#986500]"
+                            invoice.documentStatus === "VALIDATED" ? "bg-[#eafaf3] text-[#0b7f61]" :
+                            ["REJECTED", "CANCELLED"].includes(invoice.documentStatus) ? "bg-[#fff0f0] text-[#c33]" : "bg-[#fff6e5] text-[#986500]"
                           }`}>
-                            {invoice.status === "PAID"
-                              ? "Paga"
-                              : invoice.status === "CANCELLED"
-                                ? "Anulada"
-                                : "Pendente"}
+                            {{ PENDING: "Pendente", REVIEW_REQUIRED: "Em revisão", VALIDATED: "Validada", REJECTED: "Rejeitada", CANCELLED: "Cancelada" }[invoice.documentStatus]}
                           </span>
                         </td>
+                        <td className="px-6 py-5 text-sm font-semibold">{{ UNPAID: "Por pagar", PARTIALLY_PAID: "Parcialmente paga", PAID: "Paga" }[invoice.paymentStatus]}</td>
+                        <td className="px-6 py-5 text-sm font-bold">{formatCurrency(invoice.balance)}</td>
                       </tr>
                     ),
                   )}

@@ -15,7 +15,9 @@ describe('PurchaseInvoiceController', () => {
     create: jest.fn(),
     update: jest.fn(),
     updateVatDeductibility: jest.fn(),
-    markAsPaid: jest.fn(),
+    validate: jest.fn(),
+    reject: jest.fn(),
+    addPayment: jest.fn(),
     cancel: jest.fn(),
     remove: jest.fn(),
   } as unknown as PurchaseInvoiceService;
@@ -47,8 +49,8 @@ describe('PurchaseInvoiceController', () => {
       .toEqual([UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT]);
     expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.create))
       .toEqual([UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT]);
-    expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.markAsPaid))
-      .toEqual([UserRole.OWNER, UserRole.ADMIN]);
+    expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.addPayment))
+      .toEqual([UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT]);
     expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.cancel))
       .toEqual([UserRole.OWNER, UserRole.ADMIN]);
     expect(Reflect.getMetadata(REQUIRED_ROLES_KEY, PurchaseInvoiceController.prototype.remove))

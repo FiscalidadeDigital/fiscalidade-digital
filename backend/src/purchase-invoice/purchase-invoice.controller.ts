@@ -18,6 +18,8 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { CreatePurchaseInvoiceDto } from './dto/create-purchase-invoice.dto';
 import { UpdatePurchaseInvoiceDto } from './dto/update-purchase-invoice.dto';
 import { UpdatePurchaseInvoiceVatDeductibilityDto } from './dto/update-purchase-invoice-vat-deductibility.dto';
+import { RejectPurchaseInvoiceDto } from './dto/reject-purchase-invoice.dto';
+import { CreatePurchaseInvoicePaymentDto } from './dto/create-purchase-invoice-payment.dto';
 
 @Controller('purchase-invoice')
 @UseGuards(JwtAuthGuard)
@@ -119,20 +121,25 @@ export class PurchaseInvoiceController {
   }
 
   // ============================================================
-  // MARCAR COMO PAGA
-  // POST /purchase-invoice/:id/pay
+  // WORKFLOW DOCUMENTAL E PAGAMENTOS
   // ============================================================
 
-  @Post(':id/pay')
-  @Roles(UserRole.OWNER, UserRole.ADMIN)
-  async markAsPaid(
-    @CurrentUser() user: { tenantId: string },
-    @Param('id') id: string,
-  ) {
-    return this.purchaseInvoiceService.markAsPaid(
-      user.tenantId,
-      id,
-    );
+  @Post(':id/validate')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  validate(@CurrentUser() user: { tenantId: string; userId: string }, @Param('id') id: string) {
+    return this.purchaseInvoiceService.validate(user.tenantId, user.userId, id);
+  }
+
+  @Post(':id/reject')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  reject(@CurrentUser() user: { tenantId: string; userId: string }, @Param('id') id: string, @Body() dto: RejectPurchaseInvoiceDto) {
+    return this.purchaseInvoiceService.reject(user.tenantId, user.userId, id, dto.reason);
+  }
+
+  @Post(':id/payments')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
+  addPayment(@CurrentUser() user: { tenantId: string; userId: string }, @Param('id') id: string, @Body() dto: CreatePurchaseInvoicePaymentDto) {
+    return this.purchaseInvoiceService.addPayment(user.tenantId, user.userId, id, dto);
   }
 
   // ============================================================

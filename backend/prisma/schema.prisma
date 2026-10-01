@@ -46,6 +46,7 @@ model Tenant {
   payrolls         Payroll[]
   products         Product[]
   purchaseInvoices PurchaseInvoice[]
+  purchaseInvoicePayments PurchaseInvoicePayment[]
   revenues         Revenue[]
   smsLogs          SMSLog[]
   subscriptions    Subscription[]
@@ -80,6 +81,9 @@ model User {
 
   tenant                  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdPurchaseInvoices PurchaseInvoice[] @relation("PurchaseInvoiceCreatedBy")
+  validatedPurchaseInvoices PurchaseInvoice[] @relation("PurchaseInvoiceValidatedBy")
+  rejectedPurchaseInvoices PurchaseInvoice[] @relation("PurchaseInvoiceRejectedBy")
+  purchaseInvoicePayments PurchaseInvoicePayment[] @relation("PurchaseInvoicePaymentCreatedBy")
   uploadedPurchaseInvoiceImports PurchaseInvoiceImport[] @relation("PurchaseInvoiceImportUploadedBy")
 
   @@unique([email, tenantId])
@@ -570,6 +574,14 @@ model PurchaseInvoice {
   createdById    String?
   originalDocumentId String?   @unique
   status         InvoiceStatus @default(PENDING)
+  documentStatus PurchaseInvoiceDocumentStatus @default(PENDING)
+  paymentStatus  PurchaseInvoicePaymentStatus  @default(UNPAID)
+  paidAmount     Decimal        @default(0) @db.Decimal(20, 2)
+  validatedAt    DateTime?
+  validatedById  String?
+  rejectedAt     DateTime?
+  rejectedById   String?
+  rejectionReason String?
   notes          String?
   pdfUrl         String?
   issuedAt       DateTime      @default(now())
@@ -580,16 +592,41 @@ model PurchaseInvoice {
   tenant           Tenant                @relation(fields: [tenantId], references: [id])
   supplier         Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
   createdBy        User?                 @relation("PurchaseInvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  validatedBy      User?                 @relation("PurchaseInvoiceValidatedBy", fields: [validatedById], references: [id], onDelete: SetNull)
+  rejectedBy       User?                 @relation("PurchaseInvoiceRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
   originalDocument Document?             @relation("PurchaseInvoiceSourceDocument", fields: [originalDocumentId], references: [id], onDelete: SetNull)
   confirmedImport PurchaseInvoiceImport? @relation("PurchaseInvoiceImportConfirmation")
   items            PurchaseInvoiceItem[]
+  payments         PurchaseInvoicePayment[]
 
   @@unique([tenantId, supplierId, invoiceNumber])
   @@index([tenantId])
   @@index([supplierId])
   @@index([issuedAt])
   @@index([status])
+  @@index([tenantId, documentStatus])
+  @@index([tenantId, paymentStatus])
   @@index([createdById])
+}
+
+model PurchaseInvoicePayment {
+  id                String                       @id @default(uuid())
+  tenantId          String
+  purchaseInvoiceId String
+  amount            Decimal                      @db.Decimal(20, 2)
+  paymentDate       DateTime
+  method            PurchaseInvoicePaymentMethod
+  reference         String?
+  notes             String?
+  createdById       String?
+  createdAt         DateTime                     @default(now())
+
+  tenant          Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  purchaseInvoice PurchaseInvoice @relation(fields: [purchaseInvoiceId], references: [id], onDelete: Restrict)
+  createdBy       User?           @relation("PurchaseInvoicePaymentCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([tenantId, purchaseInvoiceId])
+  @@index([paymentDate])
 }
 
 model PurchaseInvoiceImport {
@@ -1002,6 +1039,27 @@ enum InvoiceStatus {
   PENDING
   PAID
   CANCELLED
+}
+
+enum PurchaseInvoiceDocumentStatus {
+  PENDING
+  REVIEW_REQUIRED
+  VALIDATED
+  REJECTED
+  CANCELLED
+}
+
+enum PurchaseInvoicePaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+}
+
+enum PurchaseInvoicePaymentMethod {
+  BANK_TRANSFER
+  MULTICAIXA_TPA
+  CASH
+  OTHER
 }
 
 enum InvoiceDocumentType {

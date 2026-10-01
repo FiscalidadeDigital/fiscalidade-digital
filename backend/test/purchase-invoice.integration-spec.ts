@@ -1,6 +1,6 @@
 import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { FiscalRegime, Prisma, UserRole } from '@prisma/client';
+import { FiscalRegime, Prisma, PurchaseInvoiceDocumentStatus, UserRole } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
 import request from 'supertest';
@@ -81,6 +81,10 @@ describe('Purchase Invoice HTTP tenant isolation', () => {
   afterAll(async () => {
     if (prisma && tenantAId && tenantBId) {
       const tenantIds = [tenantAId, tenantBId];
+      await prisma.taxAssessment.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await prisma.taxTransaction.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await prisma.fiscalObligation.deleteMany({ where: { tenantId: { in: tenantIds } } });
+      await prisma.purchaseInvoicePayment.deleteMany({ where: { tenantId: { in: tenantIds } } });
       await prisma.purchaseInvoice.deleteMany({ where: { tenantId: { in: tenantIds } } });
       await prisma.document.deleteMany({ where: { tenantId: { in: tenantIds } } });
       await prisma.supplier.deleteMany({ where: { tenantId: { in: tenantIds } } });
@@ -152,5 +156,74 @@ describe('Purchase Invoice HTTP tenant isolation', () => {
       .post('/purchase-invoice').set('Authorization', bearer(ownerAToken))
       .send({ supplierId: supplierAId, invoiceNumber: 'SUP-DECIMAL-001', issuedAt: '2026-10-01', iva: 0, withholdingTax: 0, items: [{ productName: 'Duplicada', quantity: 1, unitPrice: 1 }] })
       .expect(400);
+  });
+
+  it('validates zero VAT and enforces the payment workflow, RBAC and tenant isolation', async () => {
+    const validated = await request(app.getHttpServer())
+      .post(`/purchase-invoice/${purchaseId}/validate`)
+      .set('Authorization', bearer(ownerAToken))
+      .expect(201);
+    expect(validated.body.documentStatus).toBe(PurchaseInvoiceDocumentStatus.VALIDATED);
+    expect(decimal(validated.body.ivaAmount).equals('420.02')).toBe(true);
+
+    await request(app.getHttpServer())
+      .post(`/purchase-invoice/${purchaseId}/payments`)
+      .set('Authorization', bearer(viewerAToken))
+      .send({ amount: 100, paymentDate: '2026-10-02', method: 'CASH' })
+      .expect(403);
+    await request(app.getHttpServer())
+      .post(`/purchase-invoice/${purchaseId}/payments`)
+      .set('Authorization', bearer(ownerBToken))
+      .send({ amount: 100, paymentDate: '2026-10-02', method: 'CASH' })
+      .expect(404);
+
+    const partial = await request(app.getHttpServer())
+      .post(`/purchase-invoice/${purchaseId}/payments`)
+      .set('Authorization', bearer(ownerAToken))
+      .send({ amount: 1000, paymentDate: '2026-10-02', method: 'BANK_TRANSFER', reference: 'TRX-1' })
+      .expect(201);
+    expect(partial.body.paymentStatus).toBe('PARTIALLY_PAID');
+    expect(decimal(partial.body.paidAmount).equals(1000)).toBe(true);
+
+    await request(app.getHttpServer())
+      .post(`/purchase-invoice/${purchaseId}/payments`)
+      .set('Authorization', bearer(ownerAToken))
+      .send({ amount: 3000, paymentDate: '2026-10-02', method: 'CASH' })
+      .expect(400);
+
+    const balance = decimal(partial.body.balance);
+    const paid = await request(app.getHttpServer())
+      .post(`/purchase-invoice/${purchaseId}/payments`)
+      .set('Authorization', bearer(ownerAToken))
+      .send({ amount: balance.toString(), paymentDate: '2026-10-03', method: 'MULTICAIXA_TPA' })
+      .expect(201);
+    expect(paid.body.paymentStatus).toBe('PAID');
+    expect(decimal(paid.body.balance).equals(0)).toBe(true);
+  });
+
+  it('requires a rejection reason and prevents payments for rejected documents', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/purchase-invoice')
+      .set('Authorization', bearer(ownerAToken))
+      .send({ supplierId: supplierAId, invoiceNumber: 'SUP-REJECT-001', issuedAt: '2026-10-01', iva: 0, withholdingTax: 0, items: [{ productName: 'Sem IVA', quantity: 1, unitPrice: 100 }] })
+      .expect(201);
+    await request(app.getHttpServer()).post(`/purchase-invoice/${created.body.id}/reject`).set('Authorization', bearer(ownerAToken)).send({ reason: '' }).expect(400);
+    const rejected = await request(app.getHttpServer()).post(`/purchase-invoice/${created.body.id}/reject`).set('Authorization', bearer(ownerAToken)).send({ reason: 'Documento ilegível' }).expect(201);
+    expect(rejected.body.documentStatus).toBe('REJECTED');
+    await request(app.getHttpServer()).post(`/purchase-invoice/${created.body.id}/payments`).set('Authorization', bearer(ownerAToken)).send({ amount: 10, paymentDate: '2026-10-02', method: 'CASH' }).expect(400);
+  });
+
+  it('accepts and validates a genuine zero VAT document', async () => {
+    const created = await request(app.getHttpServer())
+      .post('/purchase-invoice')
+      .set('Authorization', bearer(ownerAToken))
+      .send({ supplierId: supplierAId, invoiceNumber: 'SUP-ZERO-VAT-001', issuedAt: '2026-10-01', iva: 0, withholdingTax: 0, items: [{ productName: 'Operação sem IVA indicado', quantity: 2, unitPrice: 50 }] })
+      .expect(201);
+    const validated = await request(app.getHttpServer())
+      .post(`/purchase-invoice/${created.body.id}/validate`)
+      .set('Authorization', bearer(ownerAToken))
+      .expect(201);
+    expect(validated.body.documentStatus).toBe('VALIDATED');
+    expect(decimal(validated.body.ivaAmount).equals(0)).toBe(true);
   });
 });
