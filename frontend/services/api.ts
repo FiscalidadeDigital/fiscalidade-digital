@@ -2,7 +2,7 @@
   AxiosHeaders,
   type InternalAxiosRequestConfig,
 } from 'axios';
-import { API_BASE_URL } from './api-base-url';
+import { API_BASE_URL, getApiBaseUrl } from './api-base-url';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -22,6 +22,8 @@ api.interceptors.request.use(
   (
     config: InternalAxiosRequestConfig,
   ) => {
+    config.baseURL ||= getApiBaseUrl();
+
     if (
       typeof window !== 'undefined'
     ) {

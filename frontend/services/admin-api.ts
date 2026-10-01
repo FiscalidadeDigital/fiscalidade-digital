@@ -1,5 +1,5 @@
 import axios, { AxiosHeaders, type InternalAxiosRequestConfig } from 'axios';
-import { API_BASE_URL } from './api-base-url';
+import { API_BASE_URL, getApiBaseUrl } from './api-base-url';
 
 export const ADMIN_TOKEN_KEY = 'platform_admin_token';
 
@@ -123,6 +123,8 @@ const adminApi = axios.create({
 });
 
 adminApi.interceptors.request.use((config: InternalAxiosRequestConfig) => {
+  config.baseURL ||= getApiBaseUrl();
+
   if (typeof window !== 'undefined') {
     const token = window.sessionStorage.getItem(ADMIN_TOKEN_KEY);
     if (token) {
