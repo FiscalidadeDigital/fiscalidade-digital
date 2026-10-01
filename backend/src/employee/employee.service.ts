@@ -216,6 +216,39 @@ export class EmployeeService {
             notes:
               dto.notes?.trim() ||
               null,
+
+            ...(dto.initialSalary && {
+              salaries: {
+                create: {
+                  baseSalary: dto.initialSalary.baseSalary,
+                  foodAllowance:
+                    dto.initialSalary.foodAllowance ??
+                    0,
+                  transportAllowance:
+                    dto.initialSalary.transportAllowance ??
+                    0,
+                  otherAllowances:
+                    dto.initialSalary.otherAllowances ??
+                    0,
+                  bonuses:
+                    dto.initialSalary.bonuses ??
+                    0,
+                  commissions:
+                    dto.initialSalary.commissions ??
+                    0,
+                  otherIncome:
+                    dto.initialSalary.otherIncome ??
+                    0,
+                  effectiveFrom: new Date(
+                    dto.initialSalary.effectiveFrom,
+                  ),
+                  active: true,
+                  notes:
+                    dto.initialSalary.notes?.trim() ||
+                    null,
+                },
+              },
+            }),
           },
 
           include: {

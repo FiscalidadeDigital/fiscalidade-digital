@@ -30,7 +30,11 @@ import {
 import {
   createEmployee,
   deleteEmployee,
+  getEmployee,
   getEmployees,
+  addEmployeeSalary,
+  updateEmployee,
+  type CreateEmployeeSalaryData,
   type CreateEmployeeData,
   type Employee,
 } from '@/services/employee';
@@ -111,6 +115,13 @@ const initialForm: CreateEmployeeData = {
   notes: '',
 };
 
+const initialSalaryForm: CreateEmployeeSalaryData = {
+  baseSalary: 0,
+  effectiveFrom: new Date()
+    .toISOString()
+    .slice(0, 10),
+};
+
 // =====================================================
 // PÁGINA
 // =====================================================
@@ -171,11 +182,40 @@ export default function EmployeesPage() {
   );
 
   const [
+    editingEmployeeId,
+    setEditingEmployeeId,
+  ] = useState<string | null>(null);
+
+  const [
     form,
     setForm,
   ] = useState<CreateEmployeeData>(
     initialForm,
   );
+
+  const [
+    includeInitialSalary,
+    setIncludeInitialSalary,
+  ] = useState(false);
+
+  const [
+    initialSalary,
+    setInitialSalary,
+  ] = useState<CreateEmployeeSalaryData>(
+    initialSalaryForm,
+  );
+
+  const [
+    salaryForm,
+    setSalaryForm,
+  ] = useState<CreateEmployeeSalaryData>(
+    initialSalaryForm,
+  );
+
+  const [
+    salarySaving,
+    setSalarySaving,
+  ] = useState(false);
 
   // ===================================================
   // CARREGAR FUNCIONÁRIOS
@@ -419,12 +459,99 @@ export default function EmployeesPage() {
     setError('');
     setSuccess('');
     setSelectedEmployee(null);
+    setEditingEmployeeId(null);
 
     setForm({
       ...initialForm,
     });
+    setIncludeInitialSalary(false);
+    setInitialSalary({
+      ...initialSalaryForm,
+    });
 
     setShowModal(true);
+  }
+
+  function openEditEmployee(employee: Employee) {
+    setError('');
+    setSuccess('');
+    setEditingEmployeeId(employee.id);
+    setSelectedEmployee(null);
+    setIncludeInitialSalary(false);
+    setForm({
+      name: employee.name,
+      nif: employee.nif || '',
+      socialSecurityNumber: employee.socialSecurityNumber || '',
+      socialSecurityCategory:
+        employee.socialSecurityCategory || 'STANDARD',
+      email: employee.email || '',
+      phone: employee.phone || '',
+      address: employee.address || '',
+      birthDate: employee.birthDate?.slice(0, 10) || '',
+      hireDate: employee.hireDate?.slice(0, 10) || '',
+      jobTitle: employee.jobTitle || '',
+      department: employee.department || '',
+      gender: employee.gender || '',
+      maritalStatus: employee.maritalStatus || '',
+      dependentCount: employee.dependentCount,
+      status: employee.status,
+      notes: employee.notes || '',
+    });
+    setShowModal(true);
+  }
+
+  async function openEmployeeDetails(employeeId: string) {
+    try {
+      setError('');
+      const employee = await getEmployee(employeeId);
+      setSelectedEmployee(employee);
+      setSalaryForm({
+        ...initialSalaryForm,
+      });
+    } catch (err: any) {
+      setError(
+        err?.response?.data?.message ||
+          'Não foi possível carregar o detalhe do funcionário.',
+      );
+    }
+  }
+
+  async function handleAddSalary() {
+    if (!selectedEmployee) {
+      return;
+    }
+
+    if (
+      !salaryForm.effectiveFrom ||
+      !Number.isFinite(Number(salaryForm.baseSalary)) ||
+      Number(salaryForm.baseSalary) < 0
+    ) {
+      setError(
+        'Indique um salário base válido e a data de início da vigência.',
+      );
+      return;
+    }
+
+    try {
+      setSalarySaving(true);
+      setError('');
+      await addEmployeeSalary(selectedEmployee.id, {
+        ...salaryForm,
+        baseSalary: Number(salaryForm.baseSalary),
+      });
+      await openEmployeeDetails(selectedEmployee.id);
+      await loadEmployees();
+      setSuccess('Nova vigência salarial registada com sucesso.');
+    } catch (err: any) {
+      const message = err?.response?.data?.message;
+      setError(
+        Array.isArray(message)
+          ? message.join(' ')
+          : message || 'Não foi possível registar a vigência salarial.',
+      );
+    } finally {
+      setSalarySaving(false);
+    }
   }
 
   // ===================================================
@@ -437,6 +564,7 @@ export default function EmployeesPage() {
     }
 
     setShowModal(false);
+    setEditingEmployeeId(null);
   }
 
   // ===================================================
@@ -545,23 +673,54 @@ export default function EmployeesPage() {
           notes:
             form.notes?.trim() ||
             undefined,
+
+          ...(includeInitialSalary && {
+            initialSalary: {
+              ...initialSalary,
+              baseSalary: Number(initialSalary.baseSalary),
+            },
+          }),
         };
 
-      const created =
-        await createEmployee(
-          payload,
+      if (
+        includeInitialSalary &&
+        (!initialSalary.effectiveFrom ||
+          !Number.isFinite(Number(initialSalary.baseSalary)) ||
+          Number(initialSalary.baseSalary) < 0)
+      ) {
+        setError(
+          'Indique um salário base válido e a data de início da vigência.',
         );
+        return;
+      }
+
+      const isEditing = Boolean(editingEmployeeId);
+      const saved = isEditing
+        ? await updateEmployee(
+            editingEmployeeId,
+            payload,
+          )
+        : await createEmployee(
+            payload,
+          );
 
       setShowModal(false);
 
       setForm({
         ...initialForm,
       });
+      setIncludeInitialSalary(false);
+      setInitialSalary({
+        ...initialSalaryForm,
+      });
+      setEditingEmployeeId(null);
 
       await loadEmployees();
 
       setSuccess(
-        `Funcionário ${created?.employeeNumber ? `Nº ${created.employeeNumber} ` : ''}cadastrado com sucesso.`,
+        isEditing
+          ? 'Dados do funcionário actualizados com sucesso.'
+          : `Funcionário ${saved?.employeeNumber ? `Nº ${saved.employeeNumber} ` : ''}cadastrado com sucesso.`,
       );
 
       window.setTimeout(() => {
@@ -727,11 +886,15 @@ export default function EmployeesPage() {
                   id="employees-new-title"
                   className="employees-modal-title"
                 >
-                  Novo funcionário
+                  {editingEmployeeId
+                    ? 'Editar funcionário'
+                    : 'Novo funcionário'}
                 </h2>
 
                 <p className="employees-modal-subtitle">
-                  Registe os dados do colaborador
+                  {editingEmployeeId
+                    ? 'Actualize apenas os dados necessários'
+                    : 'Registe os dados do colaborador'}
                 </p>
               </div>
             </div>
@@ -1049,6 +1212,76 @@ export default function EmployeesPage() {
               </div>
             </section>
 
+            {!editingEmployeeId && (
+            <section className="employees-form-section">
+              <div className="employees-section-title">
+                <CircleDollarSign size={14} />
+
+                Salário inicial
+
+                <span />
+              </div>
+
+              <label className="employees-checkbox-field">
+                <input
+                  type="checkbox"
+                  checked={includeInitialSalary}
+                  onChange={(event) =>
+                    setIncludeInitialSalary(event.target.checked)
+                  }
+                  disabled={saving}
+                />
+                <span>
+                  Registar a primeira vigência salarial agora
+                </span>
+              </label>
+
+              {includeInitialSalary && (
+                <div className="employees-form-grid">
+                  <div className="employees-field">
+                    <label htmlFor="initial-base-salary">
+                      Salário base (Kz)
+                    </label>
+                    <input
+                      id="initial-base-salary"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={initialSalary.baseSalary}
+                      onChange={(event) =>
+                        setInitialSalary((current) => ({
+                          ...current,
+                          baseSalary: Number(event.target.value || 0),
+                        }))
+                      }
+                      disabled={saving}
+                      required
+                    />
+                  </div>
+
+                  <div className="employees-field">
+                    <label htmlFor="initial-salary-effective-from">
+                      Vigente desde
+                    </label>
+                    <input
+                      id="initial-salary-effective-from"
+                      type="date"
+                      value={initialSalary.effectiveFrom}
+                      onChange={(event) =>
+                        setInitialSalary((current) => ({
+                          ...current,
+                          effectiveFrom: event.target.value,
+                        }))
+                      }
+                      disabled={saving}
+                      required
+                    />
+                  </div>
+                </div>
+              )}
+            </section>
+            )}
+
             {/* CONTACTO */}
 
             <section className="employees-form-section">
@@ -1318,7 +1551,9 @@ export default function EmployeesPage() {
 
                 {saving
                   ? 'A guardar...'
-                  : 'Cadastrar funcionário'}
+                  : editingEmployeeId
+                    ? 'Guardar alterações'
+                    : 'Cadastrar funcionário'}
               </button>
 
             </div>
@@ -1699,7 +1934,101 @@ export default function EmployeesPage() {
 
             </div>
 
+            <section className="employees-form-section employees-salary-history">
+              <div className="employees-section-title">
+                <CircleDollarSign size={14} />
+
+                Histórico salarial
+
+                <span />
+              </div>
+
+              {employee.salaries?.length ? (
+                <div className="employees-salary-list">
+                  {employee.salaries.map((item) => (
+                    <div key={item.id} className="employees-salary-entry">
+                      <div>
+                        <strong>{formatMoney(item.baseSalary)}</strong>
+                        <p>
+                          Vigente desde {new Date(item.effectiveFrom).toLocaleDateString('pt-AO')}
+                          {item.effectiveTo
+                            ? ` até ${new Date(item.effectiveTo).toLocaleDateString('pt-AO')}`
+                            : ' · actual'}
+                        </p>
+                      </div>
+                      <span className={item.active ? 'employees-salary-state employees-salary-state-active' : 'employees-salary-state'}>
+                        {item.active ? 'Actual' : 'Histórico'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="employees-salary-empty">
+                  Ainda não existe uma vigência salarial registada.
+                </p>
+              )}
+
+              <div className="employees-form-grid employees-new-salary-form">
+                <div className="employees-field">
+                  <label htmlFor="salary-base">
+                    Novo salário base (Kz)
+                  </label>
+                  <input
+                    id="salary-base"
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={salaryForm.baseSalary}
+                    onChange={(event) =>
+                      setSalaryForm((current) => ({
+                        ...current,
+                        baseSalary: Number(event.target.value || 0),
+                      }))
+                    }
+                    disabled={salarySaving}
+                  />
+                </div>
+
+                <div className="employees-field">
+                  <label htmlFor="salary-effective-from">
+                    Nova vigência desde
+                  </label>
+                  <input
+                    id="salary-effective-from"
+                    type="date"
+                    value={salaryForm.effectiveFrom}
+                    onChange={(event) =>
+                      setSalaryForm((current) => ({
+                        ...current,
+                        effectiveFrom: event.target.value,
+                      }))
+                    }
+                    disabled={salarySaving}
+                  />
+                </div>
+
+                <div className="employees-field employees-salary-action">
+                  <label> </label>
+                  <button
+                    type="button"
+                    className="employees-secondary-button"
+                    onClick={handleAddSalary}
+                    disabled={salarySaving}
+                  >
+                    {salarySaving ? 'A registar...' : 'Registar vigência'}
+                  </button>
+                </div>
+              </div>
+            </section>
+
             <div className="employees-modal-footer">
+              <button
+                type="button"
+                className="employees-secondary-button"
+                onClick={() => openEditEmployee(employee)}
+              >
+                Editar dados
+              </button>
               <button
                 type="button"
                 className="employees-secondary-button"
@@ -2443,6 +2772,21 @@ export default function EmployeesPage() {
               margin-bottom: 23px !important;
             }
 
+            .employees-checkbox-field {
+              display: flex !important;
+              align-items: center !important;
+              gap: 8px !important;
+              margin: 0 0 13px !important;
+              color: var(--fd-text-secondary) !important;
+              font-size: 12px !important;
+            }
+
+            .employees-checkbox-field input {
+              width: 15px !important;
+              height: 15px !important;
+              accent-color: var(--fd-primary) !important;
+            }
+
             .employees-section-title {
               display: flex !important;
               align-items: center !important;
@@ -2719,6 +3063,56 @@ export default function EmployeesPage() {
             .employees-notes {
               white-space: pre-wrap !important;
               line-height: 1.5 !important;
+            }
+
+            .employees-salary-history {
+              padding-top: 4px !important;
+              border-top: 1px solid var(--fd-border) !important;
+            }
+
+            .employees-salary-list {
+              display: grid !important;
+              gap: 8px !important;
+              margin-bottom: 14px !important;
+            }
+
+            .employees-salary-entry {
+              display: flex !important;
+              align-items: center !important;
+              justify-content: space-between !important;
+              gap: 12px !important;
+              padding: 10px 12px !important;
+              border: 1px solid var(--fd-border) !important;
+              border-radius: 8px !important;
+              background: var(--fd-surface-raised) !important;
+            }
+
+            .employees-salary-entry strong {
+              display: block !important;
+              color: var(--fd-text-primary) !important;
+              font-size: 12px !important;
+            }
+
+            .employees-salary-entry p,
+            .employees-salary-empty {
+              margin: 3px 0 0 !important;
+              color: var(--fd-text-secondary) !important;
+              font-size: 11px !important;
+            }
+
+            .employees-salary-state {
+              flex: none !important;
+              color: var(--fd-text-secondary) !important;
+              font-size: 10px !important;
+              font-weight: 700 !important;
+            }
+
+            .employees-salary-state-active {
+              color: #047857 !important;
+            }
+
+            .employees-salary-action {
+              justify-content: flex-end !important;
             }
 
             /* =====================================================
@@ -3411,8 +3805,8 @@ export default function EmployeesPage() {
                                   type="button"
                                   className="employees-action"
                                   onClick={() =>
-                                    setSelectedEmployee(
-                                      employee,
+                                    void openEmployeeDetails(
+                                      employee.id,
                                     )
                                   }
                                 >

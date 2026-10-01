@@ -55,6 +55,24 @@ export class InvoiceController {
     );
   }
 
+  @Post('pro-forma')
+  @Roles(...INVOICE_WRITE_ROLES)
+  createProForma(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateInvoiceDto,
+  ) {
+    return this.invoiceService.createProForma(user.tenantId, dto);
+  }
+
+  @Post(':id/convert')
+  @Roles(...INVOICE_WRITE_ROLES)
+  convertProForma(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+  ) {
+    return this.invoiceService.convertProForma(user.tenantId, id);
+  }
+
   @Get()
   @Roles(...INVOICE_READ_ROLES)
   findAll(
@@ -67,6 +85,7 @@ export class InvoiceController {
 
     return this.invoiceService.findAll(
       user.tenantId,
+      query.documentType,
     );
   }
 

@@ -9,7 +9,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { InvoiceDocumentType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ObligationsService } from '../obligations/obligations.service';
@@ -18,7 +18,10 @@ import {
   SIMPLIFIED_IVA_INVOICE_MENTION,
 } from '../fiscal-rules/iva-rules';
 
-import { CreateInvoiceDto } from './dto/create-invoice.dto';
+import {
+  CreateInvoiceDto,
+  CreateInvoiceItemDto,
+} from './dto/create-invoice.dto';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
 import { calculateInvoiceAmounts } from './invoice-calculator';
 
@@ -39,6 +42,59 @@ export class InvoiceService {
   async create(
     tenantId: string,
     dto: CreateInvoiceDto,
+  ) {
+    return this.createDocument(tenantId, dto, InvoiceDocumentType.NORMAL);
+  }
+
+  async createProForma(tenantId: string, dto: CreateInvoiceDto) {
+    return this.createDocument(tenantId, dto, InvoiceDocumentType.PRO_FORMA);
+  }
+
+  async convertProForma(tenantId: string, proFormaId: string) {
+    const proForma = await this.prisma.invoice.findFirst({
+      where: {
+        id: proFormaId,
+        tenantId,
+        documentType: InvoiceDocumentType.PRO_FORMA,
+      },
+      include: { items: true },
+    });
+
+    if (!proForma) {
+      throw new NotFoundException('Pro Forma não encontrada.');
+    }
+
+    const existing = await this.prisma.invoice.findFirst({
+      where: { tenantId, sourceProFormaId: proForma.id },
+      include: { client: true, items: true },
+    });
+    if (existing) {
+      return existing;
+    }
+
+    return this.createDocument(
+      tenantId,
+      {
+        clientId: proForma.clientId,
+        notes: proForma.notes ?? undefined,
+        items: proForma.items.map((item) => ({
+          productId: item.productId ?? undefined,
+          productName: item.productName,
+          unit: item.unit as CreateInvoiceItemDto['unit'],
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+        })),
+      },
+      InvoiceDocumentType.NORMAL,
+      proForma.id,
+    );
+  }
+
+  private async createDocument(
+    tenantId: string,
+    dto: CreateInvoiceDto,
+    documentType: InvoiceDocumentType,
+    sourceProFormaId?: string,
   ) {
     const tenant =
       await this.prisma.tenant.findUnique({
@@ -155,7 +211,10 @@ export class InvoiceService {
     // ==========================================================
 
     const vatPolicy = resolveInvoiceVatPolicy(tenant.regime);
-    const ivaRate = Number(vatPolicy.invoiceRate);
+    const ivaRate =
+      documentType === InvoiceDocumentType.PRO_FORMA
+        ? 0
+        : Number(vatPolicy.invoiceRate);
 
     // ==========================================================
     // RETENÇÃO
@@ -179,6 +238,7 @@ export class InvoiceService {
       );
 
     const retentionRate =
+      documentType === InvoiceDocumentType.NORMAL &&
       configuredRetentionRate > 0
         ? configuredRetentionRate / 100
         : 0;
@@ -242,7 +302,15 @@ export class InvoiceService {
         vatPolicy.ruleVersion,
 
       taxCalculationStatus:
-        vatPolicy.calculationStatus,
+        documentType === InvoiceDocumentType.PRO_FORMA
+          ? 'PREVIEW_NON_FISCAL'
+          : vatPolicy.calculationStatus,
+
+      documentType,
+
+      sourceProFormaId:
+        sourceProFormaId ??
+        null,
 
       issuedAt,
 
@@ -308,6 +376,7 @@ export class InvoiceService {
               tx,
               tenantId,
               year,
+              documentType,
             );
 
           return tx.invoice.create({
@@ -324,15 +393,28 @@ export class InvoiceService {
         },
       );
 
-      await this.syncFiscalObligations(
-        tenantId,
-      );
+      if (documentType === InvoiceDocumentType.NORMAL) {
+        await this.syncFiscalObligations(tenantId);
+      }
 
       return invoice;
     } catch (error: unknown) {
       if (
         error instanceof
           Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002' && sourceProFormaId
+      ) {
+        const existing = await this.prisma.invoice.findFirst({
+          where: { tenantId, sourceProFormaId },
+          include: { client: true, items: true },
+        });
+        if (existing) {
+          return existing;
+        }
+      }
+
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
         throw new ConflictException(
@@ -391,9 +473,10 @@ export class InvoiceService {
     tx: Prisma.TransactionClient,
     tenantId: string,
     year: number,
+    documentType: InvoiceDocumentType,
   ): Promise<string> {
     const prefix =
-      `FT-${year}-`;
+      `${documentType === InvoiceDocumentType.PRO_FORMA ? 'PF' : 'FT'}-${year}-`;
 
     const invoices =
       await tx.invoice.findMany({
@@ -450,10 +533,12 @@ export class InvoiceService {
 
   async findAll(
     tenantId: string,
+    documentType: InvoiceDocumentType = InvoiceDocumentType.NORMAL,
   ) {
     return this.prisma.invoice.findMany({
       where: {
         tenantId,
+        documentType,
       },
 
       include: {
@@ -474,6 +559,7 @@ export class InvoiceService {
     const search = query.search?.trim();
     const where: Prisma.InvoiceWhereInput = {
       tenantId,
+      documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
       ...(query.status ? { status: query.status } : {}),
       ...(search
         ? {
@@ -499,11 +585,33 @@ export class InvoiceService {
           skip: (page - 1) * pageSize,
           take: pageSize,
         }),
-        this.prisma.invoice.count({ where: { tenantId, status: 'PENDING' } }),
-        this.prisma.invoice.count({ where: { tenantId, status: 'PAID' } }),
-        this.prisma.invoice.count({ where: { tenantId, status: 'CANCELLED' } }),
+        this.prisma.invoice.count({
+          where: {
+            tenantId,
+            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            status: 'PENDING',
+          },
+        }),
+        this.prisma.invoice.count({
+          where: {
+            tenantId,
+            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            status: 'PAID',
+          },
+        }),
+        this.prisma.invoice.count({
+          where: {
+            tenantId,
+            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            status: 'CANCELLED',
+          },
+        }),
         this.prisma.invoice.aggregate({
-          where: { tenantId, status: { not: 'CANCELLED' } },
+          where: {
+            tenantId,
+            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            status: { not: 'CANCELLED' },
+          },
           _sum: {
             total: true,
             iva: true,
@@ -640,6 +748,12 @@ export class InvoiceService {
       }
 
       return current;
+    }
+
+    if (invoice.documentType === InvoiceDocumentType.PRO_FORMA) {
+      throw new BadRequestException(
+        'Uma Pro Forma nÃ£o pode ser marcada como paga. Converta-a primeiro em factura.',
+      );
     }
 
     /*

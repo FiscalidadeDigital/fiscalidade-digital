@@ -1276,7 +1276,7 @@ export default function PayrollPage() {
                               (total, item) =>
                                 total +
                                 numberValue(
-                                  item.employerSocialSecurityAmount,
+                                  item.socialSecurityAmount,
                                 ),
                               0,
                             ),
@@ -1292,7 +1292,7 @@ export default function PayrollPage() {
                               ) =>
                                 total +
                                 numberValue(
-                                  item.socialSecurityAmount,
+                                  item.employerSocialSecurityAmount,
                                 ),
                               0,
                             ),

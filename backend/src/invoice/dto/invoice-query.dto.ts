@@ -1,4 +1,4 @@
-import { InvoiceStatus } from '@prisma/client';
+import { InvoiceDocumentType, InvoiceStatus } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
   IsEnum,
@@ -12,6 +12,10 @@ import {
 } from 'class-validator';
 
 export class InvoiceQueryDto {
+  @IsOptional()
+  @IsEnum(InvoiceDocumentType)
+  documentType?: InvoiceDocumentType;
+
   @IsOptional()
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,

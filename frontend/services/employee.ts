@@ -107,6 +107,8 @@ export type CreateEmployeeData = {
   status?: string;
 
   notes?: string;
+
+  initialSalary?: CreateEmployeeSalaryData;
 };
 
 export type UpdateEmployeeData =

@@ -92,6 +92,10 @@ describe('EmployeeController authorization and DTOs', () => {
       name: 'Ana Manuel',
       gender: 'Feminino',
       socialSecurityCategory: SocialSecurityCategory.STANDARD,
+      initialSalary: {
+        baseSalary: 250000,
+        effectiveFrom: '2026-10-01',
+      },
       status: EmployeeStatus.ACTIVE,
       dependentCount: 1,
     });
@@ -100,6 +104,18 @@ describe('EmployeeController authorization and DTOs', () => {
     });
 
     expect(await validate(valid)).toHaveLength(0);
+    expect(await validate(invalid)).not.toHaveLength(0);
+  });
+
+  it('validates a nested initial salary when it is supplied', async () => {
+    const invalid = plainToInstance(CreateEmployeeDto, {
+      name: 'Ana Manuel',
+      initialSalary: {
+        baseSalary: -1,
+        effectiveFrom: 'invalid-date',
+      },
+    });
+
     expect(await validate(invalid)).not.toHaveLength(0);
   });
 

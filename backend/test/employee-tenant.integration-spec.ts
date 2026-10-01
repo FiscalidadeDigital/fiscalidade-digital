@@ -162,11 +162,21 @@ describe('Core records HTTP tenant isolation', () => {
         phone: '+244900000001',
         jobTitle: 'Auditora',
         status: 'ACTIVE',
+        initialSalary: {
+          baseSalary: 250000,
+          foodAllowance: 30000,
+          effectiveFrom: '2026-08-01',
+        },
       })
       .expect(201);
 
     employeeId = created.body.id;
     expect(employeeId).toEqual(expect.any(String));
+    expect(created.body.salaries).toEqual([
+      expect.objectContaining({ active: true }),
+    ]);
+    expect(Number(created.body.salaries[0].baseSalary)).toBe(250000);
+    expect(Number(created.body.salaries[0].foodAllowance)).toBe(30000);
 
     await request(app.getHttpServer())
       .patch(`/employees/${employeeId}`)
@@ -956,7 +966,10 @@ describe('Core records HTTP tenant isolation', () => {
         .set('Authorization', bearer(ownerAToken))
         .expect(200),
     ]);
-    expect(salaries.body).toHaveLength(1);
+    expect(salaries.body).toHaveLength(2);
+    expect(Number(salaries.body[0].baseSalary)).toBe(500000.25);
+    expect(salaries.body[0].active).toBe(true);
+    expect(salaries.body[1].active).toBe(false);
     expect(dependents.body).toHaveLength(1);
 
     await request(app.getHttpServer())
