@@ -56,7 +56,9 @@ const quantity = (value: Money) => {
 
 const date = (value?: Date | null) => value ? new Date(value).toLocaleDateString('pt-AO') : '—';
 
-const paymentStatus = (status: string) => ({ PAID: 'Paga', PENDING: 'Pendente', CANCELLED: 'Cancelada' })[status] ?? status;
+export const formatPaymentStatus = (status: string) => ({ PAID: 'Paga', PENDING: 'Pendente', CANCELLED: 'Cancelada' })[status] ?? status;
+
+export const formatLineVatRate = (rate: number | null | undefined) => rate == null ? '—' : `${quantity(rate)}%`;
 
 function label(doc: PDFKit.PDFDocument, text: string, x: number, y: number) {
   doc.font('Helvetica-Bold').fontSize(7.5).fillColor(MUTED).text(text.toUpperCase(), x, y, { characterSpacing: 0.6 });
@@ -90,8 +92,11 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
   const isProForma = invoice.documentType === 'PRO_FORMA';
   addPageHeader(doc, invoice);
 
-  doc.font('Helvetica-Bold').fontSize(24).fillColor(TEXT).text(isProForma ? 'PRO FORMA' : 'FACTURA', MARGIN, 86);
-  doc.font('Helvetica-Bold').fontSize(9).fillColor(BLUE).text(isProForma ? 'DOCUMENTO PRELIMINAR' : 'FT — FACTURA', MARGIN, 116);
+  doc.font('Helvetica-Bold').fontSize(25).fillColor(TEXT).text(isProForma ? 'PRO FORMA' : 'FACTURA', MARGIN, 82);
+  label(doc, 'Tipo de documento', MARGIN, 119);
+  value(doc, isProForma ? 'Pro Forma · documento preliminar' : 'FT — Factura', MARGIN, 131, 180);
+  label(doc, 'Estado de pagamento', 225, 119);
+  value(doc, formatPaymentStatus(invoice.status), 225, 131, 105);
 
   label(doc, 'Número do documento', 355, 86);
   value(doc, invoice.invoiceNumber, 355, 98, 202);
@@ -101,8 +106,8 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
   value(doc, date(invoice.dueDate), 458, 132, 99);
 
   const cardY = 166;
-  doc.rect(MARGIN, cardY, 252, 112).lineWidth(0.7).strokeColor(LINE).stroke();
-  doc.rect(305, cardY, 252, 112).stroke();
+  doc.roundedRect(MARGIN, cardY, 252, 112, 2).lineWidth(0.7).strokeColor(LINE).stroke();
+  doc.roundedRect(305, cardY, 252, 112, 2).stroke();
   label(doc, 'Emissor', 50, cardY + 14);
   doc.font('Helvetica-Bold').fontSize(10.5).fillColor(TEXT).text(invoice.tenant.name, 50, cardY + 30, { width: 228 });
   value(doc, `NIF: ${invoice.tenant.nif}`, 50, cardY + 49, 228);
@@ -112,7 +117,7 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
 
   label(doc, 'Adquirente / Cliente', 317, cardY + 14);
   doc.font('Helvetica-Bold').fontSize(10.5).fillColor(TEXT).text(invoice.client.name, 317, cardY + 30, { width: 228 });
-  value(doc, invoice.client.nif ? `NIF: ${invoice.client.nif}` : 'NIF: não informado', 317, cardY + 49, 228);
+  value(doc, invoice.client.nif ? `NIF: ${invoice.client.nif}` : 'NIF: Não indicado', 317, cardY + 49, 228);
   let clientY = cardY + 65;
   if (invoice.client.address) { value(doc, invoice.client.address, 317, clientY, 228); clientY += 15; }
   if (invoice.client.phone) value(doc, `Contacto: ${invoice.client.phone}`, 317, clientY, 228);
@@ -120,6 +125,7 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
   let y = 304;
   label(doc, 'Artigos e serviços', MARGIN, y);
   y = tableHeader(doc, y + 16);
+  doc.moveTo(MARGIN, y).lineTo(PAGE_WIDTH - MARGIN, y).lineWidth(0.5).strokeColor(LINE).stroke();
 
   invoice.items.forEach((item) => {
     const descriptionHeight = doc.heightOfString(item.productName, { width: 190, lineGap: 1 });
@@ -134,7 +140,7 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
     doc.font('Helvetica').fontSize(8.5).fillColor(TEXT).text(item.productName, 100, y + 9, { width: 190, lineGap: 1 });
     doc.text(`${quantity(item.quantityAmount ?? item.quantity)} ${item.unit || 'UN'}`, 294, y + 9, { width: 60, align: 'right' });
     doc.text(money(item.unitPriceAmount ?? item.unitPrice), 358, y + 9, { width: 79, align: 'right' });
-    doc.text(item.product?.ivaRate == null ? '—' : `${quantity(item.product.ivaRate)}%`, 441, y + 9, { width: 36, align: 'right' });
+    doc.text(formatLineVatRate(item.product?.ivaRate), 441, y + 9, { width: 36, align: 'right' });
     doc.font('Helvetica-Bold').text(money(item.totalAmount ?? item.total), 481, y + 9, { width: 68, align: 'right' });
     y += rowHeight;
   });
@@ -154,9 +160,9 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
     value(doc, invoice.notes, MARGIN, y + 15, 270);
   }
 
-  const totalsX = 334;
+  const totalsX = 326;
   const totalsY = y;
-  doc.rect(totalsX, totalsY, 223, 145).fill(LIGHT);
+  doc.roundedRect(totalsX, totalsY, 231, 145, 2).fill(LIGHT);
   label(doc, 'Resumo fiscal e totais', totalsX + 14, totalsY + 13);
   const rows: Array<[string, string]> = [
     ['Subtotal / base', money(invoice.subtotalAmount ?? invoice.subtotal)],
@@ -173,15 +179,11 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
   doc.font('Helvetica-Bold').fontSize(8).fillColor(MUTED).text('TOTAL', totalsX + 14, totalsY + 113);
   doc.font('Helvetica-Bold').fontSize(15).fillColor(BLUE).text(money(invoice.totalAmount ?? invoice.total), totalsX + 70, totalsY + 109, { width: 139, align: 'right' });
 
-  label(doc, 'Tipo de documento', MARGIN, totalsY + 94);
-  value(doc, isProForma ? 'Pro Forma · sem efeito fiscal definitivo' : 'FT — Factura', MARGIN, totalsY + 108, 260);
-  label(doc, 'Estado de pagamento', MARGIN, totalsY + 132);
-  value(doc, paymentStatus(invoice.status), MARGIN, totalsY + 146, 260);
   if (invoice.taxCalculationStatus === 'PAYMENT_BASIS_NOT_INVOICE_LIQUIDATION') {
     doc.font('Helvetica').fontSize(7.5).fillColor('#7C4A03').text(
       'IVA apurado segundo o regime fiscal registado para a empresa.',
       MARGIN,
-      totalsY + 169,
+      totalsY + 94,
       { width: 270 },
     );
   }

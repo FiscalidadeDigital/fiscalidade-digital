@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { InvoicePdfData, renderInvoicePdf } from './invoice-pdf.renderer';
+import { formatLineVatRate, formatPaymentStatus, InvoicePdfData, renderInvoicePdf } from './invoice-pdf.renderer';
 
 const fixture = (overrides: Partial<InvoicePdfData> = {}): InvoicePdfData => ({
   invoiceNumber: 'FT-2026-00001',
@@ -38,6 +38,19 @@ async function createPdf(data: InvoicePdfData) {
 const pageCount = (pdf: Buffer) => (pdf.toString('latin1').match(/\/Type \/Page\b/g) ?? []).length;
 
 describe('invoice PDF renderer', () => {
+  it('shows only a VAT rate actually available on the line', () => {
+    expect(formatLineVatRate(14)).toBe('14%');
+    expect(formatLineVatRate(0)).toBe('0%');
+    expect(formatLineVatRate(null)).toBe('—');
+    expect(formatLineVatRate(undefined)).toBe('—');
+  });
+
+  it('keeps the fiscal type independent from Portuguese payment states', () => {
+    expect(formatPaymentStatus('PAID')).toBe('Paga');
+    expect(formatPaymentStatus('PENDING')).toBe('Pendente');
+    expect(formatPaymentStatus('CANCELLED')).toBe('Cancelada');
+  });
+
   it.each([
     ['IVA normal, cliente com NIF e factura pendente', fixture()],
     ['IVA zero e cliente sem NIF', fixture({ iva: '0', ivaAmount: '0', total: '1000', totalAmount: '1000', client: { name: 'Consumidor final' } })],
