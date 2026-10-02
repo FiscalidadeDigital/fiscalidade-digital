@@ -56,7 +56,11 @@ describe('InvoiceService paged list', () => {
     await expect(service.generatePdf('tenant-a', 'invoice-b', {} as any)).rejects.toThrow('Factura não encontrada.');
     expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: { id: 'invoice-b', tenantId: 'tenant-a' },
-      include: expect.objectContaining({ client: true, tenant: true }),
+      include: expect.objectContaining({
+        client: true,
+        tenant: true,
+        items: { include: { product: true } },
+      }),
     }));
   });
 });

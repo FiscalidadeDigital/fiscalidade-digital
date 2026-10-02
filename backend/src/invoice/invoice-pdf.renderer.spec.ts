@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { formatLineVatRate, formatPaymentStatus, InvoicePdfData, renderInvoicePdf } from './invoice-pdf.renderer';
+import { formatLineVatRate, formatPaymentStatus, InvoicePdfData, renderInvoicePdf, resolveLineVatRate } from './invoice-pdf.renderer';
 
 const fixture = (overrides: Partial<InvoicePdfData> = {}): InvoicePdfData => ({
   invoiceNumber: 'FT-2026-00001',
@@ -43,6 +43,38 @@ describe('invoice PDF renderer', () => {
     expect(formatLineVatRate(0)).toBe('0%');
     expect(formatLineVatRate(null)).toBe('—');
     expect(formatLineVatRate(undefined)).toBe('—');
+  });
+
+  it('derives 14% only for an unambiguous single taxable base', () => {
+    const invoice = fixture({
+      subtotal: '2000000.00',
+      subtotalAmount: '2000000.00',
+      iva: '280000.00',
+      ivaAmount: '280000.00',
+      total: '2280000.00',
+      totalAmount: '2280000.00',
+      items: [{
+        productName: 'Annn',
+        quantity: '4',
+        unitPrice: '500000.00',
+        total: '2000000.00',
+        unit: 'UN',
+      }],
+    });
+
+    expect(resolveLineVatRate(invoice, invoice.items[0])).toBe(14);
+    expect(formatLineVatRate(resolveLineVatRate(invoice, invoice.items[0]))).toBe('14%');
+  });
+
+  it('does not derive a line rate from global VAT when several lines make it ambiguous', () => {
+    const invoice = fixture({
+      items: [
+        { productName: 'Linha A', quantity: '1', unitPrice: '500', total: '500', unit: 'UN' },
+        { productName: 'Linha B', quantity: '1', unitPrice: '500', total: '500', unit: 'UN' },
+      ],
+    });
+
+    expect(resolveLineVatRate(invoice, invoice.items[0])).toBeNull();
   });
 
   it('keeps the fiscal type independent from Portuguese payment states', () => {

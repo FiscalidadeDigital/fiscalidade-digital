@@ -1,4 +1,5 @@
 import PDFDocument from 'pdfkit';
+import { Prisma } from '@prisma/client';
 
 type Money = { toString(): string } | number | string | null | undefined;
 
@@ -59,6 +60,31 @@ const date = (value?: Date | null) => value ? new Date(value).toLocaleDateString
 export const formatPaymentStatus = (status: string) => ({ PAID: 'Paga', PENDING: 'Pendente', CANCELLED: 'Cancelada' })[status] ?? status;
 
 export const formatLineVatRate = (rate: number | null | undefined) => rate == null ? '—' : `${quantity(rate)}%`;
+
+export function resolveLineVatRate(
+  invoice: InvoicePdfData,
+  item: InvoicePdfData['items'][number],
+): number | null {
+  if (item.product?.ivaRate != null && Number.isFinite(item.product.ivaRate)) {
+    return item.product.ivaRate;
+  }
+
+  if (invoice.items.length !== 1) return null;
+
+  try {
+    const base = new Prisma.Decimal((invoice.subtotalAmount ?? invoice.subtotal)?.toString() ?? '0');
+    const lineBase = new Prisma.Decimal((item.totalAmount ?? item.total)?.toString() ?? '0');
+    const vat = new Prisma.Decimal((invoice.ivaAmount ?? invoice.iva)?.toString() ?? '0');
+
+    if (base.lessThanOrEqualTo(0) || vat.lessThan(0) || !lineBase.equals(base)) {
+      return null;
+    }
+
+    return vat.dividedBy(base).times(100).toDecimalPlaces(4).toNumber();
+  } catch {
+    return null;
+  }
+}
 
 function label(doc: PDFKit.PDFDocument, text: string, x: number, y: number) {
   doc.font('Helvetica-Bold').fontSize(7.5).fillColor(MUTED).text(text.toUpperCase(), x, y, { characterSpacing: 0.6 });
@@ -140,7 +166,7 @@ export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfDat
     doc.font('Helvetica').fontSize(8.5).fillColor(TEXT).text(item.productName, 100, y + 9, { width: 190, lineGap: 1 });
     doc.text(`${quantity(item.quantityAmount ?? item.quantity)} ${item.unit || 'UN'}`, 294, y + 9, { width: 60, align: 'right' });
     doc.text(money(item.unitPriceAmount ?? item.unitPrice), 358, y + 9, { width: 79, align: 'right' });
-    doc.text(formatLineVatRate(item.product?.ivaRate), 441, y + 9, { width: 36, align: 'right' });
+    doc.text(formatLineVatRate(resolveLineVatRate(invoice, item)), 441, y + 9, { width: 36, align: 'right' });
     doc.font('Helvetica-Bold').text(money(item.totalAmount ?? item.total), 481, y + 9, { width: 68, align: 'right' });
     y += rowHeight;
   });

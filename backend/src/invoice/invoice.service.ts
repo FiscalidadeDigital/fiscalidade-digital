@@ -983,7 +983,11 @@ export class InvoiceService {
 
         include: {
           client: true,
-          items: true,
+          items: {
+            include: {
+              product: true,
+            },
+          },
           tenant: true,
         },
       });
