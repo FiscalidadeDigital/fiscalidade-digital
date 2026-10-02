@@ -227,7 +227,7 @@ export default function PurchaseInvoicesPage() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-[#f7f9fc] p-6 lg:p-8">
+      <div className="min-h-screen min-w-0 overflow-x-hidden bg-[#f7f9fc] p-4 sm:p-6 lg:p-8">
 
         {/* HEADER */}
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -248,10 +248,10 @@ export default function PurchaseInvoicesPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="grid gap-3 sm:flex sm:flex-wrap">
             <Link
               href="/purchase-invoices/import"
-              className="flex items-center justify-center gap-2 rounded-xl border border-[#d9ddec] bg-white px-5 py-3 text-sm font-semibold text-[#273558] shadow-sm transition hover:border-[#5146e5]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#d9ddec] sm:w-auto bg-white px-5 py-3 text-sm font-semibold text-[#273558] shadow-sm transition hover:border-[#5146e5]"
             >
               <FileText size={18} />
               Importar documento
@@ -262,7 +262,7 @@ export default function PurchaseInvoicesPage() {
                 setShowModal(true);
               }}
               disabled={isLoading || Boolean(loadError)}
-              className="flex items-center justify-center gap-2 rounded-xl bg-[#5146e5] px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5146e5] sm:w-auto px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
             >
               <Plus size={19} />
               Nova factura recebida
@@ -425,7 +425,7 @@ export default function PurchaseInvoicesPage() {
               </button>
             </div>
           ) : (
-            <div className="overflow-x-auto">
+            <div className="max-w-full overflow-x-auto">
               <table className="w-full min-w-[1100px]">
                 <thead>
                   <tr className="border-b border-[#eef0f5] bg-[#fafbfe] text-left text-xs uppercase tracking-wide text-[#7a86a0]">
@@ -522,10 +522,10 @@ export default function PurchaseInvoicesPage() {
 
       {/* MODAL */}
       {showModal && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f1b3d]/40 p-4 backdrop-blur-sm">
-          <div role="dialog" aria-modal="true" aria-labelledby="purchase-invoice-title" className="max-h-[88vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[#0f1b3d]/40 p-2 sm:p-4 backdrop-blur-sm">
+          <div role="dialog" aria-modal="true" aria-labelledby="purchase-invoice-title" className="max-h-[calc(100vh-1rem)] w-full max-w-4xl overflow-y-auto sm:max-h-[88vh] rounded-2xl bg-white shadow-2xl">
 
-            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#eef0f5] bg-white px-6 py-5">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-[#eef0f5] bg-white px-4 py-4 sm:px-6 sm:py-5">
               <div>
                 <h2 id="purchase-invoice-title" className="text-xl font-bold text-[#0f1b3d]">
                   Nova factura recebida
@@ -821,7 +821,7 @@ export default function PurchaseInvoicesPage() {
             </div>
 
             {/* FOOTER */}
-            <div className="sticky bottom-0 flex justify-end gap-3 border-t border-[#eef0f5] bg-white px-6 py-4">
+            <div className="sticky bottom-0 flex flex-col-reverse gap-3 border-t sm:flex-row sm:justify-end border-[#eef0f5] bg-white px-4 py-4 sm:px-6">
               <button
                 onClick={() => {
                   resetForm();
