@@ -9,12 +9,15 @@ import {
   ConflictException,
   Logger,
   NotFoundException,
+  Optional,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { InvoiceDocumentType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ObligationsService } from '../obligations/obligations.service';
 import { FiscalEngineService } from '../fiscal-engine/fiscal-engine.service';
+import { FiscalSignatureService } from '../fiscal-signature/fiscal-signature.service';
 import {
   resolveInvoiceVatPolicy,
   SIMPLIFIED_IVA_INVOICE_MENTION,
@@ -36,6 +39,7 @@ export class InvoiceService {
     private readonly prisma: PrismaService,
     private readonly obligationsService: ObligationsService,
     private readonly fiscalEngineService: FiscalEngineService,
+    @Optional() private readonly fiscalSignatureService?: FiscalSignatureService,
   ) {}
 
   // ============================================================
@@ -311,11 +315,22 @@ export class InvoiceService {
 
       documentType,
 
+      fiscalDocumentType:
+        documentType === InvoiceDocumentType.PRO_FORMA ? null : 'FT',
+
+      fiscalSeries:
+        documentType === InvoiceDocumentType.PRO_FORMA ? 'PF' : 'FT',
+
+      fiscalYear:
+        year,
+
       sourceProFormaId:
         sourceProFormaId ??
         null,
 
       issuedAt,
+
+      createdAt: issuedAt,
 
       notes:
         dto.notes?.trim() ||
@@ -354,6 +369,26 @@ export class InvoiceService {
 
               unit:
                 item.unit,
+
+              taxType:
+                documentType === InvoiceDocumentType.NORMAL ? 'IVA' : null,
+
+              taxCode:
+                documentType === InvoiceDocumentType.NORMAL && ivaRate > 0
+                  ? 'NOR'
+                  : null,
+
+              taxRate:
+                documentType === InvoiceDocumentType.NORMAL
+                  ? new Prisma.Decimal(String(ivaRate)).mul(100)
+                  : null,
+
+              taxAmount:
+                documentType === InvoiceDocumentType.NORMAL
+                  ? calculation.lines[index].total
+                      .mul(new Prisma.Decimal(String(ivaRate)))
+                      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+                  : null,
             }),
           ),
       },
@@ -382,10 +417,59 @@ export class InvoiceService {
               documentType,
             );
 
+          let signature:
+            | {
+                fiscalHash: string;
+                fiscalHashControl: string;
+                signatureKeyVersion: number;
+                previousFiscalHash: string | null;
+              }
+            | Record<string, never> = {};
+
+          if (documentType === InvoiceDocumentType.NORMAL) {
+            if (!this.fiscalSignatureService) {
+              throw new ServiceUnavailableException({
+                code: 'FISCAL_SIGNATURE_NOT_CONFIGURED',
+                message: 'O serviço de assinatura fiscal não está disponível.',
+              });
+            }
+            const previous = await tx.invoice.findFirst({
+              where: {
+                tenantId,
+                fiscalDocumentType: 'FT',
+                fiscalSeries: 'FT',
+                fiscalYear: year,
+              },
+              orderBy: { fiscalSequence: 'desc' },
+              select: { fiscalHash: true },
+            });
+            if (previous && !previous.fiscalHash) {
+              throw new ConflictException({
+                code: 'LEGACY_UNSIGNED_DOCUMENT',
+                message: 'A série contém um documento anterior sem assinatura fiscal persistida. A emissão foi bloqueada para não quebrar a cadeia.',
+              });
+            }
+            const signed = this.fiscalSignatureService.sign({
+              invoiceDate: issuedAt,
+              systemEntryDate: issuedAt,
+              invoiceNo: invoiceNumber,
+              grossTotal: calculation.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toFixed(2),
+              previousHash: previous?.fiscalHash ?? null,
+            });
+            signature = {
+              fiscalHash: signed.hash,
+              fiscalHashControl: signed.hashControl,
+              signatureKeyVersion: signed.keyVersion,
+              previousFiscalHash: previous?.fiscalHash ?? null,
+            };
+          }
+
           return tx.invoice.create({
             data: {
               ...data,
               invoiceNumber,
+              fiscalSequence: Number(invoiceNumber.split('-').at(-1)),
+              ...signature,
             },
 
             include: {

@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { PrismaModule } from '../prisma/prisma.module';
 import { ObligationsModule } from '../obligations/obligations.module';
 import { FiscalEngineModule } from '../fiscal-engine/fiscal-engine.module';
+import { FiscalSignatureModule } from '../fiscal-signature/fiscal-signature.module';
 
 import { InvoiceController } from './invoice.controller';
 import { InvoiceService } from './invoice.service';
@@ -12,6 +13,7 @@ import { InvoiceService } from './invoice.service';
     PrismaModule,
     ObligationsModule,
     FiscalEngineModule,
+    FiscalSignatureModule,
   ],
 
   controllers: [

@@ -65,7 +65,9 @@ describe('AccountingSaftService', () => {
     );
     expect(result.canExport).toBe(false);
     expect(result.exportEndpointAvailable).toBe(false);
-    expect(result.schema.version).toBeNull();
+    expect(result.schema.version).toBe('1.01_01');
+    expect(result.schema.status).toBe('TECHNICAL_REFERENCE_NOT_OFFICIALLY_VERIFIED');
+    expect(result.certification.status).toBe('NOT_CERTIFIED');
     expect(result.sections.accountingMovements.state).toBe('BLOCKED');
     expect(result.dataQualityIssues).toEqual(
       expect.arrayContaining([

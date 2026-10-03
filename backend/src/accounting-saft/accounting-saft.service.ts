@@ -4,6 +4,11 @@ import { PrismaService } from '../prisma/prisma.service';
 
 const OFFICIAL_AGT_NOTICE =
   'https://portaldocontribuinte.minfin.gov.ao/noticia?id=985578';
+const SAFT_LEGAL_REFERENCE =
+  'Decreto Presidencial n.º 312/18, de 21 de Dezembro';
+const SAFT_SCHEMA_VERSION = '1.01_01';
+const SAFT_SCHEMA_REFERENCE =
+  'https://github.com/assoft-portugal/SAF-T-AO/blob/master/XSD/SAFTAO1.01_01.xsd';
 
 @Injectable()
 export class AccountingSaftService {
@@ -113,17 +118,27 @@ export class AccountingSaftService {
       },
       canExport: false,
       exportEndpointAvailable: false,
+      certification: {
+        status: 'NOT_CERTIFIED',
+        softwareCertificateNumber: null,
+        productId: null,
+      },
       legalReference: {
         diploma: 'Decreto Executivo n.º 317/20, de 14 de Dezembro',
         officialNoticeUrl: OFFICIAL_AGT_NOTICE,
         officialNoticeConsultedAt: '2026-09-29',
         confirmedStructure: ['Cabeçalho', 'Tabelas mestres', 'Movimentos contabilísticos'],
       },
+      invoicingLegalReference: {
+        diploma: SAFT_LEGAL_REFERENCE,
+        schemaRequired: true,
+      },
       schema: {
-        status: 'PENDING_VERIFIED_OFFICIAL_ARTIFACT',
-        version: null,
+        status: 'TECHNICAL_REFERENCE_NOT_OFFICIALLY_VERIFIED',
+        version: SAFT_SCHEMA_VERSION,
+        source: SAFT_SCHEMA_REFERENCE,
         message:
-          'O XML e a validação XSD permanecem desactivados até existir um artefacto oficial integral, versionado e testado.',
+          'O XSD ASSOFT está versionado como referência técnica, mas declara estado Development. A exportação permanece desactivada até o artefacto aplicável ser confirmado oficialmente e o motor de assinatura estar implementado.',
       },
       sections: {
         header: {
@@ -153,10 +168,16 @@ export class AccountingSaftService {
       },
       blockingIssues: [
         {
-          code: 'OFFICIAL_SCHEMA_NOT_EMBEDDED',
+          code: 'OFFICIAL_SCHEMA_NOT_VERIFIED',
           severity: 'BLOCKING',
           message:
-            'A estrutura XML/XSD oficial integral e a sua versão ainda não foram incorporadas e validadas.',
+            'A versão aplicável do XSD ainda não foi confirmada através de um artefacto oficial autenticado da AGT/Ministério das Finanças.',
+        },
+        {
+          code: 'FISCAL_DOCUMENT_SIGNATURE_NOT_IMPLEMENTED',
+          severity: 'BLOCKING',
+          message:
+            'A cadeia de assinatura dos documentos fiscais e a configuração segura da chave privada ainda não estão implementadas.',
         },
         {
           code: 'CHART_OF_ACCOUNTS_NOT_IMPLEMENTED',

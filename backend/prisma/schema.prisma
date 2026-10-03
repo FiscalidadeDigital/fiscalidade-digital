@@ -8,57 +8,59 @@ datasource db {
 }
 
 model Tenant {
-  id            String       @id @default(uuid())
-  name          String
-  nif           String       @unique
-  email         String       @unique
-  phone         String?
-  address       String?
-  sector        String?
-  status        TenantStatus @default(TRIAL)
-  planType      PlanType     @default(FREE)
-  trialEndsAt   DateTime?
-  settings      Json?
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  regime        FiscalRegime @default(GERAL)
-  companyType   String?
-  employeeCount Int?
-  retentionRate Float        @default(0)
+  id                     String       @id @default(uuid())
+  name                   String
+  nif                    String       @unique
+  email                  String       @unique
+  phone                  String?
+  address                String?
+  city                   String?
+  country                String?      @default("AO")
+  sector                 String?
+  status                 TenantStatus @default(TRIAL)
+  planType               PlanType     @default(FREE)
+  trialEndsAt            DateTime?
+  settings               Json?
+  createdAt              DateTime     @default(now())
+  updatedAt              DateTime     @updatedAt
+  regime                 FiscalRegime @default(GERAL)
+  companyType            String?
+  employeeCount          Int?
+  retentionRate          Float        @default(0)
   /// Quota base atribuída explicitamente pelo plano. Null significa que a
   /// capacidade comercial ainda não foi configurada para este tenant.
-  storageBaseQuotaBytes BigInt? @db.BigInt
+  storageBaseQuotaBytes  BigInt?      @db.BigInt
   /// Capacidade adicional atribuída separadamente da quota base.
-  storageAdditionalBytes BigInt  @default(0) @db.BigInt
+  storageAdditionalBytes BigInt       @default(0) @db.BigInt
   /// Contador autoritativo actualizado na mesma transacção do documento.
-  storageUsedBytes       BigInt  @default(0) @db.BigInt
+  storageUsedBytes       BigInt       @default(0) @db.BigInt
 
-  aiQuestions      AIQuestion[]
-  auditLogs        AuditLog[]
-  clients          Client[]
-  companySettings  CompanySettings?
-  emailLogs        EmailLog[]
-  fiscalAlerts     FiscalAlert[]
-  employees        Employee[]
-  obligations      FiscalObligation[]
-  invoices         Invoice[]
-  notifications    Notification[]
-  payrolls         Payroll[]
-  products         Product[]
-  purchaseInvoices PurchaseInvoice[]
+  aiQuestions             AIQuestion[]
+  auditLogs               AuditLog[]
+  clients                 Client[]
+  companySettings         CompanySettings?
+  emailLogs               EmailLog[]
+  fiscalAlerts            FiscalAlert[]
+  employees               Employee[]
+  obligations             FiscalObligation[]
+  invoices                Invoice[]
+  notifications           Notification[]
+  payrolls                Payroll[]
+  products                Product[]
+  purchaseInvoices        PurchaseInvoice[]
   purchaseInvoicePayments PurchaseInvoicePayment[]
-  revenues         Revenue[]
-  smsLogs          SMSLog[]
-  subscriptions    Subscription[]
-  suppliers        Supplier[]
-  taxAssessments   TaxAssessment[]
-  taxCalculations  TaxCalculation[]
-  declarations     TaxDeclaration[]
-  payments         TaxPayment[]
-  taxTransactions  TaxTransaction[]
-  users            User[]
-  documents        Document[]
-  purchaseInvoiceImports PurchaseInvoiceImport[]
+  revenues                Revenue[]
+  smsLogs                 SMSLog[]
+  subscriptions           Subscription[]
+  suppliers               Supplier[]
+  taxAssessments          TaxAssessment[]
+  taxCalculations         TaxCalculation[]
+  declarations            TaxDeclaration[]
+  payments                TaxPayment[]
+  taxTransactions         TaxTransaction[]
+  users                   User[]
+  documents               Document[]
+  purchaseInvoiceImports  PurchaseInvoiceImport[]
 
   @@index([nif])
   @@index([regime])
@@ -79,12 +81,12 @@ model User {
   phone            String?
   twoFactorEnabled Boolean   @default(false)
 
-  tenant                  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  createdPurchaseInvoices PurchaseInvoice[] @relation("PurchaseInvoiceCreatedBy")
-  validatedPurchaseInvoices PurchaseInvoice[] @relation("PurchaseInvoiceValidatedBy")
-  rejectedPurchaseInvoices PurchaseInvoice[] @relation("PurchaseInvoiceRejectedBy")
-  purchaseInvoicePayments PurchaseInvoicePayment[] @relation("PurchaseInvoicePaymentCreatedBy")
-  uploadedPurchaseInvoiceImports PurchaseInvoiceImport[] @relation("PurchaseInvoiceImportUploadedBy")
+  tenant                         Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  createdPurchaseInvoices        PurchaseInvoice[]        @relation("PurchaseInvoiceCreatedBy")
+  validatedPurchaseInvoices      PurchaseInvoice[]        @relation("PurchaseInvoiceValidatedBy")
+  rejectedPurchaseInvoices       PurchaseInvoice[]        @relation("PurchaseInvoiceRejectedBy")
+  purchaseInvoicePayments        PurchaseInvoicePayment[] @relation("PurchaseInvoicePaymentCreatedBy")
+  uploadedPurchaseInvoiceImports PurchaseInvoiceImport[]  @relation("PurchaseInvoiceImportUploadedBy")
 
   @@unique([email, tenantId])
   @@index([tenantId])
@@ -141,6 +143,8 @@ model Client {
   email     String?
   phone     String?
   address   String?
+  city      String?
+  country   String?  @default("AO")
   createdAt DateTime @default(now())
   notes     String?
   updatedAt DateTime @updatedAt
@@ -175,55 +179,72 @@ model Product {
 }
 
 model Invoice {
-  id             String        @id @default(uuid())
-  tenantId       String
-  clientId       String
-  invoiceNumber  String
-  subtotal       Float
-  subtotalAmount Decimal?      @db.Decimal(20, 2)
-  iva            Float
-  ivaAmount      Decimal?      @db.Decimal(20, 2)
-  withholdingTax Float         @default(0)
-  withholdingTaxAmount Decimal? @db.Decimal(20, 2)
-  total          Float
-  totalAmount    Decimal?      @db.Decimal(20, 2)
-  taxRuleVersion String?
-  taxCalculationStatus String  @default("LEGACY_UNVERIFIED")
-  documentType   InvoiceDocumentType @default(NORMAL)
-  sourceProFormaId String?     @unique
-  status         InvoiceStatus @default(PENDING)
-  notes          String?
-  createdAt      DateTime      @default(now())
-  dueDate        DateTime?
-  issuedAt       DateTime      @default(now())
-  pdfUrl         String?
-  qrCode         String?
+  id                   String              @id @default(uuid())
+  tenantId             String
+  clientId             String
+  invoiceNumber        String
+  subtotal             Float
+  subtotalAmount       Decimal?            @db.Decimal(20, 2)
+  iva                  Float
+  ivaAmount            Decimal?            @db.Decimal(20, 2)
+  withholdingTax       Float               @default(0)
+  withholdingTaxAmount Decimal?            @db.Decimal(20, 2)
+  total                Float
+  totalAmount          Decimal?            @db.Decimal(20, 2)
+  taxRuleVersion       String?
+  taxCalculationStatus String              @default("LEGACY_UNVERIFIED")
+  documentType         InvoiceDocumentType @default(NORMAL)
+  sourceProFormaId     String?             @unique
+  status               InvoiceStatus       @default(PENDING)
+  notes                String?
+  createdAt            DateTime            @default(now())
+  dueDate              DateTime?
+  issuedAt             DateTime            @default(now())
+  pdfUrl               String?
+  qrCode               String?
+  fiscalDocumentType   String?             @default("FT")
+  fiscalSeries         String?
+  fiscalSequence       Int?
+  fiscalYear           Int?
+  cancellationReason   String?
+  rectifiesInvoiceId   String?
+  fiscalHash           String?
+  fiscalHashControl    String?
+  signatureKeyVersion  Int?
+  previousFiscalHash   String?
 
-  client    Client        @relation(fields: [clientId], references: [id])
-  tenant    Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  items     InvoiceItem[]
-  documents Document[]
-  sourceProForma Invoice? @relation("InvoiceConversion", fields: [sourceProFormaId], references: [id])
-  convertedInvoice Invoice? @relation("InvoiceConversion")
+  client           Client        @relation(fields: [clientId], references: [id])
+  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items            InvoiceItem[]
+  documents        Document[]
+  sourceProForma   Invoice?      @relation("InvoiceConversion", fields: [sourceProFormaId], references: [id])
+  convertedInvoice Invoice?      @relation("InvoiceConversion")
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
   @@index([clientId])
   @@index([tenantId, documentType])
+  @@index([tenantId, fiscalDocumentType, fiscalSeries, fiscalYear, fiscalSequence])
 }
 
 model InvoiceItem {
-  id          String  @id @default(uuid())
-  invoiceId   String
-  productName String
-  quantity    Float
-  quantityAmount Decimal? @db.Decimal(20, 4)
-  unitPrice   Float
-  unitPriceAmount Decimal? @db.Decimal(20, 2)
-  total       Float
-  totalAmount Decimal? @db.Decimal(20, 2)
-  unit        String  @default("UN")
-  productId   String?
+  id                 String   @id @default(uuid())
+  invoiceId          String
+  productName        String
+  quantity           Float
+  quantityAmount     Decimal? @db.Decimal(20, 4)
+  unitPrice          Float
+  unitPriceAmount    Decimal? @db.Decimal(20, 2)
+  total              Float
+  totalAmount        Decimal? @db.Decimal(20, 2)
+  unit               String   @default("UN")
+  productId          String?
+  taxType            String?
+  taxCode            String?
+  taxRate            Decimal? @db.Decimal(10, 6)
+  taxAmount          Decimal? @db.Decimal(20, 2)
+  taxExemptionCode   String?
+  taxExemptionReason String?
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id])
@@ -460,16 +481,16 @@ model AuditLog {
 }
 
 model SMSLog {
-  id       String   @id @default(uuid())
-  tenantId String
-  phone    String
-  message            String
-  status             String
-  provider           String?
-  channel            String   @default("SMS")
-  providerMessageId  String?
-  errorMessage       String?
-  sentAt   DateTime @default(now())
+  id                String   @id @default(uuid())
+  tenantId          String
+  phone             String
+  message           String
+  status            String
+  provider          String?
+  channel           String   @default("SMS")
+  providerMessageId String?
+  errorMessage      String?
+  sentAt            DateTime @default(now())
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -516,19 +537,19 @@ model Legislation {
 }
 
 model CompanySettings {
-  id                    String  @id @default(uuid())
-  tenantId              String  @unique
+  id                    String    @id @default(uuid())
+  tenantId              String    @unique
   companyLogo           String?
   invoicePrefix         String?
-  smsEnabled            Boolean @default(true)
-  emailEnabled          Boolean @default(true)
-  whatsappEnabled       Boolean @default(false)
+  smsEnabled            Boolean   @default(true)
+  emailEnabled          Boolean   @default(true)
+  whatsappEnabled       Boolean   @default(false)
   whatsappOptInAt       DateTime?
-  aiEnabled             Boolean @default(true)
-  fiscalAlertDaysBefore Int     @default(7)
-  fiscalAlertsEnabled   Boolean @default(true)
-  fiscalDueDateReminder Boolean @default(true)
-  fiscalReminderEnabled Boolean @default(true)
+  aiEnabled             Boolean   @default(true)
+  fiscalAlertDaysBefore Int       @default(7)
+  fiscalAlertsEnabled   Boolean   @default(true)
+  fiscalDueDateReminder Boolean   @default(true)
+  fiscalReminderEnabled Boolean   @default(true)
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 }
@@ -553,49 +574,49 @@ model Supplier {
 }
 
 model PurchaseInvoice {
-  id             String        @id @default(uuid())
-  tenantId       String
-  supplierId     String
-  invoiceNumber  String
-  subtotal       Float
-  iva            Float         @default(0)
-  withholdingTax Float         @default(0)
-  total          Float
-  subtotalAmount Decimal?      @db.Decimal(20, 2)
-  ivaAmount      Decimal?      @db.Decimal(20, 2)
-  withholdingTaxAmount Decimal? @db.Decimal(20, 2)
-  totalAmount    Decimal?      @db.Decimal(20, 2)
-  vatDeductibilityStatus String @default("PENDING_REVIEW")
+  id                     String                        @id @default(uuid())
+  tenantId               String
+  supplierId             String
+  invoiceNumber          String
+  subtotal               Float
+  iva                    Float                         @default(0)
+  withholdingTax         Float                         @default(0)
+  total                  Float
+  subtotalAmount         Decimal?                      @db.Decimal(20, 2)
+  ivaAmount              Decimal?                      @db.Decimal(20, 2)
+  withholdingTaxAmount   Decimal?                      @db.Decimal(20, 2)
+  totalAmount            Decimal?                      @db.Decimal(20, 2)
+  vatDeductibilityStatus String                        @default("PENDING_REVIEW")
   vatDeductibilityReason String?
-  vatReviewedAt DateTime?
-  vatReviewedById String?
-  currency       String        @default("AOA") @db.VarChar(3)
-  reference      String?
-  createdById    String?
-  originalDocumentId String?   @unique
-  status         InvoiceStatus @default(PENDING)
-  documentStatus PurchaseInvoiceDocumentStatus @default(PENDING)
-  paymentStatus  PurchaseInvoicePaymentStatus  @default(UNPAID)
-  paidAmount     Decimal        @default(0) @db.Decimal(20, 2)
-  validatedAt    DateTime?
-  validatedById  String?
-  rejectedAt     DateTime?
-  rejectedById   String?
-  rejectionReason String?
-  notes          String?
-  pdfUrl         String?
-  issuedAt       DateTime      @default(now())
-  dueDate        DateTime?
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
+  vatReviewedAt          DateTime?
+  vatReviewedById        String?
+  currency               String                        @default("AOA") @db.VarChar(3)
+  reference              String?
+  createdById            String?
+  originalDocumentId     String?                       @unique
+  status                 InvoiceStatus                 @default(PENDING)
+  documentStatus         PurchaseInvoiceDocumentStatus @default(PENDING)
+  paymentStatus          PurchaseInvoicePaymentStatus  @default(UNPAID)
+  paidAmount             Decimal                       @default(0) @db.Decimal(20, 2)
+  validatedAt            DateTime?
+  validatedById          String?
+  rejectedAt             DateTime?
+  rejectedById           String?
+  rejectionReason        String?
+  notes                  String?
+  pdfUrl                 String?
+  issuedAt               DateTime                      @default(now())
+  dueDate                DateTime?
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
 
-  tenant           Tenant                @relation(fields: [tenantId], references: [id])
-  supplier         Supplier              @relation(fields: [supplierId], references: [id], onDelete: Restrict)
-  createdBy        User?                 @relation("PurchaseInvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  validatedBy      User?                 @relation("PurchaseInvoiceValidatedBy", fields: [validatedById], references: [id], onDelete: SetNull)
-  rejectedBy       User?                 @relation("PurchaseInvoiceRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
-  originalDocument Document?             @relation("PurchaseInvoiceSourceDocument", fields: [originalDocumentId], references: [id], onDelete: SetNull)
-  confirmedImport PurchaseInvoiceImport? @relation("PurchaseInvoiceImportConfirmation")
+  tenant           Tenant                   @relation(fields: [tenantId], references: [id])
+  supplier         Supplier                 @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  createdBy        User?                    @relation("PurchaseInvoiceCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  validatedBy      User?                    @relation("PurchaseInvoiceValidatedBy", fields: [validatedById], references: [id], onDelete: SetNull)
+  rejectedBy       User?                    @relation("PurchaseInvoiceRejectedBy", fields: [rejectedById], references: [id], onDelete: SetNull)
+  originalDocument Document?                @relation("PurchaseInvoiceSourceDocument", fields: [originalDocumentId], references: [id], onDelete: SetNull)
+  confirmedImport  PurchaseInvoiceImport?   @relation("PurchaseInvoiceImportConfirmation")
   items            PurchaseInvoiceItem[]
   payments         PurchaseInvoicePayment[]
 
@@ -655,7 +676,7 @@ model PurchaseInvoiceImport {
 }
 
 model PurchaseInvoiceItem {
-  id                String  @id @default(uuid())
+  id                String   @id @default(uuid())
   purchaseInvoiceId String
   productId         String?
   productName       String
@@ -675,30 +696,30 @@ model PurchaseInvoiceItem {
 }
 
 model TaxTransaction {
-  id               String           @id @default(uuid())
-  tenantId         String
-  taxType          TaxType
-  operation        TaxRuleOperation
-  period           String
-  referenceDate    DateTime
-  sourceType       String
-  sourceId         String?
-  baseAmount       Float            @default(0)
-  taxAmount        Float            @default(0)
-  deductibleAmount Float            @default(0)
-  withheldAmount   Float            @default(0)
-  baseAmountValue       Decimal? @db.Decimal(20, 2)
-  taxAmountValue        Decimal? @db.Decimal(20, 2)
-  deductibleAmountValue Decimal? @db.Decimal(20, 2)
-  withheldAmountValue   Decimal? @db.Decimal(20, 2)
-  calculationStatus String @default("LEGACY_UNVERIFIED")
-  ruleVersion       String?
-  legalReference    String?
-  officialSource    String?
-  calculationDetails Json?
-  description      String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id                    String           @id @default(uuid())
+  tenantId              String
+  taxType               TaxType
+  operation             TaxRuleOperation
+  period                String
+  referenceDate         DateTime
+  sourceType            String
+  sourceId              String?
+  baseAmount            Float            @default(0)
+  taxAmount             Float            @default(0)
+  deductibleAmount      Float            @default(0)
+  withheldAmount        Float            @default(0)
+  baseAmountValue       Decimal?         @db.Decimal(20, 2)
+  taxAmountValue        Decimal?         @db.Decimal(20, 2)
+  deductibleAmountValue Decimal?         @db.Decimal(20, 2)
+  withheldAmountValue   Decimal?         @db.Decimal(20, 2)
+  calculationStatus     String           @default("LEGACY_UNVERIFIED")
+  ruleVersion           String?
+  legalReference        String?
+  officialSource        String?
+  calculationDetails    Json?
+  description           String?
+  createdAt             DateTime         @default(now())
+  updatedAt             DateTime         @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -711,17 +732,17 @@ model TaxTransaction {
 }
 
 model TaxAssessment {
-  id                String   @id @default(uuid())
-  tenantId          String
-  taxType           TaxType
-  period            String
-  year              Int
-  taxableAmount     Float    @default(0)
-  taxDueAmount      Float    @default(0)
-  deductibleAmount  Float    @default(0)
-  withheldAmount    Float    @default(0)
-  adjustmentsAmount Float    @default(0)
-  finalAmount       Float    @default(0)
+  id                     String   @id @default(uuid())
+  tenantId               String
+  taxType                TaxType
+  period                 String
+  year                   Int
+  taxableAmount          Float    @default(0)
+  taxDueAmount           Float    @default(0)
+  deductibleAmount       Float    @default(0)
+  withheldAmount         Float    @default(0)
+  adjustmentsAmount      Float    @default(0)
+  finalAmount            Float    @default(0)
   taxableAmountValue     Decimal? @db.Decimal(20, 2)
   taxDueAmountValue      Decimal? @db.Decimal(20, 2)
   deductibleAmountValue  Decimal? @db.Decimal(20, 2)
@@ -730,14 +751,14 @@ model TaxAssessment {
   finalAmountValue       Decimal? @db.Decimal(20, 2)
   creditAmountValue      Decimal? @db.Decimal(20, 2)
   payableAmountValue     Decimal? @db.Decimal(20, 2)
-  calculationStatus String @default("LEGACY_UNVERIFIED")
-  ruleVersion       String?
-  legalReference    String?
-  officialSource    String?
-  calculationSnapshot Json?
-  status            String   @default("DRAFT")
-  calculatedAt      DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  calculationStatus      String   @default("LEGACY_UNVERIFIED")
+  ruleVersion            String?
+  legalReference         String?
+  officialSource         String?
+  calculationSnapshot    Json?
+  status                 String   @default("DRAFT")
+  calculatedAt           DateTime @default(now())
+  updatedAt              DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
 
@@ -781,28 +802,28 @@ model TaxRule {
 }
 
 model Employee {
-  id                   String         @id @default(uuid())
-  tenantId             String
-  employeeNumber       String?
-  name                 String
-  nif                  String?
-  socialSecurityNumber String?
-  email                String?
-  phone                String?
-  address              String?
-  birthDate            DateTime?
-  hireDate             DateTime?
-  terminationDate      DateTime?
-  jobTitle             String?
-  department           String?
-  maritalStatus        String?
-  gender               String?
-  dependentCount       Int            @default(0)
-  status               EmployeeStatus @default(ACTIVE)
+  id                     String                 @id @default(uuid())
+  tenantId               String
+  employeeNumber         String?
+  name                   String
+  nif                    String?
+  socialSecurityNumber   String?
+  email                  String?
+  phone                  String?
+  address                String?
+  birthDate              DateTime?
+  hireDate               DateTime?
+  terminationDate        DateTime?
+  jobTitle               String?
+  department             String?
+  maritalStatus          String?
+  gender                 String?
+  dependentCount         Int                    @default(0)
+  status                 EmployeeStatus         @default(ACTIVE)
   socialSecurityCategory SocialSecurityCategory @default(STANDARD)
-  notes                String?
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  notes                  String?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
 
   tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   dependents   EmployeeDependent[]
@@ -855,24 +876,24 @@ model EmployeeSalary {
 }
 
 model Payroll {
-  id                    String        @id @default(uuid())
-  tenantId              String
-  period                String
-  month                 Int
-  year                  Int
-  status                PayrollStatus @default(DRAFT)
-  employeeCount         Int           @default(0)
-  grossAmount           Decimal       @default(0) @db.Decimal(18, 2)
-  socialSecurityAmount  Decimal       @default(0) @db.Decimal(18, 2)
-  employerSocialSecurityAmount Decimal @default(0) @db.Decimal(18, 2)
-  irtAmount             Decimal       @default(0) @db.Decimal(18, 2)
-  otherDeductionsAmount Decimal       @default(0) @db.Decimal(18, 2)
-  netAmount             Decimal       @default(0) @db.Decimal(18, 2)
-  taxRuleVersion        String?
-  calculationStatus     String?
-  processedAt           DateTime?
-  createdAt             DateTime      @default(now())
-  updatedAt             DateTime      @updatedAt
+  id                           String        @id @default(uuid())
+  tenantId                     String
+  period                       String
+  month                        Int
+  year                         Int
+  status                       PayrollStatus @default(DRAFT)
+  employeeCount                Int           @default(0)
+  grossAmount                  Decimal       @default(0) @db.Decimal(18, 2)
+  socialSecurityAmount         Decimal       @default(0) @db.Decimal(18, 2)
+  employerSocialSecurityAmount Decimal       @default(0) @db.Decimal(18, 2)
+  irtAmount                    Decimal       @default(0) @db.Decimal(18, 2)
+  otherDeductionsAmount        Decimal       @default(0) @db.Decimal(18, 2)
+  netAmount                    Decimal       @default(0) @db.Decimal(18, 2)
+  taxRuleVersion               String?
+  calculationStatus            String?
+  processedAt                  DateTime?
+  createdAt                    DateTime      @default(now())
+  updatedAt                    DateTime      @updatedAt
 
   tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items  PayrollItem[]
@@ -884,35 +905,35 @@ model Payroll {
 }
 
 model PayrollItem {
-  id                   String   @id @default(uuid())
-  payrollId            String
-  employeeId           String
-  employeeName         String
-  employeeNif          String?
-  socialSecurityNumber String?
-  socialSecurityCategory SocialSecurityCategory @default(STANDARD)
-  dependentCount       Int      @default(0)
-  baseSalary           Decimal  @default(0) @db.Decimal(18, 2)
-  foodAllowance        Decimal  @default(0) @db.Decimal(18, 2)
-  transportAllowance   Decimal  @default(0) @db.Decimal(18, 2)
-  otherAllowances      Decimal  @default(0) @db.Decimal(18, 2)
-  bonuses              Decimal  @default(0) @db.Decimal(18, 2)
-  commissions          Decimal  @default(0) @db.Decimal(18, 2)
-  otherIncome          Decimal  @default(0) @db.Decimal(18, 2)
-  grossAmount          Decimal  @default(0) @db.Decimal(18, 2)
-  socialSecurityBase   Decimal  @default(0) @db.Decimal(18, 2)
-  socialSecurityAmount Decimal  @default(0) @db.Decimal(18, 2)
-  employeeSocialSecurityRate Decimal @default(0) @db.Decimal(7, 6)
-  employerSocialSecurityRate Decimal @default(0) @db.Decimal(7, 6)
-  employerSocialSecurityAmount Decimal @default(0) @db.Decimal(18, 2)
-  irtTaxableAmount     Decimal  @default(0) @db.Decimal(18, 2)
-  irtAmount            Decimal  @default(0) @db.Decimal(18, 2)
-  otherDeductions      Decimal  @default(0) @db.Decimal(18, 2)
-  netAmount            Decimal  @default(0) @db.Decimal(18, 2)
-  taxRuleVersion       String?
-  calculationStatus   String?
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                           String                 @id @default(uuid())
+  payrollId                    String
+  employeeId                   String
+  employeeName                 String
+  employeeNif                  String?
+  socialSecurityNumber         String?
+  socialSecurityCategory       SocialSecurityCategory @default(STANDARD)
+  dependentCount               Int                    @default(0)
+  baseSalary                   Decimal                @default(0) @db.Decimal(18, 2)
+  foodAllowance                Decimal                @default(0) @db.Decimal(18, 2)
+  transportAllowance           Decimal                @default(0) @db.Decimal(18, 2)
+  otherAllowances              Decimal                @default(0) @db.Decimal(18, 2)
+  bonuses                      Decimal                @default(0) @db.Decimal(18, 2)
+  commissions                  Decimal                @default(0) @db.Decimal(18, 2)
+  otherIncome                  Decimal                @default(0) @db.Decimal(18, 2)
+  grossAmount                  Decimal                @default(0) @db.Decimal(18, 2)
+  socialSecurityBase           Decimal                @default(0) @db.Decimal(18, 2)
+  socialSecurityAmount         Decimal                @default(0) @db.Decimal(18, 2)
+  employeeSocialSecurityRate   Decimal                @default(0) @db.Decimal(7, 6)
+  employerSocialSecurityRate   Decimal                @default(0) @db.Decimal(7, 6)
+  employerSocialSecurityAmount Decimal                @default(0) @db.Decimal(18, 2)
+  irtTaxableAmount             Decimal                @default(0) @db.Decimal(18, 2)
+  irtAmount                    Decimal                @default(0) @db.Decimal(18, 2)
+  otherDeductions              Decimal                @default(0) @db.Decimal(18, 2)
+  netAmount                    Decimal                @default(0) @db.Decimal(18, 2)
+  taxRuleVersion               String?
+  calculationStatus            String?
+  createdAt                    DateTime               @default(now())
+  updatedAt                    DateTime               @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id])
   payroll  Payroll  @relation(fields: [payrollId], references: [id], onDelete: Cascade)
@@ -937,9 +958,9 @@ model Document {
   createdAt    DateTime         @default(now())
   updatedAt    DateTime         @updatedAt
 
-  tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  invoice Invoice? @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
-  purchaseInvoiceSource PurchaseInvoice? @relation("PurchaseInvoiceSourceDocument")
+  tenant                Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice               Invoice?               @relation(fields: [invoiceId], references: [id], onDelete: SetNull)
+  purchaseInvoiceSource PurchaseInvoice?       @relation("PurchaseInvoiceSourceDocument")
   purchaseInvoiceImport PurchaseInvoiceImport? @relation("PurchaseInvoiceImportDocument")
 
   @@index([tenantId])
