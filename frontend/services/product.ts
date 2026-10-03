@@ -3,6 +3,7 @@ import { isAxiosError } from 'axios';
 import api from './api';
 
 export type ProductUnit = 'UN' | 'SERVICO' | 'HORA' | 'KG' | 'L' | 'M';
+export type ElectronicOperationType = 'SE' | 'SS' | 'STP' | 'SR' | 'SIF' | 'SHS' | 'ST' | 'SG' | 'TB' | 'AS' | 'QT' | 'RD';
 
 export type Product = {
   id: string;
@@ -13,6 +14,7 @@ export type Product = {
   ivaRate: number;
   stock: number | null;
   unit: ProductUnit;
+  electronicOperationType: ElectronicOperationType | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -26,6 +28,7 @@ export type ProductInput = {
   ivaRate?: number;
   stock?: number | null;
   unit?: ProductUnit;
+  electronicOperationType?: ElectronicOperationType;
   isActive?: boolean;
 };
 

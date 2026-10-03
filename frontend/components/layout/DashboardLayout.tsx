@@ -16,6 +16,7 @@ import {
   Menu,
   Package,
   ReceiptText,
+  RadioTower,
   Settings,
   ShieldAlert,
   ShieldCheck,
@@ -152,6 +153,12 @@ const navigationSections = [
         label: 'Faturação',
         href: '/invoices',
         icon: ReceiptText,
+      },
+
+      {
+        label: 'Facturação Electrónica',
+        href: '/electronic-invoicing',
+        icon: RadioTower,
       },
 
       {

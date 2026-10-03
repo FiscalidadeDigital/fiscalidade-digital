@@ -48,6 +48,7 @@ export class ProductService {
                   Prisma.Decimal.ROUND_HALF_UP,
                 ),
         unit: body.unit ?? 'UN',
+        electronicOperationType: body.electronicOperationType ?? null,
       },
     });
   }
@@ -190,6 +191,7 @@ export class ProductService {
                   Prisma.Decimal.ROUND_HALF_UP,
                 ),
         unit: body.unit,
+        electronicOperationType: body.electronicOperationType,
       },
     });
   }

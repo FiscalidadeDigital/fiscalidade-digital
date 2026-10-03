@@ -33,6 +33,10 @@ export class CreateInvoiceItemDto {
   @IsIn(['UN', 'SERVICO', 'HORA', 'KG', 'L', 'M'])
   unit?: 'UN' | 'SERVICO' | 'HORA' | 'KG' | 'L' | 'M';
 
+  @IsOptional()
+  @IsIn(['SE', 'SS', 'STP', 'SR', 'SIF', 'SHS', 'ST', 'SG', 'TB', 'AS', 'QT', 'RD'])
+  electronicOperationType?: string;
+
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 4 })
   @Min(0.0001)

@@ -38,6 +38,7 @@ import { AdminModule } from './admin/admin.module';
 import { AccountingSaftModule } from './accounting-saft/accounting-saft.module';
 import { SubscriptionAccessModule } from './subscription-access/subscription-access.module';
 import { UsersModule } from './users/users.module';
+import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
 
 @Module({
   imports: [
@@ -83,6 +84,7 @@ import { UsersModule } from './users/users.module';
     // ==========================================================
 
     InvoiceModule,
+    ElectronicInvoicingModule,
     PurchaseInvoiceModule,
     PurchaseInvoiceImportModule,
 

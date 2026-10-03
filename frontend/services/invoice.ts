@@ -1,7 +1,7 @@
 import { isAxiosError } from 'axios';
 
 import api from './api';
-import type { ProductUnit } from './product';
+import type { ElectronicOperationType, ProductUnit } from './product';
 
 export type InvoiceItemInput = {
   productId?: string;
@@ -9,6 +9,7 @@ export type InvoiceItemInput = {
   quantity: number;
   unitPrice: number;
   unit?: ProductUnit;
+  electronicOperationType?: ElectronicOperationType;
 };
 
 export type CreateInvoiceInput = {
@@ -61,6 +62,7 @@ export type Invoice = {
     total: number;
     totalAmount?: string | null;
     unit: ProductUnit;
+    electronicOperationType?: ElectronicOperationType | null;
   }>;
 };
 

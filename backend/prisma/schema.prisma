@@ -61,6 +61,8 @@ model Tenant {
   users                   User[]
   documents               Document[]
   purchaseInvoiceImports  PurchaseInvoiceImport[]
+  electronicInvoiceSubmissions ElectronicInvoiceSubmission[]
+  electronicInvoiceSeries      ElectronicInvoiceSeries[]
 
   @@index([nif])
   @@index([regime])
@@ -169,6 +171,7 @@ model Product {
   stock       Float?
   stockAmount Decimal? @db.Decimal(20, 4)
   unit        String   @default("UN")
+  electronicOperationType String?
   updatedAt   DateTime @updatedAt
 
   invoiceItems         InvoiceItem[]
@@ -219,12 +222,61 @@ model Invoice {
   documents        Document[]
   sourceProForma   Invoice?      @relation("InvoiceConversion", fields: [sourceProFormaId], references: [id])
   convertedInvoice Invoice?      @relation("InvoiceConversion")
+  electronicSubmissions ElectronicInvoiceSubmission[]
 
   @@unique([tenantId, invoiceNumber])
   @@index([tenantId])
   @@index([clientId])
   @@index([tenantId, documentType])
   @@index([tenantId, fiscalDocumentType, fiscalSeries, fiscalYear, fiscalSequence])
+}
+
+model ElectronicInvoiceSubmission {
+  id               String   @id @default(uuid())
+  tenantId         String
+  invoiceId        String
+  submissionUuid   String   @unique
+  requestId        String?
+  agtDocumentNo    String?
+  environment      String
+  status           String   @default("READY")
+  attempt          Int      @default(0)
+  lastHttpStatus   Int?
+  agtErrors        Json?
+  agtErrorHistory  Json?
+  lastAgtResponse  Json?
+  submittedAt      DateTime?
+  lastCheckedAt    DateTime?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
+
+  @@index([tenantId, status])
+  @@index([requestId])
+  @@unique([invoiceId, environment])
+}
+
+model ElectronicInvoiceSeries {
+  id                 String   @id @default(uuid())
+  tenantId           String
+  seriesCode         String
+  documentType       String
+  seriesYear         Int
+  establishmentNumber String
+  contingencyIndicator String @default("N")
+  authorizedQuantity Int?
+  firstDocumentNo    String?
+  lastDocumentNo     String?
+  environment        String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, seriesCode, environment])
+  @@index([tenantId, documentType, seriesYear])
 }
 
 model InvoiceItem {
@@ -245,6 +297,7 @@ model InvoiceItem {
   taxAmount          Decimal? @db.Decimal(20, 2)
   taxExemptionCode   String?
   taxExemptionReason String?
+  electronicOperationType String?
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
   product Product? @relation(fields: [productId], references: [id])

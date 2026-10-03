@@ -88,6 +88,7 @@ export class InvoiceService {
           productId: item.productId ?? undefined,
           productName: item.productName,
           unit: item.unit as CreateInvoiceItemDto['unit'],
+          electronicOperationType: item.electronicOperationType ?? undefined,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
         })),
@@ -160,6 +161,7 @@ export class InvoiceService {
             price: true,
             priceAmount: true,
             unit: true,
+            electronicOperationType: true,
           },
         })
       : [];
@@ -181,6 +183,7 @@ export class InvoiceService {
           ? Number(product.priceAmount?.toString() ?? product.price)
           : item.unitPrice,
         unit: product?.unit ?? item.unit ?? 'UN',
+        electronicOperationType: product?.electronicOperationType ?? item.electronicOperationType ?? null,
       };
     });
 
@@ -369,6 +372,9 @@ export class InvoiceService {
 
               unit:
                 item.unit,
+
+              electronicOperationType:
+                item.electronicOperationType,
 
               taxType:
                 documentType === InvoiceDocumentType.NORMAL ? 'IVA' : null,

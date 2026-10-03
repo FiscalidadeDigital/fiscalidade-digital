@@ -30,6 +30,7 @@ import {
 import {
   getProducts,
   type Product,
+  type ElectronicOperationType,
   type ProductUnit,
 } from '@/services/product';
 
@@ -40,6 +41,7 @@ type DraftItem = {
   quantity: string;
   unitPrice: string;
   unit: ProductUnit;
+  electronicOperationType: ElectronicOperationType | '';
 };
 
 const unitLabels: Record<ProductUnit, string> = {
@@ -51,6 +53,14 @@ const unitLabels: Record<ProductUnit, string> = {
   M: 'Metro',
 };
 
+const operationTypes: Array<[ElectronicOperationType, string]> = [
+  ['TB', 'Transmissão de bens'], ['SG', 'Outros serviços'], ['SE', 'Educação'],
+  ['SS', 'Saúde'], ['STP', 'Transporte de passageiros'], ['SR', 'Serviços sujeitos a royalties'],
+  ['SIF', 'Intermediação financeira'], ['SHS', 'Hotelaria e similares'],
+  ['ST', 'Telecomunicações'], ['AS', 'Arrendamento e subarrendamento'],
+  ['QT', 'Quotas'], ['RD', 'Repasse de despesas'],
+];
+
 function newItem(): DraftItem {
   return {
     id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
@@ -59,6 +69,7 @@ function newItem(): DraftItem {
     quantity: '1',
     unitPrice: '',
     unit: 'UN',
+    electronicOperationType: '',
   };
 }
 
@@ -200,7 +211,7 @@ export default function InvoiceComposer({
   function selectProduct(itemId: string, productId: string) {
     const product = products.find((entry) => entry.id === productId);
     if (!product) {
-      updateItem(itemId, { productId: '', productName: '', unitPrice: '', unit: 'UN' });
+      updateItem(itemId, { productId: '', productName: '', unitPrice: '', unit: 'UN', electronicOperationType: '' });
       return;
     }
     updateItem(itemId, {
@@ -208,6 +219,7 @@ export default function InvoiceComposer({
       productName: product.name,
       unitPrice: String(product.price),
       unit: product.unit,
+      electronicOperationType: product.electronicOperationType ?? '',
     });
   }
 
@@ -240,6 +252,7 @@ export default function InvoiceComposer({
           quantity: Number(item.quantity.replace(',', '.')),
           unitPrice: Number(item.unitPrice.replace(',', '.')),
           unit: item.unit,
+          electronicOperationType: item.electronicOperationType || undefined,
         })),
       });
       setCreated(invoice);
@@ -324,6 +337,7 @@ export default function InvoiceComposer({
                     <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Descrição<input value={item.productName} onChange={(event) => updateItem(item.id, { productName: event.target.value })} readOnly={Boolean(item.productId)} maxLength={200} placeholder="Ex.: Serviço de consultoria" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:read-only:bg-slate-800" /></label>
                     <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Quantidade<input value={item.quantity} onChange={(event) => updateItem(item.id, { quantity: event.target.value })} inputMode="decimal" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-white" /></label>
                     <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Unidade<select value={item.unit} onChange={(event) => updateItem(item.id, { unit: event.target.value as ProductUnit })} disabled={Boolean(item.productId)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800">{Object.entries(unitLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
+                    <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Operação AGT<select value={item.electronicOperationType} onChange={(event) => updateItem(item.id, { electronicOperationType: event.target.value as ElectronicOperationType | '' })} disabled={Boolean(item.productId)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:disabled:bg-slate-800"><option value="">Por classificar</option>{operationTypes.map(([value, label]) => <option key={value} value={value}>{value} — {label}</option>)}</select></label>
                     <label className="text-xs font-medium text-slate-600 dark:text-slate-300">Preço unitário<input value={item.unitPrice} onChange={(event) => updateItem(item.id, { unitPrice: event.target.value })} readOnly={Boolean(item.productId)} inputMode="decimal" placeholder="0,00" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50 dark:border-slate-700 dark:bg-slate-950 dark:text-white dark:read-only:bg-slate-800" /></label>
                     <div><p className="text-xs font-medium text-slate-600 dark:text-slate-300">Subtotal da linha</p><div className="mt-1.5 flex min-h-[42px] items-center rounded-lg bg-slate-50 px-3 text-sm font-semibold text-slate-900 dark:bg-slate-950 dark:text-white">{formatCents(lineCents)}</div></div>
                   </div>

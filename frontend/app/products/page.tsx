@@ -23,6 +23,7 @@ import {
   getProductApiError,
   getProducts,
   Product,
+  ElectronicOperationType,
   ProductInput,
   ProductPage,
   ProductUnit,
@@ -36,6 +37,13 @@ const unitLabels: Record<ProductUnit, string> = {
   KG: 'Quilograma',
   L: 'Litro',
   M: 'Metro',
+};
+
+const operationLabels: Record<ElectronicOperationType, string> = {
+  SE: 'Serviços de educação', SS: 'Serviços de saúde', STP: 'Transporte de passageiros',
+  SR: 'Serviços sujeitos a royalties', SIF: 'Intermediação financeira ou seguradora', SHS: 'Hotelaria e similares',
+  ST: 'Telecomunicações', SG: 'Outros serviços', TB: 'Transmissão de bens',
+  AS: 'Arrendamento e subarrendamento', QT: 'Quotas', RD: 'Repasse de despesas',
 };
 
 const money = new Intl.NumberFormat('pt-AO', {
@@ -166,10 +174,10 @@ export default function ProductsPage() {
   );
 }
 
-type ProductForm = { name: string; code: string; description: string; price: string; ivaRate: string; stock: string; unit: ProductUnit; isActive: boolean };
+type ProductForm = { name: string; code: string; description: string; price: string; ivaRate: string; stock: string; unit: ProductUnit; electronicOperationType: ElectronicOperationType | ''; isActive: boolean };
 
 function ProductModal({ product, onClose, onSaved }: { product: Product | null; onClose: () => void; onSaved: (name: string) => void }) {
-  const [form, setForm] = useState<ProductForm>({ name: product?.name ?? '', code: product?.code ?? '', description: product?.description ?? '', price: product ? String(product.price) : '', ivaRate: product ? String(product.ivaRate) : '14', stock: product?.stock === null || product?.stock === undefined ? '' : String(product.stock), unit: product?.unit ?? 'UN', isActive: product?.isActive ?? true });
+  const [form, setForm] = useState<ProductForm>({ name: product?.name ?? '', code: product?.code ?? '', description: product?.description ?? '', price: product ? String(product.price) : '', ivaRate: product ? String(product.ivaRate) : '14', stock: product?.stock === null || product?.stock === undefined ? '' : String(product.stock), unit: product?.unit ?? 'UN', electronicOperationType: product?.electronicOperationType ?? '', isActive: product?.isActive ?? true });
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const set = <K extends keyof ProductForm>(key: K, value: ProductForm[K]) => setForm((current) => ({ ...current, [key]: value }));
@@ -184,7 +192,7 @@ function ProductModal({ product, onClose, onSaved }: { product: Product | null; 
     if (!Number.isFinite(price) || price < 0) return setError('Indique um preço válido.');
     if (!Number.isFinite(ivaRate) || ivaRate < 0 || ivaRate > 100) return setError('A taxa de IVA deve estar entre 0 e 100.');
     if (stock !== undefined && (!Number.isFinite(stock) || stock < 0)) return setError('O stock não pode ser negativo.');
-    const input: ProductInput = { name: form.name.trim(), code: form.code.trim() || undefined, description: form.description.trim() || undefined, price, ivaRate, stock: form.stock === '' && product ? null : stock, unit: form.unit, isActive: form.isActive };
+    const input: ProductInput = { name: form.name.trim(), code: form.code.trim() || undefined, description: form.description.trim() || undefined, price, ivaRate, stock: form.stock === '' && product ? null : stock, unit: form.unit, electronicOperationType: form.electronicOperationType || undefined, isActive: form.isActive };
     setSaving(true);
     try {
       const saved = product ? await updateProduct(product.id, input) : await createProduct(input);
@@ -200,6 +208,7 @@ function ProductModal({ product, onClose, onSaved }: { product: Product | null; 
     <Field label="Preço (AOA)" required><input value={form.price} onChange={(event) => set('price', event.target.value)} inputMode="decimal" required className="fd-field" /></Field>
     <Field label="Taxa de IVA (%)" required><input value={form.ivaRate} onChange={(event) => set('ivaRate', event.target.value)} inputMode="decimal" required className="fd-field" /></Field>
     <Field label="Unidade"><select value={form.unit} onChange={(event) => set('unit', event.target.value as ProductUnit)} className="fd-field">{Object.entries(unitLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></Field>
+    <Field label="Operação electrónica AGT"><select value={form.electronicOperationType} onChange={(event) => set('electronicOperationType', event.target.value as ElectronicOperationType | '')} className="fd-field"><option value="">Por classificar</option>{Object.entries(operationLabels).map(([value, label]) => <option key={value} value={value}>{value} — {label}</option>)}</select></Field>
     <Field label="Stock (opcional)"><input value={form.stock} onChange={(event) => set('stock', event.target.value)} inputMode="decimal" placeholder="Sem controlo" className="fd-field" /></Field>
     <div className="sm:col-span-2"><Field label="Descrição"><textarea value={form.description} onChange={(event) => set('description', event.target.value)} maxLength={2000} rows={3} className="fd-field resize-none" /></Field></div>
     <label className="flex items-center gap-3 rounded-xl border border-[var(--fd-border)] p-4 sm:col-span-2"><input type="checkbox" checked={form.isActive} onChange={(event) => set('isActive', event.target.checked)} className="h-4 w-4 accent-sky-700" /><span><span className="block text-sm font-semibold text-[var(--fd-text-primary)]">Disponível no catálogo</span><span className="text-xs text-[var(--fd-muted)]">Itens inactivos permanecem no histórico.</span></span></label>
