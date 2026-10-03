@@ -56,6 +56,11 @@ export class UpdateCompanyDto {
   @IsOptional()
   @IsString()
   @MaxLength(120)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(120)
   sector?: string;
 
   @IsOptional()

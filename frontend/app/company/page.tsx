@@ -58,6 +58,7 @@ type Company = {
   email?: string | null;
   phone?: string | null;
   address?: string | null;
+  city?: string | null;
   sector?: string | null;
   companyType?: string | null;
   employeeCount?: number | null;
@@ -71,6 +72,7 @@ type CompanyFormState = {
   email: string;
   phone: string;
   address: string;
+  city: string;
   sector: string;
   companyType: string;
 };
@@ -191,6 +193,7 @@ export default function CompanyPage() {
       email: '',
       phone: '',
       address: '',
+      city: '',
       sector: '',
       companyType: '',
     });
@@ -282,6 +285,7 @@ export default function CompanyPage() {
       email: company?.email || '',
       phone: company?.phone || '',
       address: company?.address || '',
+      city: company?.city || '',
       sector: company?.sector || '',
       companyType: company?.companyType || '',
     });
@@ -323,6 +327,7 @@ export default function CompanyPage() {
         email: companyForm.email.trim() || undefined,
         phone: companyForm.phone.trim() || undefined,
         address: companyForm.address.trim() || undefined,
+        city: companyForm.city.trim() || undefined,
         sector: companyForm.sector.trim() || undefined,
         companyType: companyForm.companyType.trim() || undefined,
       };
@@ -1839,6 +1844,17 @@ export default function CompanyPage() {
                       }
                       className="input-field"
                       placeholder="Sector de actividade"
+                    />
+                  </Field>
+
+                  <Field label="Cidade">
+                    <input
+                      value={companyForm.city}
+                      onChange={(event) =>
+                        updateCompanyForm('city', event.target.value)
+                      }
+                      className="input-field"
+                      placeholder="Cidade"
                     />
                   </Field>
 

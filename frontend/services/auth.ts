@@ -17,6 +17,7 @@ export interface Tenant {
   email: string;
   phone: string | null;
   address: string | null;
+  city: string | null;
   sector: string | null;
   companyType: string | null;
   employeeCount: number | null;
