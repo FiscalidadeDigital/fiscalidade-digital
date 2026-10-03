@@ -36,6 +36,11 @@ export class CreateClientDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(120)
+  city?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(2000)
   notes?: string;
 }

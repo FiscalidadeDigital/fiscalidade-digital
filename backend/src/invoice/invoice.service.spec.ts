@@ -1,4 +1,5 @@
 import { ObligationsService } from '../obligations/obligations.service';
+import { FiscalRegime } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvoiceService } from './invoice.service';
 
@@ -61,6 +62,50 @@ describe('InvoiceService paged list', () => {
         tenant: true,
         items: { include: { product: true } },
       }),
+    }));
+  });
+
+  it('emite nova factura com snapshot fiscal e assinatura persistidos atomicamente', async () => {
+    const create = jest.fn().mockImplementation(({ data }) => Promise.resolve({ id: 'invoice-1', ...data }));
+    const tx = {
+      $queryRaw: jest.fn().mockResolvedValue([{ lock: '1' }]),
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        create,
+      },
+    };
+    const prisma = {
+      tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', regime: FiscalRegime.GERAL, retentionRate: 0 }) },
+      client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a', city: 'Luanda' }) },
+      product: { findMany: jest.fn().mockResolvedValue([{ id: 'product-a', name: 'Serviço', price: 100, priceAmount: null, unit: 'SERVICO' }]) },
+      $transaction: jest.fn((callback) => callback(tx)),
+    } as unknown as PrismaService;
+    const fiscalSignature = {
+      sign: jest.fn().mockReturnValue({ hash: 'signed-hash', hashControl: '1', keyVersion: 1 }),
+    };
+    const service = new InvoiceService(
+      prisma,
+      { syncCompany: jest.fn() } as any,
+      { syncTenant: jest.fn() } as any,
+      fiscalSignature as any,
+    );
+
+    await service.create('tenant-a', {
+      clientId: 'client-a',
+      items: [{ productId: 'product-a', productName: 'ignorado', quantity: 1, unitPrice: 1 }],
+    });
+
+    expect(prisma.client.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'client-a', tenantId: 'tenant-a' } }));
+    expect(tx.$queryRaw).toHaveBeenCalled();
+    expect(fiscalSignature.sign).toHaveBeenCalledWith(expect.objectContaining({ previousHash: null }));
+    const persisted = create.mock.calls[0][0].data;
+    expect(persisted).toEqual(expect.objectContaining({
+      tenantId: 'tenant-a', fiscalHash: 'signed-hash', fiscalHashControl: '1',
+      signatureKeyVersion: 1, previousFiscalHash: null,
+    }));
+    expect(persisted.items.create[0]).toEqual(expect.objectContaining({
+      taxType: 'IVA', taxCode: 'NOR', taxRate: expect.anything(), taxAmount: expect.anything(),
     }));
   });
 });

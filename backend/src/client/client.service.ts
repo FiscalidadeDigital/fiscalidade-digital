@@ -46,6 +46,9 @@ export class ClientService {
         address:
           dto.address?.trim() || null,
 
+        city:
+          dto.city?.trim() || null,
+
         notes:
           dto.notes?.trim() || null,
       },
@@ -183,6 +186,9 @@ export class ClientService {
         }),
         ...(dto.address !== undefined && {
           address: dto.address?.trim() || null,
+        }),
+        ...(dto.city !== undefined && {
+          city: dto.city?.trim() || null,
         }),
         ...(dto.notes !== undefined && {
           notes: dto.notes?.trim() || null,

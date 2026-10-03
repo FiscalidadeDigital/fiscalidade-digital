@@ -33,4 +33,28 @@ describe('ClientService paged directory', () => {
     );
     expect(result.summary).toEqual({ total: 4, withEmail: 3, withPhone: 2 });
   });
+
+  it('persiste city ao criar e editar sem sair do tenant autenticado', async () => {
+    const prisma = {
+      client: {
+        create: jest.fn().mockResolvedValue({ id: 'client-a' }),
+        findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }),
+        update: jest.fn().mockResolvedValue({ id: 'client-a', city: 'Benguela' }),
+      },
+    } as unknown as PrismaService;
+    const service = new ClientService(prisma);
+
+    await service.create('tenant-a', { name: 'Cliente A', city: '  Luanda  ' });
+    await service.update('tenant-a', 'client-a', { city: '  Benguela  ' });
+
+    expect(prisma.client.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ tenantId: 'tenant-a', city: 'Luanda' }),
+    }));
+    expect(prisma.client.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'client-a', tenantId: 'tenant-a' }),
+    }));
+    expect(prisma.client.update).toHaveBeenCalledWith(expect.objectContaining({
+      where: { id: 'client-a' }, data: expect.objectContaining({ city: 'Benguela' }),
+    }));
+  });
 });

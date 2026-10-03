@@ -7,6 +7,7 @@ export interface Client {
   email: string | null;
   phone: string | null;
   address: string | null;
+  city: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;

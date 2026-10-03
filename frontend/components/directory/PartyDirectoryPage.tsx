@@ -32,6 +32,7 @@ type DirectoryEntry = {
   email: string | null;
   phone: string | null;
   address: string | null;
+  city?: string | null;
   notes: string | null;
   createdAt: string;
   updatedAt: string;
@@ -49,6 +50,7 @@ type DirectoryForm = {
   email: string;
   phone: string;
   address: string;
+  city: string;
   notes: string;
 };
 
@@ -58,6 +60,7 @@ const EMPTY_FORM: DirectoryForm = {
   email: '',
   phone: '',
   address: '',
+  city: '',
   notes: '',
 };
 
@@ -206,7 +209,8 @@ function LoadingRow({ columns }: { columns: number }) { return <tr><td colSpan={
 function EmptyRow({ columns, label }: { columns: number; label: string }) { return <tr><td colSpan={columns} className="h-52 text-center text-sm text-[var(--fd-muted)]">{label}</td></tr>; }
 
 function DirectoryModal({ endpoint, singular, entry, onClose, onSaved }: { endpoint: string; singular: string; entry: DirectoryEntry | null; onClose: () => void; onSaved: (name: string) => void }) {
-  const [form, setForm] = useState<DirectoryForm>(entry ? { name: entry.name, nif: entry.nif ?? '', email: entry.email ?? '', phone: entry.phone ?? '', address: entry.address ?? '', notes: entry.notes ?? '' } : EMPTY_FORM);
+  const isClient = endpoint === '/clients';
+  const [form, setForm] = useState<DirectoryForm>(entry ? { name: entry.name, nif: entry.nif ?? '', email: entry.email ?? '', phone: entry.phone ?? '', address: entry.address ?? '', city: entry.city ?? '', notes: entry.notes ?? '' } : EMPTY_FORM);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const set = (key: keyof DirectoryForm, value: string) => setForm((current) => ({ ...current, [key]: value }));
@@ -216,7 +220,7 @@ function DirectoryModal({ endpoint, singular, entry, onClose, onSaved }: { endpo
     setError('');
     if (!form.name.trim()) return setError('Indique o nome.');
     const optional = (value: string) => entry ? value.trim() || null : value.trim() || undefined;
-    const payload = { name: form.name.trim(), nif: optional(form.nif), email: optional(form.email), phone: optional(form.phone), address: optional(form.address), notes: optional(form.notes) };
+    const payload = { name: form.name.trim(), nif: optional(form.nif), email: optional(form.email), phone: optional(form.phone), address: optional(form.address), ...(isClient ? { city: optional(form.city) } : {}), notes: optional(form.notes) };
     setSaving(true);
     try {
       const response = entry ? await api.patch<DirectoryEntry>(`${endpoint}/${entry.id}`, payload) : await api.post<DirectoryEntry>(endpoint, payload);
@@ -226,7 +230,7 @@ function DirectoryModal({ endpoint, singular, entry, onClose, onSaved }: { endpo
     } finally { setSaving(false); }
   }
 
-  return <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[var(--fd-overlay)] p-4" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section role="dialog" aria-modal="true" aria-labelledby="directory-dialog-title" className="my-6 w-full max-w-2xl rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-2xl"><div className="flex items-start justify-between border-b border-[var(--fd-border)] p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Directório</p><h2 id="directory-dialog-title" className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]">{entry ? `Editar ${singular}` : `Novo ${singular}`}</h2></div><button type="button" onClick={onClose} className="rounded-lg p-2 text-[var(--fd-muted)] hover:bg-slate-100" aria-label="Fechar"><X className="h-4 w-4" /></button></div><form onSubmit={submit} className="grid gap-4 p-5 sm:grid-cols-2"><Input label="Nome" required value={form.name} onChange={(value) => set('name', value)} maxLength={180} /><Input label="NIF" value={form.nif} onChange={(value) => set('nif', value)} maxLength={50} /><Input label="Email" type="email" value={form.email} onChange={(value) => set('email', value)} maxLength={254} /><Input label="Telefone" value={form.phone} onChange={(value) => set('phone', value)} maxLength={50} /><div className="sm:col-span-2"><Input label="Morada" value={form.address} onChange={(value) => set('address', value)} maxLength={500} /></div><label className="block text-xs font-semibold text-[var(--fd-text-primary)] sm:col-span-2">Notas<textarea value={form.notes} onChange={(event) => set('notes', event.target.value)} maxLength={2000} rows={3} className="mt-2 w-full resize-none rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>{error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 sm:col-span-2">{error}</p>}<div className="flex justify-end gap-3 border-t border-[var(--fd-border)] pt-4 sm:col-span-2"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold">Cancelar</button><button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Guardar</button></div></form></section></div>;
+  return <div className="fixed inset-0 z-[100] flex items-center justify-center overflow-y-auto bg-[var(--fd-overlay)] p-4" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}><section role="dialog" aria-modal="true" aria-labelledby="directory-dialog-title" className="my-6 w-full max-w-2xl rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-2xl"><div className="flex items-start justify-between border-b border-[var(--fd-border)] p-5"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Directório</p><h2 id="directory-dialog-title" className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]">{entry ? `Editar ${singular}` : `Novo ${singular}`}</h2></div><button type="button" onClick={onClose} className="rounded-lg p-2 text-[var(--fd-muted)] hover:bg-slate-100" aria-label="Fechar"><X className="h-4 w-4" /></button></div><form onSubmit={submit} className="grid gap-4 p-5 sm:grid-cols-2"><Input label="Nome" required value={form.name} onChange={(value) => set('name', value)} maxLength={180} /><Input label="NIF" value={form.nif} onChange={(value) => set('nif', value)} maxLength={50} /><Input label="Email" type="email" value={form.email} onChange={(value) => set('email', value)} maxLength={254} /><Input label="Telefone" value={form.phone} onChange={(value) => set('phone', value)} maxLength={50} /><div className={isClient ? '' : 'sm:col-span-2'}><Input label="Morada" value={form.address} onChange={(value) => set('address', value)} maxLength={500} /></div>{isClient && <Input label="Cidade" value={form.city} onChange={(value) => set('city', value)} maxLength={120} />}<label className="block text-xs font-semibold text-[var(--fd-text-primary)] sm:col-span-2">Notas<textarea value={form.notes} onChange={(event) => set('notes', event.target.value)} maxLength={2000} rows={3} className="mt-2 w-full resize-none rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>{error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800 sm:col-span-2">{error}</p>}<div className="flex justify-end gap-3 border-t border-[var(--fd-border)] pt-4 sm:col-span-2"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold">Cancelar</button><button type="submit" disabled={saving} className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Guardar</button></div></form></section></div>;
 }
 
 function Input({ label, required, type = 'text', value, onChange, maxLength }: { label: string; required?: boolean; type?: string; value: string; onChange: (value: string) => void; maxLength: number }) { return <label className="block text-xs font-semibold text-[var(--fd-text-primary)]">{label}{required && <span className="text-rose-600"> *</span>}<input type={type} required={required} value={value} onChange={(event) => onChange(event.target.value)} maxLength={maxLength} className="mt-2 h-11 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>; }

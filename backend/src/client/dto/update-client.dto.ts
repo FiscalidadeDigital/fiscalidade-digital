@@ -38,6 +38,11 @@ export class UpdateClientDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(120)
+  city?: string | null;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(2000)
   notes?: string | null;
 }
