@@ -45,6 +45,31 @@ describe('ElectronicInvoicingService', () => {
     expect(prisma.invoice.findFirst).toHaveBeenCalledWith(expect.objectContaining({ where: { id: 'invoice-b', tenantId: 'tenant-a', documentType: 'NORMAL' } }));
   });
 
+  it('returns a controlled read-only state without AGT configuration or submission side effects', async () => {
+    const { prisma, client, jws, service } = setup();
+    for (const key of Object.keys(configuredEnv)) delete process.env[key];
+    prisma.invoice.findFirst.mockResolvedValue(invoice());
+    prisma.electronicInvoiceSubmission.findFirst.mockResolvedValue(null);
+    await expect(service.localState('tenant-a', 'invoice-a')).resolves.toMatchObject({
+      certificationStatus: 'NOT_CERTIFIED', configured: false,
+      submissionStatus: 'NOT_SUBMITTED', canSubmitHomologation: false,
+      canSubmitProduction: false, submission: null,
+    });
+    expect(prisma.electronicInvoiceSubmission.upsert).not.toHaveBeenCalled();
+    expect(prisma.electronicInvoiceSubmission.update).not.toHaveBeenCalled();
+    expect(client.post).not.toHaveBeenCalled();
+    expect(jws.sign).not.toHaveBeenCalled();
+  });
+
+  it('returns a controlled 412 when submission is attempted without configuration', async () => {
+    const { service } = setup();
+    for (const key of Object.keys(configuredEnv)) delete process.env[key];
+    await expect(service.submit('tenant-a', 'invoice-a')).rejects.toMatchObject({
+      status: 412,
+      response: expect.objectContaining({ code: 'AGT_CONFIGURATION_PENDING' }),
+    });
+  });
+
   it('blocks missing explicit AGT operation type instead of inferring it from unit', async () => {
     const { prisma, service } = setup();
     prisma.invoice.findFirst.mockResolvedValue(invoice({ items: [{ ...invoice().items[0], electronicOperationType: null }] }));

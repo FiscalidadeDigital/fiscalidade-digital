@@ -18,10 +18,17 @@ export type ElectronicPreflight = {
   issues: Array<{ code: string; category: string; message: string }>;
   series?: { seriesCode: string } | null;
 };
+export type ElectronicInvoiceState = {
+  certificationStatus: 'NOT_CERTIFIED'; configured: boolean; environment: string;
+  submissionStatus: string; canSubmitHomologation: boolean; canSubmitProduction: boolean;
+  blockers: Array<{ code: string; message: string }>;
+  submission: ElectronicSubmission | null;
+};
 
 export async function getElectronicReadiness() { return (await api.get<ElectronicReadiness>('/electronic-invoicing/readiness')).data; }
 export async function getElectronicSubmissions() { return (await api.get<ElectronicSubmission[]>('/electronic-invoicing')).data; }
 export async function getElectronicPreflight(invoiceId: string) { return (await api.get<ElectronicPreflight>(`/electronic-invoicing/invoice/${invoiceId}/preflight`)).data; }
+export async function getElectronicInvoiceState(invoiceId: string) { return (await api.get<ElectronicInvoiceState>(`/electronic-invoicing/invoice/${invoiceId}/state`)).data; }
 export async function submitElectronicInvoice(invoiceId: string) { return (await api.post<ElectronicSubmission>(`/electronic-invoicing/invoice/${invoiceId}/submit`)).data; }
 export async function refreshElectronicStatus(invoiceId: string) { return (await api.post<ElectronicSubmission>(`/electronic-invoicing/invoice/${invoiceId}/status`)).data; }
 export function electronicInvoicingError(error: unknown, fallback: string) {

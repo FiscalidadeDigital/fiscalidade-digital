@@ -15,6 +15,7 @@ export class ElectronicInvoicingController {
   @Get() list(@CurrentUser() user: any) { return this.service.list(user.tenantId); }
   @Get('series') series(@CurrentUser() user: any) { return this.service.listSeries(user.tenantId); }
   @Get('invoice/:invoiceId/preflight') preflight(@CurrentUser() user: any, @Param('invoiceId') invoiceId: string) { return this.service.preflight(user.tenantId, invoiceId); }
+  @Get('invoice/:invoiceId/state') state(@CurrentUser() user: any, @Param('invoiceId') invoiceId: string) { return this.service.localState(user.tenantId, invoiceId); }
 
   @Post('invoice/:invoiceId/submit')
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)

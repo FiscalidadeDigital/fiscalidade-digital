@@ -1,4 +1,4 @@
-import { ServiceUnavailableException } from '@nestjs/common';
+import { PreconditionFailedException } from '@nestjs/common';
 import { AgtEnvironment, SoftwareInfoDetail } from './electronic-invoicing.types';
 
 const BASE_URLS: Record<AgtEnvironment, string> = {
@@ -41,7 +41,7 @@ export function readAgtEinvoiceConfig(): AgtEinvoiceConfig | null {
 
 export function requireAgtEinvoiceConfig() {
   const config = readAgtEinvoiceConfig();
-  if (!config) throw new ServiceUnavailableException({
+  if (!config) throw new PreconditionFailedException({
     code: 'AGT_CONFIGURATION_PENDING',
     message: 'Configuração oficial AGT pendente.',
   });

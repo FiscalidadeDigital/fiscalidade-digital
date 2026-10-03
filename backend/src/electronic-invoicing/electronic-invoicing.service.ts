@@ -54,6 +54,46 @@ export class ElectronicInvoicingService {
     });
   }
 
+  async localState(tenantId: string, invoiceId: string) {
+    const invoice = await this.source(tenantId, invoiceId);
+    const config = readAgtEinvoiceConfig();
+    const environment = config?.environment ?? 'homologation';
+    const submission = await this.prisma.electronicInvoiceSubmission.findFirst({
+      where: { tenantId, invoiceId, environment },
+      select: {
+        id: true, invoiceId: true, submissionUuid: true, agtDocumentNo: true,
+        requestId: true, environment: true, status: true, attempt: true,
+        submittedAt: true, lastCheckedAt: true, agtErrors: true, updatedAt: true,
+      },
+    });
+    if (!config) {
+      return {
+        certificationStatus: 'NOT_CERTIFIED' as const,
+        configured: false,
+        environment,
+        submissionStatus: submission?.status ?? 'NOT_SUBMITTED',
+        canSubmitHomologation: false,
+        canSubmitProduction: false,
+        blockers: [
+          { code: 'AGT_CONFIGURATION_PENDING', message: 'Configuração AGT de homologação pendente.' },
+          { code: 'AGT_SOFTWARE_NOT_CERTIFIED', message: 'Certificação oficial pendente.' },
+        ],
+        submission,
+      };
+    }
+    const check = await this.preflight(tenantId, invoice.id);
+    return {
+      certificationStatus: 'NOT_CERTIFIED' as const,
+      configured: true,
+      environment,
+      submissionStatus: submission?.status ?? 'NOT_SUBMITTED',
+      canSubmitHomologation: environment === 'homologation' && check.ready && process.env.AGT_EINVOICE_TRANSMISSION_ENABLED === 'true',
+      canSubmitProduction: false,
+      blockers: check.issues,
+      submission,
+    };
+  }
+
   private async source(tenantId: string, invoiceId: string) {
     const invoice = await this.prisma.invoice.findFirst({
       where: { id: invoiceId, tenantId, documentType: 'NORMAL' },
