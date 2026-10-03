@@ -74,7 +74,6 @@ type CompanyFormState = {
   address: string;
   city: string;
   sector: string;
-  companyType: string;
 };
 
 type FormState = {
@@ -195,7 +194,6 @@ export default function CompanyPage() {
       address: '',
       city: '',
       sector: '',
-      companyType: '',
     });
 
   const [employees, setEmployees] =
@@ -287,7 +285,6 @@ export default function CompanyPage() {
       address: company?.address || '',
       city: company?.city || '',
       sector: company?.sector || '',
-      companyType: company?.companyType || '',
     });
 
     setShowCompanyModal(true);
@@ -329,7 +326,6 @@ export default function CompanyPage() {
         address: companyForm.address.trim() || undefined,
         city: companyForm.city.trim() || undefined,
         sector: companyForm.sector.trim() || undefined,
-        companyType: companyForm.companyType.trim() || undefined,
       };
 
       const response = await api.patch('/company', payload);
@@ -1857,19 +1853,6 @@ export default function CompanyPage() {
                       placeholder="Cidade"
                     />
                   </Field>
-
-                  <div className="sm:col-span-2">
-                    <Field label="Tipo de empresa">
-                      <input
-                        value={companyForm.companyType}
-                        onChange={(event) =>
-                          updateCompanyForm('companyType', event.target.value)
-                        }
-                        className="input-field"
-                        placeholder="Tipo de empresa"
-                      />
-                    </Field>
-                  </div>
 
                   <div className="sm:col-span-2">
                     <Field label="Morada">

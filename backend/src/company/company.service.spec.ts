@@ -7,6 +7,7 @@ describe('CompanyService city', () => {
     nif: '5000000001',
     email: 'empresa@example.ao',
     city: 'Luanda',
+    companyType: 'SINGLE',
   };
 
   function setup() {
@@ -38,6 +39,7 @@ describe('CompanyService city', () => {
     expect(prisma.tenant.update).toHaveBeenCalledWith(
       expect.objectContaining({ where: { id: 'tenant-a' }, data: expect.objectContaining({ city: 'Benguela' }) }),
     );
+    expect(prisma.tenant.update.mock.calls[0][0].data.companyType).toBeUndefined();
   });
 
   it('mantém compatibilidade com pedidos antigos sem city', async () => {
