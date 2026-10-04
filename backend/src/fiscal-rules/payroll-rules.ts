@@ -7,7 +7,9 @@ export const IRT_2026_LEGAL_SOURCE = {
   article: 'Artigo 21.º, n.º 3, e Anexo I',
   publishedAt: '2025-12-30',
   effectiveFrom: '2026-01-01',
-  effectiveTo: '2026-12-31',
+  // A Lei não contém cláusula de caducidade em 31/12/2026. A regra mantém-se
+  // aplicável até que uma norma posterior, registada neste módulo, a substitua.
+  effectiveTo: null,
   consultedAt: '2026-09-30',
 } as const;
 
@@ -142,10 +144,36 @@ export function resolveSocialSecurityRates(
   );
 }
 
-export function assertSupportedPayrollYear(year: number): void {
-  if (year !== 2026) {
-    throw new Error(
-      `Não existe uma versão fiscal validada para calcular folhas de ${year}.`,
-    );
+export type PayrollRuleSet = {
+  version: string;
+  validFrom: string;
+  validTo: string | null;
+};
+
+const PAYROLL_RULE_SETS: readonly PayrollRuleSet[] = [
+  {
+    version: PAYROLL_RULE_VERSION_2026,
+    validFrom: '2026-01-01',
+    validTo: null,
+  },
+] as const;
+
+/** Resolve pela data do período e não pelo número do ano. */
+export function resolvePayrollRuleSet(year: number): PayrollRuleSet {
+  const period = `${year}-01-01`;
+  const rule = PAYROLL_RULE_SETS.find(
+    (candidate) =>
+      candidate.validFrom <= period &&
+      (candidate.validTo === null || candidate.validTo >= period),
+  );
+
+  if (!rule) {
+    throw new Error(`Não existe uma versão fiscal validada para calcular folhas de ${year}.`);
   }
+
+  return rule;
+}
+
+export function assertSupportedPayrollYear(year: number): void {
+  resolvePayrollRuleSet(year);
 }

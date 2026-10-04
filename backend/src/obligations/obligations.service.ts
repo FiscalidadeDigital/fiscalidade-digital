@@ -16,6 +16,7 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
 
 @Injectable()
 export class ObligationsService {
@@ -24,6 +25,7 @@ export class ObligationsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
   ) {}
 
   // ============================================================
@@ -430,45 +432,24 @@ export class ObligationsService {
           ? ObligationStatus.LATE
           : ObligationStatus.PENDING;
 
-      await this.prisma.fiscalObligation.create({
-        data: {
-          tenantId:
-            tenant.id,
-
-          fiscalCalendarId:
-            rule.id,
-
-          type:
-            rule.obligationType,
-
-          title:
-            rule.title,
-
-          description:
-            rule.description,
-
-          amount:
-            finalAmount,
-
-          dueDate:
-            rule.dueDate,
-
+      const persisted =
+        await this.obligationPersistence.persistCalendarDerived({
+          tenantId: tenant.id,
+          fiscalCalendarId: rule.id,
           period,
-
+          type: rule.obligationType,
+          title: rule.title,
+          description: rule.description,
+          amount: finalAmount,
+          dueDate: rule.dueDate,
           status,
+          alertEnabled: true,
+          alertDaysBefore: 7,
+          reminderSent: false,
+          origin: 'CALENDAR',
+        });
 
-          alertEnabled:
-            true,
-
-          alertDaysBefore:
-            7,
-
-          reminderSent:
-            false,
-        },
-      });
-
-      created++;
+      if (persisted.outcome === 'CREATED') created++;
 
       if (isLate) {
         late++;

@@ -33,10 +33,13 @@ import {
   getEmployee,
   getEmployees,
   addEmployeeSalary,
+  addRemunerationComponent,
+  endRemunerationComponent,
   updateEmployee,
   type CreateEmployeeSalaryData,
   type CreateEmployeeData,
   type Employee,
+  type CreateRemunerationComponentData,
 } from '@/services/employee';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
@@ -216,6 +219,9 @@ export default function EmployeesPage() {
     salarySaving,
     setSalarySaving,
   ] = useState(false);
+  const [componentSaving, setComponentSaving] = useState(false);
+  const [componentEndDates, setComponentEndDates] = useState<Record<string, string>>({});
+  const [componentForm, setComponentForm] = useState<CreateRemunerationComponentData>({ type: 'MEAL_ALLOWANCE', amount: 0, effectiveFrom: '' });
 
   // ===================================================
   // CARREGAR FUNCIONÁRIOS
@@ -508,6 +514,7 @@ export default function EmployeesPage() {
       setSalaryForm({
         ...initialSalaryForm,
       });
+      setComponentForm({ type: 'MEAL_ALLOWANCE', amount: 0, effectiveFrom: '' });
     } catch (err: any) {
       setError(
         err?.response?.data?.message ||
@@ -552,6 +559,28 @@ export default function EmployeesPage() {
     } finally {
       setSalarySaving(false);
     }
+  }
+
+  async function handleAddComponent() {
+    if (!selectedEmployee || !componentForm.effectiveFrom || componentForm.amount < 0) return;
+    try {
+      setComponentSaving(true); setError('');
+      await addRemunerationComponent(selectedEmployee.id, componentForm);
+      await openEmployeeDetails(selectedEmployee.id);
+      setSuccess('Componente remuneratório registado.');
+    } catch (err: any) { setError(err?.response?.data?.message || 'Não foi possível registar o componente.'); }
+    finally { setComponentSaving(false); }
+  }
+
+  async function handleEndComponent(componentId: string) {
+    if (!selectedEmployee || !componentEndDates[componentId]) return;
+    try {
+      setComponentSaving(true); setError('');
+      await endRemunerationComponent(selectedEmployee.id, componentId, componentEndDates[componentId]);
+      await openEmployeeDetails(selectedEmployee.id);
+      setSuccess('Fim de vigência registado; o histórico foi preservado.');
+    } catch (err: any) { setError(err?.response?.data?.message || 'Não foi possível encerrar o componente.'); }
+    finally { setComponentSaving(false); }
   }
 
   // ===================================================
@@ -2019,6 +2048,20 @@ export default function EmployeesPage() {
                   </button>
                 </div>
               </div>
+            </section>
+
+            <section className="employees-form-section employees-salary-history">
+              <div className="employees-section-title"><CircleDollarSign size={14} />Remuneração e subsídios<span /></div>
+              {employee.remunerationComponents?.length ? <div className="employees-salary-list">
+                {employee.remunerationComponents.map((component) => <div key={component.id} className="employees-salary-entry"><div><strong>{component.type.replaceAll('_', ' ')} · {formatMoney(component.amount)}</strong><p>Desde {new Date(component.effectiveFrom).toLocaleDateString('pt-AO')}{component.effectiveTo ? ` até ${new Date(component.effectiveTo).toLocaleDateString('pt-AO')}` : ' · histórico'} · IRT: {component.irtTreatment} · INSS: {component.inssTreatment}</p></div>{!component.effectiveTo && <div className="employees-inline-actions"><input type="date" aria-label="Fim de vigência" min={component.effectiveFrom.slice(0, 10)} value={componentEndDates[component.id] || ''} onChange={(event) => setComponentEndDates((current) => ({ ...current, [component.id]: event.target.value }))} /><button type="button" className="employees-secondary-button" onClick={() => handleEndComponent(component.id)} disabled={componentSaving || !componentEndDates[component.id]}>Encerrar</button></div>}</div>)}
+              </div> : <p className="employees-salary-empty">Sem subsídios ou componentes adicionais registados.</p>}
+              <div className="employees-form-grid employees-new-salary-form">
+                <div className="employees-field"><label>Tipo de componente</label><select value={componentForm.type} onChange={(event) => setComponentForm((current) => ({ ...current, type: event.target.value as CreateRemunerationComponentData['type'] }))}><option value="MEAL_ALLOWANCE">Subsídio de alimentação</option><option value="TRANSPORT_ALLOWANCE">Subsídio de transporte</option><option value="HOLIDAY_ALLOWANCE">Subsídio de férias</option><option value="BONUS">Prémio</option><option value="OVERTIME">Horas extra</option><option value="OTHER">Outro</option></select></div>
+                <div className="employees-field"><label>Valor (Kz)</label><input type="number" min="0" step="0.01" value={componentForm.amount} onChange={(event) => setComponentForm((current) => ({ ...current, amount: Number(event.target.value || 0) }))} /></div>
+                <div className="employees-field"><label>Vigência desde</label><input type="date" value={componentForm.effectiveFrom} onChange={(event) => setComponentForm((current) => ({ ...current, effectiveFrom: event.target.value }))} /></div>
+                <div className="employees-field employees-salary-action"><label> </label><button type="button" className="employees-secondary-button" onClick={handleAddComponent} disabled={componentSaving || !componentForm.effectiveFrom}>{componentSaving ? 'A registar...' : 'Adicionar componente'}</button></div>
+              </div>
+              <p className="employees-salary-empty">O tratamento IRT e INSS é informativo e definido pelo motor fiscal; não pode ser alterado manualmente.</p>
             </section>
 
             <div className="employees-modal-footer">

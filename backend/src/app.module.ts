@@ -20,6 +20,10 @@ import { PurchaseInvoiceImportModule } from './purchase-invoice-import/purchase-
 
 import { FiscalCalendarModule } from './fiscal-calendar/fiscal-calendar.module';
 import { FiscalEngineModule } from './fiscal-engine/fiscal-engine.module';
+import { FiscalEnrollmentModule } from './fiscal-enrollment/fiscal-enrollment.module';
+import { FiscalApplicabilityModule } from './fiscal-applicability/fiscal-applicability.module';
+import { FiscalObligationPersistenceModule } from './fiscal-obligation-persistence/fiscal-obligation-persistence.module';
+import { ObligationGenerationModule } from './obligation-generation/obligation-generation.module';
 import { TaxCalculatorModule } from './tax-calculator/tax-calculator.module';
 import { ObligationsModule } from './obligations/obligations.module';
 
@@ -94,6 +98,10 @@ import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-inv
 
     FiscalCalendarModule,
     FiscalEngineModule,
+    FiscalEnrollmentModule,
+    FiscalApplicabilityModule,
+    FiscalObligationPersistenceModule,
+    ObligationGenerationModule,
     TaxCalculatorModule,
     ObligationsModule,
 

@@ -935,7 +935,7 @@ describe('Core records HTTP tenant isolation', () => {
     ).resolves.toBeNull();
   });
 
-  it('creates tenant-owned salary/dependent records and cascades them on delete', async () => {
+  it('archives employee records while preserving salary and dependent history', async () => {
     await request(app.getHttpServer())
       .post(`/employees/${employeeId}/salaries`)
       .set('Authorization', bearer(ownerAToken))
@@ -982,8 +982,13 @@ describe('Core records HTTP tenant isolation', () => {
       prisma.employeeSalary.count({ where: { employeeId } }),
       prisma.employeeDependent.count({ where: { employeeId } }),
     ]);
-    expect(employee).toBeNull();
-    expect(salaryCount).toBe(0);
-    expect(dependentCount).toBe(0);
+    expect(employee).toEqual(
+      expect.objectContaining({
+        id: employeeId,
+        status: 'ARCHIVED',
+      }),
+    );
+    expect(salaryCount).toBe(2);
+    expect(dependentCount).toBe(1);
   });
 });

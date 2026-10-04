@@ -33,6 +33,17 @@ export type EmployeeDependent = {
   taxDependent: boolean;
 };
 
+export type RemunerationComponent = {
+  id: string;
+  type: 'SALARY' | 'MEAL_ALLOWANCE' | 'TRANSPORT_ALLOWANCE' | 'HOLIDAY_ALLOWANCE' | 'CHRISTMAS_ALLOWANCE' | 'OVERTIME' | 'BONUS' | 'REPRESENTATION_ALLOWANCE' | 'HOUSING_ALLOWANCE' | 'FAMILY_ALLOWANCE' | 'REIMBURSEMENT' | 'OTHER';
+  amount: number | string;
+  effectiveFrom: string;
+  effectiveTo?: string | null;
+  irtTreatment: string;
+  inssTreatment: string;
+  legalReference?: string | null;
+};
+
 export type Employee = {
   id: string;
   tenantId: string;
@@ -68,7 +79,8 @@ export type Employee = {
     | 'ACTIVE'
     | 'INACTIVE'
     | 'SUSPENDED'
-    | 'TERMINATED';
+    | 'TERMINATED'
+    | 'ARCHIVED';
 
   notes?: string | null;
 
@@ -77,6 +89,7 @@ export type Employee = {
 
   salaries?: EmployeeSalary[];
   dependents?: EmployeeDependent[];
+  remunerationComponents?: RemunerationComponent[];
 };
 
 export type CreateEmployeeData = {
@@ -136,6 +149,8 @@ export type CreateEmployeeDependentData = {
   birthDate?: string;
   taxDependent?: boolean;
 };
+
+export type CreateRemunerationComponentData = Pick<RemunerationComponent, 'type'> & { amount: number; effectiveFrom: string; effectiveTo?: string; notes?: string };
 
 function unwrap<T>(
   response: any,
@@ -232,6 +247,14 @@ export async function addEmployeeSalary(
   return unwrap<EmployeeSalary>(
     response,
   );
+}
+
+export async function addRemunerationComponent(employeeId: string, data: CreateRemunerationComponentData): Promise<RemunerationComponent> {
+  return unwrap<RemunerationComponent>(await api.post(`/employees/${employeeId}/remuneration-components`, data));
+}
+
+export async function endRemunerationComponent(employeeId: string, componentId: string, effectiveTo: string): Promise<RemunerationComponent> {
+  return unwrap<RemunerationComponent>(await api.patch(`/employees/${employeeId}/remuneration-components/${componentId}/end`, { effectiveTo }));
 }
 
 export async function getEmployeeSalaries(

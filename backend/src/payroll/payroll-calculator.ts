@@ -1,12 +1,11 @@
 import { Prisma, SocialSecurityCategory } from '@prisma/client';
 
 import {
-  assertSupportedPayrollYear,
   IRT_ALLOWANCE_EXEMPT_LIMITS,
   IRT_GROUP_A_2026_BRACKETS,
   PAYROLL_CALCULATION_STATUS,
-  PAYROLL_RULE_VERSION_2026,
   resolveSocialSecurityRates,
+  resolvePayrollRuleSet,
 } from '../fiscal-rules/payroll-rules';
 
 type DecimalValue = Prisma.Decimal.Value;
@@ -21,6 +20,7 @@ export type PayrollCalculationInput = {
   bonuses?: DecimalValue | null;
   commissions?: DecimalValue | null;
   otherIncome?: DecimalValue | null;
+  holidayAllowance?: DecimalValue | null;
   otherDeductions?: DecimalValue | null;
 };
 
@@ -83,7 +83,7 @@ export function calculateIrtGroupA2026(
 export function calculatePayrollItem(
   input: PayrollCalculationInput,
 ): PayrollCalculation {
-  assertSupportedPayrollYear(input.year);
+  const ruleSet = resolvePayrollRuleSet(input.year);
 
   const baseSalary = money(nonNegative(decimal(input.baseSalary)));
   const foodAllowance = money(nonNegative(decimal(input.foodAllowance)));
@@ -96,6 +96,9 @@ export function calculatePayrollItem(
   const bonuses = money(nonNegative(decimal(input.bonuses)));
   const commissions = money(nonNegative(decimal(input.commissions)));
   const otherIncome = money(nonNegative(decimal(input.otherIncome)));
+  const holidayAllowance = money(
+    nonNegative(decimal(input.holidayAllowance)),
+  );
   const otherDeductions = money(
     nonNegative(decimal(input.otherDeductions)),
   );
@@ -106,9 +109,13 @@ export function calculatePayrollItem(
       .add(otherAllowances)
       .add(bonuses)
       .add(commissions)
-      .add(otherIncome),
+      .add(otherIncome)
+      .add(holidayAllowance),
   );
-  const socialSecurityBase = grossAmount;
+  // Confirmado para subsídio de férias: excluído da base contributiva.
+  // Demais componentes legadas preservam o tratamento histórico até serem
+  // migradas para EmployeeRemunerationComponent com fundamento explícito.
+  const socialSecurityBase = money(grossAmount.sub(holidayAllowance));
   const rates = resolveSocialSecurityRates(input.socialSecurityCategory);
   const socialSecurityAmount = money(
     socialSecurityBase.mul(rates.employee),
@@ -151,7 +158,7 @@ export function calculatePayrollItem(
     irtAmount,
     otherDeductions,
     netAmount,
-    taxRuleVersion: PAYROLL_RULE_VERSION_2026,
+    taxRuleVersion: ruleSet.version,
     calculationStatus: PAYROLL_CALCULATION_STATUS,
   };
 }
