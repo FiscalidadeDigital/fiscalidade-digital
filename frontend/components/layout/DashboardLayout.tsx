@@ -144,6 +144,12 @@ const navigationSections = [
       },
 
       {
+        label: 'Central Fiscal',
+        href: '/fiscal-situation',
+        icon: ShieldAlert,
+      },
+
+      {
         label: 'Pagamentos',
         href: '/payments',
         icon: CreditCard,

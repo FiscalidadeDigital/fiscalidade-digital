@@ -24,6 +24,7 @@ import { FiscalEnrollmentModule } from './fiscal-enrollment/fiscal-enrollment.mo
 import { FiscalApplicabilityModule } from './fiscal-applicability/fiscal-applicability.module';
 import { FiscalObligationPersistenceModule } from './fiscal-obligation-persistence/fiscal-obligation-persistence.module';
 import { ObligationGenerationModule } from './obligation-generation/obligation-generation.module';
+import { FiscalSituationModule } from './fiscal-situation/fiscal-situation.module';
 import { TaxCalculatorModule } from './tax-calculator/tax-calculator.module';
 import { ObligationsModule } from './obligations/obligations.module';
 
@@ -102,6 +103,7 @@ import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-inv
     FiscalApplicabilityModule,
     FiscalObligationPersistenceModule,
     ObligationGenerationModule,
+    FiscalSituationModule,
     TaxCalculatorModule,
     ObligationsModule,
 

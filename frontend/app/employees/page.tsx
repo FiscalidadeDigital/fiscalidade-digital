@@ -76,6 +76,7 @@ const statusLabel: Record<
   INACTIVE: 'Inativo',
   SUSPENDED: 'Suspenso',
   TERMINATED: 'Terminado',
+  ARCHIVED: 'Arquivado',
 };
 
 const statusClass: Record<
@@ -93,6 +94,9 @@ const statusClass: Record<
 
   TERMINATED:
     'employees-status employees-status-terminated',
+
+  ARCHIVED:
+    'employees-status employees-status-inactive',
 };
 
 // =====================================================
