@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
 import { calculateVatAssessment } from './fiscal-assessment';
 import { IVA_LEGAL_SOURCE } from '../fiscal-rules/iva-rules';
 
@@ -43,6 +44,7 @@ export class FiscalEngineService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
   ) {}
 
   // =========================================================
@@ -1697,48 +1699,25 @@ export class FiscalEngineService {
     // CRIAR OBRIGAÇÃO
     // =======================================================
 
-    await tx.fiscalObligation.create({
-      data: {
+    await this.obligationPersistence.persistCalendarDerived(
+      {
         tenantId,
-
-        fiscalCalendarId:
-          rule.id,
-
-        type:
-          rule.obligationType,
-
-        title:
-          rule.title,
-
-        description:
-          rule.description,
-
-        dueDate:
-          rule.dueDate,
-
-        period:
-          obligationPeriod,
-
-        amount:
-          this.round(
-            finalAmount,
-          ),
-
-        amountValue:
-          this.decimal(finalAmount),
-
+        fiscalCalendarId: rule.id,
+        period: obligationPeriod,
+        type: rule.obligationType,
+        title: rule.title,
+        description: rule.description,
+        dueDate: rule.dueDate,
+        amount: this.round(finalAmount),
+        amountValue: this.decimal(finalAmount),
         status,
-
-        alertEnabled:
-          true,
-
-        alertDaysBefore:
-          7,
-
-        reminderSent:
-          false,
+        alertEnabled: true,
+        alertDaysBefore: 7,
+        reminderSent: false,
+        origin: 'FISCAL_ENGINE',
       },
-    });
+      tx,
+    );
   }
 
   // =========================================================

@@ -42,6 +42,7 @@ model Tenant {
   emailLogs               EmailLog[]
   fiscalAlerts            FiscalAlert[]
   employees               Employee[]
+  taxRegimeAssignments    TaxRegimeAssignment[]
   obligations             FiscalObligation[]
   invoices                Invoice[]
   notifications           Notification[]
@@ -362,6 +363,10 @@ model FiscalCalendarRegime {
 model FiscalObligation {
   id               String           @id @default(uuid())
   tenantId         String
+  /// Provenance is explicit only when supplied by a producer; historical rows remain null.
+  origin           FiscalObligationOrigin?
+  /// Producer-supplied stable identity for non-calendar obligations; never derived from display fields.
+  idempotencyKey   String?
   type             ObligationType
   description      String?
   dueDate          DateTime
@@ -881,6 +886,7 @@ model Employee {
   tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   dependents   EmployeeDependent[]
   salaries     EmployeeSalary[]
+  remunerationComponents EmployeeRemunerationComponent[]
   payrollItems PayrollItem[]
 
   @@index([tenantId])
@@ -922,10 +928,37 @@ model EmployeeSalary {
   updatedAt          DateTime  @updatedAt
 
   employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  components EmployeeRemunerationComponent[]
 
   @@index([employeeId])
   @@index([employeeId, active])
   @@index([effectiveFrom])
+}
+
+/// Componentes estruturados. Os campos monetários legados permanecem apenas
+/// para compatibilidade de leitura de salários históricos.
+model EmployeeRemunerationComponent {
+  id                    String                    @id @default(uuid())
+  employeeId            String
+  salaryId              String?
+  type                  RemunerationComponentType
+  amount                Decimal                   @db.Decimal(18, 2)
+  effectiveFrom         DateTime
+  effectiveTo           DateTime?
+  irtTreatment          FiscalTreatment           @default(NEEDS_OFFICIAL_CONFIRMATION)
+  inssTreatment         FiscalTreatment           @default(NEEDS_OFFICIAL_CONFIRMATION)
+  exemptAmount          Decimal                   @default(0) @db.Decimal(18, 2)
+  legalReference        String?
+  officialSourceUrl     String?
+  notes                 String?
+  createdAt             DateTime                  @default(now())
+  updatedAt             DateTime                  @updatedAt
+
+  employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  salary   EmployeeSalary? @relation(fields: [salaryId], references: [id], onDelete: SetNull)
+
+  @@index([employeeId, effectiveFrom])
+  @@index([salaryId])
 }
 
 model Payroll {
@@ -944,6 +977,8 @@ model Payroll {
   netAmount                    Decimal       @default(0) @db.Decimal(18, 2)
   taxRuleVersion               String?
   calculationStatus            String?
+  fiscalSnapshot               Json?
+  snapshotStatus               PayrollSnapshotStatus @default(LEGACY_INCOMPLETE)
   processedAt                  DateTime?
   createdAt                    DateTime      @default(now())
   updatedAt                    DateTime      @updatedAt
@@ -985,6 +1020,8 @@ model PayrollItem {
   netAmount                    Decimal                @default(0) @db.Decimal(18, 2)
   taxRuleVersion               String?
   calculationStatus            String?
+  fiscalSnapshot               Json?
+  remunerationComponents       Json?
   createdAt                    DateTime               @default(now())
   updatedAt                    DateTime               @updatedAt
 
@@ -994,6 +1031,31 @@ model PayrollItem {
   @@unique([payrollId, employeeId])
   @@index([payrollId])
   @@index([employeeId])
+}
+
+/// Enquadramento por imposto; não substitui automaticamente Tenant.regime.
+model TaxRegimeAssignment {
+  id                String       @id @default(uuid())
+  tenantId          String
+  taxType           TaxType
+  regime            FiscalRegime
+  status            TaxRegimeAssignmentStatus @default(ACTIVE)
+  validFrom         DateTime
+  validUntil        DateTime?
+  legalReference    String?
+  officialSourceUrl String?
+  sourceDiploma     String?
+  sourceArticle     String?
+  decisionDate      DateTime?
+  decisionType      String?
+  reviewStatus      TaxRegimeAssignmentStatus @default(REVIEW_REQUIRED)
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, taxType, validFrom])
 }
 
 model Document {
@@ -1103,6 +1165,14 @@ enum ObligationType {
   OUTRA
 }
 
+enum FiscalObligationOrigin {
+  CALENDAR
+  PAYROLL
+  FISCAL_ENGINE
+  MANUAL
+  LEGACY
+}
+
 enum ObligationStatus {
   PENDING
   PAID
@@ -1190,6 +1260,42 @@ enum EmployeeStatus {
   INACTIVE
   SUSPENDED
   TERMINATED
+  ARCHIVED
+}
+
+enum RemunerationComponentType {
+  SALARY
+  MEAL_ALLOWANCE
+  TRANSPORT_ALLOWANCE
+  HOLIDAY_ALLOWANCE
+  CHRISTMAS_ALLOWANCE
+  OVERTIME
+  BONUS
+  REPRESENTATION_ALLOWANCE
+  HOUSING_ALLOWANCE
+  FAMILY_ALLOWANCE
+  REIMBURSEMENT
+  OTHER
+}
+
+enum FiscalTreatment {
+  INCLUDED
+  EXCLUDED
+  PARTIALLY_EXEMPT
+  NEEDS_OFFICIAL_CONFIRMATION
+}
+
+enum PayrollSnapshotStatus {
+  LEGACY_INCOMPLETE
+  CAPTURED
+  IMMUTABLE
+  REVIEW_REQUIRED
+}
+
+enum TaxRegimeAssignmentStatus {
+  ACTIVE
+  INACTIVE
+  REVIEW_REQUIRED
 }
 
 enum SocialSecurityCategory {

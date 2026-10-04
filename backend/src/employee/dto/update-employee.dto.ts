@@ -6,12 +6,10 @@ import {
   IsDateString,
   IsEmail,
   IsEnum,
-  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
   Matches,
-  Min,
   ValidateIf,
 } from 'class-validator';
 
@@ -73,11 +71,6 @@ export class UpdateEmployeeDto {
   @IsOptional()
   @IsString()
   gender?: string | null;
-
-  @ValidateIf((_object, value) => value !== undefined)
-  @IsInt()
-  @Min(0)
-  dependentCount?: number;
 
   @IsOptional()
   @IsString()

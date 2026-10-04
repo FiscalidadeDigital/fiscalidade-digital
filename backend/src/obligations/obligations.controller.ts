@@ -13,6 +13,8 @@ import {
 import type { Request } from 'express';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { UserRole } from '@prisma/client';
 
 import { ObligationsService } from './obligations.service';
 
@@ -37,6 +39,7 @@ export class ObligationsController {
   // ==========================================================
 
   @Get()
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.VIEWER)
   async findAll(
     @Req()
     req: AuthenticatedRequest,
@@ -63,6 +66,7 @@ export class ObligationsController {
   // ==========================================================
 
   @Get('dashboard')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.VIEWER)
   async dashboard(
     @Req()
     req: AuthenticatedRequest,
@@ -79,6 +83,7 @@ export class ObligationsController {
   // ==========================================================
 
   @Post('sync')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async sync(
     @Req()
     req: AuthenticatedRequest,
@@ -95,6 +100,7 @@ export class ObligationsController {
   // ==========================================================
 
   @Post('update-statuses')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async updateStatuses(
     @Req()
     req: AuthenticatedRequest,
@@ -111,6 +117,7 @@ export class ObligationsController {
   // ==========================================================
 
   @Get(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.VIEWER)
   async findOne(
     @Req()
     req: AuthenticatedRequest,
@@ -131,6 +138,7 @@ export class ObligationsController {
   // ==========================================================
 
   @Patch(':id/pay')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async pay(
     @Req()
     req: AuthenticatedRequest,
@@ -151,6 +159,7 @@ export class ObligationsController {
   // ==========================================================
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   async remove(
     @Req()
     req: AuthenticatedRequest,

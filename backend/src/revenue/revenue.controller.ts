@@ -10,9 +10,14 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { UserRole } from '@prisma/client';
 
 import { RevenueService } from './revenue.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+
+const REVENUE_READ_ROLES = [UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT, UserRole.VIEWER];
+const REVENUE_WRITE_ROLES = [UserRole.OWNER, UserRole.ADMIN];
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -35,6 +40,7 @@ export class RevenueController {
   // =====================================================
 
   @Post()
+  @Roles(...REVENUE_WRITE_ROLES)
   create(
     @Req() req: AuthenticatedRequest,
     @Body()
@@ -56,6 +62,7 @@ export class RevenueController {
   // =====================================================
 
   @Get()
+  @Roles(...REVENUE_READ_ROLES)
   findAll(@Req() req: AuthenticatedRequest) {
     return this.revenueService.findAll(
       req.user.tenantId,
@@ -67,6 +74,7 @@ export class RevenueController {
   // =====================================================
 
   @Get('dashboard')
+  @Roles(...REVENUE_READ_ROLES)
   dashboard(@Req() req: AuthenticatedRequest) {
     return this.revenueService.dashboardRevenue(
       req.user.tenantId,
@@ -78,6 +86,7 @@ export class RevenueController {
   // =====================================================
 
   @Get(':id')
+  @Roles(...REVENUE_READ_ROLES)
   findOne(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -93,6 +102,7 @@ export class RevenueController {
   // =====================================================
 
   @Patch(':id')
+  @Roles(...REVENUE_WRITE_ROLES)
   update(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,
@@ -116,6 +126,7 @@ export class RevenueController {
   // =====================================================
 
   @Delete(':id')
+  @Roles(...REVENUE_WRITE_ROLES)
   remove(
     @Req() req: AuthenticatedRequest,
     @Param('id') id: string,

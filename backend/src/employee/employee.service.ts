@@ -10,6 +10,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { CreateEmployeeSalaryDto } from './dto/create-employee-salary.dto';
 import { CreateEmployeeDependentDto } from './dto/create-employee-dependent.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { CreateRemunerationComponentDto } from './dto/create-remuneration-component.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -209,9 +210,9 @@ export class EmployeeService {
               dto.status ??
               'ACTIVE',
 
-            dependentCount:
-              dto.dependentCount ??
-              0,
+            // Dependentes são a fonte de verdade; este campo é um contador
+            // denormalizado somente para compatibilidade e snapshots.
+            dependentCount: 0,
 
             notes:
               dto.notes?.trim() ||
@@ -342,6 +343,10 @@ export class EmployeeService {
             },
           },
 
+          remunerationComponents: {
+            orderBy: { effectiveFrom: 'desc' },
+          },
+
           payrollItems: {
             orderBy: {
               createdAt:
@@ -457,9 +462,6 @@ export class EmployeeService {
         ...(dto.gender !== undefined && {
           gender: dto.gender?.trim() || null,
         }),
-        ...(dto.dependentCount !== undefined && {
-          dependentCount: dto.dependentCount,
-        }),
         ...(dto.notes !== undefined && {
           notes: dto.notes?.trim() || null,
         }),
@@ -492,9 +494,14 @@ export class EmployeeService {
       );
     }
 
-    return this.prisma.employee.delete({
+    // Não há remoção física: relações laborais e folhas históricas precisam
+    // continuar auditáveis. A reactivação exige fluxo administrativo explícito.
+    return this.prisma.employee.update({
       where: {
         id,
+      },
+      data: {
+        status: 'ARCHIVED',
       },
     });
   }
@@ -636,6 +643,45 @@ export class EmployeeService {
     });
   }
 
+  async addRemunerationComponent(tenantId: string, employeeId: string, dto: CreateRemunerationComponentDto) {
+    await this.findOne(tenantId, employeeId);
+    const inssTreatment = dto.type === 'HOLIDAY_ALLOWANCE' ? 'EXCLUDED' : 'NEEDS_OFFICIAL_CONFIRMATION';
+    return this.prisma.employeeRemunerationComponent.create({
+      data: {
+        employeeId,
+        type: dto.type,
+        amount: dto.amount,
+        effectiveFrom: new Date(dto.effectiveFrom),
+        effectiveTo: dto.effectiveTo ? new Date(dto.effectiveTo) : null,
+        inssTreatment,
+        notes: dto.notes?.trim() || null,
+        legalReference: dto.type === 'HOLIDAY_ALLOWANCE' ? 'Decreto Presidencial n.º 227/18, arts. 12.º–14.º' : null,
+      },
+    });
+  }
+
+  async getRemunerationComponents(tenantId: string, employeeId: string) {
+    await this.findOne(tenantId, employeeId);
+    return this.prisma.employeeRemunerationComponent.findMany({
+      where: { employeeId }, orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async endRemunerationComponent(tenantId: string, employeeId: string, componentId: string, effectiveTo: string) {
+    const component = await this.prisma.employeeRemunerationComponent.findFirst({
+      where: { id: componentId, employeeId, employee: { tenantId } },
+    });
+    if (!component) throw new NotFoundException('Componente remuneratório não encontrado.');
+    if (component.effectiveTo) throw new BadRequestException('Este componente já possui fim de vigência.');
+    const end = new Date(effectiveTo);
+    if (Number.isNaN(end.getTime()) || end < component.effectiveFrom) {
+      throw new BadRequestException('A data de fim deve ser igual ou posterior ao início da vigência.');
+    }
+    return this.prisma.employeeRemunerationComponent.update({
+      where: { id: component.id }, data: { effectiveTo: end },
+    });
+  }
+
   // =========================================================
   // DEPENDENTES
   // =========================================================
@@ -689,19 +735,13 @@ export class EmployeeService {
             },
           });
 
-        if (taxDependent) {
-          await transaction.employee.update({
-            where: {
-              id: employeeId,
-            },
-
-            data: {
-              dependentCount: {
-                increment: 1,
-              },
-            },
-          });
-        }
+        const dependentCount = await transaction.employeeDependent.count({
+          where: { employeeId, taxDependent: true },
+        });
+        await transaction.employee.update({
+          where: { id: employeeId },
+          data: { dependentCount },
+        });
 
         return dependent;
       },

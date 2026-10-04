@@ -2,12 +2,10 @@
   IsDateString,
   IsEmail,
   IsEnum,
-  IsInt,
   IsNotEmpty,
   Matches,
   IsOptional,
   IsString,
-  Min,
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -78,11 +76,6 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsString()
   gender?: string;
-
-  @IsOptional()
-  @IsInt()
-  @Min(0)
-  dependentCount?: number;
 
   @IsOptional()
   @IsString()

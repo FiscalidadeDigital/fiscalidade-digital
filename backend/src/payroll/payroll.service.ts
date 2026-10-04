@@ -11,10 +11,11 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
 import {
   assertSupportedPayrollYear,
   PAYROLL_CALCULATION_STATUS,
-  PAYROLL_RULE_VERSION_2026,
+  resolvePayrollRuleSet,
   resolveSocialSecurityRates,
 } from '../fiscal-rules/payroll-rules';
 import { calculatePayrollItem } from './payroll-calculator';
@@ -23,6 +24,7 @@ import { calculatePayrollItem } from './payroll-calculator';
 export class PayrollService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
   ) {}
 
   // =========================================================
@@ -108,6 +110,13 @@ export class PayrollService {
             where: {
               taxDependent: true,
             },
+          },
+          remunerationComponents: {
+            where: {
+              effectiveFrom: { lte: periodStart },
+              OR: [{ effectiveTo: null }, { effectiveTo: { gt: periodStart } }],
+            },
+            orderBy: { effectiveFrom: 'asc' },
           },
         },
         orderBy: {
@@ -207,7 +216,7 @@ export class PayrollService {
           irtAmount: 0,
           otherDeductionsAmount: 0,
           netAmount: 0,
-          taxRuleVersion: PAYROLL_RULE_VERSION_2026,
+          taxRuleVersion: resolvePayrollRuleSet(year).version,
           calculationStatus: PAYROLL_CALCULATION_STATUS,
           items: {
             create: employees.map((employee) => {
@@ -219,6 +228,10 @@ export class PayrollService {
                 .add(salary.bonuses)
                 .add(salary.commissions)
                 .add(salary.otherIncome)
+                .add(employee.remunerationComponents.reduce(
+                  (total, component) => total.add(component.amount),
+                  new Prisma.Decimal(0),
+                ))
                 .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
               return {
@@ -247,8 +260,18 @@ export class PayrollService {
                 irtAmount: 0,
                 otherDeductions: 0,
                 netAmount: grossAmount,
-                taxRuleVersion: PAYROLL_RULE_VERSION_2026,
+                taxRuleVersion: resolvePayrollRuleSet(year).version,
                 calculationStatus: PAYROLL_CALCULATION_STATUS,
+                remunerationComponents: employee.remunerationComponents.map((component) => ({
+                  id: component.id,
+                  type: component.type,
+                  amount: component.amount.toString(),
+                  irtTreatment: component.irtTreatment,
+                  inssTreatment: component.inssTreatment,
+                  exemptAmount: component.exemptAmount.toString(),
+                  legalReference: component.legalReference,
+                  effectiveFrom: component.effectiveFrom.toISOString(),
+                })),
               };
             }),
           },
@@ -365,12 +388,9 @@ export class PayrollService {
       );
     }
 
-    const socialSecurityObligationAmount =
-      payroll.taxRuleVersion === PAYROLL_RULE_VERSION_2026
-        ? payroll.socialSecurityAmount.add(
-            payroll.employerSocialSecurityAmount,
-          )
-        : payroll.socialSecurityAmount;
+    const socialSecurityObligationAmount = payroll.socialSecurityAmount.add(
+      payroll.employerSocialSecurityAmount,
+    );
 
     if (
       payroll.status === 'PAID' ||
@@ -418,6 +438,14 @@ export class PayrollService {
 
     const calculations = payroll.items.map((item) => {
       try {
+        const components = Array.isArray(item.remunerationComponents)
+          ? (item.remunerationComponents as Array<{ type?: string; amount?: string | number }>)
+          : [];
+        const sumComponents = (type?: string) => components
+          .filter((component) => !type || component.type === type)
+          .reduce((total, component) => total.add(component.amount ?? 0), new Prisma.Decimal(0));
+        const holidayAllowance = sumComponents('HOLIDAY_ALLOWANCE');
+        const otherComponentIncome = sumComponents().sub(holidayAllowance);
         return {
           item,
           result: calculatePayrollItem({
@@ -430,7 +458,8 @@ export class PayrollService {
             otherAllowances: item.otherAllowances,
             bonuses: item.bonuses,
             commissions: item.commissions,
-            otherIncome: item.otherIncome,
+            otherIncome: item.otherIncome.add(otherComponentIncome),
+            holidayAllowance,
             otherDeductions: item.otherDeductions,
           }),
         };
@@ -523,6 +552,30 @@ export class PayrollService {
               netAmount: result.netAmount,
               taxRuleVersion: result.taxRuleVersion,
               calculationStatus: result.calculationStatus,
+              fiscalSnapshot: {
+                input: {
+                  baseSalary: calculation.item.baseSalary.toString(),
+                  foodAllowance: calculation.item.foodAllowance.toString(),
+                  transportAllowance: calculation.item.transportAllowance.toString(),
+                  otherAllowances: calculation.item.otherAllowances.toString(),
+                  bonuses: calculation.item.bonuses.toString(),
+                  commissions: calculation.item.commissions.toString(),
+                  otherIncome: calculation.item.otherIncome.toString(),
+                },
+                remunerationComponents: calculation.item.remunerationComponents,
+                componentGrossAmount: calculation.result.grossAmount
+                  .sub(calculation.item.baseSalary)
+                  .sub(calculation.item.foodAllowance)
+                  .sub(calculation.item.transportAllowance)
+                  .sub(calculation.item.otherAllowances)
+                  .sub(calculation.item.bonuses)
+                  .sub(calculation.item.commissions)
+                  .sub(calculation.item.otherIncome)
+                  .toString(),
+                inssBase: result.socialSecurityBase.toString(),
+                irtBase: result.irtTaxableAmount.toString(),
+                ruleVersion: result.taxRuleVersion,
+              },
             },
           });
         }
@@ -541,8 +594,22 @@ export class PayrollService {
             otherDeductionsAmount:
               totals.otherDeductions,
             netAmount: totals.net,
-            taxRuleVersion: PAYROLL_RULE_VERSION_2026,
+            taxRuleVersion: resolvePayrollRuleSet(payroll.year).version,
             calculationStatus: PAYROLL_CALCULATION_STATUS,
+            fiscalSnapshot: {
+              period: payroll.period,
+              ruleVersion: resolvePayrollRuleSet(payroll.year).version,
+              calculationStatus: PAYROLL_CALCULATION_STATUS,
+              source: 'Lei n.º 14/25, Artigo 21.º e Anexo I; Decreto Presidencial n.º 227/18, arts. 12.º–13.º',
+              totals: {
+                gross: totals.gross.toString(),
+                inssEmployee: totals.socialSecurity.toString(),
+                inssEmployer: totals.employerSocialSecurity.toString(),
+                irt: totals.irt.toString(),
+                net: totals.net.toString(),
+              },
+            },
+            snapshotStatus: 'CAPTURED',
             processedAt: new Date(),
           },
           include: {
@@ -566,7 +633,7 @@ export class PayrollService {
             },
             newData: {
               status: 'CALCULATED',
-              taxRuleVersion: PAYROLL_RULE_VERSION_2026,
+              taxRuleVersion: resolvePayrollRuleSet(payroll.year).version,
               calculationStatus: PAYROLL_CALCULATION_STATUS,
             },
           },
@@ -627,11 +694,9 @@ export class PayrollService {
     await this.updatePayrollObligations(
       tenantId,
       paidPayroll,
-      paidPayroll.taxRuleVersion === PAYROLL_RULE_VERSION_2026
-        ? paidPayroll.socialSecurityAmount.add(
-            paidPayroll.employerSocialSecurityAmount,
-          )
-        : paidPayroll.socialSecurityAmount,
+      paidPayroll.socialSecurityAmount.add(
+        paidPayroll.employerSocialSecurityAmount,
+      ),
       paidPayroll.irtAmount,
     );
 
@@ -691,6 +756,9 @@ export class PayrollService {
         },
         data: {
           status: nextStatus,
+          ...(nextStatus === 'CLOSED' && {
+            snapshotStatus: 'IMMUTABLE',
+          }),
         },
       });
 
@@ -1508,44 +1576,22 @@ export class PayrollService {
     // CRIAR
     // =======================================================
 
-    const created =
-      await this.prisma.fiscalObligation.create({
-        data: {
-          tenantId,
-
-          fiscalCalendarId:
-            rule.id,
-
-          type:
-            rule.obligationType,
-
-          title:
-            rule.title,
-
-          description:
-            rule.description,
-
-          amount: amount.toNumber(),
-          amountValue: amount,
-
-          dueDate:
-            rule.dueDate,
-
-          period:
-            obligationPeriod,
-
-          status:
-            calculatedStatus,
-
-          alertEnabled:
-            true,
-
-          alertDaysBefore:
-            7,
-
-          reminderSent:
-            false,
-        },
+    const persisted =
+      await this.obligationPersistence.persistCalendarDerived({
+        tenantId,
+        fiscalCalendarId: rule.id,
+        period: obligationPeriod,
+        type: rule.obligationType,
+        title: rule.title,
+        description: rule.description,
+        amount: amount.toNumber(),
+        amountValue: amount,
+        dueDate: rule.dueDate,
+        status: calculatedStatus,
+        alertEnabled: true,
+        alertDaysBefore: 7,
+        reminderSent: false,
+        origin: 'PAYROLL',
       });
 
     console.log(
@@ -1564,7 +1610,7 @@ export class PayrollService {
       `[Payroll] Vencimento=${dueDate.toISOString()}`,
     );
 
-    return created;
+    return persisted.obligation;
   }
 
   // =========================================================
