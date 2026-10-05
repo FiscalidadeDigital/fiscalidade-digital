@@ -1,11 +1,14 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { Prisma, TaxType } from '@prisma/client';
 
 import { CalculateIndustrialDto } from '../dto/calculate-industrial.dto';
 import { industrialAssessmentRequiresReview } from '../../fiscal-engine/fiscal-assessment';
+import { FiscalEnrollmentService } from '../../fiscal-enrollment/fiscal-enrollment.service';
 
 @Injectable()
 export class IndustrialEngine {
+  constructor(private readonly enrollments: FiscalEnrollmentService) {}
+
   async calculate(tenantId: string, dto: CalculateIndustrialDto) {
     if (!tenantId) {
       throw new BadRequestException('Empresa autenticada não identificada.');
@@ -32,6 +35,16 @@ export class IndustrialEngine {
       throw new BadRequestException('Receitas e custos devem ser números válidos.');
     }
 
+    const enrollment = await this.enrollments.resolve(tenantId, TaxType.INDUSTRIAL, new Date());
+    if (!enrollment) {
+      return {
+        success: true, tenantId, currency: 'AOA', receitas: Number(receitas.toFixed(2)), custos: Number(custos.toFixed(2)),
+        taxableBase: null, industrialTax: null, provisionalTax: null, rate: null, ratePercent: null,
+        regime: null, calculationStatus: 'NEEDS_CONFIGURATION',
+        message: 'Sem enquadramento vigente de Imposto Industrial. A simulação não assume Tenant.regime.',
+      };
+    }
+
     const review = industrialAssessmentRequiresReview();
     return {
       success: true,
@@ -44,7 +57,7 @@ export class IndustrialEngine {
       provisionalTax: null,
       rate: null,
       ratePercent: null,
-      regime: 'REVIEW_REQUIRED',
+      regime: enrollment.regime,
       ...review,
     };
   }

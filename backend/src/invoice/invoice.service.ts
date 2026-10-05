@@ -12,7 +12,7 @@ import {
   Optional,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { InvoiceDocumentType, Prisma } from '@prisma/client';
+import { InvoiceDocumentType, Prisma, TaxType } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { ObligationsService } from '../obligations/obligations.service';
@@ -29,6 +29,7 @@ import {
 } from './dto/create-invoice.dto';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
 import { calculateInvoiceAmounts } from './invoice-calculator';
+import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 
 @Injectable()
 export class InvoiceService {
@@ -40,6 +41,7 @@ export class InvoiceService {
     private readonly obligationsService: ObligationsService,
     private readonly fiscalEngineService: FiscalEngineService,
     @Optional() private readonly fiscalSignatureService?: FiscalSignatureService,
+    private readonly enrollments?: FiscalEnrollmentService,
   ) {}
 
   // ============================================================
@@ -114,7 +116,6 @@ export class InvoiceService {
           id: true,
           name: true,
           nif: true,
-          regime: true,
           retentionRate: true,
         },
       });
@@ -220,7 +221,23 @@ export class InvoiceService {
     // O cálculo é feito exclusivamente no backend.
     // ==========================================================
 
-    const vatPolicy = resolveInvoiceVatPolicy(tenant.regime);
+    const issuedAt = new Date();
+    const ivaEnrollment = documentType === InvoiceDocumentType.NORMAL
+      ? await this.enrollments?.resolve(tenantId, TaxType.IVA, issuedAt)
+      : null;
+    if (documentType === InvoiceDocumentType.NORMAL && !ivaEnrollment) {
+      throw new BadRequestException({
+        code: 'IVA_ENROLLMENT_REQUIRED',
+        message: 'É necessário um enquadramento IVA vigente na data de emissão da factura.',
+      });
+    }
+    if (documentType === InvoiceDocumentType.NORMAL && ivaEnrollment?.regime === 'SIMPLIFICADO') {
+      throw new BadRequestException({
+        code: 'IVA_SIMPLIFIED_NEEDS_OFFICIAL_CONFIRMATION',
+        message: 'O IVA Simplificado está configurado, mas o cálculo automático aguarda confirmação oficial.',
+      });
+    }
+    const vatPolicy = resolveInvoiceVatPolicy(ivaEnrollment?.regime ?? 'GERAL');
     const ivaRate =
       documentType === InvoiceDocumentType.PRO_FORMA
         ? 0
@@ -269,7 +286,6 @@ export class InvoiceService {
     const iva = calculation.iva.toNumber();
     const withholdingTax = calculation.withholdingTax.toNumber();
     const total = calculation.total.toNumber();
-    const issuedAt = new Date();
 
     // ==========================================================
     // NÚMERO DA FACTURA

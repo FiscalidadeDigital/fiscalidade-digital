@@ -46,6 +46,8 @@ export class ObligationsController {
 
     @Query('year')
     year?: string,
+    @Query('readOnly')
+    readOnly?: string,
   ) {
     const tenantId =
       req.user.tenantId;
@@ -53,7 +55,9 @@ export class ObligationsController {
     const referenceYear =
       this.parseYear(year);
 
-    return this.obligationsService.findAll(
+    return readOnly === 'true'
+      ? this.obligationsService.findAllReadOnly(tenantId, referenceYear)
+      : this.obligationsService.findAll(
       tenantId,
       referenceYear,
     );

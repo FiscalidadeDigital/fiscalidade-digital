@@ -3,10 +3,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { FiscalRegime, Prisma } from '@prisma/client';
+import { FiscalRegime, Prisma, TaxType } from '@prisma/client';
 
 import { CalculateIvaDto, IvaOperation } from '../dto/calculate-iva.dto';
 import { PrismaService } from '../../prisma/prisma.service';
+import { FiscalEnrollmentService } from '../../fiscal-enrollment/fiscal-enrollment.service';
 import {
   IVA_LEGAL_SOURCE,
   IVA_RATES_FROM_2023_12_28,
@@ -17,7 +18,7 @@ const asDisplayNumber = (value: Prisma.Decimal) =>
 
 @Injectable()
 export class IvaEngine {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService, private readonly enrollments: FiscalEnrollmentService) {}
 
   async calculate(tenantId: string, dto: CalculateIvaDto) {
     if (!tenantId) {
@@ -48,11 +49,16 @@ export class IvaEngine {
       throw new NotFoundException('Empresa não encontrada.');
     }
 
-    const isSimplified = tenant.regime === FiscalRegime.SIMPLIFICADO;
+    const enrollment = await this.enrollments.resolve(tenantId, TaxType.IVA, new Date());
+    if (!enrollment) {
+      return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: null, operation: dto.operation, amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_CONFIGURATION', ruleVersion: null, legalSource: null, message: 'Sem enquadramento IVA vigente para o período. A simulação não assume Tenant.regime.' };
+    }
+    const isSimplified = enrollment.regime === FiscalRegime.SIMPLIFICADO;
+    if (isSimplified) {
+      return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: enrollment.regime, operation: dto.operation, amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION', ruleVersion: enrollment.legalReference || null, legalSource: enrollment.officialSourceUrl || null, message: 'O enquadramento IVA Simplificado foi reconhecido, mas a fórmula definitiva não está automatizada sem confirmação oficial.' };
+    }
     const rate = new Prisma.Decimal(
-      isSimplified
-        ? IVA_RATES_FROM_2023_12_28.simplifiedSettlement
-        : IVA_RATES_FROM_2023_12_28.general,
+      IVA_RATES_FROM_2023_12_28.general,
     );
     const hasLineClassification = Boolean(dto.productType?.trim());
     const isPurchase =
@@ -66,7 +72,7 @@ export class IvaEngine {
       success: true,
       tenantId,
       company: { id: tenant.id, name: tenant.name, nif: tenant.nif },
-      regime: tenant.regime,
+      regime: enrollment.regime,
       operation: dto.operation,
       amount: asDisplayNumber(amount),
       taxableBase: asDisplayNumber(amount),
@@ -80,9 +86,7 @@ export class IvaEngine {
       productType: dto.productType || null,
       description: dto.description || null,
       calculationStatus: requiresReview ? 'REVIEW_REQUIRED' : 'PREVIEW_ONLY',
-      ruleVersion: isSimplified
-        ? 'AO-CIVA-LEI-14-23-ART19-B-69B-69C'
-        : 'AO-CIVA-LEI-14-23-ART19-A',
+      ruleVersion: 'AO-CIVA-LEI-14-23-ART19-A',
       legalSource: IVA_LEGAL_SOURCE.officialUrl,
       message: isPurchase
         ? 'IVA suportado indicado para revisão. Não é IVA dedutível até existir confirmação humana e documentação válida.'

@@ -8,6 +8,7 @@ import {
   InvoiceDocumentType,
   ObligationStatus,
   Prisma,
+  FiscalRegime,
   TaxRuleOperation,
   TaxType,
 } from '@prisma/client';
@@ -16,6 +17,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
 import { calculateVatAssessment } from './fiscal-assessment';
 import { IVA_LEGAL_SOURCE } from '../fiscal-rules/iva-rules';
+import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 
 type FiscalTransactionData = {
   tenantId: string;
@@ -45,6 +47,7 @@ export class FiscalEngineService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
+    private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(prisma),
   ) {}
 
   // =========================================================
@@ -64,7 +67,6 @@ export class FiscalEngineService {
           id: true,
           name: true,
           nif: true,
-          regime: true,
           sector: true,
           companyType: true,
           retentionRate: true,
@@ -238,6 +240,15 @@ export class FiscalEngineService {
 
     const transactionData: FiscalTransactionData[] =
       [];
+    const regimeByTaxPeriod = new Map<string, FiscalRegime | null>();
+    const resolveRegime = async (taxType: TaxType, date: Date) => {
+      const key = `${taxType}:${this.period(date)}`;
+      if (!regimeByTaxPeriod.has(key)) {
+        const enrollment = await this.enrollments.resolve(tenantId, taxType, date);
+        regimeByTaxPeriod.set(key, enrollment?.regime ?? null);
+      }
+      return regimeByTaxPeriod.get(key) ?? null;
+    };
 
     // =======================================================
     // IVA DAS VENDAS
@@ -260,10 +271,9 @@ export class FiscalEngineService {
       // REGIME GERAL
       // =====================================================
 
-      if (
-        tenant.regime ===
-        'GERAL'
-      ) {
+      const ivaRegime = await resolveRegime(TaxType.IVA, invoice.issuedAt);
+
+      if (ivaRegime === FiscalRegime.GERAL) {
         transactionData.push({
           tenantId,
 
@@ -323,20 +333,11 @@ export class FiscalEngineService {
       // issuedAt como referência temporal disponível.
       // =====================================================
 
-      if (
-        tenant.regime ===
-        'SIMPLIFICADO'
-      ) {
+      if (ivaRegime === FiscalRegime.SIMPLIFICADO) {
         if (
           invoice.status ===
           'PAID'
         ) {
-          const simplifiedVat =
-            this.round(
-              subtotal *
-                0.07,
-            );
-
           transactionData.push({
             tenantId,
 
@@ -354,8 +355,7 @@ export class FiscalEngineService {
             referenceDate:
               invoice.issuedAt,
 
-            sourceType:
-              'INVOICE_IVA_SIMPLIFICADO',
+            sourceType: 'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
 
             sourceId:
               invoice.id,
@@ -365,8 +365,7 @@ export class FiscalEngineService {
                 subtotal,
               ),
 
-            taxAmount:
-              simplifiedVat,
+            taxAmount: 0,
 
             deductibleAmount:
               0,
@@ -375,7 +374,8 @@ export class FiscalEngineService {
               0,
 
             description:
-              `IVA Simplificado da venda ${invoice.invoiceNumber}`,
+              `IVA Simplificado da venda ${invoice.invoiceNumber}: cálculo pendente de confirmação oficial.`,
+            calculationStatus: 'REVIEW_REQUIRED',
           });
         }
       }
@@ -385,13 +385,9 @@ export class FiscalEngineService {
     // IVA DEDUTÍVEL DAS COMPRAS
     // =======================================================
 
-    if (
-      tenant.regime ===
-      'GERAL'
-    ) {
-      for (
-        const purchase of purchases
-      ) {
+    for (const purchase of purchases) {
+      const ivaRegime = await resolveRegime(TaxType.IVA, purchase.issuedAt);
+      if (ivaRegime === FiscalRegime.GERAL) {
         const subtotal =
           this.number(
             purchase.subtotal,
@@ -699,7 +695,12 @@ export class FiscalEngineService {
     // nem cria uma liquidação provisória automática.
     // =======================================================
 
-    transactionData.push({
+    const industrialRegime = await resolveRegime(
+      TaxType.INDUSTRIAL,
+      new Date(Date.UTC(year, 7, 1)),
+    );
+
+    if (industrialRegime) transactionData.push({
       tenantId,
       taxType: TaxType.INDUSTRIAL,
       operation: TaxRuleOperation.SALE,
@@ -724,7 +725,7 @@ export class FiscalEngineService {
       async (tx) => {
         const sourceTypes = [
           'INVOICE_IVA',
-          'INVOICE_IVA_SIMPLIFICADO',
+          'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
           'PURCHASE_INVOICE_IVA',
           'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
           'PURCHASE_INVOICE_IVA_DEDUCTIBLE_CONFIRMED',
@@ -751,6 +752,10 @@ export class FiscalEngineService {
         await tx.taxTransaction.deleteMany({
           where: {
             tenantId,
+
+            period: {
+              startsWith: `${year}-`,
+            },
 
             sourceType: {
               in: sourceTypes,
@@ -806,7 +811,7 @@ export class FiscalEngineService {
             key.taxType,
             key.period,
             year,
-            tenant.regime,
+            regimeByTaxPeriod.get(`${key.taxType}:${key.period}`) ?? null,
           );
         }
       },
@@ -935,7 +940,7 @@ export class FiscalEngineService {
 
         `NIF: ${tenant.nif}`,
 
-        `Regime: ${tenant.regime}`,
+        'Enquadramento: resolvido por imposto e competência',
 
         `Ano: ${year}`,
 
@@ -976,8 +981,7 @@ export class FiscalEngineService {
         nif:
           tenant.nif,
 
-        regime:
-          tenant.regime,
+        regime: null,
 
         sector:
           tenant.sector,
@@ -1220,7 +1224,7 @@ export class FiscalEngineService {
     taxType: TaxType,
     period: string,
     year: number,
-    regime: any,
+    regime: FiscalRegime | null,
   ) {
     const transactions =
       await tx.taxTransaction.findMany({
@@ -1404,7 +1408,7 @@ export class FiscalEngineService {
     taxType: TaxType,
     period: string,
     year: number,
-    regime: any,
+    regime: FiscalRegime | null,
     finalAmount: number,
   ) {
     /*
@@ -1459,11 +1463,13 @@ export class FiscalEngineService {
 
           taxType,
 
-          regimes: {
-            some: {
-              regime,
-            },
-          },
+          ...(this.requiresEnrollment(taxType)
+            ? {
+                regimes: {
+                  some: { regime },
+                },
+              }
+            : {}),
         },
 
         include: {
@@ -2116,6 +2122,10 @@ export class FiscalEngineService {
   // =========================================================
   // NORMALIZAR PERÍODO
   // =========================================================
+
+  private requiresEnrollment(taxType: TaxType) {
+    return taxType === TaxType.IVA || taxType === TaxType.INDUSTRIAL;
+  }
 
   private normalizePeriod(
     period: string,
