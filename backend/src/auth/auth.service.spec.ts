@@ -1,61 +1,61 @@
 import { AuthService } from './auth.service';
 
-describe('AuthService registration defaults', () => {
-  it('does not infer a withholding rate from the company category', async () => {
-    const tenantCreate = jest.fn(({ data }) =>
-      Promise.resolve({ id: 'tenant-1', ...data }),
-    );
+describe('AuthService registration', () => {
+  it('creates a pending account and versioned consents without creating a tenant', async () => {
+    const transaction = {
+      pendingRegistration: { create: jest.fn().mockResolvedValue({ id: 'pending-1', name: 'Responsável', email: 'owner@example.invalid' }) },
+      legalAcceptance: { createMany: jest.fn().mockResolvedValue({ count: 2 }) },
+    };
     const prisma = {
-      user: {
-        findFirst: jest.fn().mockResolvedValue(null),
-        create: jest.fn().mockResolvedValue({
-          id: 'user-1',
-          tenantId: 'tenant-1',
-          name: 'Responsável',
-          email: 'owner@example.invalid',
-          role: 'OWNER',
-        }),
-      },
-      tenant: { create: tenantCreate },
-      companySettings: {
-        upsert: jest.fn().mockResolvedValue({ tenantId: 'tenant-1' }),
-      },
+      user: { findFirst: jest.fn().mockResolvedValue(null) },
+      pendingRegistration: { findUnique: jest.fn().mockResolvedValue(null) },
+      $transaction: jest.fn((callback) => callback(transaction)),
+      authChallenge: { findFirst: jest.fn().mockResolvedValue(null), updateMany: jest.fn().mockResolvedValue({ count: 0 }), create: jest.fn().mockResolvedValue({}) },
     };
-    const jwtService = {
-      signAsync: jest.fn().mockResolvedValue('test-token'),
-    };
-    const obligationsService = {
-      syncCompany: jest.fn().mockResolvedValue({
-        success: true,
-        created: 0,
-        updated: 0,
-        late: 0,
-        year: 2026,
-        calendarRules: 0,
-      }),
-    };
-    const service = new AuthService(
-      prisma as any,
-      jwtService as any,
-      obligationsService as any,
-    );
+    const mail = { sendEmailVerification: jest.fn() };
+    const service = new AuthService(prisma as any, {} as any, mail as any, {} as any);
 
-    await service.register({
-      companyName: 'Empresa de teste',
-      ownerName: 'Responsável',
-      nif: '5000000000',
-      email: 'owner@example.invalid',
-      companyType: 'OUTRO',
-      employees: 0,
-      regime: 'GERAL',
-      password: 'Password-de-teste-2026!',
-      acceptTerms: true,
-      acceptPrivacyPolicy: true,
-      confirmInformation: true,
+    await service.registerAccount({
+      name: 'Responsável', email: 'owner@example.invalid', password: 'Password-de-teste-2026!',
+      confirmPassword: 'Password-de-teste-2026!', acceptTerms: true, acceptPrivacyPolicy: true,
     });
 
-    const tenantData = tenantCreate.mock.calls[0][0].data;
-    expect(tenantData.regime).toBe('GERAL');
-    expect(tenantData).not.toHaveProperty('retentionRate');
+    expect(transaction.legalAcceptance.createMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.arrayContaining([
+        expect.objectContaining({ documentType: 'TERMS_OF_USE' }),
+        expect.objectContaining({ documentType: 'PRIVACY_POLICY' }),
+      ]),
+    }));
+    expect((prisma as any).tenant).toBeUndefined();
+    expect(mail.sendEmailVerification).toHaveBeenCalledWith(
+      'owner@example.invalid', 'Responsável', expect.stringMatching(/^\d{6}$/),
+    );
+  });
+});
+
+describe('AuthService authentication challenges', () => {
+  const makeService = (challenge: any, updateCount = 1) => {
+    const prisma = {
+      authChallenge: { findFirst: jest.fn().mockResolvedValue(challenge), updateMany: jest.fn().mockResolvedValue({ count: updateCount }) },
+    };
+    return { service: new AuthService(prisma as any, {} as any, {} as any, {} as any), prisma };
+  };
+
+  it('rejects a wrong OTP and increments its attempt counter', async () => {
+    const { service, prisma } = makeService({ id: 'challenge-1', codeHash: 'not-the-code', expiresAt: new Date(Date.now() + 60_000), attemptCount: 0, usedAt: null });
+    await expect((service as any).consumeChallenge('a@example.invalid', 'EMAIL_VERIFICATION', '123456')).rejects.toThrow('inválido ou expirou');
+    expect(prisma.authChallenge.updateMany).toHaveBeenCalledWith(expect.objectContaining({ data: { attemptCount: { increment: 1 } } }));
+  });
+
+  it('rejects an expired OTP without consuming it', async () => {
+    const { service, prisma } = makeService({ id: 'challenge-1', codeHash: 'irrelevant', expiresAt: new Date(Date.now() - 1), attemptCount: 0, usedAt: null });
+    await expect((service as any).consumeChallenge('a@example.invalid', 'EMAIL_VERIFICATION', '123456')).rejects.toThrow('inválido ou expirou');
+    expect(prisma.authChallenge.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('rejects an OTP claimed concurrently by another request', async () => {
+    const crypto = require('crypto');
+    const { service } = makeService({ id: 'challenge-1', codeHash: crypto.createHash('sha256').update('123456').digest('hex'), expiresAt: new Date(Date.now() + 60_000), attemptCount: 0, usedAt: null }, 0);
+    await expect((service as any).consumeChallenge('a@example.invalid', 'EMAIL_VERIFICATION', '123456')).rejects.toThrow('inválido ou expirou');
   });
 });

@@ -35,33 +35,34 @@ model Tenant {
   /// Contador autoritativo actualizado na mesma transacção do documento.
   storageUsedBytes       BigInt       @default(0) @db.BigInt
 
-  aiQuestions             AIQuestion[]
-  auditLogs               AuditLog[]
-  clients                 Client[]
-  companySettings         CompanySettings?
-  emailLogs               EmailLog[]
-  fiscalAlerts            FiscalAlert[]
-  employees               Employee[]
-  taxRegimeAssignments    TaxRegimeAssignment[]
-  obligations             FiscalObligation[]
-  invoices                Invoice[]
-  notifications           Notification[]
-  payrolls                Payroll[]
-  products                Product[]
-  purchaseInvoices        PurchaseInvoice[]
-  purchaseInvoicePayments PurchaseInvoicePayment[]
-  revenues                Revenue[]
-  smsLogs                 SMSLog[]
-  subscriptions           Subscription[]
-  suppliers               Supplier[]
-  taxAssessments          TaxAssessment[]
-  taxCalculations         TaxCalculation[]
-  declarations            TaxDeclaration[]
-  payments                TaxPayment[]
-  taxTransactions         TaxTransaction[]
-  users                   User[]
-  documents               Document[]
-  purchaseInvoiceImports  PurchaseInvoiceImport[]
+  aiQuestions                  AIQuestion[]
+  auditLogs                    AuditLog[]
+  clients                      Client[]
+  companySettings              CompanySettings?
+  emailLogs                    EmailLog[]
+  fiscalAlerts                 FiscalAlert[]
+  employees                    Employee[]
+  taxRegimeAssignments         TaxRegimeAssignment[]
+  invitations                  UserInvitation[]
+  obligations                  FiscalObligation[]
+  invoices                     Invoice[]
+  notifications                Notification[]
+  payrolls                     Payroll[]
+  products                     Product[]
+  purchaseInvoices             PurchaseInvoice[]
+  purchaseInvoicePayments      PurchaseInvoicePayment[]
+  revenues                     Revenue[]
+  smsLogs                      SMSLog[]
+  subscriptions                Subscription[]
+  suppliers                    Supplier[]
+  taxAssessments               TaxAssessment[]
+  taxCalculations              TaxCalculation[]
+  declarations                 TaxDeclaration[]
+  payments                     TaxPayment[]
+  taxTransactions              TaxTransaction[]
+  users                        User[]
+  documents                    Document[]
+  purchaseInvoiceImports       PurchaseInvoiceImport[]
   electronicInvoiceSubmissions ElectronicInvoiceSubmission[]
   electronicInvoiceSeries      ElectronicInvoiceSeries[]
 
@@ -70,19 +71,23 @@ model Tenant {
 }
 
 model User {
-  id               String    @id @default(uuid())
-  tenantId         String
-  email            String
-  password         String
-  name             String
-  role             UserRole  @default(VIEWER)
-  isActive         Boolean   @default(true)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  lastLogin        DateTime?
-  avatar           String?
-  phone            String?
-  twoFactorEnabled Boolean   @default(false)
+  id                        String    @id @default(uuid())
+  tenantId                  String
+  email                     String
+  password                  String
+  name                      String
+  role                      UserRole  @default(VIEWER)
+  isActive                  Boolean   @default(true)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  lastLogin                 DateTime?
+  avatar                    String?
+  phone                     String?
+  twoFactorEnabled          Boolean   @default(false)
+  emailVerifiedAt           DateTime?
+  emailVerificationRequired Boolean   @default(false)
+  passwordChangedAt         DateTime?
+  onboardingCompletedAt     DateTime?
 
   tenant                         Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   createdPurchaseInvoices        PurchaseInvoice[]        @relation("PurchaseInvoiceCreatedBy")
@@ -90,9 +95,91 @@ model User {
   rejectedPurchaseInvoices       PurchaseInvoice[]        @relation("PurchaseInvoiceRejectedBy")
   purchaseInvoicePayments        PurchaseInvoicePayment[] @relation("PurchaseInvoicePaymentCreatedBy")
   uploadedPurchaseInvoiceImports PurchaseInvoiceImport[]  @relation("PurchaseInvoiceImportUploadedBy")
+  authChallenges                 AuthChallenge[]
+  legalAcceptances               LegalAcceptance[]
 
   @@unique([email, tenantId])
   @@index([tenantId])
+}
+
+/// Registo de conta antes da criação da empresa. Evita criar tenants com
+/// identificadores fiscais ou enquadramentos fictícios durante a verificação.
+model PendingRegistration {
+  id                    String    @id @default(uuid())
+  name                  String
+  email                 String    @unique
+  passwordHash          String
+  phone                 String?
+  acceptedTermsAt       DateTime
+  acceptedPrivacyAt     DateTime
+  emailVerifiedAt       DateTime?
+  onboardingCompletedAt DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  authChallenges AuthChallenge[]
+  legalAcceptances LegalAcceptance[]
+
+  @@index([emailVerifiedAt])
+}
+
+/// Códigos de curta duração. Apenas o hash do código é persistido.
+model AuthChallenge {
+  id                    String               @id @default(uuid())
+  email                 String
+  purpose               AuthChallengePurpose
+  codeHash              String
+  expiresAt             DateTime
+  usedAt                DateTime?
+  attemptCount          Int                  @default(0)
+  lastSentAt            DateTime             @default(now())
+  createdAt             DateTime             @default(now())
+  userId                String?
+  pendingRegistrationId String?
+
+  user                User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pendingRegistration PendingRegistration? @relation(fields: [pendingRegistrationId], references: [id], onDelete: Cascade)
+
+  @@index([email, purpose, usedAt])
+  @@index([userId, purpose])
+  @@index([pendingRegistrationId, purpose])
+}
+
+/// Convite tenant-scoped: o segredo é guardado exclusivamente como hash.
+model UserInvitation {
+  id          String    @id @default(uuid())
+  tenantId    String
+  email       String
+  role        UserRole
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime  @default(now())
+  createdById String
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, email])
+  @@index([email, acceptedAt])
+}
+
+/// Aceite rastreável de documentos jurídicos. O vínculo começa na pré-conta
+/// ou no utilizador convidado, sem recolha de dados adicionais desnecessários.
+model LegalAcceptance {
+  id                    String            @id @default(uuid())
+  documentType          LegalDocumentType
+  version               String
+  acceptedAt            DateTime          @default(now())
+  userId                String?
+  pendingRegistrationId String?
+
+  user                User?                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  pendingRegistration PendingRegistration? @relation(fields: [pendingRegistrationId], references: [id], onDelete: Cascade)
+
+  @@unique([documentType, version, userId])
+  @@unique([documentType, version, pendingRegistrationId])
+  @@index([userId, acceptedAt])
+  @@index([pendingRegistrationId, acceptedAt])
 }
 
 /// Conta administrativa da plataforma. Não pertence a nenhum tenant e usa um
@@ -159,21 +246,21 @@ model Client {
 }
 
 model Product {
-  id          String   @id @default(uuid())
-  tenantId    String
-  name        String
-  description String?
-  price       Float
-  priceAmount Decimal? @db.Decimal(20, 2)
-  ivaRate     Float    @default(14)
-  createdAt   DateTime @default(now())
-  code        String?
-  isActive    Boolean  @default(true)
-  stock       Float?
-  stockAmount Decimal? @db.Decimal(20, 4)
-  unit        String   @default("UN")
+  id                      String   @id @default(uuid())
+  tenantId                String
+  name                    String
+  description             String?
+  price                   Float
+  priceAmount             Decimal? @db.Decimal(20, 2)
+  ivaRate                 Float    @default(14)
+  createdAt               DateTime @default(now())
+  code                    String?
+  isActive                Boolean  @default(true)
+  stock                   Float?
+  stockAmount             Decimal? @db.Decimal(20, 4)
+  unit                    String   @default("UN")
   electronicOperationType String?
-  updatedAt   DateTime @updatedAt
+  updatedAt               DateTime @updatedAt
 
   invoiceItems         InvoiceItem[]
   tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -217,12 +304,12 @@ model Invoice {
   signatureKeyVersion  Int?
   previousFiscalHash   String?
 
-  client           Client        @relation(fields: [clientId], references: [id])
-  tenant           Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  items            InvoiceItem[]
-  documents        Document[]
-  sourceProForma   Invoice?      @relation("InvoiceConversion", fields: [sourceProFormaId], references: [id])
-  convertedInvoice Invoice?      @relation("InvoiceConversion")
+  client                Client                        @relation(fields: [clientId], references: [id])
+  tenant                Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  items                 InvoiceItem[]
+  documents             Document[]
+  sourceProForma        Invoice?                      @relation("InvoiceConversion", fields: [sourceProFormaId], references: [id])
+  convertedInvoice      Invoice?                      @relation("InvoiceConversion")
   electronicSubmissions ElectronicInvoiceSubmission[]
 
   @@unique([tenantId, invoiceNumber])
@@ -233,46 +320,46 @@ model Invoice {
 }
 
 model ElectronicInvoiceSubmission {
-  id               String   @id @default(uuid())
-  tenantId         String
-  invoiceId        String
-  submissionUuid   String   @unique
-  requestId        String?
-  agtDocumentNo    String?
-  environment      String
-  status           String   @default("READY")
-  attempt          Int      @default(0)
-  lastHttpStatus   Int?
-  agtErrors        Json?
-  agtErrorHistory  Json?
-  lastAgtResponse  Json?
-  submittedAt      DateTime?
-  lastCheckedAt    DateTime?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String    @id @default(uuid())
+  tenantId        String
+  invoiceId       String
+  submissionUuid  String    @unique
+  requestId       String?
+  agtDocumentNo   String?
+  environment     String
+  status          String    @default("READY")
+  attempt         Int       @default(0)
+  lastHttpStatus  Int?
+  agtErrors       Json?
+  agtErrorHistory Json?
+  lastAgtResponse Json?
+  submittedAt     DateTime?
+  lastCheckedAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   invoice Invoice @relation(fields: [invoiceId], references: [id], onDelete: Restrict)
 
+  @@unique([invoiceId, environment])
   @@index([tenantId, status])
   @@index([requestId])
-  @@unique([invoiceId, environment])
 }
 
 model ElectronicInvoiceSeries {
-  id                 String   @id @default(uuid())
-  tenantId           String
-  seriesCode         String
-  documentType       String
-  seriesYear         Int
-  establishmentNumber String
-  contingencyIndicator String @default("N")
-  authorizedQuantity Int?
-  firstDocumentNo    String?
-  lastDocumentNo     String?
-  environment        String
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
+  id                   String   @id @default(uuid())
+  tenantId             String
+  seriesCode           String
+  documentType         String
+  seriesYear           Int
+  establishmentNumber  String
+  contingencyIndicator String   @default("N")
+  authorizedQuantity   Int?
+  firstDocumentNo      String?
+  lastDocumentNo       String?
+  environment          String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -281,23 +368,23 @@ model ElectronicInvoiceSeries {
 }
 
 model InvoiceItem {
-  id                 String   @id @default(uuid())
-  invoiceId          String
-  productName        String
-  quantity           Float
-  quantityAmount     Decimal? @db.Decimal(20, 4)
-  unitPrice          Float
-  unitPriceAmount    Decimal? @db.Decimal(20, 2)
-  total              Float
-  totalAmount        Decimal? @db.Decimal(20, 2)
-  unit               String   @default("UN")
-  productId          String?
-  taxType            String?
-  taxCode            String?
-  taxRate            Decimal? @db.Decimal(10, 6)
-  taxAmount          Decimal? @db.Decimal(20, 2)
-  taxExemptionCode   String?
-  taxExemptionReason String?
+  id                      String   @id @default(uuid())
+  invoiceId               String
+  productName             String
+  quantity                Float
+  quantityAmount          Decimal? @db.Decimal(20, 4)
+  unitPrice               Float
+  unitPriceAmount         Decimal? @db.Decimal(20, 2)
+  total                   Float
+  totalAmount             Decimal? @db.Decimal(20, 2)
+  unit                    String   @default("UN")
+  productId               String?
+  taxType                 String?
+  taxCode                 String?
+  taxRate                 Decimal? @db.Decimal(10, 6)
+  taxAmount               Decimal? @db.Decimal(20, 2)
+  taxExemptionCode        String?
+  taxExemptionReason      String?
   electronicOperationType String?
 
   invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
@@ -361,7 +448,7 @@ model FiscalCalendarRegime {
 }
 
 model FiscalObligation {
-  id               String           @id @default(uuid())
+  id               String                  @id @default(uuid())
   tenantId         String
   /// Provenance is explicit only when supplied by a producer; historical rows remain null.
   origin           FiscalObligationOrigin?
@@ -371,17 +458,17 @@ model FiscalObligation {
   description      String?
   dueDate          DateTime
   amount           Float?
-  amountValue      Decimal?         @db.Decimal(18, 2)
-  createdAt        DateTime         @default(now())
-  status           ObligationStatus @default(PENDING)
+  amountValue      Decimal?                @db.Decimal(18, 2)
+  createdAt        DateTime                @default(now())
+  status           ObligationStatus        @default(PENDING)
   title            String
-  updatedAt        DateTime         @updatedAt
-  alertDaysBefore  Int              @default(7)
-  alertEnabled     Boolean          @default(true)
+  updatedAt        DateTime                @updatedAt
+  alertDaysBefore  Int                     @default(7)
+  alertEnabled     Boolean                 @default(true)
   fiscalCalendarId String?
   lastReminderAt   DateTime?
   period           String?
-  reminderSent     Boolean          @default(false)
+  reminderSent     Boolean                 @default(false)
 
   fiscalCalendar FiscalCalendar? @relation(fields: [fiscalCalendarId], references: [id])
   tenant         Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
@@ -883,11 +970,11 @@ model Employee {
   createdAt              DateTime               @default(now())
   updatedAt              DateTime               @updatedAt
 
-  tenant       Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  dependents   EmployeeDependent[]
-  salaries     EmployeeSalary[]
+  tenant                 Tenant                          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  dependents             EmployeeDependent[]
+  salaries               EmployeeSalary[]
   remunerationComponents EmployeeRemunerationComponent[]
-  payrollItems PayrollItem[]
+  payrollItems           PayrollItem[]
 
   @@index([tenantId])
   @@index([tenantId, status])
@@ -927,7 +1014,7 @@ model EmployeeSalary {
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
 
-  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee   Employee                        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   components EmployeeRemunerationComponent[]
 
   @@index([employeeId])
@@ -938,23 +1025,23 @@ model EmployeeSalary {
 /// Componentes estruturados. Os campos monetários legados permanecem apenas
 /// para compatibilidade de leitura de salários históricos.
 model EmployeeRemunerationComponent {
-  id                    String                    @id @default(uuid())
-  employeeId            String
-  salaryId              String?
-  type                  RemunerationComponentType
-  amount                Decimal                   @db.Decimal(18, 2)
-  effectiveFrom         DateTime
-  effectiveTo           DateTime?
-  irtTreatment          FiscalTreatment           @default(NEEDS_OFFICIAL_CONFIRMATION)
-  inssTreatment         FiscalTreatment           @default(NEEDS_OFFICIAL_CONFIRMATION)
-  exemptAmount          Decimal                   @default(0) @db.Decimal(18, 2)
-  legalReference        String?
-  officialSourceUrl     String?
-  notes                 String?
-  createdAt             DateTime                  @default(now())
-  updatedAt             DateTime                  @updatedAt
+  id                String                    @id @default(uuid())
+  employeeId        String
+  salaryId          String?
+  type              RemunerationComponentType
+  amount            Decimal                   @db.Decimal(18, 2)
+  effectiveFrom     DateTime
+  effectiveTo       DateTime?
+  irtTreatment      FiscalTreatment           @default(NEEDS_OFFICIAL_CONFIRMATION)
+  inssTreatment     FiscalTreatment           @default(NEEDS_OFFICIAL_CONFIRMATION)
+  exemptAmount      Decimal                   @default(0) @db.Decimal(18, 2)
+  legalReference    String?
+  officialSourceUrl String?
+  notes             String?
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
 
-  employee Employee       @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  employee Employee        @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   salary   EmployeeSalary? @relation(fields: [salaryId], references: [id], onDelete: SetNull)
 
   @@index([employeeId, effectiveFrom])
@@ -962,26 +1049,26 @@ model EmployeeRemunerationComponent {
 }
 
 model Payroll {
-  id                           String        @id @default(uuid())
+  id                           String                @id @default(uuid())
   tenantId                     String
   period                       String
   month                        Int
   year                         Int
-  status                       PayrollStatus @default(DRAFT)
-  employeeCount                Int           @default(0)
-  grossAmount                  Decimal       @default(0) @db.Decimal(18, 2)
-  socialSecurityAmount         Decimal       @default(0) @db.Decimal(18, 2)
-  employerSocialSecurityAmount Decimal       @default(0) @db.Decimal(18, 2)
-  irtAmount                    Decimal       @default(0) @db.Decimal(18, 2)
-  otherDeductionsAmount        Decimal       @default(0) @db.Decimal(18, 2)
-  netAmount                    Decimal       @default(0) @db.Decimal(18, 2)
+  status                       PayrollStatus         @default(DRAFT)
+  employeeCount                Int                   @default(0)
+  grossAmount                  Decimal               @default(0) @db.Decimal(18, 2)
+  socialSecurityAmount         Decimal               @default(0) @db.Decimal(18, 2)
+  employerSocialSecurityAmount Decimal               @default(0) @db.Decimal(18, 2)
+  irtAmount                    Decimal               @default(0) @db.Decimal(18, 2)
+  otherDeductionsAmount        Decimal               @default(0) @db.Decimal(18, 2)
+  netAmount                    Decimal               @default(0) @db.Decimal(18, 2)
   taxRuleVersion               String?
   calculationStatus            String?
   fiscalSnapshot               Json?
   snapshotStatus               PayrollSnapshotStatus @default(LEGACY_INCOMPLETE)
   processedAt                  DateTime?
-  createdAt                    DateTime      @default(now())
-  updatedAt                    DateTime      @updatedAt
+  createdAt                    DateTime              @default(now())
+  updatedAt                    DateTime              @updatedAt
 
   tenant Tenant        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   items  PayrollItem[]
@@ -1035,7 +1122,7 @@ model PayrollItem {
 
 /// Enquadramento por imposto; não substitui automaticamente Tenant.regime.
 model TaxRegimeAssignment {
-  id                String       @id @default(uuid())
+  id                String                    @id @default(uuid())
   tenantId          String
   taxType           TaxType
   regime            FiscalRegime
@@ -1050,8 +1137,8 @@ model TaxRegimeAssignment {
   decisionType      String?
   reviewStatus      TaxRegimeAssignmentStatus @default(REVIEW_REQUIRED)
   notes             String?
-  createdAt         DateTime     @default(now())
-  updatedAt         DateTime     @updatedAt
+  createdAt         DateTime                  @default(now())
+  updatedAt         DateTime                  @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
@@ -1089,6 +1176,16 @@ enum UserRole {
   ADMIN
   ACCOUNTANT
   VIEWER
+}
+
+enum AuthChallengePurpose {
+  EMAIL_VERIFICATION
+  PASSWORD_RESET
+}
+
+enum LegalDocumentType {
+  TERMS_OF_USE
+  PRIVACY_POLICY
 }
 
 enum PlatformAdminRole {
