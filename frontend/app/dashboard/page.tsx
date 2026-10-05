@@ -588,10 +588,7 @@ export default function DashboardPage() {
     );
   }
 
-  const regime =
-    getRegimeLabel(
-      company.regime,
-    );
+  const regime = 'Enquadramentos por imposto';
 
   const companyStatus =
     getCompanyStatus(
@@ -1085,7 +1082,7 @@ export default function DashboardPage() {
                   text-[#7b87a1]
                 "
               >
-                Prazos fiscais aplicáveis ao regime da empresa
+                Prazos fiscais configurados por imposto e período
               </p>
             </div>
 

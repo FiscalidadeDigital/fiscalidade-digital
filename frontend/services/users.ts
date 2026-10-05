@@ -54,6 +54,11 @@ export async function updateTenantUserAccess(
   return response.data;
 }
 
+export async function createTenantInvitation(input: { email: string; role: Exclude<TenantUserRole, 'OWNER'> }) {
+  const response = await api.post('/auth/invitations', input);
+  return response.data as { message: string };
+}
+
 export function getUserApiError(error: unknown, fallback: string) {
   if (!isAxiosError<{ message?: string | string[] }>(error)) return fallback;
   const message = error.response?.data?.message;

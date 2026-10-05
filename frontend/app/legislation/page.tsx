@@ -17,6 +17,7 @@ import {
 
 import {
   getLegislationLibrary,
+  getLegislationLibraryDocument,
   searchLegislationLibrary,
   type LibraryArticle,
   type LibraryDocument,
@@ -195,12 +196,19 @@ export default function LegislationPage() {
    * Não chama /legislation/library/document/:sourceFile,
    * evitando o erro 404 apresentado anteriormente.
    */
-  function openDocument(document: LibraryDocument) {
+  async function openDocument(document: LibraryDocument) {
     setError('');
     setSelectedArticle(null);
     setArticleSearch('');
     setShowFullText(false);
     setSelected(document);
+    try {
+      const complete = await getLegislationLibraryDocument(document.sourceFile);
+      setSelected(complete);
+    } catch (err) {
+      console.error('Erro ao carregar diploma completo:', err);
+      setError('Não foi possível carregar o texto integral deste diploma.');
+    }
   }
 
   function closeDocument() {
@@ -567,7 +575,7 @@ export default function LegislationPage() {
 
                   <button
                     type="button"
-                    onClick={() => openDocument(document)}
+                    onClick={() => void openDocument(document)}
                     className="mt-5 flex h-10 w-full items-center justify-between rounded-lg bg-[#f7f7ff] px-4 text-left text-[11px] font-bold text-[#5146e5] transition hover:bg-[#efedff]"
                   >
                     <span>Consultar diploma</span>

@@ -438,17 +438,12 @@ export default function LoginPage() {
                     Palavra-passe
                   </label>
 
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setError(
-                        'A recuperação de palavra-passe será disponibilizada em breve.',
-                      )
-                    }
+                  <Link
+                    href="/forgot-password"
                     className="text-xs font-medium text-[#0b6f93] transition hover:text-[#085b79]"
                   >
                     Esqueceu-se?
-                  </button>
+                  </Link>
 
                 </div>
 

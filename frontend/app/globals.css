@@ -6060,3 +6060,83 @@ button {
 }
 
 /* FD_FINAL_LANDING_POLISH_END */
+
+/* FD_PARTNER_MARQUEE_PREMIUM */
+@keyframes fdPartnerMarquee {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+/*
+ * Faixa institucional da landing.
+ * Os logos permanecem visíveis sem hover.
+ */
+.partner-marquee,
+[data-partner-marquee] {
+  width: 100%;
+  overflow: hidden;
+  position: relative;
+}
+
+.partner-marquee-track,
+[data-partner-marquee-track] {
+  display: flex;
+  width: max-content;
+  align-items: center;
+  gap: clamp(3.5rem, 6vw, 6.5rem);
+  animation: fdPartnerMarquee 28s linear infinite;
+  will-change: transform;
+}
+
+.partner-marquee img,
+[data-partner-marquee] img {
+  width: auto !important;
+  height: clamp(42px, 4vw, 58px) !important;
+  max-width: 180px;
+  object-fit: contain;
+  opacity: 1 !important;
+  filter: none !important;
+  transform: translateZ(0);
+  transition:
+    transform 220ms ease,
+    opacity 220ms ease;
+}
+
+.partner-marquee img:hover,
+[data-partner-marquee] img:hover {
+  opacity: 1 !important;
+  filter: none !important;
+  transform: scale(1.06);
+}
+
+/* Não parar o marquee quando o utilizador coloca o rato */
+.partner-marquee:hover .partner-marquee-track,
+[data-partner-marquee]:hover [data-partner-marquee-track] {
+  animation-play-state: running !important;
+}
+
+@media (max-width: 768px) {
+  .partner-marquee-track,
+  [data-partner-marquee-track] {
+    gap: 3rem;
+    animation-duration: 23s;
+  }
+
+  .partner-marquee img,
+  [data-partner-marquee] img {
+    height: 38px !important;
+    max-width: 140px;
+  }
+}
+
+/* Acessibilidade */
+@media (prefers-reduced-motion: reduce) {
+  .partner-marquee-track,
+  [data-partner-marquee-track] {
+    animation-duration: 80s;
+  }
+}

@@ -14,11 +14,8 @@ import {
 
 const themeInitializationScript = `
   try {
-    var preference = localStorage.getItem('fiscalidade-theme') || 'system';
-    var dark = preference === 'dark' || (
-      preference === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches
-    );
-    var theme = dark ? 'dark' : 'light';
+    var preference = localStorage.getItem('fiscalidade-theme');
+    var theme = preference === 'dark' ? 'dark' : 'light';
     document.documentElement.dataset.theme = theme;
     document.documentElement.style.colorScheme = theme;
   } catch (_) {

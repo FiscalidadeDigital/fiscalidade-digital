@@ -148,6 +148,11 @@ const navigationSections = [
         href: '/fiscal-situation',
         icon: ShieldAlert,
       },
+      {
+        label: 'Enquadramentos',
+        href: '/fiscal-enrollments',
+        icon: ShieldCheck,
+      },
 
       {
         label: 'Pagamentos',
