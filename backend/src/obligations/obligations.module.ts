@@ -5,11 +5,13 @@ import { ObligationsService } from './obligations.service';
 
 import { PrismaModule } from '../prisma/prisma.module';
 import { FiscalObligationPersistenceModule } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.module';
+import { FiscalEnrollmentModule } from '../fiscal-enrollment/fiscal-enrollment.module';
 
 @Module({
   imports: [
     PrismaModule,
     FiscalObligationPersistenceModule,
+    FiscalEnrollmentModule,
   ],
 
   controllers: [
