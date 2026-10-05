@@ -20,8 +20,10 @@ export default function RegisterPage() {
       const result = await register(form);
       router.replace(`/verify-email?email=${encodeURIComponent(result.email)}`);
     } catch (cause: unknown) {
-      const message = (cause as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      setError(message || 'Não foi possível criar a conta.');
+      const response = (cause as { response?: { status?: number; data?: { message?: string } } })?.response;
+      setError(response?.status === 429
+        ? 'Foram efectuadas várias tentativas. Aguarde alguns instantes e tente novamente.'
+        : response?.data?.message || 'Não foi possível criar a conta.');
     } finally { setLoading(false); }
   }
 
