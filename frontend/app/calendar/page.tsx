@@ -830,7 +830,7 @@ export default function CalendarPage() {
               <p className="mt-1 max-w-2xl text-sm text-slate-500">
                 Consulte os prazos fiscais
                 aplicáveis à sua empresa
-                de acordo com o regime fiscal.
+                conforme os prazos oficialmente configurados para cada imposto.
               </p>
 
               {company && (
@@ -847,13 +847,6 @@ export default function CalendarPage() {
                     </span>
                   )}
 
-                  {company.regime && (
-                    <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-600">
-                      {getRegimeLabel(
-                        company.regime,
-                      )}
-                    </span>
-                  )}
                 </div>
               )}
             </div>

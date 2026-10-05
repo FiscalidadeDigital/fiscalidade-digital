@@ -4,6 +4,8 @@ type Scenario = {
   invoices?: any[];
   purchases?: any[];
   payrolls?: any[];
+  enrollments?: any[];
+  legacyRegime?: string;
 };
 
 function fiscalPrisma(scenarios: Record<string, Scenario>) {
@@ -64,7 +66,7 @@ function fiscalPrisma(scenarios: Record<string, Scenario>) {
   };
   const prisma = {
     tenant: { findUnique: jest.fn(async ({ where }: any) => ({
-      id: where.id, name: `Tenant ${where.id}`, nif: '5000000000', regime: 'GERAL',
+      id: where.id, name: `Tenant ${where.id}`, nif: '5000000000', regime: scenarios[where.id]?.legacyRegime ?? 'GERAL',
       sector: null, companyType: null, retentionRate: null,
     })) },
     invoice: { findMany: jest.fn(async ({ where }: any) => scenarios[where.tenantId]?.invoices ?? []) },
@@ -73,22 +75,33 @@ function fiscalPrisma(scenarios: Record<string, Scenario>) {
     revenue: { findMany: jest.fn(async () => []) },
     $transaction: jest.fn(async (callback: any) => callback(transaction)),
   };
-  return { prisma, ledger, assessments, obligations };
+  const enrollments = {
+    resolve: jest.fn(async (tenantId: string, taxType: string, period: Date) =>
+      scenarios[tenantId]?.enrollments?.find((assignment) =>
+        assignment.taxType === taxType &&
+        assignment.status !== 'INACTIVE' &&
+        new Date(assignment.validFrom) <= period &&
+        (!assignment.validUntil || new Date(assignment.validUntil) >= period),
+      ) ?? null),
+  };
+  return { prisma, ledger, assessments, obligations, enrollments };
 }
 
 describe('FiscalEngineService integration', () => {
   const issuedAt = new Date('2026-03-10T00:00:00.000Z');
 
   it('keeps pending input IVA out of payable VAT, excludes Pro Forma data, and is idempotent', async () => {
-    const scenarios = {
+    const scenarios: Record<string, Scenario> = {
       A: {
         invoices: [{ id: 'invoice-a', subtotal: 1000, iva: 140, withholdingTax: 0, issuedAt, invoiceNumber: 'FT-1', status: 'ISSUED' }],
         purchases: [{ id: 'purchase-a', subtotal: 500, iva: 70, withholdingTax: 0, issuedAt, invoiceNumber: 'FR-1', status: 'PENDING', vatDeductibilityStatus: 'PENDING_REVIEW' }],
       },
       B: { invoices: [{ id: 'invoice-b', subtotal: 200, iva: 28, withholdingTax: 0, issuedAt, invoiceNumber: 'FT-B', status: 'ISSUED' }] },
     };
-    const { prisma, ledger, assessments, obligations } = fiscalPrisma(scenarios);
-    const service = new FiscalEngineService(prisma as any);
+    scenarios.A.enrollments = [{ taxType: 'IVA', regime: 'GERAL', validFrom: '2026-01-01' }];
+    scenarios.B.enrollments = [{ taxType: 'IVA', regime: 'GERAL', validFrom: '2026-01-01' }];
+    const { prisma, ledger, assessments, obligations, enrollments } = fiscalPrisma(scenarios);
+    const service = new FiscalEngineService(prisma as any, undefined, enrollments as any);
 
     await service.syncTenant('A', 2026);
     const vat = assessments.find((item) => item.taxType === 'IVA');
@@ -118,7 +131,7 @@ describe('FiscalEngineService integration', () => {
   });
 
   it('aggregates payroll IRT and both INSS portions without cancelling IRT', async () => {
-    const { prisma, assessments, obligations } = fiscalPrisma({
+    const { prisma, assessments, obligations, enrollments } = fiscalPrisma({
       A: {
         payrolls: [{
           id: 'payroll-a', month: 3, year: 2026, status: 'APPROVED',
@@ -126,7 +139,7 @@ describe('FiscalEngineService integration', () => {
         }],
       },
     });
-    const service = new FiscalEngineService(prisma as any);
+    const service = new FiscalEngineService(prisma as any, undefined, enrollments as any);
     await service.syncTenant('A', 2026);
 
     const irt = assessments.find((item) => item.taxType === 'IRT');
@@ -135,5 +148,42 @@ describe('FiscalEngineService integration', () => {
     expect(socialSecurity.payableAmountValue.toFixed(2)).toBe('110.00');
     expect(obligations.find((item) => item.type === 'IRT').amountValue.toFixed(2)).toBe('150.00');
     expect(obligations.find((item) => item.type === 'SS').amountValue.toFixed(2)).toBe('110.00');
+  });
+
+  it('resolves IVA by tax and historical period without falling back to Tenant.regime', async () => {
+    const march = new Date('2026-03-10T00:00:00.000Z');
+    const august = new Date('2026-08-10T00:00:00.000Z');
+    const { prisma, ledger, enrollments } = fiscalPrisma({
+      A: {
+        legacyRegime: 'GERAL',
+        invoices: [
+          { id: 'march', subtotal: 1000, iva: 140, issuedAt: march, invoiceNumber: 'FT-M', status: 'ISSUED' },
+          { id: 'august', subtotal: 1000, iva: 140, issuedAt: august, invoiceNumber: 'FT-A', status: 'PAID' },
+        ],
+        enrollments: [
+          { taxType: 'IVA', regime: 'GERAL', validFrom: '2026-01-01', validUntil: '2026-06-30' },
+          { taxType: 'IVA', regime: 'SIMPLIFICADO', validFrom: '2026-07-01' },
+        ],
+      },
+      B: {
+        legacyRegime: 'GERAL',
+        invoices: [{ id: 'b', subtotal: 1000, iva: 140, issuedAt: march, invoiceNumber: 'FT-B', status: 'ISSUED' }],
+        enrollments: [],
+      },
+    });
+    const service = new FiscalEngineService(prisma as any, undefined, enrollments as any);
+
+    await service.syncTenant('A', 2026);
+    await service.syncTenant('B', 2026);
+
+    expect(ledger.find((item) => item.sourceId === 'march')).toMatchObject({ taxAmount: 140, period: '2026-03' });
+    expect(ledger.find((item) => item.sourceId === 'august')).toMatchObject({
+      taxAmount: 0,
+      sourceType: 'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
+      calculationStatus: 'REVIEW_REQUIRED',
+    });
+    expect(ledger.find((item) => item.sourceId === 'b')).toBeUndefined();
+    expect(enrollments.resolve).toHaveBeenCalledWith('A', 'IVA', march);
+    expect(enrollments.resolve).toHaveBeenCalledWith('B', 'IVA', march);
   });
 });

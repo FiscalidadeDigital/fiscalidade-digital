@@ -31,6 +31,22 @@ describe('PayrollService tenant and state transitions', () => {
     ).rejects.toThrow('2025');
   });
 
+  it('does not select IRT calendar rules from Tenant.regime', async () => {
+    const fiscalCalendar = { findMany: jest.fn().mockResolvedValue([]) };
+    const calendarService = new PayrollService({ fiscalCalendar } as unknown as PrismaService);
+    const warning = jest.spyOn(console, 'warn').mockImplementation();
+
+    await expect(
+      (calendarService as any).findPayrollCalendarRule('tenant-a', 'IRT', 3, 2026),
+    ).resolves.toBeNull();
+
+    expect(fiscalCalendar.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ active: true, referenceYear: 2026, taxType: 'IRT' }),
+    }));
+    expect(fiscalCalendar.findMany.mock.calls[0][0].where.regimes).toBeUndefined();
+    warning.mockRestore();
+  });
+
   it('scopes approval by tenant and changes only CALCULATED to APPROVED', async () => {
     transaction.payroll.findFirst
       .mockResolvedValueOnce({

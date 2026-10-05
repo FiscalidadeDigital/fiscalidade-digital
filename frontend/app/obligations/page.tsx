@@ -466,36 +466,9 @@ export default function ObligationsPage() {
     'ALL' | ObligationStatus
   >('ALL');
 
-  /* =====================================================
-     REGIME REAL DA EMPRESA
-  ===================================================== */
-
-  const currentRegime =
-    useMemo(
-      () =>
-        normalizeRegime(
-          company.regime,
-        ),
-      [company.regime],
-    );
-
-  const currentRegimeLabel =
-    useMemo(
-      () =>
-        regimeLabel(
-          company.regime,
-        ),
-      [company.regime],
-    );
-
-  const currentRegimeStyles =
-    useMemo(
-      () =>
-        regimeStyles(
-          company.regime,
-        ),
-      [company.regime],
-    );
+  /* Regime fiscal is contextual to each tax and period. Tenant.regime remains legacy company data only. */
+  const currentRegimeLabel = 'Enquadramento por imposto';
+  const currentRegimeStyles = { wrapper: 'border-slate-200 bg-slate-50', icon: 'bg-slate-100 text-slate-700', text: 'text-slate-700', dot: 'bg-slate-500' };
 
   /* =====================================================
      CARREGAR EMPRESA AUTENTICADA

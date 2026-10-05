@@ -18,6 +18,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
 import {
   getTenantUsers,
+  createTenantInvitation,
   getUserApiError,
   TenantUser,
   TenantUserRole,
@@ -60,6 +61,8 @@ export default function UsersPage() {
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
   const [selected, setSelected] = useState<TenantUser | null>(null);
+  const [invite, setInvite] = useState({ email: '', role: 'VIEWER' as Exclude<TenantUserRole, 'OWNER'> });
+  const [inviting, setInviting] = useState(false);
   const [sortBy, sortDirection] = useMemo(() => sort.split(':'), [sort]);
 
   useEffect(() => {
@@ -96,6 +99,17 @@ export default function UsersPage() {
     setNotice('');
   }
 
+  async function sendInvitation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setInviting(true); setError(''); setNotice('');
+    try {
+      await createTenantInvitation(invite);
+      setInvite({ email: '', role: 'VIEWER' });
+      setNotice('Convite enviado. O destinatário definirá a própria palavra-passe.');
+    } catch (requestError) { setError(getUserApiError(requestError, 'Não foi possível enviar o convite.')); }
+    finally { setInviting(false); }
+  }
+
   const summaries = [
     { label: 'Utilizadores', value: result?.summary.total ?? 0, icon: Users },
     { label: 'Activos', value: result?.summary.active ?? 0, icon: UserRoundCheck },
@@ -112,6 +126,7 @@ export default function UsersPage() {
           <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--fd-text-secondary)]">
             Consulte os membros da empresa e controle funções e estado de acesso. As alterações ficam registadas para auditoria.
           </p>
+          {(currentUser?.role === 'OWNER' || currentUser?.role === 'ADMIN') && <form onSubmit={sendInvitation} className="mt-5 grid max-w-2xl gap-2 rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-3 sm:grid-cols-[minmax(0,1fr)_160px_auto]"><input required type="email" value={invite.email} onChange={(event) => setInvite((value) => ({ ...value, email: event.target.value }))} placeholder="Email do novo utilizador" className="h-10 rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm" /><select value={invite.role} onChange={(event) => setInvite((value) => ({ ...value, role: event.target.value as Exclude<TenantUserRole, 'OWNER'> }))} className="h-10 rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm"><option value="ADMIN">Administrador</option><option value="ACCOUNTANT">Contabilista</option><option value="VIEWER">Consulta</option></select><button disabled={inviting} className="h-10 rounded-lg bg-sky-700 px-4 text-sm font-semibold text-white disabled:opacity-60">{inviting ? 'A enviar…' : 'Convidar'}</button></form>}
         </header>
 
         <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo de utilizadores">

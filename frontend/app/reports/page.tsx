@@ -384,7 +384,7 @@ export default function ReportsPage() {
           getCompany(),
           getInvoices(),
           getEmployees(),
-          api.get('/obligations'),
+          api.get('/obligations?readOnly=true'),
           api.get('/payments'),
         ]);
 

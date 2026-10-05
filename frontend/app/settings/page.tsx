@@ -6,7 +6,6 @@ import {
   Check,
   Clock3,
   CreditCard,
-  Monitor,
   Moon,
   Sun,
 } from 'lucide-react';
@@ -40,12 +39,6 @@ const themeOptions: Array<{
     label: 'Escuro',
     description: 'Contraste sóbrio para utilização com pouca luz.',
     icon: Moon,
-  },
-  {
-    value: 'system',
-    label: 'Sistema',
-    description: 'Segue a preferência definida no dispositivo.',
-    icon: Monitor,
   },
 ];
 

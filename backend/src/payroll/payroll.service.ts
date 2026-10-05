@@ -890,26 +890,11 @@ export class PayrollService {
   // =========================================================
 
   private async findPayrollCalendarRule(
-    tenantId: string,
+    _tenantId: string,
     taxType: TaxType,
     payrollMonth: number,
     payrollYear: number,
   ): Promise<any | null> {
-    const tenant =
-      await this.prisma.tenant.findUnique({
-        where: {
-          id: tenantId,
-        },
-
-        select: {
-          regime: true,
-        },
-      });
-
-    if (!tenant) {
-      return null;
-    }
-
     // =======================================================
     // A OBRIGAÇÃO É DO MÊS SEGUINTE À FOLHA
     // =======================================================
@@ -933,12 +918,6 @@ export class PayrollService {
 
           taxType,
 
-          regimes: {
-            some: {
-              regime:
-                tenant.regime,
-            },
-          },
         },
 
         include: {
@@ -954,7 +933,7 @@ export class PayrollService {
       rules.length === 0
     ) {
       console.warn(
-        `[Payroll] Nenhuma regra ${taxType} encontrada para ${tenant.regime}, ${next.month}/${next.year}.`,
+        `[Payroll] Nenhuma regra ${taxType} encontrada para ${next.month}/${next.year}.`,
       );
 
       return null;

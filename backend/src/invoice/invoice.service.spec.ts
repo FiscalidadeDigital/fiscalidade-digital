@@ -89,6 +89,7 @@ describe('InvoiceService paged list', () => {
       { syncCompany: jest.fn() } as any,
       { syncTenant: jest.fn() } as any,
       fiscalSignature as any,
+      { resolve: jest.fn().mockResolvedValue({ regime: FiscalRegime.GERAL }) } as any,
     );
 
     await service.create('tenant-a', {
@@ -107,5 +108,20 @@ describe('InvoiceService paged list', () => {
     expect(persisted.items.create[0]).toEqual(expect.objectContaining({
       taxType: 'IVA', taxCode: 'NOR', taxRate: expect.anything(), taxAmount: expect.anything(),
     }));
+  });
+
+  it('blocks fiscal issuance without a current IVA enrollment instead of using Tenant.regime', async () => {
+    const prisma = {
+      tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', regime: FiscalRegime.GERAL, retentionRate: 0 }) },
+      client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }) },
+      product: { findMany: jest.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const enrollments = { resolve: jest.fn().mockResolvedValue(null) };
+    const service = new InvoiceService(prisma, {} as any, {} as any, undefined, enrollments as any);
+
+    await expect(service.create('tenant-a', {
+      clientId: 'client-a', items: [{ productName: 'Serviço', quantity: 1, unitPrice: 100 }],
+    })).rejects.toMatchObject({ response: expect.objectContaining({ code: 'IVA_ENROLLMENT_REQUIRED' }) });
+    expect(enrollments.resolve).toHaveBeenCalledWith('tenant-a', 'IVA', expect.any(Date));
   });
 });

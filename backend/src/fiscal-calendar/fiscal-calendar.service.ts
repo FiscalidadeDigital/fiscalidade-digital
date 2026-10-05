@@ -10,11 +10,13 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 
 @Injectable()
 export class FiscalCalendarService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(prisma),
   ) {}
 
   // =====================================================
@@ -72,7 +74,6 @@ export class FiscalCalendarService {
           id: true,
           name: true,
           nif: true,
-          regime: true,
         },
       });
 
@@ -82,10 +83,17 @@ export class FiscalCalendarService {
       );
     }
 
-    return this.findByRegime(
-      tenant.regime,
-      referenceYear,
-    );
+    const rules = await this.findAll(referenceYear);
+    const applicable = await Promise.all(rules.map(async (rule) => {
+      if (!rule.regimes.length) return true;
+      const enrollment = await this.enrollments.resolve(
+        tenantId,
+        rule.taxType,
+        this.ruleReferenceDate(rule),
+      );
+      return Boolean(enrollment && rule.regimes.some((item) => item.regime === enrollment.regime));
+    }));
+    return rules.filter((_, index) => applicable[index]);
   }
 
   // =====================================================
@@ -130,6 +138,16 @@ export class FiscalCalendarService {
         },
       ],
     });
+  }
+
+  private ruleReferenceDate(rule: { period: string | null; referenceYear: number; dueDate: Date }) {
+    const normalized = String(rule.period ?? '').trim().toUpperCase();
+    const numeric = normalized.match(/^(\d{4})-(\d{1,2})$/);
+    if (numeric) return new Date(Date.UTC(Number(numeric[1]), Number(numeric[2]) - 1, 1));
+    const months = ['JANEIRO', 'FEVEREIRO', 'MARCO', 'ABRIL', 'MAIO', 'JUNHO', 'JULHO', 'AGOSTO', 'SETEMBRO', 'OUTUBRO', 'NOVEMBRO', 'DEZEMBRO'];
+    const month = months.indexOf(normalized.normalize('NFD').replace(/[\u0300-\u036f]/g, ''));
+    if (month >= 0) return new Date(Date.UTC(rule.referenceYear, month, 1));
+    return new Date(rule.dueDate);
   }
 
   // =====================================================

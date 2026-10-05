@@ -27,9 +27,8 @@ import {
   PrismaModule,
 } from '../prisma/prisma.module';
 
-import {
-  ObligationsModule,
-} from '../obligations/obligations.module';
+import { MailModule } from '../mail/mail.module';
+import { FiscalEnrollmentModule } from '../fiscal-enrollment/fiscal-enrollment.module';
 
 import {
   JwtStrategy,
@@ -98,7 +97,8 @@ import {
     // OBRIGAÇÕES FISCAIS
     // ===================================================
 
-    ObligationsModule,
+    MailModule,
+    FiscalEnrollmentModule,
   ],
 
   // =====================================================

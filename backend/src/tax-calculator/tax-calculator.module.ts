@@ -9,8 +9,10 @@ import { IvaEngine } from './engines/iva.engine';
 import { RetentionEngine } from './engines/retention.engine';
 
 import { IndustrialEngine } from './engines/industrial.engine';
+import { FiscalEnrollmentModule } from '../fiscal-enrollment/fiscal-enrollment.module';
 
 @Module({
+  imports: [FiscalEnrollmentModule],
   controllers: [
     TaxCalculatorController,
   ],
