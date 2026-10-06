@@ -83,7 +83,7 @@ export default function InvoicesPage() {
       })
         .then((data) => active && setResult(data))
         .catch((requestError) =>
-          active && setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel carregar as facturas.')),
+          active && setError(getInvoiceApiError(requestError, 'Não foi possível carregar as facturas.')),
         )
         .finally(() => active && setLoading(false));
     }, 300);
@@ -114,7 +114,7 @@ export default function InvoicesPage() {
       setReload((value) => value + 1);
     } catch (requestError) {
       setPendingAction(null);
-      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel actualizar a factura.'));
+      setError(getInvoiceApiError(requestError, 'Não foi possível actualizar a factura.'));
     } finally {
       setActionBusy(false);
     }
@@ -126,7 +126,7 @@ export default function InvoicesPage() {
     try {
       await openInvoicePdf(invoice.id);
     } catch (requestError) {
-      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel abrir o PDF.'));
+      setError(getInvoiceApiError(requestError, 'Não foi possível abrir o PDF.'));
     } finally {
       setPdfBusy(null);
     }

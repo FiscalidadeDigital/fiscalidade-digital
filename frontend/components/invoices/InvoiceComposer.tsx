@@ -46,7 +46,7 @@ type DraftItem = {
 
 const unitLabels: Record<ProductUnit, string> = {
   UN: 'Unidade',
-  SERVICO: 'ServiÃ§o',
+  SERVICO: 'Serviço',
   HORA: 'Hora',
   KG: 'Quilograma',
   L: 'Litro',
@@ -54,10 +54,10 @@ const unitLabels: Record<ProductUnit, string> = {
 };
 
 const operationTypes: Array<[ElectronicOperationType, string]> = [
-  ['TB', 'TransmissÃ£o de bens'], ['SG', 'Outros serviÃ§os'], ['SE', 'EducaÃ§Ã£o'],
-  ['SS', 'SaÃºde'], ['STP', 'Transporte de passageiros'], ['SR', 'ServiÃ§os sujeitos a royalties'],
-  ['SIF', 'IntermediaÃ§Ã£o financeira'], ['SHS', 'Hotelaria e similares'],
-  ['ST', 'TelecomunicaÃ§Ãµes'], ['AS', 'Arrendamento e subarrendamento'],
+  ['TB', 'Transmissão de bens'], ['SG', 'Outros serviços'], ['SE', 'Educação'],
+  ['SS', 'Saúde'], ['STP', 'Transporte de passageiros'], ['SR', 'Serviços sujeitos a royalties'],
+  ['SIF', 'Intermediação financeira'], ['SHS', 'Hotelaria e similares'],
+  ['ST', 'Telecomunicações'], ['AS', 'Arrendamento e subarrendamento'],
   ['QT', 'Quotas'], ['RD', 'Repasse de despesas'],
 ];
 
@@ -146,7 +146,7 @@ export default function InvoiceComposer({
           setError(
             getInvoiceApiError(
               loadError,
-              'NÃ£o foi possÃ­vel carregar a empresa e os clientes.',
+              'Não foi possível carregar a empresa e os clientes.',
             ),
           );
         }
@@ -178,7 +178,7 @@ export default function InvoiceComposer({
         .catch((loadError: unknown) => {
           if (active) {
             setCatalogError(
-              getInvoiceApiError(loadError, 'NÃ£o foi possÃ­vel consultar o catÃ¡logo.'),
+              getInvoiceApiError(loadError, 'Não foi possível consultar o catálogo.'),
             );
           }
         })
@@ -232,12 +232,12 @@ export default function InvoiceComposer({
     for (const item of items) {
       const quantity = Number(item.quantity.replace(',', '.'));
       const unitPrice = Number(item.unitPrice.replace(',', '.'));
-      if (!item.productName.trim()) return setError('Todos os itens precisam de descriÃ§Ã£o.');
+      if (!item.productName.trim()) return setError('Todos os itens precisam de descrição.');
       if (!Number.isFinite(quantity) || quantity <= 0 || !Number.isFinite(unitPrice) || unitPrice <= 0) {
-        return setError('Quantidade e preÃ§o devem ser valores positivos.');
+        return setError('Quantidade e preço devem ser valores positivos.');
       }
       if (toScaledInteger(item.quantity, 4) === null || toScaledInteger(item.unitPrice, 2) === null) {
-        return setError('Use atÃ© quatro casas na quantidade e duas casas no preÃ§o.');
+        return setError('Use até quatro casas na quantidade e duas casas no preço.');
       }
     }
 
@@ -258,7 +258,7 @@ export default function InvoiceComposer({
       setCreated(invoice);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (submitError: unknown) {
-      setError(getInvoiceApiError(submitError, `NÃ£o foi possÃ­vel registar ${isProForma ? 'a Pro Forma' : 'a factura'}.`));
+      setError(getInvoiceApiError(submitError, `Não foi possível registar ${isProForma ? 'a Pro Forma' : 'a factura'}.`));
     } finally {
       setSaving(false);
     }
@@ -281,7 +281,7 @@ export default function InvoiceComposer({
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">FacturaÃ§Ã£o</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Facturação</p>
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">{isProForma ? 'Criar Pro Forma' : 'Emitir factura'}</h1>
               <p className="mt-1 max-w-2xl text-sm text-slate-500">{isProForma ? 'Registe uma proposta comercial. O documento será numerado na série PF e não produz efeito fiscal definitivo.' : 'Ambiente de testes: registe o cliente e as linhas. Numeração, impostos e total são determinados pelo servidor.'}</p>
             </div>
