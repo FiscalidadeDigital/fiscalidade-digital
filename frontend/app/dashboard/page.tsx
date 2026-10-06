@@ -588,7 +588,7 @@ export default function DashboardPage() {
     );
   }
 
-  const regime = 'Enquadramentos por imposto';
+  const regime = 'Situação Fiscal';
 
   const companyStatus =
     getCompanyStatus(

@@ -467,7 +467,7 @@ export default function ObligationsPage() {
   >('ALL');
 
   /* Regime fiscal is contextual to each tax and period. Tenant.regime remains legacy company data only. */
-  const currentRegimeLabel = 'Enquadramento por imposto';
+  const currentRegimeLabel = 'Situação Fiscal';
   const currentRegimeStyles = { wrapper: 'border-slate-200 bg-slate-50', icon: 'bg-slate-100 text-slate-700', text: 'text-slate-700', dot: 'bg-slate-500' };
 
   /* =====================================================
