@@ -267,7 +267,7 @@ export default function InvoiceComposer({
   if ((initialized && !canCreate) || loading || !company) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-600">
-        {error || <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A carregar emissÃ£oâ€¦</>}
+        {error || <><Loader2 className="mr-2 h-4 w-4 animate-spin" />A carregar emissão…</>}
       </div>
     );
   }
@@ -302,29 +302,29 @@ export default function InvoiceComposer({
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div className="border-b border-slate-200 p-5"><h2 className="font-semibold text-slate-950">DestinatÃ¡rio</h2><p className="mt-1 text-sm text-slate-500">O nÃºmero da factura Ã© atribuÃ­do automaticamente por empresa e ano.</p></div>
+          <div className="border-b border-slate-200 p-5"><h2 className="font-semibold text-slate-950">Destinatário</h2><p className="mt-1 text-sm text-slate-500">O número da factura é atribuído automaticamente por empresa e ano.</p></div>
           <div className="grid gap-5 p-5 md:grid-cols-2">
             <label className="text-sm font-medium text-slate-700">Cliente<span className="text-rose-600"> *</span>
               <select value={clientId} onChange={(event) => setClientId(event.target.value)} disabled={saving} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100">
                 <option value="">Seleccione o cliente</option>
-                {clients.map((client) => <option key={client.id} value={client.id}>{client.name}{client.nif ? ` â€” NIF ${client.nif}` : ''}</option>)}
+                {clients.map((client) => <option key={client.id} value={client.id}>{client.name}{client.nif ? ` — NIF ${client.nif}` : ''}</option>)}
               </select>
-              {clients.length === 0 && <span className="mt-2 block text-xs text-amber-700">Crie primeiro um cliente no directÃ³rio.</span>}
+              {clients.length === 0 && <span className="mt-2 block text-xs text-amber-700">Crie primeiro um cliente no directório.</span>}
             </label>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">NÃºmero</p><p className="mt-2 text-sm font-semibold text-slate-900">Gerado no servidor</p><p className="mt-1 text-xs text-slate-500">A sequÃªncia Ã© protegida contra emissÃµes concorrentes.</p></div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Número</p><p className="mt-2 text-sm font-semibold text-slate-900">Gerado no servidor</p><p className="mt-1 text-xs text-slate-500">A sequência é protegida contra emissões concorrentes.</p></div>
           </div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-end lg:justify-between">
-            <div><h2 className="font-semibold text-slate-950">Artigos e serviÃ§os</h2><p className="mt-1 text-sm text-slate-500">Escolha no catÃ¡logo ou descreva uma linha livre.</p></div>
+            <div><h2 className="font-semibold text-slate-950">Artigos e serviços</h2><p className="mt-1 text-sm text-slate-500">Escolha no catálogo ou descreva uma linha livre.</p></div>
             <div className="flex flex-col gap-2 sm:flex-row">
-              <label className="relative"><span className="sr-only">Pesquisar catÃ¡logo</span><PackageSearch className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} placeholder="Pesquisar catÃ¡logo" className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-sky-600 sm:w-64" /></label>
+              <label className="relative"><span className="sr-only">Pesquisar catálogo</span><PackageSearch className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" /><input value={catalogSearch} onChange={(event) => setCatalogSearch(event.target.value)} placeholder="Pesquisar catálogo" className="w-full rounded-lg border border-slate-300 bg-white py-2 pl-9 pr-3 text-sm outline-none focus:border-sky-600 sm:w-64" /></label>
               <button type="button" onClick={() => setItems((current) => [...current, newItem()])} disabled={saving || items.length >= 500} className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 py-2 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50"><Plus className="h-4 w-4" />Adicionar linha</button>
             </div>
           </div>
 
-          {catalogError && <div className="mx-5 mt-4 flex items-center justify-between rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700"><span>{catalogError}</span><button type="button" onClick={() => setCatalogReload((value) => value + 1)} className="rounded-md p-1 hover:bg-rose-100" aria-label="Tentar carregar o catÃ¡logo novamente"><RefreshCw className="h-4 w-4" /></button></div>}
+          {catalogError && <div className="mx-5 mt-4 flex items-center justify-between rounded-lg bg-rose-50 px-3 py-2 text-xs text-rose-700"><span>{catalogError}</span><button type="button" onClick={() => setCatalogReload((value) => value + 1)} className="rounded-md p-1 hover:bg-rose-100" aria-label="Tentar carregar o catálogo novamente"><RefreshCw className="h-4 w-4" /></button></div>}
 
           <div className="divide-y divide-slate-200">
             {items.map((item, index) => {
@@ -333,15 +333,15 @@ export default function InvoiceComposer({
                 <div key={item.id} className="p-5">
                   <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Linha {index + 1}</p><button type="button" onClick={() => setItems((current) => current.filter((entry) => entry.id !== item.id))} disabled={saving || items.length === 1} className="rounded-md p-2 text-rose-600 hover:bg-rose-50 disabled:opacity-30" aria-label={`Remover linha ${index + 1}`}><Trash2 className="h-4 w-4" /></button></div>
                   <div className="grid gap-4 xl:grid-cols-[1.2fr_1.4fr_.55fr_.65fr_.8fr_.8fr]">
-                    <label className="text-xs font-medium text-slate-600">Origem<select value={item.productId} onChange={(event) => selectProduct(item.id, event.target.value)} disabled={saving || catalogLoading} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950"><option value="">Linha livre</option>{products.map((product) => <option key={product.id} value={product.id}>{product.code ? `${product.code} â€” ` : ''}{product.name}</option>)}</select></label>
-                    <label className="text-xs font-medium text-slate-600">DescriÃ§Ã£o<input value={item.productName} onChange={(event) => updateItem(item.id, { productName: event.target.value })} readOnly={Boolean(item.productId)} maxLength={200} placeholder="Ex.: ServiÃ§o de consultoria" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50" /></label>
+                    <label className="text-xs font-medium text-slate-600">Origem<select value={item.productId} onChange={(event) => selectProduct(item.id, event.target.value)} disabled={saving || catalogLoading} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950"><option value="">Linha livre</option>{products.map((product) => <option key={product.id} value={product.id}>{product.code ? `${product.code} — ` : ''}{product.name}</option>)}</select></label>
+                    <label className="text-xs font-medium text-slate-600">Descrição<input value={item.productName} onChange={(event) => updateItem(item.id, { productName: event.target.value })} readOnly={Boolean(item.productId)} maxLength={200} placeholder="Ex.: Serviço de consultoria" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50" /></label>
                     <label className="text-xs font-medium text-slate-600">Quantidade<input value={item.quantity} onChange={(event) => updateItem(item.id, { quantity: event.target.value })} inputMode="decimal" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950" /></label>
                     <label className="text-xs font-medium text-slate-600">Unidade<select value={item.unit} onChange={(event) => updateItem(item.id, { unit: event.target.value as ProductUnit })} disabled={Boolean(item.productId)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50">{Object.entries(unitLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                    <label className="text-xs font-medium text-slate-600">OperaÃ§Ã£o AGT<select value={item.electronicOperationType} onChange={(event) => updateItem(item.id, { electronicOperationType: event.target.value as ElectronicOperationType | '' })} disabled={Boolean(item.productId)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50"><option value="">Por classificar</option>{operationTypes.map(([value, label]) => <option key={value} value={value}>{value} â€” {label}</option>)}</select></label>
-                    <label className="text-xs font-medium text-slate-600">PreÃ§o unitÃ¡rio<input value={item.unitPrice} onChange={(event) => updateItem(item.id, { unitPrice: event.target.value })} readOnly={Boolean(item.productId)} inputMode="decimal" placeholder="0,00" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50" /></label>
+                    <label className="text-xs font-medium text-slate-600">Operação AGT<select value={item.electronicOperationType} onChange={(event) => updateItem(item.id, { electronicOperationType: event.target.value as ElectronicOperationType | '' })} disabled={Boolean(item.productId)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50"><option value="">Por classificar</option>{operationTypes.map(([value, label]) => <option key={value} value={value}>{value} — {label}</option>)}</select></label>
+                    <label className="text-xs font-medium text-slate-600">Preço unitário<input value={item.unitPrice} onChange={(event) => updateItem(item.id, { unitPrice: event.target.value })} readOnly={Boolean(item.productId)} inputMode="decimal" placeholder="0,00" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50" /></label>
                     <div><p className="text-xs font-medium text-slate-600">Subtotal da linha</p><div className="mt-1.5 flex min-h-[42px] items-center rounded-lg bg-slate-50 px-3 text-sm font-semibold text-slate-900">{formatCents(lineCents)}</div></div>
                   </div>
-                  {item.productId && <p className="mt-2 text-xs text-slate-500">DescriÃ§Ã£o, unidade e preÃ§o serÃ£o novamente obtidos do catÃ¡logo da empresa pelo servidor.</p>}
+                  {item.productId && <p className="mt-2 text-xs text-slate-500">Descrição, unidade e preço serão novamente obtidos do catálogo da empresa pelo servidor.</p>}
                 </div>
               );
             })}
@@ -349,11 +349,11 @@ export default function InvoiceComposer({
         </section>
 
         <section className="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
-          <label className="rounded-xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">ObservaÃ§Ãµes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} rows={6} placeholder="InformaÃ§Ã£o adicional para este documento" className="mt-2 w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-950 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-sky-100 text-sky-700"><Calculator className="h-4 w-4" /></span><div><h2 className="font-semibold text-slate-950">PrÃ©-visualizaÃ§Ã£o</h2><p className="text-xs text-slate-500">{isProForma ? 'Total comercial estimado' : 'Subtotal das linhas'}</p></div></div><p className="mt-6 text-2xl font-bold text-slate-950">{formatCents(subtotalCents)}</p><p className="mt-3 text-xs leading-5 text-slate-500">{isProForma ? 'IVA fiscal final e retenÃ§Ã£o fiscal final permanecem em zero nesta Pro Forma. A conversÃ£o recalcula os impostos no backend.' : 'IVA, retenÃ§Ã£o e total final sÃ£o calculados no backend. Esta prÃ©-visualizaÃ§Ã£o nÃ£o Ã© uma liquidaÃ§Ã£o fiscal.'}</p></div>
+          <label className="rounded-xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">Observaçõeses<textarea value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} rows={6} placeholder="Informação adicional para este documento" className="mt-2 w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-950 outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-sky-100 text-sky-700"><Calculator className="h-4 w-4" /></span><div><h2 className="font-semibold text-slate-950">Pré-visualização</h2><p className="text-xs text-slate-500">{isProForma ? 'Total comercial estimado' : 'Subtotal das linhas'}</p></div></div><p className="mt-6 text-2xl font-bold text-slate-950">{formatCents(subtotalCents)}</p><p className="mt-3 text-xs leading-5 text-slate-500">{isProForma ? 'IVA fiscal final e retenção fiscal final permanecem em zero nesta Pro Forma. A conversão recalcula os impostos no backend.' : 'IVA, retenção e total final são calculados no backend. Esta pré-visualização não é uma liquidação fiscal.'}</p></div>
         </section>
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => router.push(collectionHref)} disabled={saving} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancelar</button><button type="button" onClick={() => void submit()} disabled={saving || clients.length === 0 || Boolean(created)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{saving ? 'A registarâ€¦' : `Registar ${documentLabel}`}</button></div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => router.push(collectionHref)} disabled={saving} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancelar</button><button type="button" onClick={() => void submit()} disabled={saving || clients.length === 0 || Boolean(created)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-sky-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-sky-800 disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{saving ? 'A registar…' : `Registar ${documentLabel}`}</button></div>
       </main>
     </DashboardLayout>
   );
