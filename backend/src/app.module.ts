@@ -44,6 +44,7 @@ import { AccountingSaftModule } from './accounting-saft/accounting-saft.module';
 import { SubscriptionAccessModule } from './subscription-access/subscription-access.module';
 import { UsersModule } from './users/users.module';
 import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
+import { FiscalWatchModule } from './fiscal-watch/fiscal-watch.module';
 
 @Module({
   imports: [
@@ -90,6 +91,7 @@ import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-inv
 
     InvoiceModule,
     ElectronicInvoicingModule,
+    FiscalWatchModule,
     PurchaseInvoiceModule,
     PurchaseInvoiceImportModule,
 

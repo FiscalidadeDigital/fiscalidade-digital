@@ -41,6 +41,8 @@ model Tenant {
   companySettings              CompanySettings?
   emailLogs                    EmailLog[]
   fiscalAlerts                 FiscalAlert[]
+  fiscalThresholdRules         FiscalThresholdRule[]
+  fiscalWatchEvents            FiscalWatchEvent[]
   employees                    Employee[]
   taxRegimeAssignments         TaxRegimeAssignment[]
   invitations                  UserInvitation[]
@@ -558,6 +560,55 @@ model Notification {
 
   @@index([tenantId])
   @@index([tenantId, isRead])
+}
+
+model FiscalThresholdRule {
+  id             String                    @id @default(uuid())
+  taxType        TaxType
+  regimeFrom     FiscalRegime?
+  regimeTo       FiscalRegime?
+  metric         String
+  operator       FiscalThresholdOperator
+  threshold      Decimal                   @db.Decimal(20, 2)
+  periodBasis    String
+  effectiveFrom  DateTime?
+  effectiveTo    DateTime?
+  legalDiploma   String?
+  legalArticle   String?
+  officialSource String?
+  version        String
+  status         FiscalThresholdStatus
+  tenantId       String?
+  createdAt      DateTime                  @default(now())
+  updatedAt      DateTime                  @updatedAt
+
+  tenant Tenant? @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  events FiscalWatchEvent[]
+
+  @@index([taxType, status])
+  @@index([effectiveFrom, effectiveTo])
+  @@index([tenantId])
+}
+
+model FiscalWatchEvent {
+  id             String                  @id @default(uuid())
+  tenantId       String
+  ruleId         String
+  fiscalPeriod   String
+  eventType      FiscalWatchEventType
+  metric         String
+  metricValue    Decimal                 @db.Decimal(20, 2)
+  threshold      Decimal                 @db.Decimal(20, 2)
+  status         FiscalWatchEventStatus  @default(REQUIRES_REVIEW)
+  notificationId String?
+  createdAt      DateTime                @default(now())
+  updatedAt      DateTime                @updatedAt
+
+  tenant Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  rule   FiscalThresholdRule @relation(fields: [ruleId], references: [id], onDelete: Restrict)
+
+  @@unique([tenantId, ruleId, fiscalPeriod, eventType])
+  @@index([tenantId, fiscalPeriod])
 }
 
 model Subscription {
@@ -1313,6 +1364,29 @@ enum NotificationType {
   WARNING
   SUCCESS
   ERROR
+}
+
+enum FiscalThresholdOperator {
+  GREATER_THAN
+  GREATER_THAN_OR_EQUAL
+  LESS_THAN
+  LESS_THAN_OR_EQUAL
+  EQUAL
+}
+
+enum FiscalThresholdStatus {
+  OFFICIAL_CONFIRMED
+  NEEDS_OFFICIAL_CONFIRMATION
+  LEGACY_UNVERIFIED
+}
+
+enum FiscalWatchEventType {
+  REACHED
+}
+
+enum FiscalWatchEventStatus {
+  REQUIRES_REVIEW
+  RESOLVED
 }
 
 enum FiscalRegime {

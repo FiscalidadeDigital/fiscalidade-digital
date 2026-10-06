@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  Optional,
 } from '@nestjs/common';
 
 import { Cron } from '@nestjs/schedule';
@@ -9,6 +10,7 @@ import { Cron } from '@nestjs/schedule';
 import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from './mail.service';
 import { TwilioMessagingService } from './twilio-messaging.service';
+import { FiscalWatchService } from '../fiscal-watch/fiscal-watch.service';
 
 type AlertCheckMetrics = {
   scanned: number;
@@ -72,6 +74,7 @@ export class AlertsService {
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
     private readonly twilioMessagingService: TwilioMessagingService,
+    @Optional() private readonly fiscalWatchService?: FiscalWatchService,
   ) {}
 
   /**
@@ -196,6 +199,10 @@ export class AlertsService {
       ) {
         recordSkip(metrics, 'OUTSIDE_WINDOW');
         return;
+      }
+
+      if (this.fiscalWatchService) {
+        await this.fiscalWatchService.evaluateAllTenants();
       }
 
       await this.processAlert(
