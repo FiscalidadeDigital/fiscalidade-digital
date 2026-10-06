@@ -356,11 +356,11 @@ export default function LoginPage() {
               </p>
 
               <h2 className="text-3xl font-semibold tracking-tight text-[#172642] sm:text-[34px]">
-                Iniciar sessão
+                A sua gestão fiscal continua aqui.
               </h2>
 
               <p className="mt-3 text-[15px] leading-6 text-[#66758d]">
-                Introduza os dados da sua conta empresarial.
+                Acompanhe obrigações, prazos, facturação e informação fiscal da sua empresa num único espaço.
               </p>
 
             </div>
@@ -442,7 +442,7 @@ export default function LoginPage() {
                     href="/forgot-password"
                     className="text-xs font-medium text-[#0b6f93] transition hover:text-[#085b79]"
                   >
-                    Esqueceu-se?
+                    Esqueceu a palavra-passe?
                   </Link>
 
                 </div>
@@ -547,7 +547,7 @@ export default function LoginPage() {
                 href="/register"
                 className="mt-2 inline-block text-sm font-semibold text-[#0b6f93] transition hover:text-[#085b79]"
               >
-                Criar conta empresarial
+                Criar conta
               </Link>
 
             </div>

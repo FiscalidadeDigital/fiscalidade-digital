@@ -5933,6 +5933,56 @@ button {
 
 }
 
+@media (max-width: 639px) {
+  .site header > div > .hidden.items-center.gap-4 {
+    display: flex;
+    gap: 0.65rem;
+  }
+
+  .site header > div > .hidden.items-center.gap-4 a {
+    white-space: nowrap;
+  }
+}
+
+.site .marquee-track {
+  min-width: max-content;
+  min-height: 80px;
+}
+
+.site .marquee-group {
+  flex: 0 0 auto;
+}
+
+.site .marquee-logo {
+  flex: 0 0 208px;
+}
+
+@media (max-width: 639px) {
+  .site .marquee-track {
+    min-height: 68px;
+  }
+
+  .site .marquee-logo {
+    flex-basis: 150px;
+    width: 150px;
+    height: 68px;
+  }
+
+  .site .marquee-logo img {
+    max-width: 140px;
+    max-height: 58px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site .marquee-track {
+    animation: none;
+    overflow-x: auto;
+    transform: none;
+    scrollbar-width: thin;
+  }
+}
+
 
 /* ------------------------------------------------------------
    MOBILE

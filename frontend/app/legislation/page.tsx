@@ -61,9 +61,15 @@ function getCategoryIcon(category: string) {
 function getDocumentTitle(document: LibraryDocument) {
   if (
     document.titleDetected &&
-    document.titleDetected !== document.sourceFile
+    document.titleDetected !== document.sourceFile &&
+    document.titleDetected.length <= 120 &&
+    !/[.!?].{20,}/.test(document.titleDetected)
   ) {
     return document.titleDetected;
+  }
+
+  if (document.lawNumber) {
+    return `Diploma legal ${document.lawNumber}`;
   }
 
   return String(document.sourceFile || 'Documento legal')
@@ -127,6 +133,15 @@ export default function LegislationPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    if (!selected) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selected]);
 
   async function loadLibrary() {
     try {
