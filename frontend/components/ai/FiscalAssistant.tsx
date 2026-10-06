@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import api from '@/services/api';
 
 export default function FiscalAssistant() {
   const [message, setMessage] =
@@ -27,22 +28,9 @@ export default function FiscalAssistant() {
 
     setLoading(true);
 
-    const response = await fetch(
-      'https://fiscalidade-digital-api.onrender.com/ai/chat',
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type':
-            'application/json',
-        },
-        body: JSON.stringify({
-          message,
-        }),
-      },
-    );
-
-    const data =
-      await response.json();
+    const { data } = await api.post('/ai/chat', {
+      message,
+    });
 
     setMessages((prev) => [
       ...prev,

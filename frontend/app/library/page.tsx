@@ -33,10 +33,10 @@ import {
   DocumentCategory,
   DocumentSummary,
   FiscalDocument,
+  downloadDocument,
   formatDocumentSize,
   getDocumentSummary,
   getDocuments,
-  getDocumentUrl,
   uploadDocument,
 } from '../../services/document';
 
@@ -535,6 +535,39 @@ export default function DocumentsPage() {
     }
   };
 
+  const handleOpenDocument = async (
+    id: string,
+  ) => {
+    const popup = window.open('about:blank', '_blank');
+    if (popup) {
+      popup.opener = null;
+    }
+
+    try {
+      setError('');
+      const blob = await downloadDocument(id);
+      const objectUrl = URL.createObjectURL(blob);
+
+      if (popup) {
+        popup.location.href = objectUrl;
+      } else {
+        const link = window.document.createElement('a');
+        link.href = objectUrl;
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.click();
+      }
+
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
+    } catch (err: any) {
+      popup?.close();
+      setError(
+        err?.response?.data?.message ||
+          'Não foi possível abrir o documento.',
+      );
+    }
+  };
+
   const filteredDocuments =
     useMemo(
       () => documents,
@@ -544,33 +577,27 @@ export default function DocumentsPage() {
   const totalSize =
     summary?.totalSize || 0;
 
+  const effectiveQuota = summary?.storage?.effectiveQuotaBytes
+    ? Number(summary.storage.effectiveQuotaBytes)
+    : null;
+  const quotaLabel =
+    effectiveQuota !== null && Number.isSafeInteger(effectiveQuota)
+      ? `${formatDocumentSize(totalSize)} de ${formatDocumentSize(effectiveQuota)}`
+      : 'Quota comercial não configurada';
+
   return (
-    <div className="documents-page">
-      <div className="page-background" />
+    <div className="documents-page fd-workspace-page fd-theme-scope">
 
       <main className="documents-container">
         {/* HEADER */}
         <section className="hero">
           <div>
-            <div className="eyebrow">
-              <Archive size={15} />
-              Gestão documental
-            </div>
-
             <h1>
-              Os seus documentos,
-              <span>
-                organizados.
-              </span>
+              Documentos
             </h1>
 
             <p>
-              Centralize facturas,
-              declarações,
-              comprovativos e
-              documentos da sua
-              empresa num único
-              espaço.
+              Consulte e carregue ficheiros associados à sua empresa.
             </p>
           </div>
 
@@ -643,7 +670,7 @@ export default function DocumentsPage() {
               </strong>
 
               <small>
-                Arquivos armazenados
+                Ficheiros armazenados
               </small>
             </div>
           </div>
@@ -713,7 +740,7 @@ export default function DocumentsPage() {
               </strong>
 
               <small>
-                Armazenamento local
+                {quotaLabel}
               </small>
             </div>
           </div>
@@ -879,11 +906,6 @@ export default function DocumentsPage() {
                       document.category,
                     );
 
-                  const url =
-                    getDocumentUrl(
-                      document,
-                    );
-
                   return (
                     <div
                       className="document-row"
@@ -955,24 +977,16 @@ export default function DocumentsPage() {
                       </div>
 
                       <div className="actions">
-                        {url && (
-                          <button
-                            type="button"
-                            className="icon-button"
-                            title="Abrir documento"
-                            onClick={() =>
-                              window.open(
-                                url,
-                                '_blank',
-                                'noopener,noreferrer',
-                              )
-                            }
-                          >
-                            <Eye
-                              size={18}
-                            />
-                          </button>
-                        )}
+                        <button
+                          type="button"
+                          className="icon-button"
+                          title="Abrir documento"
+                          onClick={() =>
+                            handleOpenDocument(document.id)
+                          }
+                        >
+                          <Eye size={18} />
+                        </button>
 
                         <button
                           type="button"
@@ -995,29 +1009,16 @@ export default function DocumentsPage() {
                         {openMenu ===
                           document.id && (
                           <div className="action-menu">
-                            {url && (
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  window.open(
-                                    url,
-                                    '_blank',
-                                    'noopener,noreferrer',
-                                  );
-
-                                  setOpenMenu(
-                                    null,
-                                  );
-                                }}
-                              >
-                                <Download
-                                  size={
-                                    16
-                                  }
-                                />
-                                Abrir documento
-                              </button>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                handleOpenDocument(document.id);
+                                setOpenMenu(null);
+                              }}
+                            >
+                              <Download size={16} />
+                              Abrir documento
+                            </button>
 
                             <button
                               type="button"
@@ -1399,32 +1400,19 @@ export default function DocumentsPage() {
           min-height: 100vh;
           position: relative;
           overflow: hidden;
-          background: #f7f8fc;
-          color: #172033;
+          background: transparent;
+          color: var(--fd-text-primary);
         }
 
         .page-background {
-          position: absolute;
-          inset: 0;
-          pointer-events: none;
-          background:
-            radial-gradient(
-              circle at 10% 0%,
-              rgba(89, 64, 215, 0.08),
-              transparent 28%
-            ),
-            radial-gradient(
-              circle at 90% 10%,
-              rgba(156, 108, 255, 0.07),
-              transparent 25%
-            );
+          display: none;
         }
 
         .documents-container {
           position: relative;
           max-width: 1420px;
           margin: 0 auto;
-          padding: 38px 32px 60px;
+          padding: 0 0 36px;
         }
 
         .hero {
@@ -1432,7 +1420,9 @@ export default function DocumentsPage() {
           justify-content: space-between;
           align-items: flex-end;
           gap: 30px;
-          margin-bottom: 30px;
+          margin-bottom: 20px;
+          padding-bottom: 20px;
+          border-bottom: 1px solid var(--fd-border);
         }
 
         .eyebrow {
@@ -1449,24 +1439,24 @@ export default function DocumentsPage() {
 
         .hero h1 {
           margin: 0;
-          font-size: clamp(30px, 3vw, 46px);
-          line-height: 1.05;
-          letter-spacing: -0.045em;
-          font-weight: 850;
-          color: #171c2c;
+          font-size: 28px;
+          line-height: 1.2;
+          letter-spacing: -0.025em;
+          font-weight: 650;
+          color: var(--fd-text-primary);
         }
 
         .hero h1 span {
-          display: block;
-          color: #5940d7;
+          display: inline;
+          color: inherit;
         }
 
         .hero p {
           max-width: 680px;
-          margin: 15px 0 0;
-          color: #727a8c;
-          line-height: 1.65;
-          font-size: 15px;
+          margin: 7px 0 0;
+          color: var(--fd-text-secondary);
+          line-height: 1.55;
+          font-size: 14px;
         }
 
         .upload-button,
@@ -1477,16 +1467,12 @@ export default function DocumentsPage() {
           align-items: center;
           justify-content: center;
           gap: 9px;
-          background: #5940d7;
+          background: var(--fd-primary);
           color: white;
           font-weight: 750;
-          border-radius: 13px;
+          border-radius: 6px;
           cursor: pointer;
-          box-shadow: 0 10px 25px rgba(89, 64, 215, 0.2);
-          transition:
-            transform 0.2s ease,
-            box-shadow 0.2s ease,
-            background 0.2s ease;
+          transition: background 0.15s ease;
         }
 
         .upload-button {
@@ -1497,9 +1483,7 @@ export default function DocumentsPage() {
         .upload-button:hover,
         .empty-upload:hover,
         .submit-upload:hover:not(:disabled) {
-          transform: translateY(-1px);
-          box-shadow: 0 14px 30px rgba(89, 64, 215, 0.26);
-          background: #4d35c6;
+          background: var(--fd-primary-hover);
         }
 
         .alert {
@@ -1539,56 +1523,57 @@ export default function DocumentsPage() {
         .stats-grid {
           display: grid;
           grid-template-columns: repeat(4, 1fr);
-          gap: 16px;
-          margin-bottom: 22px;
+          gap: 0;
+          margin-bottom: 20px;
+          border: 1px solid var(--fd-border);
+          background: var(--fd-surface);
         }
 
         .stat-card {
-          min-height: 124px;
-          padding: 21px;
+          min-height: 92px;
+          padding: 17px;
           display: flex;
           align-items: center;
           gap: 15px;
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid #e9ebf2;
-          border-radius: 17px;
-          box-shadow: 0 8px 30px rgba(31, 38, 58, 0.045);
+          background: transparent;
+          border: 0;
+          border-right: 1px solid var(--fd-border);
+          border-radius: 0;
         }
 
         .stat-card.featured {
-          border-color: rgba(89, 64, 215, 0.18);
-          background: linear-gradient(
-            135deg,
-            rgba(89, 64, 215, 0.08),
-            white
-          );
+          background: transparent;
+        }
+
+        .stat-card:last-child {
+          border-right: 0;
         }
 
         .stat-icon {
-          width: 48px;
-          height: 48px;
-          flex: 0 0 48px;
-          border-radius: 14px;
+          width: 30px;
+          height: 30px;
+          flex: 0 0 30px;
+          border-radius: 0;
           display: flex;
           align-items: center;
           justify-content: center;
-          color: #5940d7;
-          background: #f0edff;
+          color: var(--fd-muted);
+          background: transparent;
         }
 
         .stat-icon.blue {
-          color: #2875d9;
-          background: #edf5ff;
+          color: var(--fd-muted);
+          background: transparent;
         }
 
         .stat-icon.green {
-          color: #198a57;
-          background: #eaf9f1;
+          color: var(--fd-muted);
+          background: transparent;
         }
 
         .stat-icon.purple {
-          color: #8c49c6;
-          background: #f6edff;
+          color: var(--fd-muted);
+          background: transparent;
         }
 
         .stat-card span,
@@ -1597,7 +1582,7 @@ export default function DocumentsPage() {
         }
 
         .stat-card span {
-          color: #7a8292;
+          color: var(--fd-text-secondary);
           font-size: 12px;
           font-weight: 650;
           margin-bottom: 5px;
@@ -1605,23 +1590,22 @@ export default function DocumentsPage() {
 
         .stat-card strong {
           display: block;
-          color: #202637;
-          font-size: 27px;
+          color: var(--fd-text-primary);
+          font-size: 21px;
           line-height: 1;
           letter-spacing: -0.03em;
         }
 
         .stat-card small {
-          color: #a0a6b3;
+          color: var(--fd-muted);
           margin-top: 6px;
           font-size: 11px;
         }
 
         .documents-card {
-          background: #ffffff;
-          border: 1px solid #e8eaf0;
-          border-radius: 19px;
-          box-shadow: 0 12px 35px rgba(28, 36, 58, 0.05);
+          background: var(--fd-surface);
+          border: 1px solid var(--fd-border);
+          border-radius: 0;
           overflow: visible;
         }
 
@@ -1630,7 +1614,7 @@ export default function DocumentsPage() {
           align-items: center;
           gap: 12px;
           padding: 18px;
-          border-bottom: 1px solid #eef0f4;
+          border-bottom: 1px solid var(--fd-border);
         }
 
         .search-box {
@@ -1642,9 +1626,9 @@ export default function DocumentsPage() {
           gap: 10px;
           padding: 0 13px;
           color: #8c94a4;
-          background: #f8f9fb;
-          border: 1px solid #e9ebf0;
-          border-radius: 11px;
+          background: var(--fd-input);
+          border: 1px solid var(--fd-border);
+          border-radius: 6px;
         }
 
         .search-box input {
@@ -1653,7 +1637,7 @@ export default function DocumentsPage() {
           outline: none;
           border: 0;
           background: transparent;
-          color: #252b3b;
+          color: var(--fd-text-primary);
           font-size: 13px;
         }
 
@@ -1677,9 +1661,9 @@ export default function DocumentsPage() {
           gap: 8px;
           padding: 0 12px;
           color: #737b8d;
-          background: #f8f9fb;
-          border: 1px solid #e9ebf0;
-          border-radius: 11px;
+          background: var(--fd-input);
+          border: 1px solid var(--fd-border);
+          border-radius: 6px;
         }
 
         .filter-box select {
@@ -1688,7 +1672,7 @@ export default function DocumentsPage() {
           border: 0;
           outline: 0;
           background: transparent;
-          color: #353c4d;
+          color: var(--fd-text-primary);
           font-size: 13px;
           cursor: pointer;
         }
@@ -1707,9 +1691,9 @@ export default function DocumentsPage() {
         .list-header {
           min-height: 43px;
           padding: 0 20px;
-          color: #9299a7;
-          background: #fafbfc;
-          border-bottom: 1px solid #eef0f3;
+          color: var(--fd-text-secondary);
+          background: var(--fd-table-header);
+          border-bottom: 1px solid var(--fd-border);
           font-size: 11px;
           font-weight: 800;
           text-transform: uppercase;
@@ -1720,7 +1704,7 @@ export default function DocumentsPage() {
           position: relative;
           min-height: 82px;
           padding: 13px 20px;
-          border-bottom: 1px solid #f0f1f4;
+          border-bottom: 1px solid var(--fd-border);
           transition: background 0.18s ease;
         }
 
@@ -1729,7 +1713,7 @@ export default function DocumentsPage() {
         }
 
         .document-row:hover {
-          background: #fbfbfe;
+          background: var(--fd-surface-muted);
         }
 
         .document-main {
@@ -1746,9 +1730,9 @@ export default function DocumentsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 11px;
-          color: #5940d7;
-          background: #f1efff;
+          border-radius: 6px;
+          color: var(--fd-primary);
+          background: var(--fd-surface-muted);
         }
 
         .document-info {
@@ -1761,7 +1745,7 @@ export default function DocumentsPage() {
           overflow: hidden;
           white-space: nowrap;
           text-overflow: ellipsis;
-          color: #2b3140;
+          color: var(--fd-text-primary);
           font-size: 13px;
           font-weight: 750;
         }
@@ -1771,7 +1755,7 @@ export default function DocumentsPage() {
           align-items: center;
           gap: 7px;
           margin-top: 6px;
-          color: #9ca3b0;
+          color: var(--fd-muted);
           font-size: 10px;
           font-weight: 700;
         }
@@ -1797,7 +1781,7 @@ export default function DocumentsPage() {
 
         .size-cell,
         .date-cell {
-          color: #747c8c;
+          color: var(--fd-text-secondary);
           font-size: 12px;
           font-weight: 600;
         }
@@ -1823,9 +1807,9 @@ export default function DocumentsPage() {
         }
 
         .icon-button:hover {
-          color: #5940d7;
-          background: #f2efff;
-          border-color: #e8e3ff;
+          color: var(--fd-primary);
+          background: var(--fd-surface-muted);
+          border-color: var(--fd-border);
         }
 
         .action-menu {
@@ -1836,9 +1820,9 @@ export default function DocumentsPage() {
           min-width: 165px;
           padding: 6px;
           border: 1px solid #e7e9ef;
-          border-radius: 11px;
-          background: white;
-          box-shadow: 0 14px 35px rgba(30, 37, 56, 0.14);
+          border-radius: 6px;
+          background: var(--fd-surface-raised);
+          box-shadow: 0 10px 24px rgba(9, 16, 24, 0.18);
         }
 
         .action-menu button {
@@ -1886,22 +1870,22 @@ export default function DocumentsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 18px;
-          color: #5940d7;
-          background: #f1efff;
+          border-radius: 6px;
+          color: var(--fd-muted);
+          background: var(--fd-surface-muted);
           margin-bottom: 17px;
         }
 
         .empty-state h3 {
           margin: 0;
-          color: #343b4b;
+          color: var(--fd-text-primary);
           font-size: 17px;
         }
 
         .empty-state p {
           max-width: 450px;
           margin: 8px 0 20px;
-          color: #969dab;
+          color: var(--fd-text-secondary);
           font-size: 13px;
           line-height: 1.55;
         }
@@ -1929,7 +1913,7 @@ export default function DocumentsPage() {
 
         .section-heading h2 {
           margin: 5px 0 0;
-          color: #272d3d;
+          color: var(--fd-text-primary);
           font-size: 21px;
           letter-spacing: -0.02em;
         }
@@ -1947,18 +1931,17 @@ export default function DocumentsPage() {
           align-items: center;
           gap: 11px;
           text-align: left;
-          border: 1px solid #e9ebf0;
-          border-radius: 13px;
-          background: white;
+          border: 1px solid var(--fd-border);
+          border-radius: 6px;
+          background: var(--fd-surface);
           cursor: pointer;
           transition: 0.18s ease;
         }
 
         .category-card:hover,
         .category-card.active {
-          border-color: rgba(89, 64, 215, 0.28);
-          background: #faf9ff;
-          transform: translateY(-1px);
+          border-color: var(--fd-primary);
+          background: var(--fd-surface-muted);
         }
 
         .category-card-icon {
@@ -1967,9 +1950,9 @@ export default function DocumentsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 10px;
-          color: #5940d7;
-          background: #f1efff;
+          border-radius: 4px;
+          color: var(--fd-primary);
+          background: var(--fd-surface-muted);
         }
 
         .category-card strong,
@@ -1978,14 +1961,14 @@ export default function DocumentsPage() {
         }
 
         .category-card strong {
-          color: #2c3242;
+          color: var(--fd-text-primary);
           font-size: 18px;
           line-height: 1;
         }
 
         .category-card span {
           margin-top: 5px;
-          color: #8c94a3;
+          color: var(--fd-text-secondary);
           font-size: 10px;
           font-weight: 650;
         }
@@ -1998,18 +1981,17 @@ export default function DocumentsPage() {
           align-items: center;
           justify-content: center;
           padding: 20px;
-          background: rgba(19, 23, 35, 0.48);
-          backdrop-filter: blur(5px);
+          background: var(--fd-overlay);
         }
 
         .upload-modal {
           width: min(590px, 100%);
           max-height: calc(100vh - 40px);
           overflow-y: auto;
-          border: 1px solid #e8e9ef;
-          border-radius: 20px;
-          background: white;
-          box-shadow: 0 30px 80px rgba(22, 27, 42, 0.23);
+          border: 1px solid var(--fd-border);
+          border-radius: 8px;
+          background: var(--fd-surface-raised);
+          box-shadow: 0 24px 60px rgba(9, 16, 24, 0.3);
           animation: modalIn 0.2s ease;
         }
 
@@ -2030,7 +2012,7 @@ export default function DocumentsPage() {
           align-items: center;
           justify-content: space-between;
           padding: 21px 22px;
-          border-bottom: 1px solid #eef0f4;
+          border-bottom: 1px solid var(--fd-border);
         }
 
         .modal-title-area {
@@ -2045,14 +2027,14 @@ export default function DocumentsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 12px;
-          color: #5940d7;
-          background: #f0edff;
+          border-radius: 6px;
+          color: var(--fd-primary);
+          background: var(--fd-surface-muted);
         }
 
         .modal-header h2 {
           margin: 0;
-          color: #262c3b;
+          color: var(--fd-text-primary);
           font-size: 17px;
         }
 
@@ -2085,16 +2067,16 @@ export default function DocumentsPage() {
           justify-content: center;
           text-align: center;
           border: 1.5px dashed #d6d2f5;
-          border-radius: 15px;
-          background: #fbfaff;
+          border-radius: 6px;
+          background: var(--fd-surface-muted);
           cursor: pointer;
           transition: 0.2s ease;
         }
 
         .drop-zone:hover,
         .drop-zone.dragging {
-          border-color: #5940d7;
-          background: #f7f5ff;
+          border-color: var(--fd-primary);
+          background: var(--fd-surface-muted);
         }
 
         .drop-zone.has-file {
@@ -2109,9 +2091,9 @@ export default function DocumentsPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          border-radius: 16px;
-          color: #5940d7;
-          background: #efecff;
+          border-radius: 6px;
+          color: var(--fd-primary);
+          background: var(--fd-surface);
           margin-bottom: 12px;
         }
 
@@ -2125,7 +2107,7 @@ export default function DocumentsPage() {
           overflow: hidden;
           text-overflow: ellipsis;
           white-space: nowrap;
-          color: #33394a;
+          color: var(--fd-text-primary);
           font-size: 14px;
         }
 
@@ -2145,7 +2127,7 @@ export default function DocumentsPage() {
           margin-top: 13px;
           border: 0;
           background: transparent;
-          color: #5940d7;
+          color: var(--fd-primary);
           font-size: 11px;
           font-weight: 800;
           cursor: pointer;
@@ -2169,7 +2151,7 @@ export default function DocumentsPage() {
         .field label {
           display: block;
           margin-bottom: 6px;
-          color: #646c7b;
+          color: var(--fd-text-secondary);
           font-size: 11px;
           font-weight: 750;
         }
@@ -2179,19 +2161,19 @@ export default function DocumentsPage() {
           width: 100%;
           height: 42px;
           padding: 0 12px;
-          border: 1px solid #e2e4e9;
-          border-radius: 9px;
+          border: 1px solid var(--fd-border);
+          border-radius: 6px;
           outline: none;
-          color: #323847;
-          background: white;
+          color: var(--fd-text-primary);
+          background: var(--fd-input);
           font-size: 12px;
           transition: 0.15s ease;
         }
 
         .field input:focus,
         .field select:focus {
-          border-color: #aaa0ec;
-          box-shadow: 0 0 0 3px rgba(89, 64, 215, 0.07);
+          border-color: var(--fd-primary);
+          box-shadow: 0 0 0 3px var(--fd-focus);
         }
 
         .modal-footer {
@@ -2199,9 +2181,9 @@ export default function DocumentsPage() {
           justify-content: flex-end;
           gap: 9px;
           padding: 16px 22px;
-          border-top: 1px solid #eef0f4;
-          background: #fbfcfd;
-          border-radius: 0 0 20px 20px;
+          border-top: 1px solid var(--fd-border);
+          background: var(--fd-surface-muted);
+          border-radius: 0 0 8px 8px;
         }
 
         .cancel-button,

@@ -9,14 +9,34 @@
   Query,
   UseGuards,
 } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 
 import { SupplierService } from './supplier.service';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import { CurrentUser } from '../common/decorators/current-user.decorator';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
 
 import { CreateSupplierDto } from './dto/create-supplier.dto';
+import { SearchSuppliersDto } from './dto/search-suppliers.dto';
+import { UpdateSupplierDto } from './dto/update-supplier.dto';
+
+const SUPPLIER_READ_ROLES = [
+  UserRole.OWNER,
+  UserRole.ADMIN,
+  UserRole.ACCOUNTANT,
+  UserRole.VIEWER,
+];
+
+const SUPPLIER_WRITE_ROLES = [
+  UserRole.OWNER,
+  UserRole.ADMIN,
+  UserRole.ACCOUNTANT,
+];
 
 @Controller('suppliers')
 @UseGuards(JwtAuthGuard)
@@ -31,8 +51,9 @@ export class SupplierController {
   // =====================================================
 
   @Post()
+  @Roles(...SUPPLIER_WRITE_ROLES)
   create(
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateSupplierDto,
   ) {
     return this.service.create(
@@ -51,10 +72,16 @@ export class SupplierController {
   // =====================================================
 
   @Get()
+  @Roles(...SUPPLIER_READ_ROLES)
   findAll(
-    @CurrentUser() user: any,
-    @Query('search') search?: string,
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: SearchSuppliersDto,
   ) {
+    if (query.page !== undefined) {
+      return this.service.findPage(user.tenantId, query);
+    }
+
+    const search = query.search;
     if (search?.trim()) {
       return this.service.search(
         user.tenantId,
@@ -73,8 +100,9 @@ export class SupplierController {
   // =====================================================
 
   @Get('count')
+  @Roles(...SUPPLIER_READ_ROLES)
   count(
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
   ) {
     return this.service.count(
       user.tenantId,
@@ -87,8 +115,9 @@ export class SupplierController {
   // =====================================================
 
   @Get(':id')
+  @Roles(...SUPPLIER_READ_ROLES)
   findOne(
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.service.findOne(
@@ -103,10 +132,11 @@ export class SupplierController {
   // =====================================================
 
   @Patch(':id')
+  @Roles(...SUPPLIER_WRITE_ROLES)
   update(
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
-    @Body() dto: CreateSupplierDto,
+    @Body() dto: UpdateSupplierDto,
   ) {
     return this.service.update(
       user.tenantId,
@@ -121,8 +151,9 @@ export class SupplierController {
   // =====================================================
 
   @Delete(':id')
+  @Roles(UserRole.OWNER, UserRole.ADMIN)
   remove(
-    @CurrentUser() user: any,
+    @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
     return this.service.remove(

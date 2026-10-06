@@ -27,9 +27,8 @@ import {
   PrismaModule,
 } from '../prisma/prisma.module';
 
-import {
-  ObligationsModule,
-} from '../obligations/obligations.module';
+import { MailModule } from '../mail/mail.module';
+import { FiscalEnrollmentModule } from '../fiscal-enrollment/fiscal-enrollment.module';
 
 import {
   JwtStrategy,
@@ -78,9 +77,9 @@ import {
             'JWT_SECRET',
           );
 
-        if (!secret) {
+        if (!secret || Buffer.byteLength(secret, 'utf8') < 32) {
           throw new Error(
-            'JWT_SECRET não está configurado. Defina JWT_SECRET no ficheiro .env.',
+            'JWT_SECRET não está configurado correctamente (mínimo de 32 bytes).',
           );
         }
 
@@ -88,7 +87,7 @@ import {
           secret,
 
           signOptions: {
-            expiresIn: '7d',
+            expiresIn: '1h',
           },
         };
       },
@@ -98,7 +97,8 @@ import {
     // OBRIGAÇÕES FISCAIS
     // ===================================================
 
-    ObligationsModule,
+    MailModule,
+    FiscalEnrollmentModule,
   ],
 
   // =====================================================

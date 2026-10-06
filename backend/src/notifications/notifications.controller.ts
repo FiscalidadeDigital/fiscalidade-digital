@@ -4,56 +4,63 @@ import {
   Patch,
   Delete,
   Param,
+  Req,
+  UseGuards,
 } from '@nestjs/common';
 
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { NotificationsService } from './notifications.service';
 
 @Controller('notifications')
+@UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(
     private readonly notificationsService: NotificationsService,
   ) {}
 
-  private readonly tenantId =
-    'd666e572-6320-4bb3-aaea-646d77afdf1c';
-
   @Get()
-  findAll() {
+  findAll(@Req() req: any) {
     return this.notificationsService.findAll(
-      this.tenantId,
+      req.user.tenantId,
     );
   }
 
   @Get(':id')
   findOne(
+    @Req() req: any,
     @Param('id') id: string,
   ) {
     return this.notificationsService.findOne(
+      req.user.tenantId,
       id,
     );
   }
 
   @Patch(':id/read')
   markAsRead(
+    @Req() req: any,
     @Param('id') id: string,
   ) {
     return this.notificationsService.markAsRead(
+      req.user.tenantId,
       id,
     );
   }
 
   @Patch('read/all')
-  markAllAsRead() {
+  markAllAsRead(@Req() req: any) {
     return this.notificationsService.markAllAsRead(
-      this.tenantId,
+      req.user.tenantId,
     );
   }
 
   @Delete(':id')
   remove(
+    @Req() req: any,
     @Param('id') id: string,
   ) {
     return this.notificationsService.remove(
+      req.user.tenantId,
       id,
     );
   }

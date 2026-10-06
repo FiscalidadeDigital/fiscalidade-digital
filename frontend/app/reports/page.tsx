@@ -384,7 +384,7 @@ export default function ReportsPage() {
           getCompany(),
           getInvoices(),
           getEmployees(),
-          api.get('/obligations'),
+          api.get('/obligations?readOnly=true'),
           api.get('/payments'),
         ]);
 
@@ -1002,31 +1002,27 @@ export default function ReportsPage() {
             HERO
         ================================================= */}
 
-        <section className="relative overflow-hidden rounded-[28px] border border-indigo-100 bg-gradient-to-br from-white via-white to-indigo-50/70 px-6 py-7 shadow-sm md:px-8">
-
-          <div className="absolute -right-16 -top-20 h-56 w-56 rounded-full bg-indigo-100/50 blur-3xl" />
-
-          <div className="absolute bottom-[-80px] right-[25%] h-48 w-48 rounded-full bg-cyan-100/40 blur-3xl" />
+        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-7 md:px-8">
 
           <div className="relative flex flex-col gap-7 xl:flex-row xl:items-center xl:justify-between">
 
             <div className="max-w-3xl">
 
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-100 bg-white/80 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-indigo-600 shadow-sm">
+              <div className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.12em] text-[#0b6f93]">
                 <BarChart3 size={15} />
                 Relatório fiscal
               </div>
 
               <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
-                Visão geral da sua empresa
+                Relatório financeiro e fiscal
               </h1>
 
               <div className="mt-1 flex items-center gap-2">
-                <span className="text-3xl font-black text-indigo-600 md:text-4xl">
+                <span className="text-3xl font-semibold text-[#102447] md:text-4xl">
                   {selectedYear}
                 </span>
 
-                <span className="h-8 w-1 rounded-full bg-indigo-200" />
+                <span className="h-8 w-px bg-slate-300" />
 
                 <span className="text-sm text-slate-500">
                   Desempenho fiscal e financeiro
@@ -1039,12 +1035,12 @@ export default function ReportsPage() {
                 da sua empresa num único relatório.
               </p>
 
-              <div className="mt-5 flex flex-wrap items-center gap-3">
+              <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-slate-600">
 
-                <div className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-600 shadow-sm">
+                <div className="inline-flex items-center gap-2 border-r border-slate-200 pr-3">
                   <CalendarDays
                     size={16}
-                    className="text-indigo-600"
+                    className="text-[#0b6f93]"
                   />
                   Exercício fiscal
                   <strong className="text-slate-900">
@@ -1052,7 +1048,7 @@ export default function ReportsPage() {
                   </strong>
                 </div>
 
-                <div className="inline-flex items-center gap-2 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-medium text-emerald-700">
+                <div className="inline-flex items-center gap-2 font-medium text-emerald-700">
                   <CheckCircle2 size={16} />
                   Dados em tempo real
                 </div>

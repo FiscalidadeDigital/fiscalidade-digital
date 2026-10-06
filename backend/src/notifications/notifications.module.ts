@@ -7,9 +7,10 @@ import { NotificationsService } from './notifications.service';
 
 import { MailService } from '../mail/mail.service';
 import { AlertsService } from '../mail/alerts.service';
+import { AuthModule } from '../auth/auth.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [PrismaModule, AuthModule],
 
   controllers: [NotificationsController],
 

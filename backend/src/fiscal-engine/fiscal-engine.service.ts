@@ -5,12 +5,19 @@ import {
 } from '@nestjs/common';
 
 import {
+  InvoiceDocumentType,
   ObligationStatus,
+  Prisma,
+  FiscalRegime,
   TaxRuleOperation,
   TaxType,
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
+import { calculateVatAssessment } from './fiscal-assessment';
+import { IVA_LEGAL_SOURCE } from '../fiscal-rules/iva-rules';
+import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 
 type FiscalTransactionData = {
   tenantId: string;
@@ -25,6 +32,11 @@ type FiscalTransactionData = {
   deductibleAmount: number;
   withheldAmount: number;
   description: string;
+  calculationStatus?: string;
+  ruleVersion?: string;
+  legalReference?: string;
+  officialSource?: string;
+  calculationDetails?: Prisma.InputJsonValue;
 };
 
 @Injectable()
@@ -34,6 +46,8 @@ export class FiscalEngineService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
+    private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(prisma),
   ) {}
 
   // =========================================================
@@ -53,7 +67,6 @@ export class FiscalEngineService {
           id: true,
           name: true,
           nif: true,
-          regime: true,
           sector: true,
           companyType: true,
           retentionRate: true,
@@ -102,6 +115,8 @@ export class FiscalEngineService {
         where: {
           tenantId,
 
+          documentType: InvoiceDocumentType.NORMAL,
+
           status: {
             not: 'CANCELLED',
           },
@@ -131,9 +146,7 @@ export class FiscalEngineService {
         where: {
           tenantId,
 
-          status: {
-            not: 'CANCELLED',
-          },
+          documentStatus: 'VALIDATED',
 
           issuedAt: {
             gte: start,
@@ -149,6 +162,8 @@ export class FiscalEngineService {
           issuedAt: true,
           invoiceNumber: true,
           status: true,
+          documentStatus: true,
+          vatDeductibilityStatus: true,
         },
 
         orderBy: {
@@ -184,6 +199,7 @@ export class FiscalEngineService {
               irtTaxableAmount: true,
               irtAmount: true,
               socialSecurityAmount: true,
+              employerSocialSecurityAmount: true,
             },
           },
         },
@@ -224,6 +240,15 @@ export class FiscalEngineService {
 
     const transactionData: FiscalTransactionData[] =
       [];
+    const regimeByTaxPeriod = new Map<string, FiscalRegime | null>();
+    const resolveRegime = async (taxType: TaxType, date: Date) => {
+      const key = `${taxType}:${this.period(date)}`;
+      if (!regimeByTaxPeriod.has(key)) {
+        const enrollment = await this.enrollments.resolve(tenantId, taxType, date);
+        regimeByTaxPeriod.set(key, enrollment?.regime ?? null);
+      }
+      return regimeByTaxPeriod.get(key) ?? null;
+    };
 
     // =======================================================
     // IVA DAS VENDAS
@@ -246,10 +271,9 @@ export class FiscalEngineService {
       // REGIME GERAL
       // =====================================================
 
-      if (
-        tenant.regime ===
-        'GERAL'
-      ) {
+      const ivaRegime = await resolveRegime(TaxType.IVA, invoice.issuedAt);
+
+      if (ivaRegime === FiscalRegime.GERAL) {
         transactionData.push({
           tenantId,
 
@@ -309,20 +333,11 @@ export class FiscalEngineService {
       // issuedAt como referência temporal disponível.
       // =====================================================
 
-      if (
-        tenant.regime ===
-        'SIMPLIFICADO'
-      ) {
+      if (ivaRegime === FiscalRegime.SIMPLIFICADO) {
         if (
           invoice.status ===
           'PAID'
         ) {
-          const simplifiedVat =
-            this.round(
-              subtotal *
-                0.07,
-            );
-
           transactionData.push({
             tenantId,
 
@@ -340,8 +355,7 @@ export class FiscalEngineService {
             referenceDate:
               invoice.issuedAt,
 
-            sourceType:
-              'INVOICE_IVA_SIMPLIFICADO',
+            sourceType: 'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
 
             sourceId:
               invoice.id,
@@ -351,8 +365,7 @@ export class FiscalEngineService {
                 subtotal,
               ),
 
-            taxAmount:
-              simplifiedVat,
+            taxAmount: 0,
 
             deductibleAmount:
               0,
@@ -361,7 +374,8 @@ export class FiscalEngineService {
               0,
 
             description:
-              `IVA Simplificado da venda ${invoice.invoiceNumber}`,
+              `IVA Simplificado da venda ${invoice.invoiceNumber}: cálculo pendente de confirmação oficial.`,
+            calculationStatus: 'REVIEW_REQUIRED',
           });
         }
       }
@@ -371,13 +385,9 @@ export class FiscalEngineService {
     // IVA DEDUTÍVEL DAS COMPRAS
     // =======================================================
 
-    if (
-      tenant.regime ===
-      'GERAL'
-    ) {
-      for (
-        const purchase of purchases
-      ) {
+    for (const purchase of purchases) {
+      const ivaRegime = await resolveRegime(TaxType.IVA, purchase.issuedAt);
+      if (ivaRegime === FiscalRegime.GERAL) {
         const subtotal =
           this.number(
             purchase.subtotal,
@@ -406,7 +416,9 @@ export class FiscalEngineService {
             purchase.issuedAt,
 
           sourceType:
-            'PURCHASE_INVOICE_IVA',
+            purchase.vatDeductibilityStatus === 'DEDUCTIBLE'
+              ? 'PURCHASE_INVOICE_IVA_DEDUCTIBLE_CONFIRMED'
+              : 'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
 
           sourceId:
             purchase.id,
@@ -428,15 +440,21 @@ export class FiscalEngineService {
            * IVA potencialmente dedutível.
            */
           deductibleAmount:
-            this.round(
-              iva,
-            ),
+            purchase.vatDeductibilityStatus === 'DEDUCTIBLE'
+              ? this.round(iva)
+              : 0,
 
           withheldAmount:
             0,
 
           description:
-            `IVA dedutível da compra ${purchase.invoiceNumber}`,
+            purchase.vatDeductibilityStatus === 'DEDUCTIBLE'
+              ? `IVA dedutível confirmado da compra ${purchase.invoiceNumber}`
+              : `IVA suportado indicado, pendente de revisão, da compra ${purchase.invoiceNumber}`,
+          calculationStatus:
+            purchase.vatDeductibilityStatus === 'DEDUCTIBLE'
+              ? 'CALCULATED'
+              : 'REVIEW_REQUIRED',
         });
       }
     }
@@ -521,7 +539,7 @@ export class FiscalEngineService {
           0,
         );
 
-      const socialSecurity =
+      const employeeSocialSecurity =
         payroll.items.reduce(
           (
             sum,
@@ -530,6 +548,19 @@ export class FiscalEngineService {
             sum +
             this.number(
               item.socialSecurityAmount,
+            ),
+          0,
+        );
+
+      const employerSocialSecurity =
+        payroll.items.reduce(
+          (
+            sum,
+            item,
+          ) =>
+            sum +
+            this.number(
+              item.employerSocialSecurityAmount,
             ),
           0,
         );
@@ -594,9 +625,7 @@ export class FiscalEngineService {
       // SEGURANÇA SOCIAL
       // =====================================================
 
-      if (
-        socialSecurity > 0
-      ) {
+      if (employeeSocialSecurity > 0) {
         transactionData.push({
           tenantId,
 
@@ -611,7 +640,7 @@ export class FiscalEngineService {
           referenceDate,
 
           sourceType:
-            'PAYROLL_SS',
+            'PAYROLL_SS_EMPLOYEE',
 
           sourceId:
             payroll.id,
@@ -623,7 +652,7 @@ export class FiscalEngineService {
 
           taxAmount:
             this.round(
-              socialSecurity,
+              employeeSocialSecurity,
             ),
 
           deductibleAmount:
@@ -633,117 +662,60 @@ export class FiscalEngineService {
             0,
 
           description:
-            `Segurança Social da folha ${period}`,
+            `Contribuição do trabalhador para a Segurança Social da folha ${period}`,
         });
       }
-    }
 
-    // =======================================================
-    // IMPOSTO INDUSTRIAL PROVISÓRIO
-    // =======================================================
-    //
-    // Regime Geral:
-    //
-    // 2% sobre vendas/prestações de serviços dos primeiros
-    // seis meses não sujeitas a retenção.
-    //
-    // Utilizamos as facturas como fonte da actividade de
-    // vendas, excluindo as que possuem retenção.
-    // =======================================================
-
-    if (
-      tenant.regime ===
-      'GERAL'
-    ) {
-      const firstSixMonthsInvoices =
-        invoices.filter(
-          (invoice) => {
-            const month =
-              invoice.issuedAt.getUTCMonth() +
-              1;
-
-            const withholding =
-              this.number(
-                invoice.withholdingTax,
-              );
-
-            return (
-              month >= 1 &&
-              month <= 6 &&
-              withholding <= 0
-            );
-          },
-        );
-
-      const firstSixMonthsSales =
-        firstSixMonthsInvoices.reduce(
-          (
-            sum,
-            invoice,
-          ) =>
-            sum +
-            this.number(
-              invoice.subtotal,
-            ),
-          0,
-        );
-
-      if (
-        firstSixMonthsSales >
-        0
-      ) {
-        const industrial =
-          this.round(
-            firstSixMonthsSales *
-              0.02,
-          );
-
+      if (employerSocialSecurity > 0) {
         transactionData.push({
           tenantId,
-
-          taxType:
-            TaxType.INDUSTRIAL,
-
-          operation:
-            TaxRuleOperation.SALE,
-
-          period:
-            `${year}-08`,
-
-          referenceDate:
-            new Date(
-              Date.UTC(
-                year,
-                7,
-                1,
-              ),
-            ),
-
-          sourceType:
-            'INDUSTRIAL_PROVISIONAL',
-
-          sourceId:
-            `${tenantId}-${year}-INDUSTRIAL-PROVISIONAL`,
-
-          baseAmount:
-            this.round(
-              firstSixMonthsSales,
-            ),
-
-          taxAmount:
-            industrial,
-
-          deductibleAmount:
-            0,
-
-          withheldAmount:
-            0,
-
+          taxType: TaxType.SS,
+          operation: TaxRuleOperation.PAYROLL,
+          period,
+          referenceDate,
+          sourceType: 'PAYROLL_SS_EMPLOYER',
+          sourceId: payroll.id,
+          baseAmount: this.round(gross),
+          taxAmount: this.round(employerSocialSecurity),
+          deductibleAmount: 0,
+          withheldAmount: 0,
           description:
-            `Imposto Industrial provisório ${year} - vendas dos primeiros seis meses`,
+            `Contribuição da entidade empregadora para a Segurança Social da folha ${period}`,
         });
       }
     }
+
+    // =======================================================
+    // IMPOSTO INDUSTRIAL
+    // =======================================================
+    //
+    // O modelo actual não contém matéria colectável, custos fiscalmente
+    // aceites, correcções, prejuízos ou a regra aplicável à empresa.
+    // Por isso, não transforma volume de negócios num imposto definitivo
+    // nem cria uma liquidação provisória automática.
+    // =======================================================
+
+    const industrialRegime = await resolveRegime(
+      TaxType.INDUSTRIAL,
+      new Date(Date.UTC(year, 7, 1)),
+    );
+
+    if (industrialRegime) transactionData.push({
+      tenantId,
+      taxType: TaxType.INDUSTRIAL,
+      operation: TaxRuleOperation.SALE,
+      period: `${year}-08`,
+      referenceDate: new Date(Date.UTC(year, 7, 1)),
+      sourceType: 'INDUSTRIAL_REVIEW_REQUIRED',
+      sourceId: `${tenantId}-${year}-INDUSTRIAL-REVIEW`,
+      baseAmount: 0,
+      taxAmount: 0,
+      deductibleAmount: 0,
+      withheldAmount: 0,
+      description:
+        `Imposto Industrial ${year}: revisão necessária; não existe matéria colectável fiscal suficiente para um apuramento automático.`,
+      calculationStatus: 'REVIEW_REQUIRED',
+    });
 
     // =======================================================
     // SINCRONIZAR TRANSAÇÕES E AVALIAÇÕES
@@ -753,11 +725,16 @@ export class FiscalEngineService {
       async (tx) => {
         const sourceTypes = [
           'INVOICE_IVA',
-          'INVOICE_IVA_SIMPLIFICADO',
+          'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
           'PURCHASE_INVOICE_IVA',
+          'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
+          'PURCHASE_INVOICE_IVA_DEDUCTIBLE_CONFIRMED',
           'PAYROLL_IRT',
           'PAYROLL_SS',
+          'PAYROLL_SS_EMPLOYEE',
+          'PAYROLL_SS_EMPLOYER',
           'INDUSTRIAL_PROVISIONAL',
+          'INDUSTRIAL_REVIEW_REQUIRED',
         ];
 
         // ---------------------------------------------------
@@ -776,6 +753,10 @@ export class FiscalEngineService {
           where: {
             tenantId,
 
+            period: {
+              startsWith: `${year}-`,
+            },
+
             sourceType: {
               in: sourceTypes,
             },
@@ -791,8 +772,24 @@ export class FiscalEngineService {
           0
         ) {
           await tx.taxTransaction.createMany({
-            data:
-              transactionData,
+            data: transactionData.map((item) => ({
+              ...item,
+              // Decimal columns are authoritative for new calculations. Float
+              // columns remain dual-written only while legacy consumers exist.
+              baseAmountValue: this.decimal(item.baseAmount),
+              taxAmountValue: this.decimal(item.taxAmount),
+              deductibleAmountValue: this.decimal(item.deductibleAmount),
+              withheldAmountValue: this.decimal(item.withheldAmount),
+              calculationStatus:
+                item.calculationStatus ?? 'CALCULATED',
+              ruleVersion: item.ruleVersion ?? this.ruleVersionFor(item.taxType),
+              legalReference: item.legalReference ?? this.legalReferenceFor(item.taxType),
+              officialSource: item.officialSource ?? this.officialSourceFor(item.taxType),
+              calculationDetails: item.calculationDetails ?? {
+                sourceType: item.sourceType,
+                sourceId: item.sourceId,
+              },
+            })),
           });
         }
 
@@ -814,7 +811,7 @@ export class FiscalEngineService {
             key.taxType,
             key.period,
             year,
-            tenant.regime,
+            regimeByTaxPeriod.get(`${key.taxType}:${key.period}`) ?? null,
           );
         }
       },
@@ -913,14 +910,23 @@ export class FiscalEngineService {
     // IVA FINAL
     // =======================================================
 
-    const ivaFinal =
-      Math.max(
-        0,
-        this.round(
-          ivaLiquidado -
-            ivaDedutivel,
-        ),
-      );
+    const ivaAssessment = calculateVatAssessment(
+      ivaLiquidado,
+      transactionData
+        .filter(
+          (item) =>
+            item.taxType === TaxType.IVA &&
+            item.operation === TaxRuleOperation.PURCHASE,
+        )
+        .map((item) => ({
+          amount: item.taxAmount,
+          status:
+            item.deductibleAmount > 0
+              ? 'DEDUCTIBLE_CONFIRMED' as const
+              : 'PENDING_REVIEW' as const,
+        })),
+    );
+    const ivaFinal = Number(ivaAssessment.payable);
 
     // =======================================================
     // LOG
@@ -934,7 +940,7 @@ export class FiscalEngineService {
 
         `NIF: ${tenant.nif}`,
 
-        `Regime: ${tenant.regime}`,
+        'Enquadramento: resolvido por imposto e competência',
 
         `Ano: ${year}`,
 
@@ -975,8 +981,7 @@ export class FiscalEngineService {
         nif:
           tenant.nif,
 
-        regime:
-          tenant.regime,
+        regime: null,
 
         sector:
           tenant.sector,
@@ -1028,6 +1033,8 @@ export class FiscalEngineService {
           ),
 
         ivaFinal,
+
+        ivaAssessment,
       },
 
       transactionCount:
@@ -1217,7 +1224,7 @@ export class FiscalEngineService {
     taxType: TaxType,
     period: string,
     year: number,
-    regime: any,
+    regime: FiscalRegime | null,
   ) {
     const transactions =
       await tx.taxTransaction.findMany({
@@ -1234,6 +1241,12 @@ export class FiscalEngineService {
           taxAmount: true,
           deductibleAmount: true,
           withheldAmount: true,
+          baseAmountValue: true,
+          taxAmountValue: true,
+          deductibleAmountValue: true,
+          withheldAmountValue: true,
+          operation: true,
+          sourceType: true,
         },
       });
 
@@ -1243,68 +1256,57 @@ export class FiscalEngineService {
       return;
     }
 
-    const taxableAmount =
-      transactions.reduce(
-        (
-          sum: number,
-          item: any,
-        ) =>
-          sum +
-          this.number(
-            item.baseAmount,
-          ),
-        0,
-      );
+    const sum = (
+      field: 'baseAmountValue' | 'taxAmountValue' | 'deductibleAmountValue' | 'withheldAmountValue',
+      legacyField: 'baseAmount' | 'taxAmount' | 'deductibleAmount' | 'withheldAmount',
+      predicate: (item: any) => boolean = () => true,
+    ) => transactions.reduce(
+      (total: Prisma.Decimal, item: any) =>
+        predicate(item)
+          ? total.plus(this.decimal(item[field] ?? item[legacyField]))
+          : total,
+      new Prisma.Decimal(0),
+    ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
-    const taxDueAmount =
-      transactions.reduce(
-        (
-          sum: number,
-          item: any,
-        ) =>
-          sum +
-          this.number(
-            item.taxAmount,
-          ),
-        0,
-      );
-
-    const deductibleAmount =
-      transactions.reduce(
-        (
-          sum: number,
-          item: any,
-        ) =>
-          sum +
-          this.number(
-            item.deductibleAmount,
-          ),
-        0,
-      );
-
-    const withheldAmount =
-      transactions.reduce(
-        (
-          sum: number,
-          item: any,
-        ) =>
-          sum +
-          this.number(
-            item.withheldAmount,
-          ),
-        0,
-      );
-
-    const finalAmount =
-      Math.max(
-        0,
-
-        this.round(
-          taxDueAmount -
-            deductibleAmount -
-            withheldAmount,
-        ),
-      );
+    const isSale = (item: any) =>
+      taxType !== TaxType.IVA || item.operation === TaxRuleOperation.SALE;
+    const taxableAmount = sum('baseAmountValue', 'baseAmount', isSale);
+    const taxDueAmount = sum('taxAmountValue', 'taxAmount', isSale);
+    const deductibleAmount = sum('deductibleAmountValue', 'deductibleAmount');
+    const withheldAmount = sum('withheldAmountValue', 'withheldAmount');
+    const pendingVat = taxType === TaxType.IVA && transactions.some(
+      (item: any) => item.sourceType === 'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
+    );
+    const industrialReview = taxType === TaxType.INDUSTRIAL;
+    const position = industrialReview
+      ? new Prisma.Decimal(0)
+      : taxType === TaxType.IRT
+        ? taxDueAmount.minus(deductibleAmount)
+        : taxDueAmount.minus(deductibleAmount).minus(withheldAmount);
+    const finalAmount = Prisma.Decimal.max(position, new Prisma.Decimal(0))
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const creditAmount = position.isNegative()
+      ? position.negated().toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+      : new Prisma.Decimal(0);
+    const calculationStatus = industrialReview
+      ? 'REVIEW_REQUIRED'
+      : pendingVat
+        ? 'REVIEW_REQUIRED'
+        : creditAmount.gt(0)
+          ? 'CREDIT'
+          : 'CALCULATED';
+    const snapshot = {
+      period,
+      taxType,
+      calculatedAt: new Date().toISOString(),
+      calculationStatus,
+      taxBase: taxableAmount.toFixed(2),
+      taxDue: taxDueAmount.toFixed(2),
+      taxCredit: creditAmount.toFixed(2),
+      taxPayable: finalAmount.toFixed(2),
+      sourceCount: transactions.length,
+      pendingVat,
+    };
 
     await tx.taxAssessment.upsert({
       where: {
@@ -1329,66 +1331,56 @@ export class FiscalEngineService {
 
         year,
 
-        taxableAmount:
-          this.round(
-            taxableAmount,
-          ),
-
-        taxDueAmount:
-          this.round(
-            taxDueAmount,
-          ),
-
-        deductibleAmount:
-          this.round(
-            deductibleAmount,
-          ),
-
-        withheldAmount:
-          this.round(
-            withheldAmount,
-          ),
+        taxableAmount: taxableAmount.toNumber(),
+        taxDueAmount: taxDueAmount.toNumber(),
+        deductibleAmount: deductibleAmount.toNumber(),
+        withheldAmount: withheldAmount.toNumber(),
 
         adjustmentsAmount:
           0,
 
-        finalAmount:
-          this.round(
-            finalAmount,
-          ),
+        finalAmount: finalAmount.toNumber(),
+        taxableAmountValue: taxableAmount,
+        taxDueAmountValue: taxDueAmount,
+        deductibleAmountValue: deductibleAmount,
+        withheldAmountValue: withheldAmount,
+        adjustmentsAmountValue: new Prisma.Decimal(0),
+        finalAmountValue: finalAmount,
+        creditAmountValue: creditAmount,
+        payableAmountValue: finalAmount,
+        calculationStatus,
+        ruleVersion: this.ruleVersionFor(taxType),
+        legalReference: this.legalReferenceFor(taxType),
+        officialSource: this.officialSourceFor(taxType),
+        calculationSnapshot: snapshot,
 
         status:
           'DRAFT',
       },
 
       update: {
-        taxableAmount:
-          this.round(
-            taxableAmount,
-          ),
-
-        taxDueAmount:
-          this.round(
-            taxDueAmount,
-          ),
-
-        deductibleAmount:
-          this.round(
-            deductibleAmount,
-          ),
-
-        withheldAmount:
-          this.round(
-            withheldAmount,
-          ),
+        taxableAmount: taxableAmount.toNumber(),
+        taxDueAmount: taxDueAmount.toNumber(),
+        deductibleAmount: deductibleAmount.toNumber(),
+        withheldAmount: withheldAmount.toNumber(),
 
         adjustmentsAmount:
           0,
 
-        finalAmount:
-          this.round(
-            finalAmount,
-          ),
+        finalAmount: finalAmount.toNumber(),
+        taxableAmountValue: taxableAmount,
+        taxDueAmountValue: taxDueAmount,
+        deductibleAmountValue: deductibleAmount,
+        withheldAmountValue: withheldAmount,
+        adjustmentsAmountValue: new Prisma.Decimal(0),
+        finalAmountValue: finalAmount,
+        creditAmountValue: creditAmount,
+        payableAmountValue: finalAmount,
+        calculationStatus,
+        ruleVersion: this.ruleVersionFor(taxType),
+        legalReference: this.legalReferenceFor(taxType),
+        officialSource: this.officialSourceFor(taxType),
+        calculationSnapshot: snapshot,
 
         updatedAt:
           new Date(),
@@ -1402,9 +1394,7 @@ export class FiscalEngineService {
       period,
       year,
       regime,
-      this.round(
-        finalAmount,
-      ),
+      finalAmount.toNumber(),
     );
   }
 
@@ -1418,7 +1408,7 @@ export class FiscalEngineService {
     taxType: TaxType,
     period: string,
     year: number,
-    regime: any,
+    regime: FiscalRegime | null,
     finalAmount: number,
   ) {
     /*
@@ -1473,11 +1463,13 @@ export class FiscalEngineService {
 
           taxType,
 
-          regimes: {
-            some: {
-              regime,
-            },
-          },
+          ...(this.requiresEnrollment(taxType)
+            ? {
+                regimes: {
+                  some: { regime },
+                },
+              }
+            : {}),
         },
 
         include: {
@@ -1691,6 +1683,9 @@ export class FiscalEngineService {
               finalAmount,
             ),
 
+          amountValue:
+            this.decimal(finalAmount),
+
           status,
 
           alertEnabled:
@@ -1710,45 +1705,25 @@ export class FiscalEngineService {
     // CRIAR OBRIGAÇÃO
     // =======================================================
 
-    await tx.fiscalObligation.create({
-      data: {
+    await this.obligationPersistence.persistCalendarDerived(
+      {
         tenantId,
-
-        fiscalCalendarId:
-          rule.id,
-
-        type:
-          rule.obligationType,
-
-        title:
-          rule.title,
-
-        description:
-          rule.description,
-
-        dueDate:
-          rule.dueDate,
-
-        period:
-          obligationPeriod,
-
-        amount:
-          this.round(
-            finalAmount,
-          ),
-
+        fiscalCalendarId: rule.id,
+        period: obligationPeriod,
+        type: rule.obligationType,
+        title: rule.title,
+        description: rule.description,
+        dueDate: rule.dueDate,
+        amount: this.round(finalAmount),
+        amountValue: this.decimal(finalAmount),
         status,
-
-        alertEnabled:
-          true,
-
-        alertDaysBefore:
-          7,
-
-        reminderSent:
-          false,
+        alertEnabled: true,
+        alertDaysBefore: 7,
+        reminderSent: false,
+        origin: 'FISCAL_ENGINE',
       },
-    });
+      tx,
+    );
   }
 
   // =========================================================
@@ -2148,6 +2123,10 @@ export class FiscalEngineService {
   // NORMALIZAR PERÍODO
   // =========================================================
 
+  private requiresEnrollment(taxType: TaxType) {
+    return taxType === TaxType.IVA || taxType === TaxType.INDUSTRIAL;
+  }
+
   private normalizePeriod(
     period: string,
   ) {
@@ -2341,6 +2320,50 @@ export class FiscalEngineService {
       )
       .trim()
       .toUpperCase();
+  }
+
+  private decimal(value: Prisma.Decimal.Value | null | undefined): Prisma.Decimal {
+    if (value === null || value === undefined) {
+      return new Prisma.Decimal(0);
+    }
+
+    return new Prisma.Decimal(value).toDecimalPlaces(
+      2,
+      Prisma.Decimal.ROUND_HALF_UP,
+    );
+  }
+
+  private ruleVersionFor(taxType: TaxType): string | null {
+    if (taxType === TaxType.IVA) {
+      return 'AO-CIVA-LEI-14-23';
+    }
+    if (taxType === TaxType.SS) {
+      return 'AO-INSS-DP-227-18-ART12-13';
+    }
+    if (taxType === TaxType.IRT) {
+      return 'AO-IRT-PAYROLL-RULE-VERSIONED';
+    }
+    return null;
+  }
+
+  private legalReferenceFor(taxType: TaxType): string | null {
+    if (taxType === TaxType.IVA) {
+      return 'Lei n.º 14/23, Código do IVA republicado';
+    }
+    if (taxType === TaxType.SS) {
+      return 'Decreto Presidencial n.º 227/18, artigos 12 e 13';
+    }
+    return null;
+  }
+
+  private officialSourceFor(taxType: TaxType): string | null {
+    if (taxType === TaxType.IVA) {
+      return IVA_LEGAL_SOURCE.officialUrl;
+    }
+    if (taxType === TaxType.SS) {
+      return 'https://portal.inss.gov.ao/wp-content/uploads/2021/10/227_18.pdf';
+    }
+    return null;
   }
 
   // =========================================================

@@ -1,197 +1,338 @@
 'use client';
 
 import {
-  Clock,
-  Construction,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  Search,
   ShieldCheck,
+  UserCog,
+  UserRoundCheck,
+  UserRoundX,
   Users,
-  UserRoundPlus,
+  X,
 } from 'lucide-react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/context/AuthContext';
+import {
+  getTenantUsers,
+  createTenantInvitation,
+  getUserApiError,
+  TenantUser,
+  TenantUserRole,
+  updateTenantUserAccess,
+  UserList,
+} from '@/services/users';
+
+const roleLabels: Record<TenantUserRole, string> = {
+  OWNER: 'Proprietário',
+  ADMIN: 'Administrador',
+  ACCOUNTANT: 'Contabilista',
+  VIEWER: 'Consulta',
+};
+
+const roleStyles: Record<TenantUserRole, string> = {
+  OWNER: 'border-sky-200 bg-sky-50 text-sky-800',
+  ADMIN: 'border-indigo-200 bg-indigo-50 text-indigo-800',
+  ACCOUNTANT: 'border-amber-200 bg-amber-50 text-amber-800',
+  VIEWER: 'border-slate-200 bg-slate-50 text-slate-700',
+};
+
+function formatDate(value: string | null) {
+  if (!value) return 'Nunca';
+  return new Intl.DateTimeFormat('pt-AO', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+}
 
 export default function UsersPage() {
+  const { user: currentUser } = useAuth();
+  const [result, setResult] = useState<UserList | null>(null);
+  const [search, setSearch] = useState('');
+  const [role, setRole] = useState<TenantUserRole | ''>('');
+  const [status, setStatus] = useState<'ACTIVE' | 'INACTIVE' | ''>('');
+  const [sort, setSort] = useState('name:asc');
+  const [page, setPage] = useState(1);
+  const [reload, setReload] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [notice, setNotice] = useState('');
+  const [selected, setSelected] = useState<TenantUser | null>(null);
+  const [invite, setInvite] = useState({ email: '', role: 'VIEWER' as Exclude<TenantUserRole, 'OWNER'> });
+  const [inviting, setInviting] = useState(false);
+  const [sortBy, sortDirection] = useMemo(() => sort.split(':'), [sort]);
+
+  useEffect(() => {
+    let active = true;
+    const timeout = window.setTimeout(() => {
+      setLoading(true);
+      setError('');
+      getTenantUsers({
+        search: search || undefined,
+        role,
+        status,
+        page,
+        pageSize: 20,
+        sortBy: sortBy as 'name' | 'email' | 'role' | 'createdAt' | 'lastLogin',
+        sortDirection: sortDirection as 'asc' | 'desc',
+      })
+        .then((data) => active && setResult(data))
+        .catch((requestError) =>
+          active && setError(
+            getUserApiError(requestError, 'Não foi possível consultar os utilizadores da empresa.'),
+          ),
+        )
+        .finally(() => active && setLoading(false));
+    }, 300);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [page, reload, role, search, sortBy, sortDirection, status]);
+
+  function resetPage() {
+    setPage(1);
+    setNotice('');
+  }
+
+  async function sendInvitation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setInviting(true); setError(''); setNotice('');
+    try {
+      await createTenantInvitation(invite);
+      setInvite({ email: '', role: 'VIEWER' });
+      setNotice('Convite enviado. O destinatário definirá a própria palavra-passe.');
+    } catch (requestError) { setError(getUserApiError(requestError, 'Não foi possível enviar o convite.')); }
+    finally { setInviting(false); }
+  }
+
+  const summaries = [
+    { label: 'Utilizadores', value: result?.summary.total ?? 0, icon: Users },
+    { label: 'Activos', value: result?.summary.active ?? 0, icon: UserRoundCheck },
+    { label: 'Inactivos', value: result?.summary.inactive ?? 0, icon: UserRoundX },
+    { label: 'Proprietários activos', value: result?.summary.owners ?? 0, icon: ShieldCheck },
+  ];
+
   return (
     <DashboardLayout>
-      <main className="mx-auto w-full max-w-[1400px]">
-
-        {/* CABEÇALHO */}
-
-        <section className="mb-8">
-          <div className="mb-3 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eeecff] text-[#5146e5]">
-              <Users size={21} />
-            </div>
-
-            <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#5146e5]">
-              Gestão da Empresa
-            </span>
-          </div>
-
-          <h1 className="text-[28px] font-bold tracking-[-0.03em] text-[#101b3d] sm:text-[34px]">
-            Utilizadores
-          </h1>
-
-          <p className="mt-2 max-w-[700px] text-[14px] leading-6 text-[#7180a2]">
-            Gere os utilizadores da tua empresa e organiza
-            os acessos à plataforma Fiscalidade Digital.
+      <main className="mx-auto w-full max-w-[1500px]">
+        <header className="border-b border-[var(--fd-border)] pb-6">
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Empresa e acessos</p>
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--fd-text-primary)] sm:text-3xl">Utilizadores</h1>
+          <p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--fd-text-secondary)]">
+            Consulte os membros da empresa e controle funções e estado de acesso. As alterações ficam registadas para auditoria.
           </p>
+          {(currentUser?.role === 'OWNER' || currentUser?.role === 'ADMIN') && <form onSubmit={sendInvitation} className="mt-5 grid max-w-2xl gap-2 rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-3 sm:grid-cols-[minmax(0,1fr)_160px_auto]"><input required type="email" value={invite.email} onChange={(event) => setInvite((value) => ({ ...value, email: event.target.value }))} placeholder="Email do novo utilizador" className="h-10 rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm" /><select value={invite.role} onChange={(event) => setInvite((value) => ({ ...value, role: event.target.value as Exclude<TenantUserRole, 'OWNER'> }))} className="h-10 rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm"><option value="ADMIN">Administrador</option><option value="ACCOUNTANT">Contabilista</option><option value="VIEWER">Consulta</option></select><button disabled={inviting} className="h-10 rounded-lg bg-sky-700 px-4 text-sm font-semibold text-white disabled:opacity-60">{inviting ? 'A enviar…' : 'Convidar'}</button></form>}
+        </header>
+
+        <section className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo de utilizadores">
+          {summaries.map((item) => (
+            <article key={item.label} className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-4 shadow-sm">
+              <div className="flex items-center justify-between">
+                <p className="text-xs font-medium text-[var(--fd-text-secondary)]">{item.label}</p>
+                <item.icon className="h-4 w-4 text-sky-700" aria-hidden="true" />
+              </div>
+              <p className="mt-3 text-2xl font-semibold tabular-nums text-[var(--fd-text-primary)]">{item.value}</p>
+            </article>
+          ))}
         </section>
 
-        {/* CONTEÚDO PRINCIPAL */}
-
-        <section className="relative overflow-hidden rounded-3xl border border-[#e5e8f1] bg-white shadow-[0_8px_35px_rgba(35,45,90,0.05)]">
-
-          {/* DECORAÇÕES */}
-
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#eeecff] opacity-70 blur-3xl" />
-
-          <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-[#e5f6ff] opacity-60 blur-3xl" />
-
-          <div className="relative px-5 py-12 sm:px-10 sm:py-16 lg:px-20 lg:py-20">
-
-            {/* ÍCONE PRINCIPAL */}
-
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#eeecff] text-[#5146e5] shadow-sm sm:h-24 sm:w-24">
-              <Construction
-                size={42}
-                strokeWidth={1.6}
+        <section className="mt-6 overflow-hidden rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
+          <div className="grid gap-3 border-b border-[var(--fd-border)] p-4 md:grid-cols-[minmax(240px,1fr)_170px_170px_210px]">
+            <label className="relative block">
+              <span className="sr-only">Pesquisar utilizadores</span>
+              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fd-muted)]" />
+              <input
+                value={search}
+                onChange={(event) => { setSearch(event.target.value); resetPage(); }}
+                placeholder="Nome ou email"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
               />
-            </div>
-
-            {/* MENSAGEM */}
-
-            <div className="mx-auto mt-7 max-w-[680px] text-center">
-
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#f0dca5] bg-[#fff9e8] px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-[#a87916]">
-                <Clock size={13} />
-                Em manutenção
-              </div>
-
-              <h2 className="text-[24px] font-bold tracking-[-0.02em] text-[#101b3d] sm:text-[30px]">
-                Gestão de utilizadores em breve
-              </h2>
-
-              <p className="mt-4 text-[13px] leading-7 text-[#7180a2] sm:text-[14px]">
-                Estamos a preparar uma área completa para
-                permitir que a tua empresa adicione e gira
-                os seus utilizadores dentro da Fiscalidade
-                Digital.
-              </p>
-
-              <p className="mt-3 text-[13px] leading-7 text-[#7180a2] sm:text-[14px]">
-                Em breve, poderás convidar funcionários,
-                contabilistas e colaboradores, definir
-                permissões e controlar o acesso aos
-                diferentes módulos do sistema.
-              </p>
-
-            </div>
-
-            {/* FUNCIONALIDADES FUTURAS */}
-
-            <div className="mx-auto mt-10 grid max-w-[850px] grid-cols-1 gap-4 md:grid-cols-3">
-
-              <div className="rounded-2xl border border-[#e9ebf3] bg-[#fafbfe] p-5 text-center">
-
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#eeecff] text-[#5146e5]">
-                  <UserRoundPlus size={19} />
-                </div>
-
-                <h3 className="mt-4 text-[13px] font-bold text-[#253453]">
-                  Adicionar utilizadores
-                </h3>
-
-                <p className="mt-2 text-[11px] leading-5 text-[#8490aa]">
-                  Convide membros da sua empresa para
-                  utilizarem a plataforma.
-                </p>
-
-              </div>
-
-              <div className="rounded-2xl border border-[#e9ebf3] bg-[#fafbfe] p-5 text-center">
-
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f8f0] text-[#15945b]">
-                  <ShieldCheck size={19} />
-                </div>
-
-                <h3 className="mt-4 text-[13px] font-bold text-[#253453]">
-                  Permissões de acesso
-                </h3>
-
-                <p className="mt-2 text-[11px] leading-5 text-[#8490aa]">
-                  Defina o nível de acesso de cada
-                  utilizador aos módulos do sistema.
-                </p>
-
-              </div>
-
-              <div className="rounded-2xl border border-[#e9ebf3] bg-[#fafbfe] p-5 text-center">
-
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f3ff] text-[#2876d2]">
-                  <Users size={19} />
-                </div>
-
-                <h3 className="mt-4 text-[13px] font-bold text-[#253453]">
-                  Gestão da equipa
-                </h3>
-
-                <p className="mt-2 text-[11px] leading-5 text-[#8490aa]">
-                  Consulte, actualize e controle os
-                  membros associados à sua empresa.
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* AVISO */}
-
-            <div className="mx-auto mt-10 flex max-w-[600px] items-center justify-center gap-2 rounded-xl border border-[#e5e8f1] bg-white px-5 py-4 text-center">
-
-              <Clock
-                size={16}
-                className="shrink-0 text-[#8a96ad]"
-              />
-
-              <p className="text-[11px] font-medium text-[#7180a2]">
-                Esta funcionalidade estará disponível brevemente.
-              </p>
-
-            </div>
-
+            </label>
+            <label>
+              <span className="sr-only">Filtrar por função</span>
+              <select
+                value={role}
+                onChange={(event) => { setRole(event.target.value as TenantUserRole | ''); resetPage(); }}
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+              >
+                <option value="">Todas as funções</option>
+                {Object.entries(roleLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Filtrar por estado</span>
+              <select
+                value={status}
+                onChange={(event) => { setStatus(event.target.value as 'ACTIVE' | 'INACTIVE' | ''); resetPage(); }}
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+              >
+                <option value="">Todos os estados</option>
+                <option value="ACTIVE">Activos</option>
+                <option value="INACTIVE">Inactivos</option>
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Ordenar utilizadores</span>
+              <select
+                value={sort}
+                onChange={(event) => { setSort(event.target.value); resetPage(); }}
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+              >
+                <option value="name:asc">Nome A–Z</option>
+                <option value="name:desc">Nome Z–A</option>
+                <option value="createdAt:desc">Mais recentes</option>
+                <option value="lastLogin:desc">Acesso mais recente</option>
+              </select>
+            </label>
           </div>
 
-        </section>
+          {notice && <div role="status" className="border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-medium text-emerald-800">{notice}</div>}
+          {error && <div role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-xs font-medium text-rose-800">{error}</div>}
 
-        {/* NOTA DE SEGURANÇA */}
-
-        <section className="mt-6 rounded-2xl border border-[#e5e8f1] bg-[#f8f9fd] p-5 sm:p-6">
-
-          <div className="flex items-start gap-3">
-
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#5146e5] shadow-sm">
-              <ShieldCheck size={16} />
-            </div>
-
-            <div>
-              <h3 className="text-[12px] font-bold text-[#253453]">
-                Gestão segura de acessos
-              </h3>
-
-              <p className="mt-1 text-[11px] leading-5 text-[#8490aa]">
-                Cada utilizador estará associado à sua
-                empresa. As permissões serão controladas
-                de forma segura para proteger os dados
-                empresariais.
-              </p>
-            </div>
-
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[860px] border-collapse text-left">
+              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+                <tr>
+                  <th className="px-5 py-3 font-semibold">Utilizador</th>
+                  <th className="px-4 py-3 font-semibold">Função</th>
+                  <th className="px-4 py-3 font-semibold">Segurança</th>
+                  <th className="px-4 py-3 font-semibold">Último acesso</th>
+                  <th className="px-5 py-3 text-right font-semibold">Acção</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[var(--fd-border)]">
+                {loading ? (
+                  <tr><td colSpan={5} className="h-52 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-sky-700" aria-label="A carregar utilizadores" /></td></tr>
+                ) : result?.data.length ? (
+                  result.data.map((member) => {
+                    const isSelf = member.id === currentUser?.id;
+                    const isPrivilegedTarget = member.role === 'OWNER' || member.role === 'ADMIN';
+                    const canManage =
+                      !isSelf &&
+                      !(currentUser?.role === 'ADMIN' && isPrivilegedTarget);
+                    return (
+                      <tr key={member.id} className="hover:bg-slate-50/70">
+                        <td className="px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-50 text-xs font-semibold text-sky-800">{member.name.slice(0, 2).toUpperCase()}</span>
+                            <div className="min-w-0"><p className="truncate text-sm font-semibold text-[var(--fd-text-primary)]">{member.name}{isSelf ? ' (tu)' : ''}</p><p className="mt-0.5 truncate text-xs text-[var(--fd-muted)]">{member.email}</p></div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${roleStyles[member.role]}`}>{roleLabels[member.role]}</span></td>
+                        <td className="px-4 py-4 text-xs text-[var(--fd-text-secondary)]">
+                          <span className={`inline-flex items-center gap-1.5 font-semibold ${member.isActive ? 'text-emerald-700' : 'text-rose-700'}`}><span className={`h-1.5 w-1.5 rounded-full ${member.isActive ? 'bg-emerald-500' : 'bg-rose-500'}`} />{member.isActive ? 'Activo' : 'Inactivo'}</span>
+                          <p className="mt-1.5 text-[11px] text-[var(--fd-muted)]">2FA {member.twoFactorEnabled ? 'activo' : 'inactivo'}</p>
+                        </td>
+                        <td className="px-4 py-4 text-xs text-[var(--fd-text-secondary)]">{formatDate(member.lastLogin)}</td>
+                        <td className="px-5 py-4 text-right">
+                          <button type="button" disabled={!canManage} onClick={() => setSelected(member)} className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] px-3 py-2 text-xs font-semibold text-[var(--fd-text-primary)] hover:border-sky-300 hover:text-sky-800 focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-45"><UserCog className="h-3.5 w-3.5" />Gerir</button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                ) : (
+                  <tr><td colSpan={5} className="h-52 text-center text-sm text-[var(--fd-muted)]">Nenhum utilizador corresponde aos filtros.</td></tr>
+                )}
+              </tbody>
+            </table>
           </div>
 
+          <div className="flex flex-col gap-3 border-t border-[var(--fd-border)] px-5 py-4 text-xs text-[var(--fd-muted)] sm:flex-row sm:items-center sm:justify-between">
+            <span>{result?.pagination.total ?? 0} resultado(s)</span>
+            <div className="flex items-center gap-2">
+              <button type="button" disabled={!result || result.pagination.page <= 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="Página anterior"><ChevronLeft className="h-4 w-4" /></button>
+              <span>Página {result?.pagination.page ?? page} de {result?.pagination.totalPages ?? 1}</span>
+              <button type="button" disabled={!result || result.pagination.page >= result.pagination.totalPages || loading} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="Página seguinte"><ChevronRight className="h-4 w-4" /></button>
+            </div>
+          </div>
         </section>
 
+        <aside className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-900">
+          A criação de novos acessos será disponibilizada com um fluxo de convite verificável e com expiração. Esta página não gera palavras-passe nem simula convites.
+        </aside>
       </main>
+
+      {selected && (
+        <AccessModal
+          member={selected}
+          requesterRole={(currentUser?.role as TenantUserRole | undefined) ?? 'VIEWER'}
+          onClose={() => setSelected(null)}
+          onSaved={(message) => { setSelected(null); setNotice(message); setReload((value) => value + 1); }}
+        />
+      )}
     </DashboardLayout>
+  );
+}
+
+function AccessModal({ member, requesterRole, onClose, onSaved }: {
+  member: TenantUser;
+  requesterRole: TenantUserRole;
+  onClose: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const [role, setRole] = useState<TenantUserRole>(member.role);
+  const [isActive, setIsActive] = useState(member.isActive);
+  const [reason, setReason] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const isAdmin = requesterRole === 'ADMIN';
+  const hasChanges = role !== member.role || isActive !== member.isActive;
+  const assignableRoles = (Object.keys(roleLabels) as TenantUserRole[]).filter(
+    (value) => !isAdmin || value === 'ACCOUNTANT' || value === 'VIEWER',
+  );
+
+  async function submit(event: FormEvent) {
+    event.preventDefault();
+    setError('');
+    if (!hasChanges) return setError('Altere a função ou o estado antes de guardar.');
+    if (reason.trim().length < 8) return setError('Indique um motivo com pelo menos 8 caracteres.');
+    setSaving(true);
+    try {
+      await updateTenantUserAccess(member.id, {
+        role: role !== member.role ? role : undefined,
+        isActive: isActive !== member.isActive ? isActive : undefined,
+        reason: reason.trim(),
+      });
+      onSaved(`O acesso de ${member.name} foi actualizado.`);
+    } catch (requestError) {
+      setError(getUserApiError(requestError, 'Não foi possível actualizar o acesso.'));
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--fd-overlay)] p-4" role="presentation" onMouseDown={(event) => event.target === event.currentTarget && onClose()}>
+      <section role="dialog" aria-modal="true" aria-labelledby="access-dialog-title" className="w-full max-w-lg rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-2xl">
+        <div className="flex items-start justify-between border-b border-[var(--fd-border)] p-5">
+          <div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Controlo de acesso</p><h2 id="access-dialog-title" className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]">Gerir {member.name}</h2></div>
+          <button type="button" onClick={onClose} className="rounded-lg p-2 text-[var(--fd-muted)] hover:bg-slate-100" aria-label="Fechar"><X className="h-4 w-4" /></button>
+        </div>
+        <form onSubmit={submit} className="space-y-5 p-5">
+          <label className="block text-xs font-semibold text-[var(--fd-text-primary)]">Função
+            <select value={role} onChange={(event) => setRole(event.target.value as TenantUserRole)} className="mt-2 h-11 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100">
+              {assignableRoles.map((value) => <option key={value} value={value}>{roleLabels[value]}</option>)}
+            </select>
+          </label>
+          <label className="flex items-center justify-between rounded-xl border border-[var(--fd-border)] p-4">
+            <span><span className="block text-sm font-semibold text-[var(--fd-text-primary)]">Acesso activo</span><span className="mt-1 block text-xs text-[var(--fd-muted)]">Um utilizador inactivo deixa de conseguir autenticar-se.</span></span>
+            <input type="checkbox" checked={isActive} onChange={(event) => setIsActive(event.target.checked)} className="h-4 w-4 accent-sky-700" />
+          </label>
+          <label className="block text-xs font-semibold text-[var(--fd-text-primary)]">Motivo da alteração
+            <textarea value={reason} onChange={(event) => setReason(event.target.value)} maxLength={500} rows={3} placeholder="Registe a razão para auditoria" className="mt-2 w-full resize-none rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" />
+          </label>
+          {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-800">{error}</p>}
+          <div className="flex justify-end gap-3 border-t border-[var(--fd-border)] pt-4">
+            <button type="button" onClick={onClose} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold text-[var(--fd-text-primary)]">Cancelar</button>
+            <button type="submit" disabled={saving || !hasChanges} className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50">{saving && <Loader2 className="h-4 w-4 animate-spin" />}Guardar alterações</button>
+          </div>
+        </form>
+      </section>
+    </div>
   );
 }

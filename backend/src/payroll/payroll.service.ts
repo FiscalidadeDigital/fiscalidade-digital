@@ -6,15 +6,25 @@ import {
 
 import {
   ObligationStatus,
+  Prisma,
   TaxType,
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
+import {
+  assertSupportedPayrollYear,
+  PAYROLL_CALCULATION_STATUS,
+  resolvePayrollRuleSet,
+  resolveSocialSecurityRates,
+} from '../fiscal-rules/payroll-rules';
+import { calculatePayrollItem } from './payroll-calculator';
 
 @Injectable()
 export class PayrollService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
   ) {}
 
   // =========================================================
@@ -25,14 +35,31 @@ export class PayrollService {
     tenantId: string,
     month: number,
     year: number,
+    actorUserId?: string,
   ) {
     this.validatePeriod(month, year);
 
-    const period =
-      `${year}-${String(month).padStart(2, '0')}`;
+    try {
+      assertSupportedPayrollYear(year);
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error
+          ? error.message
+          : 'O período não tem regras fiscais validadas.',
+      );
+    }
 
-    const existing =
-      await this.prisma.payroll.findUnique({
+    const period = year + '-' + String(month).padStart(2, '0');
+    const periodStart = new Date(Date.UTC(year, month - 1, 1));
+    const periodEnd = new Date(Date.UTC(year, month, 1));
+
+    const payroll = await this.prisma.$transaction(async (transaction) => {
+      await transaction.$executeRawUnsafe(
+        'SELECT pg_advisory_xact_lock(hashtext($1))',
+        tenantId + ':' + period,
+      );
+
+      const existing = await transaction.payroll.findUnique({
         where: {
           tenantId_period: {
             tenantId,
@@ -41,197 +68,214 @@ export class PayrollService {
         },
       });
 
-    if (existing) {
-      throw new BadRequestException(
-        `Já existe uma folha para ${period}.`,
-      );
-    }
+      if (existing) {
+        throw new BadRequestException(
+          'Já existe uma folha para ' + period + '.',
+        );
+      }
 
-    const employees =
-      await this.prisma.employee.findMany({
+      const employees = await transaction.employee.findMany({
         where: {
           tenantId,
-          status: 'ACTIVE',
+          status: {
+            in: ['ACTIVE', 'TERMINATED'],
+          },
+          OR: [{ hireDate: null }, { hireDate: { lt: periodEnd } }],
+          AND: [
+            {
+              OR: [
+                { terminationDate: null },
+                { terminationDate: { gte: periodStart } },
+              ],
+            },
+          ],
         },
-
         include: {
           salaries: {
             where: {
-              active: true,
+              effectiveFrom: {
+                lte: periodStart,
+              },
+              OR: [
+                { effectiveTo: null },
+                { effectiveTo: { gt: periodStart } },
+              ],
             },
-
             orderBy: {
               effectiveFrom: 'desc',
             },
-
             take: 1,
           },
-
           dependents: {
             where: {
               taxDependent: true,
             },
           },
+          remunerationComponents: {
+            where: {
+              effectiveFrom: { lte: periodStart },
+              OR: [{ effectiveTo: null }, { effectiveTo: { gt: periodStart } }],
+            },
+            orderBy: { effectiveFrom: 'asc' },
+          },
         },
-
         orderBy: {
           name: 'asc',
         },
       });
 
-    const payroll =
-      await this.prisma.payroll.create({
+      const partialPeriodEmployees = employees.filter(
+        (employee) =>
+          (employee.hireDate && employee.hireDate > periodStart) ||
+          (employee.terminationDate && employee.terminationDate < periodEnd),
+      );
+
+      if (partialPeriodEmployees.length > 0) {
+        throw new BadRequestException(
+          'A folha de ' +
+            period +
+            ' inclui admissões ou cessações a meio do mês, ainda sem regra de proporcionalidade validada: ' +
+            partialPeriodEmployees
+              .map((employee) => employee.name)
+              .join(', ') +
+            '.',
+        );
+      }
+
+      const employeeIds = employees.map((employee) => employee.id);
+      const salaryChange =
+        employeeIds.length > 0
+          ? await transaction.employeeSalary.findFirst({
+              where: {
+                employeeId: {
+                  in: employeeIds,
+                },
+                effectiveFrom: {
+                  gt: periodStart,
+                  lt: periodEnd,
+                },
+              },
+              include: {
+                employee: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            })
+          : null;
+
+      if (salaryChange) {
+        throw new BadRequestException(
+          'A folha de ' +
+            period +
+            ' tem uma alteração salarial a meio do mês para ' +
+            salaryChange.employee.name +
+            '; a proporcionalidade ainda não está validada.',
+        );
+      }
+
+      const withoutSalary = employees.filter(
+        (employee) => !employee.salaries[0],
+      );
+
+      if (withoutSalary.length > 0) {
+        throw new BadRequestException(
+          'Registe um salário vigente no início de ' +
+            period +
+            ' para: ' +
+            withoutSalary.map((employee) => employee.name).join(', ') +
+            '.',
+        );
+      }
+
+      for (const employee of employees) {
+        try {
+          resolveSocialSecurityRates(employee.socialSecurityCategory);
+        } catch (error) {
+          throw new BadRequestException(
+            employee.name +
+              ': ' +
+              (error instanceof Error
+                ? error.message
+                : 'enquadramento contributivo inválido'),
+          );
+        }
+      }
+
+      return transaction.payroll.create({
         data: {
           tenantId,
           period,
           month,
           year,
-
-          employeeCount:
-            employees.length,
-
+          employeeCount: employees.length,
           grossAmount: 0,
           socialSecurityAmount: 0,
+          employerSocialSecurityAmount: 0,
           irtAmount: 0,
           otherDeductionsAmount: 0,
           netAmount: 0,
-
+          taxRuleVersion: resolvePayrollRuleSet(year).version,
+          calculationStatus: PAYROLL_CALCULATION_STATUS,
           items: {
-            create: employees.map(
-              (employee) => {
-                const salary =
-                  employee.salaries[0];
+            create: employees.map((employee) => {
+              const salary = employee.salaries[0]!;
+              const grossAmount = new Prisma.Decimal(salary.baseSalary)
+                .add(salary.foodAllowance)
+                .add(salary.transportAllowance)
+                .add(salary.otherAllowances)
+                .add(salary.bonuses)
+                .add(salary.commissions)
+                .add(salary.otherIncome)
+                .add(employee.remunerationComponents.reduce(
+                  (total, component) => total.add(component.amount),
+                  new Prisma.Decimal(0),
+                ))
+                .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
-                const baseSalary =
-                  this.toNumber(
-                    salary?.baseSalary,
-                  );
-
-                const foodAllowance =
-                  this.toNumber(
-                    salary?.foodAllowance,
-                  );
-
-                const transportAllowance =
-                  this.toNumber(
-                    salary?.transportAllowance,
-                  );
-
-                const otherAllowances =
-                  this.toNumber(
-                    salary?.otherAllowances,
-                  );
-
-                const bonuses =
-                  this.toNumber(
-                    salary?.bonuses,
-                  );
-
-                const commissions =
-                  this.toNumber(
-                    salary?.commissions,
-                  );
-
-                const otherIncome =
-                  this.toNumber(
-                    salary?.otherIncome,
-                  );
-
-                const gross =
-                  baseSalary +
-                  foodAllowance +
-                  transportAllowance +
-                  otherAllowances +
-                  bonuses +
-                  commissions +
-                  otherIncome;
-
-                return {
-                  employeeId:
-                    employee.id,
-
-                  employeeName:
-                    employee.name,
-
-                  employeeNif:
-                    employee.nif ??
-                    null,
-
-                  socialSecurityNumber:
-                    employee.socialSecurityNumber ??
-                    null,
-
-                  dependentCount:
-                    employee.dependentCount ??
-                    0,
-
-                  baseSalary:
-                    this.round(
-                      baseSalary,
-                    ),
-
-                  foodAllowance:
-                    this.round(
-                      foodAllowance,
-                    ),
-
-                  transportAllowance:
-                    this.round(
-                      transportAllowance,
-                    ),
-
-                  otherAllowances:
-                    this.round(
-                      otherAllowances,
-                    ),
-
-                  bonuses:
-                    this.round(
-                      bonuses,
-                    ),
-
-                  commissions:
-                    this.round(
-                      commissions,
-                    ),
-
-                  otherIncome:
-                    this.round(
-                      otherIncome,
-                    ),
-
-                  grossAmount:
-                    this.round(
-                      gross,
-                    ),
-
-                  socialSecurityBase:
-                    this.round(
-                      gross,
-                    ),
-
-                  socialSecurityAmount:
-                    0,
-
-                  irtTaxableAmount:
-                    0,
-
-                  irtAmount:
-                    0,
-
-                  otherDeductions:
-                    0,
-
-                  netAmount:
-                    this.round(
-                      gross,
-                    ),
-                };
-              },
-            ),
+              return {
+                employeeId: employee.id,
+                employeeName: employee.name,
+                employeeNif: employee.nif ?? null,
+                socialSecurityNumber:
+                  employee.socialSecurityNumber ?? null,
+                socialSecurityCategory:
+                  employee.socialSecurityCategory,
+                dependentCount: employee.dependentCount ?? 0,
+                baseSalary: salary.baseSalary,
+                foodAllowance: salary.foodAllowance,
+                transportAllowance: salary.transportAllowance,
+                otherAllowances: salary.otherAllowances,
+                bonuses: salary.bonuses,
+                commissions: salary.commissions,
+                otherIncome: salary.otherIncome,
+                grossAmount,
+                socialSecurityBase: grossAmount,
+                socialSecurityAmount: 0,
+                employeeSocialSecurityRate: 0,
+                employerSocialSecurityRate: 0,
+                employerSocialSecurityAmount: 0,
+                irtTaxableAmount: 0,
+                irtAmount: 0,
+                otherDeductions: 0,
+                netAmount: grossAmount,
+                taxRuleVersion: resolvePayrollRuleSet(year).version,
+                calculationStatus: PAYROLL_CALCULATION_STATUS,
+                remunerationComponents: employee.remunerationComponents.map((component) => ({
+                  id: component.id,
+                  type: component.type,
+                  amount: component.amount.toString(),
+                  irtTreatment: component.irtTreatment,
+                  inssTreatment: component.inssTreatment,
+                  exemptAmount: component.exemptAmount.toString(),
+                  legalReference: component.legalReference,
+                  effectiveFrom: component.effectiveFrom.toISOString(),
+                })),
+              };
+            }),
           },
         },
-
         include: {
           items: {
             orderBy: {
@@ -240,13 +284,10 @@ export class PayrollService {
           },
         },
       });
+    });
 
-    return this.calculate(
-      tenantId,
-      payroll.id,
-    );
+    return this.calculate(tenantId, payroll.id, actorUserId);
   }
-
   // =========================================================
   // LISTAR FOLHAS
   // =========================================================
@@ -329,18 +370,17 @@ export class PayrollService {
   async calculate(
     tenantId: string,
     payrollId: string,
+    actorUserId?: string,
   ) {
-    const payroll =
-      await this.prisma.payroll.findFirst({
-        where: {
-          id: payrollId,
-          tenantId,
-        },
-
-        include: {
-          items: true,
-        },
-      });
+    const payroll = await this.prisma.payroll.findFirst({
+      where: {
+        id: payrollId,
+        tenantId,
+      },
+      include: {
+        items: true,
+      },
+    });
 
     if (!payroll) {
       throw new NotFoundException(
@@ -348,16 +388,9 @@ export class PayrollService {
       );
     }
 
-    // =======================================================
-    // FOLHA JÁ PAGA / FECHADA
-    // =======================================================
-    //
-    // Não recalcular.
-    //
-    // Os valores já gravados continuam a ser a fonte oficial.
-    //
-    // Apenas reconciliamos as obrigações.
-    // =======================================================
+    const socialSecurityObligationAmount = payroll.socialSecurityAmount.add(
+      payroll.employerSocialSecurityAmount,
+    );
 
     if (
       payroll.status === 'PAID' ||
@@ -366,21 +399,219 @@ export class PayrollService {
       await this.updatePayrollObligations(
         tenantId,
         payroll,
-        this.toNumber(
-          payroll.socialSecurityAmount,
-        ),
-        this.toNumber(
-          payroll.irtAmount,
-        ),
+        socialSecurityObligationAmount,
+        payroll.irtAmount,
       );
 
-      const reconciledPayroll =
-        await this.prisma.payroll.findFirst({
+      return (
+        (await this.prisma.payroll.findFirst({
           where: {
             id: payroll.id,
             tenantId,
           },
+          include: {
+            items: {
+              orderBy: {
+                employeeName: 'asc',
+              },
+            },
+          },
+        })) ?? payroll
+      );
+    }
 
+    if (payroll.status === 'APPROVED') {
+      throw new BadRequestException(
+        'Uma folha aprovada não pode ser recalculada. Reverta a aprovação através de um fluxo auditável antes de alterar valores.',
+      );
+    }
+
+    try {
+      assertSupportedPayrollYear(payroll.year);
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error
+          ? error.message
+          : 'O período não tem regras fiscais validadas.',
+      );
+    }
+
+    const calculations = payroll.items.map((item) => {
+      try {
+        const components = Array.isArray(item.remunerationComponents)
+          ? (item.remunerationComponents as Array<{ type?: string; amount?: string | number }>)
+          : [];
+        const sumComponents = (type?: string) => components
+          .filter((component) => !type || component.type === type)
+          .reduce((total, component) => total.add(component.amount ?? 0), new Prisma.Decimal(0));
+        const holidayAllowance = sumComponents('HOLIDAY_ALLOWANCE');
+        const otherComponentIncome = sumComponents().sub(holidayAllowance);
+        return {
+          item,
+          result: calculatePayrollItem({
+            year: payroll.year,
+            socialSecurityCategory:
+              item.socialSecurityCategory,
+            baseSalary: item.baseSalary,
+            foodAllowance: item.foodAllowance,
+            transportAllowance: item.transportAllowance,
+            otherAllowances: item.otherAllowances,
+            bonuses: item.bonuses,
+            commissions: item.commissions,
+            otherIncome: item.otherIncome.add(otherComponentIncome),
+            holidayAllowance,
+            otherDeductions: item.otherDeductions,
+          }),
+        };
+      } catch (error) {
+        throw new BadRequestException(
+          item.employeeName +
+            ': ' +
+            (error instanceof Error
+              ? error.message
+              : 'não foi possível calcular a folha'),
+        );
+      }
+    });
+
+    const zero = new Prisma.Decimal(0);
+    const totals = calculations.reduce(
+      (current, calculation) => ({
+        gross: current.gross.add(
+          calculation.result.grossAmount,
+        ),
+        socialSecurity: current.socialSecurity.add(
+          calculation.result.socialSecurityAmount,
+        ),
+        employerSocialSecurity:
+          current.employerSocialSecurity.add(
+            calculation.result.employerSocialSecurityAmount,
+          ),
+        irt: current.irt.add(
+          calculation.result.irtAmount,
+        ),
+        otherDeductions: current.otherDeductions.add(
+          calculation.result.otherDeductions,
+        ),
+        net: current.net.add(
+          calculation.result.netAmount,
+        ),
+      }),
+      {
+        gross: zero,
+        socialSecurity: zero,
+        employerSocialSecurity: zero,
+        irt: zero,
+        otherDeductions: zero,
+        net: zero,
+      },
+    );
+
+    const updatedPayroll = await this.prisma.$transaction(
+      async (transaction) => {
+        const claimed = await transaction.payroll.updateMany({
+          where: {
+            id: payroll.id,
+            tenantId,
+            status: {
+              in: ['DRAFT', 'CALCULATED'],
+            },
+          },
+          data: {
+            processedAt: new Date(),
+          },
+        });
+
+        if (claimed.count !== 1) {
+          throw new BadRequestException(
+            'O estado da folha foi alterado por outra operação. Actualize os dados antes de tentar novamente.',
+          );
+        }
+
+        for (const calculation of calculations) {
+          const result = calculation.result;
+
+          await transaction.payrollItem.update({
+            where: {
+              id: calculation.item.id,
+            },
+            data: {
+              grossAmount: result.grossAmount,
+              socialSecurityBase: result.socialSecurityBase,
+              employeeSocialSecurityRate:
+                result.employeeSocialSecurityRate,
+              socialSecurityAmount:
+                result.socialSecurityAmount,
+              employerSocialSecurityRate:
+                result.employerSocialSecurityRate,
+              employerSocialSecurityAmount:
+                result.employerSocialSecurityAmount,
+              irtTaxableAmount: result.irtTaxableAmount,
+              irtAmount: result.irtAmount,
+              otherDeductions: result.otherDeductions,
+              netAmount: result.netAmount,
+              taxRuleVersion: result.taxRuleVersion,
+              calculationStatus: result.calculationStatus,
+              fiscalSnapshot: {
+                input: {
+                  baseSalary: calculation.item.baseSalary.toString(),
+                  foodAllowance: calculation.item.foodAllowance.toString(),
+                  transportAllowance: calculation.item.transportAllowance.toString(),
+                  otherAllowances: calculation.item.otherAllowances.toString(),
+                  bonuses: calculation.item.bonuses.toString(),
+                  commissions: calculation.item.commissions.toString(),
+                  otherIncome: calculation.item.otherIncome.toString(),
+                },
+                remunerationComponents: calculation.item.remunerationComponents,
+                componentGrossAmount: calculation.result.grossAmount
+                  .sub(calculation.item.baseSalary)
+                  .sub(calculation.item.foodAllowance)
+                  .sub(calculation.item.transportAllowance)
+                  .sub(calculation.item.otherAllowances)
+                  .sub(calculation.item.bonuses)
+                  .sub(calculation.item.commissions)
+                  .sub(calculation.item.otherIncome)
+                  .toString(),
+                inssBase: result.socialSecurityBase.toString(),
+                irtBase: result.irtTaxableAmount.toString(),
+                ruleVersion: result.taxRuleVersion,
+              },
+            },
+          });
+        }
+
+        const result = await transaction.payroll.update({
+          where: {
+            id: payroll.id,
+          },
+          data: {
+            status: 'CALCULATED',
+            grossAmount: totals.gross,
+            socialSecurityAmount: totals.socialSecurity,
+            employerSocialSecurityAmount:
+              totals.employerSocialSecurity,
+            irtAmount: totals.irt,
+            otherDeductionsAmount:
+              totals.otherDeductions,
+            netAmount: totals.net,
+            taxRuleVersion: resolvePayrollRuleSet(payroll.year).version,
+            calculationStatus: PAYROLL_CALCULATION_STATUS,
+            fiscalSnapshot: {
+              period: payroll.period,
+              ruleVersion: resolvePayrollRuleSet(payroll.year).version,
+              calculationStatus: PAYROLL_CALCULATION_STATUS,
+              source: 'Lei n.º 14/25, Artigo 21.º e Anexo I; Decreto Presidencial n.º 227/18, arts. 12.º–13.º',
+              totals: {
+                gross: totals.gross.toString(),
+                inssEmployee: totals.socialSecurity.toString(),
+                inssEmployer: totals.employerSocialSecurity.toString(),
+                irt: totals.irt.toString(),
+                net: totals.net.toString(),
+              },
+            },
+            snapshotStatus: 'CAPTURED',
+            processedAt: new Date(),
+          },
           include: {
             items: {
               orderBy: {
@@ -390,397 +621,39 @@ export class PayrollService {
           },
         });
 
-      return (
-        reconciledPayroll ??
-        payroll
-      );
-    }
-
-    const taxRules =
-      await this.getTaxRules(
-        tenantId,
-      );
-
-    const socialSecurityRate =
-      this.findRate(
-        taxRules,
-        [
-          'SS',
-          'SEGURANCA_SOCIAL',
-          'SEGURANÇA_SOCIAL',
-          'SOCIAL_SECURITY',
-        ],
-      ) || 3;
-
-    let grossTotal = 0;
-    let socialSecurityTotal = 0;
-    let irtTotal = 0;
-    let otherDeductionsTotal = 0;
-    let netTotal = 0;
-
-    for (
-      const item of payroll.items
-    ) {
-      const gross =
-        this.toNumber(
-          item.grossAmount,
-        );
-
-      const foodAllowance =
-        this.toNumber(
-          item.foodAllowance,
-        );
-
-      const transportAllowance =
-        this.toNumber(
-          item.transportAllowance,
-        );
-
-      const otherDeductions =
-        this.toNumber(
-          item.otherDeductions,
-        );
-
-      // =====================================================
-      // SEGURANÇA SOCIAL
-      // =====================================================
-
-      const socialSecurityBase =
-        Math.max(
-          0,
-          gross,
-        );
-
-      const socialSecurity =
-        this.percentage(
-          socialSecurityBase,
-          socialSecurityRate,
-        );
-
-      // =====================================================
-      // ALIMENTAÇÃO
-      // =====================================================
-
-      const exemptFood =
-        Math.min(
-          Math.max(
-            0,
-            foodAllowance,
-          ),
-          30000,
-        );
-
-      // =====================================================
-      // TRANSPORTE
-      // =====================================================
-
-      const exemptTransport =
-        Math.min(
-          Math.max(
-            0,
-            transportAllowance,
-          ),
-          30000,
-        );
-
-      // =====================================================
-      // MATÉRIA COLECTÁVEL IRT
-      // =====================================================
-
-      const irtTaxableAmount =
-        Math.max(
-          0,
-          gross -
-            socialSecurity -
-            exemptFood -
-            exemptTransport,
-        );
-
-      // =====================================================
-      // IRT 2026
-      // =====================================================
-
-      const irt =
-        this.calculateIRT2026(
-          irtTaxableAmount,
-        );
-
-      // =====================================================
-      // LÍQUIDO
-      // =====================================================
-
-      const net =
-        gross -
-        socialSecurity -
-        irt -
-        otherDeductions;
-
-      await this.prisma.payrollItem.update({
-        where: {
-          id: item.id,
-        },
-
-        data: {
-          grossAmount:
-            this.round(
-              gross,
-            ),
-
-          socialSecurityBase:
-            this.round(
-              socialSecurityBase,
-            ),
-
-          socialSecurityAmount:
-            this.round(
-              socialSecurity,
-            ),
-
-          irtTaxableAmount:
-            this.round(
-              irtTaxableAmount,
-            ),
-
-          irtAmount:
-            this.round(
-              irt,
-            ),
-
-          otherDeductions:
-            this.round(
-              otherDeductions,
-            ),
-
-          netAmount:
-            this.round(
-              net,
-            ),
-        },
-      });
-
-      grossTotal += gross;
-
-      socialSecurityTotal +=
-        socialSecurity;
-
-      irtTotal += irt;
-
-      otherDeductionsTotal +=
-        otherDeductions;
-
-      netTotal += net;
-    }
-
-    const updatedPayroll =
-      await this.prisma.payroll.update({
-        where: {
-          id: payroll.id,
-        },
-
-        data: {
-          status:
-            'CALCULATED',
-
-          grossAmount:
-            this.round(
-              grossTotal,
-            ),
-
-          socialSecurityAmount:
-            this.round(
-              socialSecurityTotal,
-            ),
-
-          irtAmount:
-            this.round(
-              irtTotal,
-            ),
-
-          otherDeductionsAmount:
-            this.round(
-              otherDeductionsTotal,
-            ),
-
-          netAmount:
-            this.round(
-              netTotal,
-            ),
-
-          processedAt:
-            new Date(),
-        },
-
-        include: {
-          items: {
-            orderBy: {
-              employeeName: 'asc',
+        await transaction.auditLog.create({
+          data: {
+            tenantId,
+            userId: actorUserId ?? null,
+            action: 'PAYROLL_CALCULATED',
+            entity: 'Payroll',
+            entityId: payroll.id,
+            oldData: {
+              status: payroll.status,
+            },
+            newData: {
+              status: 'CALCULATED',
+              taxRuleVersion: resolvePayrollRuleSet(payroll.year).version,
+              calculationStatus: PAYROLL_CALCULATION_STATUS,
             },
           },
-        },
-      });
+        });
 
-    // =======================================================
-    // SINCRONIZAR OBRIGAÇÕES
-    // =======================================================
+        return result;
+      },
+    );
 
     await this.updatePayrollObligations(
       tenantId,
       updatedPayroll,
-      socialSecurityTotal,
-      irtTotal,
+      totals.socialSecurity.add(
+        totals.employerSocialSecurity,
+      ),
+      totals.irt,
     );
 
     return updatedPayroll;
   }
-
-  // =========================================================
-  // IRT 2026 — GRUPO A
-  // =========================================================
-
-  private calculateIRT2026(
-    taxableAmount: number,
-  ): number {
-    const amount =
-      this.round(
-        Math.max(
-          0,
-          taxableAmount,
-        ),
-      );
-
-    if (
-      amount <= 150000
-    ) {
-      return 0;
-    }
-
-    if (
-      amount <= 200000
-    ) {
-      return this.round(
-        12500 +
-          (
-            amount -
-            150000
-          ) *
-            0.16,
-      );
-    }
-
-    if (
-      amount <= 300000
-    ) {
-      return this.round(
-        31250 +
-          (
-            amount -
-            200000
-          ) *
-            0.18,
-      );
-    }
-
-    if (
-      amount <= 500000
-    ) {
-      return this.round(
-        49250 +
-          (
-            amount -
-            300000
-          ) *
-            0.19,
-      );
-    }
-
-    if (
-      amount <= 1000000
-    ) {
-      return this.round(
-        87250 +
-          (
-            amount -
-            500000
-          ) *
-            0.20,
-      );
-    }
-
-    if (
-      amount <= 1500000
-    ) {
-      return this.round(
-        187250 +
-          (
-            amount -
-            1000000
-          ) *
-            0.21,
-      );
-    }
-
-    if (
-      amount <= 2000000
-    ) {
-      return this.round(
-        292250 +
-          (
-            amount -
-            1500000
-          ) *
-            0.22,
-      );
-    }
-
-    if (
-      amount <= 2500000
-    ) {
-      return this.round(
-        402250 +
-          (
-            amount -
-            2000000
-          ) *
-            0.23,
-      );
-    }
-
-    if (
-      amount <= 5000000
-    ) {
-      return this.round(
-        517250 +
-          (
-            amount -
-            2500000
-          ) *
-            0.24,
-      );
-    }
-
-    if (
-      amount <= 10000000
-    ) {
-      return this.round(
-        1117250 +
-          (
-            amount -
-            5000000
-          ) *
-            0.245,
-      );
-    }
-
-    return this.round(
-      2342250 +
-        (
-          amount -
-          10000000
-        ) *
-          0.25,
-    );
-  }
-
   // =========================================================
   // APROVAR
   // =========================================================
@@ -788,48 +661,16 @@ export class PayrollService {
   async approve(
     tenantId: string,
     payrollId: string,
+    actorUserId?: string,
   ) {
-    const payroll =
-      await this.prisma.payroll.findFirst({
-        where: {
-          id: payrollId,
-          tenantId,
-        },
-      });
-
-    if (!payroll) {
-      throw new NotFoundException(
-        'Folha salarial não encontrada.',
-      );
-    }
-
-    if (
-      payroll.status !==
-      'CALCULATED'
-    ) {
-      throw new BadRequestException(
-        'A folha precisa ser calculada antes de ser aprovada.',
-      );
-    }
-
-    return this.prisma.payroll.update({
-      where: {
-        id: payroll.id,
-      },
-
-      data: {
-        status:
-          'APPROVED',
-      },
-
-      include: {
-        items: {
-          orderBy: {
-            employeeName: 'asc',
-          },
-        },
-      },
-    });
+    return this.transitionPayrollStatus(
+      tenantId,
+      payrollId,
+      'CALCULATED',
+      'APPROVED',
+      'A folha precisa ser calculada antes de ser aprovada.',
+      actorUserId,
+    );
   }
 
   // =========================================================
@@ -839,45 +680,115 @@ export class PayrollService {
   async pay(
     tenantId: string,
     payrollId: string,
+    actorUserId?: string,
   ) {
-    const payroll =
-      await this.prisma.payroll.findFirst({
+    const paidPayroll = await this.transitionPayrollStatus(
+      tenantId,
+      payrollId,
+      'APPROVED',
+      'PAID',
+      'A folha precisa ser aprovada antes de ser marcada como paga.',
+      actorUserId,
+    );
+
+    await this.updatePayrollObligations(
+      tenantId,
+      paidPayroll,
+      paidPayroll.socialSecurityAmount.add(
+        paidPayroll.employerSocialSecurityAmount,
+      ),
+      paidPayroll.irtAmount,
+    );
+
+    return paidPayroll;
+  }
+
+  // =========================================================
+  // FECHAR
+  // =========================================================
+
+  async close(
+    tenantId: string,
+    payrollId: string,
+    actorUserId?: string,
+  ) {
+    return this.transitionPayrollStatus(
+      tenantId,
+      payrollId,
+      'PAID',
+      'CLOSED',
+      'A folha precisa estar paga antes de ser fechada.',
+      actorUserId,
+    );
+  }
+
+  private async transitionPayrollStatus(
+    tenantId: string,
+    payrollId: string,
+    expectedStatus: 'CALCULATED' | 'APPROVED' | 'PAID',
+    nextStatus: 'APPROVED' | 'PAID' | 'CLOSED',
+    invalidStateMessage: string,
+    actorUserId?: string,
+  ) {
+    return this.prisma.$transaction(async (transaction) => {
+      const payroll = await transaction.payroll.findFirst({
         where: {
           id: payrollId,
           tenantId,
         },
       });
 
-    if (!payroll) {
-      throw new NotFoundException(
-        'Folha salarial não encontrada.',
-      );
-    }
+      if (!payroll) {
+        throw new NotFoundException(
+          'Folha salarial não encontrada.',
+        );
+      }
 
-    if (
-      payroll.status !==
-      'APPROVED'
-    ) {
-      throw new BadRequestException(
-        'A folha precisa ser aprovada antes de ser marcada como paga.',
-      );
-    }
+      if (payroll.status !== expectedStatus) {
+        throw new BadRequestException(invalidStateMessage);
+      }
 
-    // =======================================================
-    // MARCAR COMO PAGA
-    // =======================================================
-
-    const paidPayroll =
-      await this.prisma.payroll.update({
+      const updated = await transaction.payroll.updateMany({
         where: {
-          id: payroll.id,
+          id: payrollId,
+          tenantId,
+          status: expectedStatus,
         },
-
         data: {
-          status:
-            'PAID',
+          status: nextStatus,
+          ...(nextStatus === 'CLOSED' && {
+            snapshotStatus: 'IMMUTABLE',
+          }),
         },
+      });
 
+      if (updated.count !== 1) {
+        throw new BadRequestException(
+          'O estado da folha foi alterado por outra operação. Actualize os dados antes de tentar novamente.',
+        );
+      }
+
+      await transaction.auditLog.create({
+        data: {
+          tenantId,
+          userId: actorUserId ?? null,
+          action: 'PAYROLL_STATUS_CHANGED',
+          entity: 'Payroll',
+          entityId: payrollId,
+          oldData: {
+            status: expectedStatus,
+          },
+          newData: {
+            status: nextStatus,
+          },
+        },
+      });
+
+      const result = await transaction.payroll.findFirst({
+        where: {
+          id: payrollId,
+          tenantId,
+        },
         include: {
           items: {
             orderBy: {
@@ -887,138 +798,15 @@ export class PayrollService {
         },
       });
 
-    // =======================================================
-    // RECONCILIAR OBRIGAÇÕES APÓS PAGAMENTO
-    // =======================================================
-    //
-    // Isto garante que uma folha que passou por
-    // CALCULATED → APPROVED → PAID não deixa a obrigação
-    // em 0 Kz.
-    // =======================================================
-
-    await this.updatePayrollObligations(
-      tenantId,
-      paidPayroll,
-      this.toNumber(
-        paidPayroll.socialSecurityAmount,
-      ),
-      this.toNumber(
-        paidPayroll.irtAmount,
-      ),
-    );
-
-    return paidPayroll;
-  }
-
-  // =========================================================
-  // REGRAS FISCAIS
-  // =========================================================
-
-  private async getTaxRules(
-    tenantId: string,
-  ): Promise<any[]> {
-    const tenant = await this.prisma.tenant.findUnique({
-      where: {
-        id: tenantId,
-      },
-      select: {
-        regime: true,
-        sector: true,
-        companyType: true,
-      },
-    });
-
-    if (!tenant) {
-      return [];
-    }
-
-    const rules = await this.prisma.taxRule.findMany({
-      where: {
-        active: true,
-      },
-      orderBy: [
-        { validFrom: 'desc' },
-        { createdAt: 'desc' },
-      ],
-    });
-
-    const now = new Date();
-
-    return rules.filter((rule) => {
-      if (rule.validFrom && rule.validFrom > now) {
-        return false;
-      }
-
-      if (rule.validTo && rule.validTo < now) {
-        return false;
-      }
-
-      if (
-        rule.regime &&
-        String(rule.regime).toUpperCase() !==
-          String(tenant.regime).toUpperCase()
-      ) {
-        return false;
-      }
-
-      if (
-        rule.sector &&
-        tenant.sector &&
-        this.normalizeText(rule.sector) !==
-          this.normalizeText(tenant.sector)
-      ) {
-        return false;
-      }
-
-      if (
-        rule.companyType &&
-        tenant.companyType &&
-        this.normalizeText(rule.companyType) !==
-          this.normalizeText(tenant.companyType)
-      ) {
-        return false;
-      }
-
-      return true;
-    });
-  }
-
-  // =========================================================
-  // TAXA
-  // =========================================================
-
-  private findRate(
-    rules: any[],
-    names: string[],
-  ): number {
-    for (
-      const rule of rules
-    ) {
-      const type =
-        String(
-          rule.taxType ??
-            rule.type ??
-            rule.code ??
-            '',
-        )
-          .trim()
-          .toUpperCase();
-
-      if (
-        names.includes(type)
-      ) {
-        return this.toNumber(
-          rule.rate ??
-            rule.value ??
-            rule.percentage ??
-            0,
+      if (!result) {
+        throw new NotFoundException(
+          'Folha salarial não encontrada.',
         );
       }
-    }
 
-    return 0;
+      return result;
+    });
   }
-
   // =========================================================
   // NORMALIZAR TEXTO
   // =========================================================
@@ -1102,26 +890,11 @@ export class PayrollService {
   // =========================================================
 
   private async findPayrollCalendarRule(
-    tenantId: string,
+    _tenantId: string,
     taxType: TaxType,
     payrollMonth: number,
     payrollYear: number,
   ): Promise<any | null> {
-    const tenant =
-      await this.prisma.tenant.findUnique({
-        where: {
-          id: tenantId,
-        },
-
-        select: {
-          regime: true,
-        },
-      });
-
-    if (!tenant) {
-      return null;
-    }
-
     // =======================================================
     // A OBRIGAÇÃO É DO MÊS SEGUINTE À FOLHA
     // =======================================================
@@ -1145,12 +918,6 @@ export class PayrollService {
 
           taxType,
 
-          regimes: {
-            some: {
-              regime:
-                tenant.regime,
-            },
-          },
         },
 
         include: {
@@ -1166,7 +933,7 @@ export class PayrollService {
       rules.length === 0
     ) {
       console.warn(
-        `[Payroll] Nenhuma regra ${taxType} encontrada para ${tenant.regime}, ${next.month}/${next.year}.`,
+        `[Payroll] Nenhuma regra ${taxType} encontrada para ${next.month}/${next.year}.`,
       );
 
       return null;
@@ -1215,13 +982,13 @@ export class PayrollService {
             const referenceMonth =
               this.getMonthName(payrollMonth);
 
-            const normalizedText =
-              this.normalizeText(text);
-
             const mentionsPreviousMonth =
-              normalizedText.includes('MES ANTERIOR') ||
-              normalizedText.includes('MES DE REFERENCIA') ||
-              normalizedText.includes('REFERENTE AO MES');
+              text.includes('MES ANTERIOR') ||
+              text.includes('MES DE REFERENCIA') ||
+              text.includes('MES DE REFERÊNCIA') ||
+              text.includes('REFERENTE AO MES') ||
+              text.includes('REFERENTE AO MÊS');
+
             const correctPeriod =
               period === expectedMonth ||
               period === String(next.month) ||
@@ -1470,7 +1237,7 @@ export class PayrollService {
     tenantId: string,
     payroll: any,
     taxType: TaxType,
-    amount: number,
+    amount: Prisma.Decimal,
   ) {
     const payrollMonth =
       Number(
@@ -1749,10 +1516,8 @@ export class PayrollService {
             period:
               obligationPeriod,
 
-            amount:
-              this.round(
-                amount,
-              ),
+            amount: amount.toNumber(),
+            amountValue: amount,
 
             status:
               calculatedStatus,
@@ -1776,7 +1541,7 @@ export class PayrollService {
       );
 
       console.log(
-        `[Payroll] Valor=${this.round(amount)} Kz`,
+        `[Payroll] Valor=${amount.toFixed(2)} Kz`,
       );
 
       console.log(
@@ -1790,46 +1555,22 @@ export class PayrollService {
     // CRIAR
     // =======================================================
 
-    const created =
-      await this.prisma.fiscalObligation.create({
-        data: {
-          tenantId,
-
-          fiscalCalendarId:
-            rule.id,
-
-          type:
-            rule.obligationType,
-
-          title:
-            rule.title,
-
-          description:
-            rule.description,
-
-          amount:
-            this.round(
-              amount,
-            ),
-
-          dueDate:
-            rule.dueDate,
-
-          period:
-            obligationPeriod,
-
-          status:
-            calculatedStatus,
-
-          alertEnabled:
-            true,
-
-          alertDaysBefore:
-            7,
-
-          reminderSent:
-            false,
-        },
+    const persisted =
+      await this.obligationPersistence.persistCalendarDerived({
+        tenantId,
+        fiscalCalendarId: rule.id,
+        period: obligationPeriod,
+        type: rule.obligationType,
+        title: rule.title,
+        description: rule.description,
+        amount: amount.toNumber(),
+        amountValue: amount,
+        dueDate: rule.dueDate,
+        status: calculatedStatus,
+        alertEnabled: true,
+        alertDaysBefore: 7,
+        reminderSent: false,
+        origin: 'PAYROLL',
       });
 
     console.log(
@@ -1841,14 +1582,14 @@ export class PayrollService {
     );
 
     console.log(
-      `[Payroll] Valor=${this.round(amount)} Kz`,
+      `[Payroll] Valor=${amount.toFixed(2)} Kz`,
     );
 
     console.log(
       `[Payroll] Vencimento=${dueDate.toISOString()}`,
     );
 
-    return created;
+    return persisted.obligation;
   }
 
   // =========================================================
@@ -1858,8 +1599,8 @@ export class PayrollService {
   private async updatePayrollObligations(
     tenantId: string,
     payroll: any,
-    socialSecurityAmount: number,
-    irtAmount: number,
+    socialSecurityAmount: Prisma.Decimal,
+    irtAmount: Prisma.Decimal,
   ) {
     // =======================================================
     // IRT GRUPO A
@@ -1931,112 +1672,5 @@ export class PayrollService {
     }
   }
 
-  // =========================================================
-  // NUMBER
-  // =========================================================
 
-  private toNumber(
-    value: unknown,
-  ): number {
-    if (
-      value === null ||
-      value === undefined
-    ) {
-      return 0;
-    }
-
-    if (
-      typeof value ===
-      'number'
-    ) {
-      return Number.isFinite(
-        value,
-      )
-        ? value
-        : 0;
-    }
-
-    if (
-      typeof value ===
-        'object' &&
-      value !== null &&
-      'toNumber' in value &&
-      typeof (
-        value as any
-      ).toNumber ===
-        'function'
-    ) {
-      return Number(
-        (
-          value as any
-        ).toNumber(),
-      );
-    }
-
-    if (
-      typeof value ===
-        'object' &&
-      value !== null &&
-      'toString' in value
-    ) {
-      const parsed =
-        Number(
-          String(value),
-        );
-
-      return Number.isFinite(
-        parsed,
-      )
-        ? parsed
-        : 0;
-    }
-
-    const parsed =
-      Number(value);
-
-    return Number.isFinite(
-      parsed,
-    )
-      ? parsed
-      : 0;
-  }
-
-  // =========================================================
-  // PERCENTAGEM
-  // =========================================================
-
-  private percentage(
-    amount: number,
-    rate: number,
-  ): number {
-    if (
-      amount <= 0 ||
-      rate <= 0
-    ) {
-      return 0;
-    }
-
-    return this.round(
-      amount *
-        (rate / 100),
-    );
-  }
-
-  // =========================================================
-  // ROUND
-  // =========================================================
-
-  private round(
-    value: number,
-  ): number {
-    return (
-      Math.round(
-        (
-          value +
-          Number.EPSILON
-        ) *
-          100,
-      ) / 100
-    );
-  }
 }

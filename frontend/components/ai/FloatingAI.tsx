@@ -1,7 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
-import axios from 'axios';
+import api from '@/services/api';
 
 export default function FloatingAI() {
   const [open, setOpen] = useState(false);
@@ -12,21 +12,10 @@ export default function FloatingAI() {
     if (!message.trim()) return;
 
     try {
-      const token =
-        localStorage.getItem('token');
-
       const response =
-        await axios.post(
-          'https://fiscalidade-digital-api.onrender.com/ai/chat',
-          {
-            message,
-          },
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          },
-        );
+        await api.post('/ai/chat', {
+          message,
+        });
 
       setAnswer(response.data.answer);
     } catch (error) {
@@ -58,7 +47,7 @@ export default function FloatingAI() {
             onChange={(e) =>
               setMessage(e.target.value)
             }
-            placeholder="FaÃ§a uma pergunta..."
+            placeholder="Faça uma pergunta..."
             className="w-full border rounded-lg p-3 h-28"
           />
 

@@ -1,764 +1,201 @@
-﻿'use client';
-
-import { useEffect, useMemo, useState } from 'react';
-import Link from 'next/link';
+'use client';
 
 import {
+  CheckCircle2,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Eye,
   FileText,
+  Loader2,
   Plus,
   Search,
-  RefreshCw,
-  Eye,
-  Download,
-  CheckCircle,
+  ShieldAlert,
+  X,
   XCircle,
 } from 'lucide-react';
+import Link from 'next/link';
+import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
-
+import { useAuth } from '@/context/AuthContext';
 import {
-  getInvoices,
-  markInvoicePaid,
   cancelInvoice,
+  getInvoiceApiError,
+  getInvoicePage,
+  Invoice,
+  InvoicePage,
+  InvoiceStatus,
+  markInvoicePaid,
   openInvoicePdf,
 } from '@/services/invoice';
 
-type Invoice = {
-  id: string;
-  invoiceNumber?: string;
-  number?: string;
+const money = new Intl.NumberFormat('pt-AO', {
+  style: 'currency',
+  currency: 'AOA',
+  minimumFractionDigits: 2,
+});
 
-  subtotal?: number | string;
-  iva?: number | string;
-  vat?: number | string;
-  total?: number | string;
-
-  status?: string;
-
-  notes?: string;
-
-  client?: {
-    id?: string;
-    name?: string;
-    nif?: string;
-  };
-
-  clientId?: string;
-
-  createdAt?: string;
+const statusLabels: Record<InvoiceStatus, string> = {
+  PENDING: 'Pendente',
+  PAID: 'Paga',
+  CANCELLED: 'Cancelada',
 };
 
-const money = (value: number) =>
-  new Intl.NumberFormat('pt-AO', {
-    style: 'currency',
-    currency: 'AOA',
-    maximumFractionDigits: 0,
-  }).format(Number(value) || 0);
+const statusStyles: Record<InvoiceStatus, string> = {
+  PENDING: 'border-amber-200 bg-amber-50 text-amber-800',
+  PAID: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+  CANCELLED: 'border-rose-200 bg-rose-50 text-rose-800',
+};
+
+type PendingAction = { invoice: Invoice; action: 'pay' | 'cancel' };
 
 export default function InvoicesPage() {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-
-  const [loading, setLoading] = useState(true);
-
-  const [refreshing, setRefreshing] = useState(false);
-
+  const { user } = useAuth();
+  const [result, setResult] = useState<InvoicePage | null>(null);
   const [search, setSearch] = useState('');
-
+  const [status, setStatus] = useState<InvoiceStatus | ''>('');
+  const [sort, setSort] = useState('issuedAt:desc');
+  const [page, setPage] = useState(1);
+  const [reload, setReload] = useState(0);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-
-  async function loadInvoices() {
-    try {
-      setError('');
-
-      const response = await getInvoices();
-
-      console.log('FACTURAS RECEBIDAS DO BACKEND:', response);
-
-      let data: any[] = [];
-
-      if (Array.isArray(response)) {
-        data = response;
-      } else if (Array.isArray(response?.data)) {
-        data = response.data;
-      } else if (Array.isArray(response?.invoices)) {
-        data = response.invoices;
-      } else if (Array.isArray(response?.items)) {
-        data = response.items;
-      }
-
-      setInvoices(data);
-    } catch (err: any) {
-      console.error('Erro ao carregar facturas:', err);
-
-      setError(
-        err?.response?.data?.message ||
-          'Não foi possível carregar as facturas.',
-      );
-
-      setInvoices([]);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  }
+  const [notice, setNotice] = useState('');
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [actionBusy, setActionBusy] = useState(false);
+  const [pdfBusy, setPdfBusy] = useState<string | null>(null);
+  const [sortBy, sortDirection] = useMemo(() => sort.split(':'), [sort]);
+  const canWrite = ['OWNER', 'ADMIN', 'ACCOUNTANT'].includes(user?.role ?? '');
+  const canCancel = ['OWNER', 'ADMIN'].includes(user?.role ?? '');
 
   useEffect(() => {
-    loadInvoices();
-  }, []);
+    let active = true;
+    const timeout = window.setTimeout(() => {
+      setLoading(true);
+      setError('');
+      getInvoicePage({
+        search: search || undefined,
+        status,
+        page,
+        pageSize: 20,
+        sortBy: sortBy as 'issuedAt' | 'invoiceNumber' | 'total',
+        sortDirection: sortDirection as 'asc' | 'desc',
+      })
+        .then((data) => active && setResult(data))
+        .catch((requestError) =>
+          active && setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel carregar as facturas.')),
+        )
+        .finally(() => active && setLoading(false));
+    }, 300);
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+    };
+  }, [page, reload, search, sortBy, sortDirection, status]);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await loadInvoices();
+  function resetPage() {
+    setPage(1);
+    setNotice('');
   }
 
-  async function handlePay(id: string) {
+  async function confirmAction() {
+    if (!pendingAction) return;
+    setActionBusy(true);
+    setError('');
     try {
-      await markInvoicePaid(id);
-
-      await loadInvoices();
-    } catch (err) {
-      console.error('Erro ao pagar factura:', err);
-
-      alert('Não foi possível actualizar a factura.');
+      if (pendingAction.action === 'pay') {
+        await markInvoicePaid(pendingAction.invoice.id);
+        setNotice(`${pendingAction.invoice.invoiceNumber} foi marcada como paga.`);
+      } else {
+        await cancelInvoice(pendingAction.invoice.id);
+        setNotice(`${pendingAction.invoice.invoiceNumber} foi cancelada.`);
+      }
+      setPendingAction(null);
+      setReload((value) => value + 1);
+    } catch (requestError) {
+      setPendingAction(null);
+      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel actualizar a factura.'));
+    } finally {
+      setActionBusy(false);
     }
   }
 
-  async function handleCancel(id: string) {
-    const confirmed = window.confirm(
-      'Tem certeza que deseja cancelar esta factura?',
-    );
-
-    if (!confirmed) {
-      return;
-    }
-
+  async function downloadPdf(invoice: Invoice) {
+    setPdfBusy(invoice.id);
+    setError('');
     try {
-      await cancelInvoice(id);
-
-      await loadInvoices();
-    } catch (err) {
-      console.error('Erro ao cancelar factura:', err);
-
-      alert('Não foi possível cancelar a factura.');
+      await openInvoicePdf(invoice.id);
+    } catch (requestError) {
+      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel abrir o PDF.'));
+    } finally {
+      setPdfBusy(null);
     }
   }
 
-  const filteredInvoices = useMemo(() => {
-    const term = search.trim().toLowerCase();
-
-    if (!term) {
-      return invoices;
-    }
-
-    return invoices.filter((invoice) => {
-      const invoiceNumber =
-        invoice.invoiceNumber ||
-        invoice.number ||
-        '';
-
-      const clientName =
-        invoice.client?.name ||
-        '';
-
-      const clientNif =
-        invoice.client?.nif ||
-        '';
-
-      return (
-        String(invoiceNumber)
-          .toLowerCase()
-          .includes(term) ||
-        clientName
-          .toLowerCase()
-          .includes(term) ||
-        clientNif
-          .toLowerCase()
-          .includes(term)
-      );
-    });
-  }, [invoices, search]);
-
-  const totalFacturado = invoices.reduce(
-    (sum, invoice) =>
-      sum + Number(invoice.total || 0),
-    0,
-  );
-
-  const totalIVA = invoices.reduce(
-    (sum, invoice) => {
-      if (invoice.iva !== undefined) {
-        return sum + Number(invoice.iva || 0);
-      }
-
-      if (invoice.vat !== undefined) {
-        return sum + Number(invoice.vat || 0);
-      }
-
-      const subtotal = Number(
-        invoice.subtotal || 0,
-      );
-
-      return sum + subtotal * 0.14;
-    },
-    0,
-  );
-
-  const getStatus = (status?: string) => {
-    switch (status?.toUpperCase()) {
-      case 'PAID':
-      case 'PAGA':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
-            <CheckCircle size={13} />
-            Paga
-          </span>
-        );
-
-      case 'CANCELLED':
-      case 'CANCELED':
-      case 'CANCELADA':
-        return (
-          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-700">
-            <XCircle size={13} />
-            Cancelada
-          </span>
-        );
-
-      default:
-        return (
-          <span className="rounded-full bg-yellow-100 px-3 py-1 text-xs font-semibold text-yellow-700">
-            Pendente
-          </span>
-        );
-    }
-  };
-
-  if (loading) {
-    return (
-      <DashboardLayout>
-        <div className="min-h-full bg-[#f7f8fc] p-6 lg:p-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-              <RefreshCw
-                size={30}
-                className="mx-auto animate-spin text-[#5146e5]"
-              />
-
-              <p className="mt-4 text-sm text-slate-500">
-                A carregar facturas...
-              </p>
-            </div>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  const cards = [
+    ['Documentos', result?.summary.total ?? 0],
+    ['Pendentes', result?.summary.pending ?? 0],
+    ['Pagas', result?.summary.paid ?? 0],
+    ['Total facturado', money.format(Number(result?.summary.totalInvoicedAmount ?? result?.summary.totalInvoiced ?? 0))],
+  ];
 
   return (
     <DashboardLayout>
-      <div className="min-h-full bg-[#f7f8fc] p-6 lg:p-8">
-
-        <div className="mx-auto max-w-7xl">
-
-          {/* HEADER */}
-
-          <div className="flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
-            <div>
-
-              <div className="flex items-center gap-2 text-sm font-semibold text-[#5146e5]">
-                <FileText size={18} />
-                Fiscalidade Digital
-              </div>
-
-              <h1 className="mt-2 text-3xl font-bold text-[#111b3b]">
-                Facturas
-              </h1>
-
-              <p className="mt-1 text-sm text-[#7180a2]">
-                Registe, consulte e acompanhe as facturas da sua empresa.
-              </p>
-
-            </div>
-
-            <Link
-              href="/invoices/new"
-              className="
-                inline-flex
-                items-center
-                justify-center
-                gap-2
-                rounded-xl
-                bg-[#5146e5]
-                px-5
-                py-3
-                text-sm
-                font-semibold
-                text-white
-                shadow-lg
-                shadow-indigo-200
-                transition
-                hover:bg-[#4338ca]
-              "
-            >
-              <Plus size={18} />
-              Nova Factura
-            </Link>
-
+      <main className="mx-auto w-full max-w-[1500px]">
+        <header className="flex flex-col gap-4 border-b border-[var(--fd-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">FacturaÃ§Ã£o</p>
+            <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--fd-text-primary)] sm:text-3xl">Facturas</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--fd-text-secondary)]">Consulte documentos emitidos, valores e estado operacional de pagamento.</p>
           </div>
+          {canWrite && <Link href="/invoices/new" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 text-xs font-semibold text-white hover:bg-sky-800 focus:outline-none focus:ring-4 focus:ring-sky-100"><Plus className="h-4 w-4" />Emitir factura</Link>}
+        </header>
 
-          {/* RESUMO */}
+        <aside className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
+          <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
+          <p>Os documentos permanecem internos enquanto nÃ£o existir configuraÃ§Ã£o, certificaÃ§Ã£o e confirmaÃ§Ã£o efectiva da integraÃ§Ã£o de facturaÃ§Ã£o electrÃ³nica com a AGT.</p>
+        </aside>
 
-          <div className="mt-8 grid grid-cols-1 gap-5 md:grid-cols-3">
+        <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo de facturas">
+          {cards.map(([label, value]) => <article key={String(label)} className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-4 shadow-sm"><p className="text-xs font-medium text-[var(--fd-text-secondary)]">{label}</p><p className="mt-3 text-xl font-semibold tabular-nums text-[var(--fd-text-primary)]">{value}</p></article>)}
+        </section>
 
-            <div className="rounded-2xl border border-indigo-100 bg-white p-6 shadow-sm">
-
-              <p className="text-sm font-medium text-[#7180a2]">
-                Facturas emitidas
-              </p>
-
-              <p className="mt-2 text-3xl font-bold text-[#111b3b]">
-                {invoices.length}
-              </p>
-
-            </div>
-
-            <div className="rounded-2xl border border-green-100 bg-white p-6 shadow-sm">
-
-              <p className="text-sm font-medium text-[#7180a2]">
-                Total facturado
-              </p>
-
-              <p className="mt-2 text-3xl font-bold text-[#111b3b]">
-                {money(totalFacturado)}
-              </p>
-
-            </div>
-
-            <div className="rounded-2xl border border-orange-100 bg-white p-6 shadow-sm">
-
-              <p className="text-sm font-medium text-[#7180a2]">
-                IVA gerado
-              </p>
-
-              <p className="mt-2 text-3xl font-bold text-[#111b3b]">
-                {money(totalIVA)}
-              </p>
-
-            </div>
-
+        <section className="mt-6 overflow-hidden rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
+          <div className="grid gap-3 border-b border-[var(--fd-border)] p-4 lg:grid-cols-[minmax(260px,1fr)_180px_210px]">
+            <label className="relative block"><span className="sr-only">Pesquisar facturas</span><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fd-muted)]" /><input value={search} onChange={(event) => { setSearch(event.target.value); resetPage(); }} placeholder="NÃºmero, cliente ou NIF" className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>
+            <label><span className="sr-only">Filtrar por estado</span><select value={status} onChange={(event) => { setStatus(event.target.value as InvoiceStatus | ''); resetPage(); }} className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"><option value="">Todos os estados</option><option value="PENDING">Pendentes</option><option value="PAID">Pagas</option><option value="CANCELLED">Canceladas</option></select></label>
+            <label><span className="sr-only">Ordenar facturas</span><select value={sort} onChange={(event) => { setSort(event.target.value); resetPage(); }} className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"><option value="issuedAt:desc">Mais recentes</option><option value="issuedAt:asc">Mais antigas</option><option value="total:desc">Maior total</option><option value="total:asc">Menor total</option><option value="invoiceNumber:asc">NÃºmero crescente</option></select></label>
           </div>
+          {notice && <div role="status" className="border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-medium text-emerald-800">{notice}</div>}
+          {error && <div role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-xs font-medium text-rose-800">{error}</div>}
 
-          {/* ERRO */}
-
-          {error && (
-            <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm font-medium text-red-700">
-              {error}
-            </div>
-          )}
-
-          {/* FILTROS */}
-
-          <div className="mt-8 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-
-            <div className="flex flex-col gap-4 md:flex-row md:items-center">
-
-              <div className="relative flex-1">
-
-                <Search
-                  size={18}
-                  className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"
-                />
-
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) =>
-                    setSearch(e.target.value)
-                  }
-                  placeholder="Pesquisar por número, cliente ou NIF..."
-                  className="
-                    w-full
-                    rounded-xl
-                    border
-                    border-slate-200
-                    bg-slate-50
-                    py-3
-                    pl-11
-                    pr-4
-                    text-sm
-                    outline-none
-                    transition
-                    focus:border-[#5146e5]
-                    focus:bg-white
-                  "
-                />
-
-              </div>
-
-              <button
-                type="button"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="
-                  inline-flex
-                  items-center
-                  justify-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-slate-200
-                  bg-white
-                  px-4
-                  py-3
-                  text-sm
-                  font-semibold
-                  text-slate-700
-                  hover:bg-slate-50
-                  disabled:opacity-50
-                "
-              >
-                <RefreshCw
-                  size={17}
-                  className={
-                    refreshing
-                      ? 'animate-spin'
-                      : ''
-                  }
-                />
-
-                Atualizar
-              </button>
-
-            </div>
-
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[980px] border-collapse text-left">
+              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]"><tr><th className="px-5 py-3 font-semibold">Factura</th><th className="px-4 py-3 font-semibold">Cliente</th><th className="px-4 py-3 text-right font-semibold">Subtotal</th><th className="px-4 py-3 text-right font-semibold">IVA</th><th className="px-4 py-3 text-right font-semibold">Total</th><th className="px-4 py-3 font-semibold">Estado</th><th className="px-5 py-3 text-right font-semibold">AcÃ§Ãµes</th></tr></thead>
+              <tbody className="divide-y divide-[var(--fd-border)]">
+                {loading ? <tr><td colSpan={7} className="h-52 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-sky-700" aria-label="A carregar facturas" /></td></tr> : result?.data.length ? result.data.map((invoice) => (
+                  <tr key={invoice.id} className="hover:bg-slate-50/70">
+                    <td className="px-5 py-4"><div className="flex items-start gap-3"><span className="rounded-lg bg-sky-50 p-2 text-sky-700"><FileText className="h-4 w-4" /></span><div><Link href={`/invoices/${invoice.id}`} className="text-sm font-semibold text-sky-800 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">{invoice.invoiceNumber}</Link><p className="mt-1 text-[11px] text-[var(--fd-muted)]">{new Date(invoice.issuedAt).toLocaleDateString('pt-AO')}</p></div></div></td>
+                    <td className="px-4 py-4"><p className="text-sm font-medium text-[var(--fd-text-primary)]">{invoice.client.name}</p><p className="mt-1 text-[11px] text-[var(--fd-muted)]">NIF {invoice.client.nif || 'nÃ£o indicado'}</p></td>
+                    <td className="px-4 py-4 text-right text-xs tabular-nums text-[var(--fd-text-secondary)]">{money.format(Number(invoice.subtotalAmount ?? invoice.subtotal))}</td>
+                    <td className="px-4 py-4 text-right text-xs tabular-nums text-[var(--fd-text-secondary)]">{money.format(Number(invoice.ivaAmount ?? invoice.iva))}</td>
+                    <td className="px-4 py-4 text-right text-sm font-semibold tabular-nums text-[var(--fd-text-primary)]">{money.format(Number(invoice.totalAmount ?? invoice.total))}</td>
+                    <td className="px-4 py-4"><span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${statusStyles[invoice.status]}`}>{statusLabels[invoice.status]}</span></td>
+                    <td className="px-5 py-4"><div className="flex justify-end gap-2"><Link href={`/invoices/${invoice.id}`} title="Ver detalhes" className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600" aria-label={`Ver detalhes de ${invoice.invoiceNumber}`}><Eye className="h-4 w-4" /><span className="sr-only xl:not-sr-only xl:text-xs xl:font-semibold">Detalhes</span></Link><button type="button" title="Abrir PDF" disabled={pdfBusy === invoice.id} onClick={() => void downloadPdf(invoice)} className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800 disabled:opacity-50" aria-label={`Abrir PDF de ${invoice.invoiceNumber}`}>{pdfBusy === invoice.id ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}</button>{invoice.status === 'PENDING' && canWrite && <button type="button" onClick={() => setPendingAction({ invoice, action: 'pay' })} className="rounded-lg border border-emerald-200 p-2 text-emerald-700 hover:bg-emerald-50" aria-label={`Registar pagamento de ${invoice.invoiceNumber}`}><CheckCircle2 className="h-4 w-4" /></button>}{invoice.status === 'PENDING' && canCancel && <button type="button" onClick={() => setPendingAction({ invoice, action: 'cancel' })} className="rounded-lg border border-rose-200 p-2 text-rose-700 hover:bg-rose-50" aria-label={`Cancelar ${invoice.invoiceNumber}`}><XCircle className="h-4 w-4" /></button>}</div></td>
+                  </tr>
+                )) : <tr><td colSpan={7} className="h-52 text-center text-sm text-[var(--fd-muted)]">Nenhuma factura corresponde aos filtros.</td></tr>}
+              </tbody>
+            </table>
           </div>
-
-          {/* LISTA */}
-
-          <div className="mt-6 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
-
-            <div className="border-b border-slate-100 px-6 py-5">
-
-              <h2 className="text-lg font-bold text-[#111b3b]">
-                Facturas emitidas
-              </h2>
-
-              <p className="mt-1 text-sm text-[#7180a2]">
-                Todas as facturas registadas pela empresa.
-              </p>
-
-            </div>
-
-            {filteredInvoices.length === 0 ? (
-
-              <div className="px-6 py-16 text-center">
-
-                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-indigo-50 text-[#5146e5]">
-                  <FileText size={30} />
-                </div>
-
-                <h3 className="mt-5 text-lg font-bold text-[#111b3b]">
-                  {invoices.length === 0
-                    ? 'Ainda não existem facturas'
-                    : 'Nenhuma factura encontrada'}
-                </h3>
-
-                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-[#7180a2]">
-                  {invoices.length === 0
-                    ? 'Comece por emitir uma nova factura.'
-                    : 'Tente pesquisar utilizando outro número, cliente ou NIF.'}
-                </p>
-
-                {invoices.length === 0 && (
-                  <Link
-                    href="/invoices/new"
-                    className="
-                      mt-6
-                      inline-flex
-                      items-center
-                      gap-2
-                      rounded-xl
-                      bg-[#5146e5]
-                      px-5
-                      py-3
-                      text-sm
-                      font-semibold
-                      text-white
-                      hover:bg-[#4338ca]
-                    "
-                  >
-                    <Plus size={18} />
-                    Criar primeira factura
-                  </Link>
-                )}
-
-              </div>
-
-            ) : (
-
-              <div className="overflow-x-auto">
-
-                <table className="w-full min-w-[900px]">
-
-                  <thead className="bg-slate-50">
-
-                    <tr>
-
-                      <th className="p-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Factura
-                      </th>
-
-                      <th className="p-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Cliente
-                      </th>
-
-                      <th className="p-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Subtotal
-                      </th>
-
-                      <th className="p-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                        IVA
-                      </th>
-
-                      <th className="p-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Total
-                      </th>
-
-                      <th className="p-4 text-left text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Estado
-                      </th>
-
-                      <th className="p-4 text-center text-xs font-bold uppercase tracking-wide text-slate-500">
-                        Acções
-                      </th>
-
-                    </tr>
-
-                  </thead>
-
-                  <tbody>
-
-                    {filteredInvoices.map(
-                      (invoice) => {
-
-                        const invoiceNumber =
-                          invoice.invoiceNumber ||
-                          invoice.number ||
-                          invoice.id;
-
-                        const subtotal =
-                          Number(
-                            invoice.subtotal || 0,
-                          );
-
-                        const iva =
-                          invoice.iva !== undefined
-                            ? Number(invoice.iva || 0)
-                            : invoice.vat !== undefined
-                              ? Number(invoice.vat || 0)
-                              : subtotal * 0.14;
-
-                        const total =
-                          invoice.total !== undefined
-                            ? Number(invoice.total || 0)
-                            : subtotal + iva;
-
-                        return (
-                          <tr
-                            key={invoice.id}
-                            className="border-t border-slate-100 hover:bg-slate-50"
-                          >
-
-                            <td className="p-4">
-
-                              <div className="font-bold text-[#111b3b]">
-                                {invoiceNumber}
-                              </div>
-
-                              {invoice.createdAt && (
-                                <div className="mt-1 text-xs text-slate-400">
-                                  {new Date(
-                                    invoice.createdAt,
-                                  ).toLocaleDateString(
-                                    'pt-AO',
-                                  )}
-                                </div>
-                              )}
-
-                            </td>
-
-                            <td className="p-4">
-
-                              <div className="font-medium text-slate-700">
-                                {invoice.client?.name ||
-                                  'Cliente'}
-                              </div>
-
-                              {invoice.client?.nif && (
-                                <div className="mt-1 text-xs text-slate-400">
-                                  NIF: {invoice.client.nif}
-                                </div>
-                              )}
-
-                            </td>
-
-                            <td className="p-4 text-sm font-medium text-slate-700">
-                              {money(subtotal)}
-                            </td>
-
-                            <td className="p-4 text-sm font-medium text-slate-700">
-                              {money(iva)}
-                            </td>
-
-                            <td className="p-4 text-sm font-bold text-[#111b3b]">
-                              {money(total)}
-                            </td>
-
-                            <td className="p-4">
-                              {getStatus(
-                                invoice.status,
-                              )}
-                            </td>
-
-                            <td className="p-4">
-
-                              <div className="flex flex-wrap justify-center gap-2">
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    openInvoicePdf(
-                                      invoice.id,
-                                    )
-                                  }
-                                  className="
-                                    inline-flex
-                                    items-center
-                                    gap-1
-                                    rounded-lg
-                                    bg-blue-600
-                                    px-3
-                                    py-2
-                                    text-xs
-                                    font-semibold
-                                    text-white
-                                    hover:bg-blue-700
-                                  "
-                                >
-                                  <Download size={14} />
-                                  PDF
-                                </button>
-
-                                {invoice.status?.toUpperCase() ===
-                                  'PENDING' && (
-                                  <>
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handlePay(
-                                          invoice.id,
-                                        )
-                                      }
-                                      className="
-                                        inline-flex
-                                        items-center
-                                        gap-1
-                                        rounded-lg
-                                        bg-green-600
-                                        px-3
-                                        py-2
-                                        text-xs
-                                        font-semibold
-                                        text-white
-                                        hover:bg-green-700
-                                      "
-                                    >
-                                      <CheckCircle
-                                        size={14}
-                                      />
-                                      Pagar
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() =>
-                                        handleCancel(
-                                          invoice.id,
-                                        )
-                                      }
-                                      className="
-                                        inline-flex
-                                        items-center
-                                        gap-1
-                                        rounded-lg
-                                        bg-red-600
-                                        px-3
-                                        py-2
-                                        text-xs
-                                        font-semibold
-                                        text-white
-                                        hover:bg-red-700
-                                      "
-                                    >
-                                      <XCircle
-                                        size={14}
-                                      />
-                                      Cancelar
-                                    </button>
-                                  </>
-                                )}
-
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    console.log(
-                                      'Factura:',
-                                      invoice,
-                                    )
-                                  }
-                                  className="
-                                    inline-flex
-                                    items-center
-                                    gap-1
-                                    rounded-lg
-                                    border
-                                    border-slate-200
-                                    bg-white
-                                    px-3
-                                    py-2
-                                    text-xs
-                                    font-semibold
-                                    text-slate-700
-                                    hover:bg-slate-50
-                                  "
-                                >
-                                  <Eye size={14} />
-                                  Ver
-                                </button>
-
-                              </div>
-
-                            </td>
-
-                          </tr>
-                        );
-                      },
-                    )}
-
-                  </tbody>
-
-                </table>
-
-              </div>
-
-            )}
-
-          </div>
-
-        </div>
-
-      </div>
+          <div className="flex flex-col gap-3 border-t border-[var(--fd-border)] px-5 py-4 text-xs text-[var(--fd-muted)] sm:flex-row sm:items-center sm:justify-between"><span>{result?.pagination.total ?? 0} resultado(s)</span><div className="flex items-center gap-2"><button type="button" disabled={!result || result.pagination.page <= 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="PÃ¡gina anterior"><ChevronLeft className="h-4 w-4" /></button><span>PÃ¡gina {result?.pagination.page ?? page} de {result?.pagination.totalPages ?? 1}</span><button type="button" disabled={!result || result.pagination.page >= result.pagination.totalPages || loading} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="PÃ¡gina seguinte"><ChevronRight className="h-4 w-4" /></button></div></div>
+        </section>
+      </main>
+      {pendingAction && <ActionDialog pending={pendingAction} busy={actionBusy} onClose={() => setPendingAction(null)} onConfirm={confirmAction} />}
     </DashboardLayout>
   );
+}
+
+function ActionDialog({ pending, busy, onClose, onConfirm }: { pending: PendingAction; busy: boolean; onClose: () => void; onConfirm: () => void }) {
+  const paying = pending.action === 'pay';
+  return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--fd-overlay)] p-4"><section role="alertdialog" aria-modal="true" aria-labelledby="invoice-action-title" className="w-full max-w-md rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">AlteraÃ§Ã£o de estado</p><h2 id="invoice-action-title" className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]">{paying ? 'Registar pagamento' : 'Cancelar factura'}</h2></div><button type="button" onClick={onClose} disabled={busy} className="rounded-lg p-2 text-[var(--fd-muted)]" aria-label="Fechar"><X className="h-4 w-4" /></button></div><p className="mt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">{paying ? `Confirma que ${pending.invoice.invoiceNumber} foi efectivamente paga? Esta acÃ§Ã£o influencia os valores recebidos e as obrigaÃ§Ãµes.` : `Confirma o cancelamento de ${pending.invoice.invoiceNumber}? Facturas pagas exigem um fluxo de correcÃ§Ã£o e nÃ£o podem ser canceladas directamente.`}</p><div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} disabled={busy} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold">Voltar</button><button type="button" onClick={onConfirm} disabled={busy} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50 ${paying ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-rose-700 hover:bg-rose-800'}`}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}{paying ? 'Confirmar pagamento' : 'Confirmar cancelamento'}</button></div></section></div>;
 }

@@ -71,8 +71,8 @@ ${company.name}
         answer:
           completion.choices[0].message.content,
       };
-    } catch (error: any) {
-      console.log(error);
+    } catch {
+      console.warn('Falha ao processar pedido do assistente fiscal.');
 
       return {
         answer: this.getFallbackAnswer(message),

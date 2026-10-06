@@ -57,11 +57,11 @@ export class TwilioMessagingService {
     const data = await response.json();
 
     if (!response.ok) {
-      this.logger.error(`Erro Twilio SMS: ${JSON.stringify(data)}`);
-      throw new Error(data?.message || 'Falha ao enviar SMS pelo Twilio.');
+      this.logger.error(`Falha no envio SMS (código ${data?.code ?? 'desconhecido'}).`);
+      throw new Error('Falha ao enviar SMS pelo fornecedor configurado.');
     }
 
-    this.logger.log(`SMS enviado para ${to}. SID: ${data.sid}`);
+    this.logger.log('SMS enviado pelo fornecedor configurado.');
 
     return {
       success: true,
@@ -110,11 +110,11 @@ export class TwilioMessagingService {
     const data = await response.json();
 
     if (!response.ok) {
-      this.logger.error(`Erro Twilio WhatsApp: ${JSON.stringify(data)}`);
-      throw new Error(data?.message || 'Falha ao enviar WhatsApp pelo Twilio.');
+      this.logger.error(`Falha no envio WhatsApp (código ${data?.code ?? 'desconhecido'}).`);
+      throw new Error('Falha ao enviar WhatsApp pelo fornecedor configurado.');
     }
 
-    this.logger.log(`WhatsApp enviado para ${to}. SID: ${data.sid}`);
+    this.logger.log('Mensagem WhatsApp enviada pelo fornecedor configurado.');
 
     return {
       success: true,

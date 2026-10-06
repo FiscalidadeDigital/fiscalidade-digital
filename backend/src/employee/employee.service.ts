@@ -1,4 +1,5 @@
 ﻿import {
+  BadRequestException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -8,6 +9,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { CreateEmployeeSalaryDto } from './dto/create-employee-salary.dto';
 import { CreateEmployeeDependentDto } from './dto/create-employee-dependent.dto';
+import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { CreateRemunerationComponentDto } from './dto/create-remuneration-component.dto';
 
 @Injectable()
 export class EmployeeService {
@@ -150,6 +153,10 @@ export class EmployeeService {
                 ?.trim() ||
               null,
 
+            socialSecurityCategory:
+              dto.socialSecurityCategory ??
+              'STANDARD',
+
             email:
               dto.email?.trim() ||
               null,
@@ -195,13 +202,54 @@ export class EmployeeService {
               dto.maritalStatus?.trim() ||
               null,
 
-            dependentCount:
-              dto.dependentCount ??
-              0,
+            gender:
+              dto.gender?.trim() ||
+              null,
+
+            status:
+              dto.status ??
+              'ACTIVE',
+
+            // Dependentes são a fonte de verdade; este campo é um contador
+            // denormalizado somente para compatibilidade e snapshots.
+            dependentCount: 0,
 
             notes:
               dto.notes?.trim() ||
               null,
+
+            ...(dto.initialSalary && {
+              salaries: {
+                create: {
+                  baseSalary: dto.initialSalary.baseSalary,
+                  foodAllowance:
+                    dto.initialSalary.foodAllowance ??
+                    0,
+                  transportAllowance:
+                    dto.initialSalary.transportAllowance ??
+                    0,
+                  otherAllowances:
+                    dto.initialSalary.otherAllowances ??
+                    0,
+                  bonuses:
+                    dto.initialSalary.bonuses ??
+                    0,
+                  commissions:
+                    dto.initialSalary.commissions ??
+                    0,
+                  otherIncome:
+                    dto.initialSalary.otherIncome ??
+                    0,
+                  effectiveFrom: new Date(
+                    dto.initialSalary.effectiveFrom,
+                  ),
+                  active: true,
+                  notes:
+                    dto.initialSalary.notes?.trim() ||
+                    null,
+                },
+              },
+            }),
           },
 
           include: {
@@ -295,6 +343,10 @@ export class EmployeeService {
             },
           },
 
+          remunerationComponents: {
+            orderBy: { effectiveFrom: 'desc' },
+          },
+
           payrollItems: {
             orderBy: {
               createdAt:
@@ -322,7 +374,7 @@ export class EmployeeService {
   async update(
     tenantId: string,
     id: string,
-    dto: CreateEmployeeDto,
+    dto: UpdateEmployeeDto,
   ) {
     const employee =
       await this.prisma.employee.findFirst({
@@ -361,70 +413,61 @@ export class EmployeeService {
       },
 
       data: {
-        name:
-          dto.name.trim(),
-
-        nif:
-          dto.nif?.trim() ||
-          null,
-
-        socialSecurityNumber:
-          dto.socialSecurityNumber
-            ?.trim() ||
-          null,
-
-        email:
-          dto.email?.trim() ||
-          null,
-
-        phone:
-          dto.phone?.trim() ||
-          null,
-
-        address:
-          dto.address?.trim() ||
-          null,
-
-        birthDate:
-          dto.birthDate
-            ? new Date(
-                dto.birthDate,
-              )
+        ...(dto.name !== undefined && {
+          name: dto.name.trim(),
+        }),
+        ...(dto.nif !== undefined && {
+          nif: dto.nif?.trim() || null,
+        }),
+        ...(dto.socialSecurityNumber !== undefined && {
+          socialSecurityNumber:
+            dto.socialSecurityNumber?.trim() || null,
+        }),
+        ...(dto.socialSecurityCategory !== undefined && {
+          socialSecurityCategory: dto.socialSecurityCategory,
+        }),
+        ...(dto.email !== undefined && {
+          email: dto.email?.trim() || null,
+        }),
+        ...(dto.phone !== undefined && {
+          phone: dto.phone?.trim() || null,
+        }),
+        ...(dto.address !== undefined && {
+          address: dto.address?.trim() || null,
+        }),
+        ...(dto.birthDate !== undefined && {
+          birthDate: dto.birthDate
+            ? new Date(dto.birthDate)
             : null,
-
-        hireDate:
-          dto.hireDate
-            ? new Date(
-                dto.hireDate,
-              )
+        }),
+        ...(dto.hireDate !== undefined && {
+          hireDate: dto.hireDate
+            ? new Date(dto.hireDate)
             : null,
-
-        terminationDate:
-          dto.terminationDate
-            ? new Date(
-                dto.terminationDate,
-              )
+        }),
+        ...(dto.terminationDate !== undefined && {
+          terminationDate: dto.terminationDate
+            ? new Date(dto.terminationDate)
             : null,
-
-        jobTitle:
-          dto.jobTitle?.trim() ||
-          null,
-
-        department:
-          dto.department?.trim() ||
-          null,
-
-        maritalStatus:
-          dto.maritalStatus?.trim() ||
-          null,
-
-        dependentCount:
-          dto.dependentCount ??
-          0,
-
-        notes:
-          dto.notes?.trim() ||
-          null,
+        }),
+        ...(dto.jobTitle !== undefined && {
+          jobTitle: dto.jobTitle?.trim() || null,
+        }),
+        ...(dto.department !== undefined && {
+          department: dto.department?.trim() || null,
+        }),
+        ...(dto.maritalStatus !== undefined && {
+          maritalStatus: dto.maritalStatus?.trim() || null,
+        }),
+        ...(dto.gender !== undefined && {
+          gender: dto.gender?.trim() || null,
+        }),
+        ...(dto.notes !== undefined && {
+          notes: dto.notes?.trim() || null,
+        }),
+        ...(dto.status !== undefined && {
+          status: dto.status,
+        }),
       },
     });
   }
@@ -451,9 +494,14 @@ export class EmployeeService {
       );
     }
 
-    return this.prisma.employee.delete({
+    // Não há remoção física: relações laborais e folhas históricas precisam
+    // continuar auditáveis. A reactivação exige fluxo administrativo explícito.
+    return this.prisma.employee.update({
       where: {
         id,
+      },
+      data: {
+        status: 'ARCHIVED',
       },
     });
   }
@@ -483,6 +531,27 @@ export class EmployeeService {
 
     return this.prisma.$transaction(
       async (transaction) => {
+        const effectiveFrom = new Date(dto.effectiveFrom);
+        const currentSalary =
+          await transaction.employeeSalary.findFirst({
+            where: {
+              employeeId,
+              active: true,
+            },
+            orderBy: {
+              effectiveFrom: 'desc',
+            },
+          });
+
+        if (
+          currentSalary &&
+          effectiveFrom <= currentSalary.effectiveFrom
+        ) {
+          throw new BadRequestException(
+            'A nova vigência salarial deve ser posterior à vigência activa.',
+          );
+        }
+
         await transaction.employeeSalary.updateMany({
           where: {
             employeeId,
@@ -491,7 +560,7 @@ export class EmployeeService {
 
           data: {
             active: false,
-            effectiveTo: new Date(),
+            effectiveTo: effectiveFrom,
           },
         });
 
@@ -527,9 +596,7 @@ export class EmployeeService {
               0,
 
             effectiveFrom:
-              new Date(
-                dto.effectiveFrom,
-              ),
+              effectiveFrom,
 
             active: true,
 
@@ -573,6 +640,45 @@ export class EmployeeService {
         effectiveFrom:
           'desc',
       },
+    });
+  }
+
+  async addRemunerationComponent(tenantId: string, employeeId: string, dto: CreateRemunerationComponentDto) {
+    await this.findOne(tenantId, employeeId);
+    const inssTreatment = dto.type === 'HOLIDAY_ALLOWANCE' ? 'EXCLUDED' : 'NEEDS_OFFICIAL_CONFIRMATION';
+    return this.prisma.employeeRemunerationComponent.create({
+      data: {
+        employeeId,
+        type: dto.type,
+        amount: dto.amount,
+        effectiveFrom: new Date(dto.effectiveFrom),
+        effectiveTo: dto.effectiveTo ? new Date(dto.effectiveTo) : null,
+        inssTreatment,
+        notes: dto.notes?.trim() || null,
+        legalReference: dto.type === 'HOLIDAY_ALLOWANCE' ? 'Decreto Presidencial n.º 227/18, arts. 12.º–14.º' : null,
+      },
+    });
+  }
+
+  async getRemunerationComponents(tenantId: string, employeeId: string) {
+    await this.findOne(tenantId, employeeId);
+    return this.prisma.employeeRemunerationComponent.findMany({
+      where: { employeeId }, orderBy: [{ effectiveFrom: 'desc' }, { createdAt: 'desc' }],
+    });
+  }
+
+  async endRemunerationComponent(tenantId: string, employeeId: string, componentId: string, effectiveTo: string) {
+    const component = await this.prisma.employeeRemunerationComponent.findFirst({
+      where: { id: componentId, employeeId, employee: { tenantId } },
+    });
+    if (!component) throw new NotFoundException('Componente remuneratório não encontrado.');
+    if (component.effectiveTo) throw new BadRequestException('Este componente já possui fim de vigência.');
+    const end = new Date(effectiveTo);
+    if (Number.isNaN(end.getTime()) || end < component.effectiveFrom) {
+      throw new BadRequestException('A data de fim deve ser igual ou posterior ao início da vigência.');
+    }
+    return this.prisma.employeeRemunerationComponent.update({
+      where: { id: component.id }, data: { effectiveTo: end },
     });
   }
 
@@ -629,19 +735,13 @@ export class EmployeeService {
             },
           });
 
-        if (taxDependent) {
-          await transaction.employee.update({
-            where: {
-              id: employeeId,
-            },
-
-            data: {
-              dependentCount: {
-                increment: 1,
-              },
-            },
-          });
-        }
+        const dependentCount = await transaction.employeeDependent.count({
+          where: { employeeId, taxDependent: true },
+        });
+        await transaction.employee.update({
+          where: { id: employeeId },
+          data: { dependentCount },
+        });
 
         return dependent;
       },

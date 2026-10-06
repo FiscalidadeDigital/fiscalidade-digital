@@ -121,6 +121,10 @@ interface DashboardData {
 
     clients?: number;
     products?: number;
+    purchaseInvoices?: number;
+    purchaseInvoiceTotal?: number;
+    purchaseInvoiceVatSupported?: number;
+    purchaseInvoiceImportsPendingReview?: number;
 
     iva?: number;
     irt?: number;
@@ -584,10 +588,7 @@ export default function DashboardPage() {
     );
   }
 
-  const regime =
-    getRegimeLabel(
-      company.regime,
-    );
+  const regime = 'Enquadramentos por imposto';
 
   const companyStatus =
     getCompanyStatus(
@@ -623,6 +624,10 @@ export default function DashboardPage() {
         ?.totalRevenue,
     );
 
+  const purchaseInvoices = toNumber(dashboard.metrics?.purchaseInvoices);
+  const purchaseInvoiceTotal = toNumber(dashboard.metrics?.purchaseInvoiceTotal);
+  const pendingPurchaseImports = toNumber(dashboard.metrics?.purchaseInvoiceImportsPendingReview);
+
   return (
     <DashboardLayout
       company={company}
@@ -648,8 +653,8 @@ export default function DashboardPage() {
             mb-6
             rounded-2xl
             border
-            border-[#e5e9f0]
-            bg-white
+            border-[#102447]
+            bg-[#102447]
             px-5
             py-5
             shadow-sm
@@ -684,8 +689,8 @@ export default function DashboardPage() {
                   items-center
                   justify-center
                   rounded-xl
-                  bg-[#eff8ff]
-                  text-[#0ea5e9]
+                  bg-white/10
+                  text-cyan-200
                 "
               >
                 <Building2
@@ -732,7 +737,7 @@ export default function DashboardPage() {
                     text-[22px]
                     font-extrabold
                     tracking-tight
-                    text-[#111b3b]
+                    text-white
                     sm:text-[26px]
                   "
                 >
@@ -752,7 +757,7 @@ export default function DashboardPage() {
                   <span
                     className="
                       text-[11px]
-                      text-[#7180a2]
+                      text-slate-300
                     "
                   >
                     NIF: {company.nif}
@@ -772,7 +777,7 @@ export default function DashboardPage() {
                     className="
                       text-[10px]
                       font-semibold
-                      text-[#526080]
+                      text-cyan-200
                     "
                   >
                     {regime}
@@ -791,7 +796,7 @@ export default function DashboardPage() {
                   <span
                     className="
                       text-[10px]
-                      text-[#7180a2]
+                      text-slate-300
                     "
                   >
                     {company.sector}
@@ -828,14 +833,14 @@ export default function DashboardPage() {
                   gap-2
                   rounded-xl
                   border
-                  border-[#e2e7ef]
-                  bg-white
+                  border-white/20
+                  bg-white/10
                   px-3
                   text-[11px]
                   font-semibold
-                  text-[#526080]
+                  text-white
                   transition
-                  hover:bg-[#f6f8fb]
+                  hover:bg-white/15
                   disabled:cursor-not-allowed
                   disabled:opacity-50
                 "
@@ -860,13 +865,13 @@ export default function DashboardPage() {
                   items-center
                   gap-2
                   rounded-xl
-                  bg-[#0ea5e9]
+                  bg-[#0787ad]
                   px-4
                   text-[11px]
                   font-bold
                   text-white
                   transition
-                  hover:bg-[#0284c7]
+                  hover:bg-[#0a789a]
                 "
               >
                 <FileText
@@ -878,6 +883,16 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+
+        <section className="mb-6 flex flex-col gap-3 rounded-xl border border-[#e5e9f0] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-sm font-semibold text-[#111b3b]">Facturas recebidas</p>
+            <p className="mt-1 text-xs text-[#7180a2]">{purchaseInvoices} registadas · compras no valor de {formatCurrency(purchaseInvoiceTotal)}{pendingPurchaseImports > 0 ? ` · ${pendingPurchaseImports} em revisão` : ''}</p>
+          </div>
+          <Link href="/purchase-invoices" className="inline-flex items-center gap-2 self-start text-sm font-semibold text-[#087fb3] hover:underline">
+            Abrir facturas recebidas <ArrowRight size={15} />
+          </Link>
+        </section>
 
         {/* ==================================================
             ERRO
@@ -1067,7 +1082,7 @@ export default function DashboardPage() {
                   text-[#7b87a1]
                 "
               >
-                Prazos fiscais aplicáveis ao regime da empresa
+                Prazos fiscais configurados por imposto e período
               </p>
             </div>
 

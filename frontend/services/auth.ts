@@ -17,6 +17,7 @@ export interface Tenant {
   email: string;
   phone: string | null;
   address: string | null;
+  city: string | null;
   sector: string | null;
   companyType: string | null;
   employeeCount: number | null;
@@ -53,21 +54,13 @@ export interface LoginResponse {
 // =====================================================
 
 export interface RegisterData {
-  companyName: string;
-  ownerName: string;
-  nif: string;
+  name: string;
   email: string;
   phone?: string;
-  address?: string;
-  sector?: string;
-  companyType?: string;
-  employees?: number;
-  regime: FiscalRegime;
   password: string;
-
+  confirmPassword: string;
   acceptTerms: boolean;
   acceptPrivacyPolicy: boolean;
-  confirmInformation: boolean;
 }
 
 // =====================================================
@@ -76,18 +69,7 @@ export interface RegisterData {
 
 export interface RegisterResponse {
   message: string;
-  access_token: string;
-  user: AuthUser;
-  tenant: Tenant;
-
-  obligations: {
-    automatic: boolean;
-    created: number;
-    updated: number;
-    late: number;
-    year: number;
-    source: string;
-  };
+  email: string;
 }
 
 // =====================================================
@@ -133,16 +115,7 @@ export const register = async (
     await api.post<RegisterResponse>(
       '/auth/register',
       {
-        companyName:
-          data.companyName.trim(),
-
-        ownerName:
-          data.ownerName.trim(),
-
-        nif:
-          data.nif
-            .trim()
-            .toUpperCase(),
+        name: data.name.trim(),
 
         email:
           data.email
@@ -153,26 +126,10 @@ export const register = async (
           data.phone?.trim() ||
           undefined,
 
-        address:
-          data.address?.trim() ||
-          undefined,
-
-        sector:
-          data.sector?.trim() ||
-          undefined,
-
-        companyType:
-          data.companyType?.trim() ||
-          undefined,
-
-        employees:
-          data.employees,
-
-        regime:
-          data.regime,
-
         password:
           data.password,
+
+        confirmPassword: data.confirmPassword,
 
         acceptTerms:
           data.acceptTerms,
@@ -180,8 +137,6 @@ export const register = async (
         acceptPrivacyPolicy:
           data.acceptPrivacyPolicy,
 
-        confirmInformation:
-          data.confirmInformation,
       },
     );
 

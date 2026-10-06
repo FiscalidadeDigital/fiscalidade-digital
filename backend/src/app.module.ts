@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { ScheduleModule } from '@nestjs/schedule';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { PrismaModule } from './prisma/prisma.module';
 
@@ -14,9 +16,15 @@ import { SupplierModule } from './supplier/supplier.module';
 
 import { InvoiceModule } from './invoice/invoice.module';
 import { PurchaseInvoiceModule } from './purchase-invoice/purchase-invoice.module';
+import { PurchaseInvoiceImportModule } from './purchase-invoice-import/purchase-invoice-import.module';
 
 import { FiscalCalendarModule } from './fiscal-calendar/fiscal-calendar.module';
 import { FiscalEngineModule } from './fiscal-engine/fiscal-engine.module';
+import { FiscalEnrollmentModule } from './fiscal-enrollment/fiscal-enrollment.module';
+import { FiscalApplicabilityModule } from './fiscal-applicability/fiscal-applicability.module';
+import { FiscalObligationPersistenceModule } from './fiscal-obligation-persistence/fiscal-obligation-persistence.module';
+import { ObligationGenerationModule } from './obligation-generation/obligation-generation.module';
+import { FiscalSituationModule } from './fiscal-situation/fiscal-situation.module';
 import { TaxCalculatorModule } from './tax-calculator/tax-calculator.module';
 import { ObligationsModule } from './obligations/obligations.module';
 
@@ -31,6 +39,11 @@ import { NotificationModule } from './notification/notification.module';
 import { MailModule } from './mail/mail.module';
 
 import { DashboardModule } from './dashboard/dashboard.module';
+import { AdminModule } from './admin/admin.module';
+import { AccountingSaftModule } from './accounting-saft/accounting-saft.module';
+import { SubscriptionAccessModule } from './subscription-access/subscription-access.module';
+import { UsersModule } from './users/users.module';
+import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
 
 @Module({
   imports: [
@@ -44,6 +57,10 @@ import { DashboardModule } from './dashboard/dashboard.module';
 
     ScheduleModule.forRoot(),
 
+    ThrottlerModule.forRoot([
+      { name: 'default', ttl: 60_000, limit: 120 },
+    ]),
+
     // ==========================================================
     // BASE
     // ==========================================================
@@ -56,6 +73,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 
     AuthModule,
     CompanyModule,
+    UsersModule,
 
     // ==========================================================
     // DADOS OPERACIONAIS
@@ -71,7 +89,9 @@ import { DashboardModule } from './dashboard/dashboard.module';
     // ==========================================================
 
     InvoiceModule,
+    ElectronicInvoicingModule,
     PurchaseInvoiceModule,
+    PurchaseInvoiceImportModule,
 
     // ==========================================================
     // MOTOR FISCAL
@@ -79,6 +99,11 @@ import { DashboardModule } from './dashboard/dashboard.module';
 
     FiscalCalendarModule,
     FiscalEngineModule,
+    FiscalEnrollmentModule,
+    FiscalApplicabilityModule,
+    FiscalObligationPersistenceModule,
+    ObligationGenerationModule,
+    FiscalSituationModule,
     TaxCalculatorModule,
     ObligationsModule,
 
@@ -101,6 +126,12 @@ import { DashboardModule } from './dashboard/dashboard.module';
     MailModule,
 
     DashboardModule,
+    AdminModule,
+    AccountingSaftModule,
+    SubscriptionAccessModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule {}

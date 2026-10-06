@@ -24,6 +24,7 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 
 import {
   Obligation,
+  ObligationCalculationQuality,
   ObligationStatus,
   getObligations,
   syncObligations,
@@ -248,6 +249,21 @@ const statusLabel = (
   }
 };
 
+const calculationQuality = (
+  quality?: ObligationCalculationQuality,
+) => {
+  switch (quality) {
+    case 'CONFIRMED':
+      return { label: 'Confirmado', className: 'bg-emerald-50 text-emerald-700' };
+    case 'CALCULATED':
+      return { label: 'Calculado', className: 'bg-blue-50 text-blue-700' };
+    case 'ESTIMATE':
+      return { label: 'Estimativa', className: 'bg-slate-100 text-slate-700' };
+    default:
+      return { label: 'Revisão necessária', className: 'bg-amber-50 text-amber-700' };
+  }
+};
+
 /* =====================================================
    TIPO
 ===================================================== */
@@ -450,36 +466,9 @@ export default function ObligationsPage() {
     'ALL' | ObligationStatus
   >('ALL');
 
-  /* =====================================================
-     REGIME REAL DA EMPRESA
-  ===================================================== */
-
-  const currentRegime =
-    useMemo(
-      () =>
-        normalizeRegime(
-          company.regime,
-        ),
-      [company.regime],
-    );
-
-  const currentRegimeLabel =
-    useMemo(
-      () =>
-        regimeLabel(
-          company.regime,
-        ),
-      [company.regime],
-    );
-
-  const currentRegimeStyles =
-    useMemo(
-      () =>
-        regimeStyles(
-          company.regime,
-        ),
-      [company.regime],
-    );
+  /* Regime fiscal is contextual to each tax and period. Tenant.regime remains legacy company data only. */
+  const currentRegimeLabel = 'Enquadramento por imposto';
+  const currentRegimeStyles = { wrapper: 'border-slate-200 bg-slate-50', icon: 'bg-slate-100 text-slate-700', text: 'text-slate-700', dot: 'bg-slate-500' };
 
   /* =====================================================
      CARREGAR EMPRESA AUTENTICADA
@@ -855,6 +844,8 @@ export default function ObligationsPage() {
       <div
         className="
           mx-auto
+          fd-workspace-page
+          fd-theme-scope
           w-full
           max-w-[1500px]
           space-y-6
@@ -873,6 +864,9 @@ export default function ObligationsPage() {
             lg:flex-row
             lg:items-end
             lg:justify-between
+            border-b
+            border-slate-200
+            pb-5
           "
         >
           <div
@@ -881,39 +875,12 @@ export default function ObligationsPage() {
             "
           >
 
-            <div
-              className="
-                mb-2
-                inline-flex
-                items-center
-                gap-2
-                rounded-full
-                border
-                border-[#e3defe]
-                bg-[#f5f3ff]
-                px-3
-                py-1.5
-                text-[10px]
-                font-bold
-                uppercase
-                tracking-wider
-                text-[#5146e5]
-              "
-            >
-              <FileText
-                size={13}
-              />
-
-              Gestão fiscal
-            </div>
-
             <h1
               className="
-                text-[28px]
-                font-extrabold
+                text-2xl
+                font-semibold
                 tracking-tight
-                text-[#111b3b]
-                sm:text-[32px]
+                text-slate-950
               "
             >
               Obrigações Fiscais
@@ -925,7 +892,7 @@ export default function ObligationsPage() {
                 max-w-[680px]
                 text-[12px]
                 leading-6
-                text-[#7180a2]
+                text-slate-600
                 sm:text-[13px]
               "
             >
@@ -945,16 +912,14 @@ export default function ObligationsPage() {
               items-center
               justify-center
               gap-2
-              rounded-xl
-              bg-[#5146e5]
+              rounded-md
+              bg-[#0b6f93]
               px-5
               text-[11px]
-              font-bold
+              font-semibold
               text-white
-              shadow-lg
-              shadow-indigo-100
-              transition
-              hover:bg-[#4338ca]
+              transition-colors
+              hover:bg-[#085b79]
               disabled:cursor-not-allowed
               disabled:opacity-60
             "
@@ -993,12 +958,11 @@ export default function ObligationsPage() {
 
           <div
             className="
-              rounded-2xl
+              rounded-md
               border
               border-[#e8ebf3]
               bg-white
               p-5
-              shadow-sm
               lg:col-span-2
             "
           >
@@ -1029,9 +993,9 @@ export default function ObligationsPage() {
                     shrink-0
                     items-center
                     justify-center
-                    rounded-2xl
-                    bg-[#f0edff]
-                    text-[#5146e5]
+                    rounded-md
+                    bg-slate-100
+                    text-slate-500
                   "
                 >
                   <Building2
@@ -1406,7 +1370,10 @@ export default function ObligationsPage() {
           className="
             grid
             grid-cols-1
-            gap-4
+            overflow-hidden
+            border
+            border-slate-200
+            bg-white
             sm:grid-cols-2
             xl:grid-cols-4
           "
@@ -2121,6 +2088,10 @@ export default function ObligationsPage() {
                       obligation.description,
                     );
 
+                  const quality = calculationQuality(
+                    obligation.calculation?.quality,
+                  );
+
                   return (
                     <div
                       key={
@@ -2232,6 +2203,12 @@ export default function ObligationsPage() {
                                 {typeLabel(
                                   obligation.type,
                                 )}
+                              </span>
+
+                              <span
+                                className={`rounded-md px-2 py-1 text-[9px] font-bold ${quality.className}`}
+                              >
+                                {quality.label}
                               </span>
                             </div>
 
@@ -2367,6 +2344,39 @@ export default function ObligationsPage() {
                               >
                                 {description}
                               </p>
+                            )}
+
+                            {obligation.calculation && (
+                              <details className="mt-3 max-w-[650px] rounded-lg border border-[#eef0f5] bg-[#fafbfe] px-3 py-2 text-[10px] text-[#65718a]">
+                                <summary className="cursor-pointer font-semibold text-[#526080]">
+                                  Como este valor foi calculado
+                                </summary>
+                                <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                                  <span>Período: {obligation.calculation.period || obligation.period || '—'}</span>
+                                  <span>Origem: {obligation.calculation.origin?.calendarTitle || 'Calendário fiscal'}</span>
+                                  {obligation.calculation.amounts && (
+                                    <>
+                                      <span>Base: {formatCurrency(obligation.calculation.amounts.taxableAmount)}</span>
+                                      <span>Imposto apurado: {formatCurrency(obligation.calculation.amounts.taxDueAmount)}</span>
+                                      <span>Dedução confirmada: {formatCurrency(obligation.calculation.amounts.deductibleAmount)}</span>
+                                      <span>Resultado: {formatCurrency(obligation.calculation.amounts.finalAmount)}</span>
+                                    </>
+                                  )}
+                                </div>
+                                {obligation.calculation.message && (
+                                  <p className="mt-2 leading-5">{obligation.calculation.message}</p>
+                                )}
+                                {obligation.calculation.rule?.sourceUrl && (
+                                  <a
+                                    className="mt-2 inline-block font-semibold text-[#5146e5] hover:underline"
+                                    href={obligation.calculation.rule.sourceUrl}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                  >
+                                    Consultar fonte da regra
+                                  </a>
+                                )}
+                              </details>
                             )}
                           </div>
                         </div>
@@ -2682,15 +2692,13 @@ function SummaryCard({
   return (
     <div
       className={`
-        rounded-2xl
-        border
-        bg-white
+        border-b
+        border-slate-200
         p-5
-        shadow-sm
-        transition
-        hover:-translate-y-0.5
-        hover:shadow-md
-        ${style.border}
+        last:border-b-0
+        xl:border-b-0
+        xl:border-r
+        xl:last:border-r-0
       `}
     >
       <div
@@ -2705,10 +2713,10 @@ function SummaryCard({
           <p
             className="
               text-[10px]
-              font-semibold
+              font-medium
               uppercase
               tracking-wider
-              text-[#8a96b0]
+              text-slate-500
             "
           >
             {title}
@@ -2717,10 +2725,11 @@ function SummaryCard({
           <p
             className="
               mt-2
-              text-[26px]
-              font-extrabold
+              text-xl
+              font-semibold
+              tabular-nums
               tracking-tight
-              text-[#111b3b]
+              text-slate-950
             "
           >
             {value}
@@ -2731,7 +2740,7 @@ function SummaryCard({
               mt-1
               text-[10px]
               font-medium
-              text-[#7180a2]
+              text-slate-600
             "
           >
             {description}
@@ -2741,12 +2750,12 @@ function SummaryCard({
         <div
           className={`
             flex
-            h-11
-            w-11
+            h-8
+            w-8
             shrink-0
             items-center
             justify-center
-            rounded-xl
+            rounded-md
             ${style.icon}
           `}
         >

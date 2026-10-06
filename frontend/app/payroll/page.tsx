@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   useCallback,
@@ -10,9 +10,9 @@ import {
 import {
   Calculator,
   CheckCircle2,
-  ChevronRight,
   CircleDollarSign,
   FileText,
+  Lock,
   Loader2,
   Plus,
   RefreshCw,
@@ -25,10 +25,12 @@ import {
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { useAuth } from '@/context/AuthContext';
 
 import {
   approvePayroll,
   calculatePayroll,
+  closePayroll,
   createPayroll,
   getPayrollByPeriod,
   getPayrolls,
@@ -115,16 +117,28 @@ function statusClasses(status: string): string {
   }
 }
 
-function getErrorMessage(error: any): string {
+function getErrorMessage(error: unknown): string {
+  const candidate = error as {
+    response?: { data?: { message?: string } };
+    message?: string;
+  };
+
   return (
-    error?.response?.data?.message ||
-    error?.message ||
+    candidate?.response?.data?.message ||
+    candidate?.message ||
     'Não foi possível concluir a operação.'
   );
 }
 
 export default function PayrollPage() {
+  const { user } = useAuth();
   const currentDate = new Date();
+  const canCalculate = ['OWNER', 'ADMIN', 'ACCOUNTANT'].includes(
+    user?.role ?? '',
+  );
+  const canApprove = ['OWNER', 'ADMIN'].includes(
+    user?.role ?? '',
+  );
 
   const [month, setMonth] = useState(
     currentDate.getMonth() + 1,
@@ -151,6 +165,9 @@ export default function PayrollPage() {
 
   const [showCreate, setShowCreate] =
     useState(false);
+
+  const [pendingAction, setPendingAction] =
+    useState<'APPROVE' | 'PAY' | 'CLOSE' | null>(null);
 
   const [createMonth, setCreateMonth] =
     useState(
@@ -400,6 +417,42 @@ export default function PayrollPage() {
     }
   }
 
+  async function handleClose() {
+    if (!selectedPayroll) {
+      return;
+    }
+
+    try {
+      setWorking(true);
+      setError('');
+
+      const updated = await closePayroll(
+        selectedPayroll.id,
+      );
+
+      setSelectedPayroll(updated);
+      setPayrolls(await getPayrolls());
+    } catch (err) {
+      console.error(err);
+      setError(getErrorMessage(err));
+    } finally {
+      setWorking(false);
+    }
+  }
+
+  async function confirmPendingAction() {
+    const action = pendingAction;
+    setPendingAction(null);
+
+    if (action === 'APPROVE') {
+      await handleApprove();
+    } else if (action === 'PAY') {
+      await handlePay();
+    } else if (action === 'CLOSE') {
+      await handleClose();
+    }
+  }
+
   const gross = numberValue(
     selectedPayroll?.grossAmount,
   );
@@ -411,6 +464,11 @@ export default function PayrollPage() {
   const socialSecurity =
     numberValue(
       selectedPayroll?.socialSecurityAmount,
+    );
+
+  const employerSocialSecurity =
+    numberValue(
+      selectedPayroll?.employerSocialSecurityAmount,
     );
 
   const irt =
@@ -464,38 +522,18 @@ export default function PayrollPage() {
 
   return (
     <DashboardLayout>
-      <div className="relative space-y-7">
+      <div className="fd-workspace-page fd-theme-scope mx-auto w-full max-w-[1440px] space-y-5">
         {/* CABEÇALHO */}
-        <section className="relative overflow-hidden rounded-[2rem] border border-slate-200/80 bg-gradient-to-br from-white via-white to-blue-50/70 p-6 shadow-[0_18px_55px_rgba(15,35,80,0.06)] lg:p-8">
-          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-100/50 blur-3xl" />
-          <div className="relative flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+        <section className="border-b border-slate-200 pb-5">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
             <div>
-              <div className="mb-3 flex items-center gap-2 text-sm text-slate-400">
-                <span>Gestão</span>
+              <h1 className="text-2xl font-semibold tracking-tight text-slate-950">
+                Folha salarial
+              </h1>
 
-                <ChevronRight size={15} />
-
-                <span className="font-medium text-slate-600">
-                  Folha Salarial
-                </span>
-              </div>
-
-              <div className="flex items-center gap-3">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-blue-600 via-indigo-600 to-cyan-500 text-white shadow-xl shadow-blue-600/25">
-                  <Wallet size={23} />
-                </div>
-
-                <div>
-                  <h1 className="text-3xl font-black tracking-tight text-slate-950">
-                    Folha Salarial
-                  </h1>
-
-                  <p className="mt-1 text-sm text-slate-500">
-                    Gestão, cálculo e controlo das
-                    remunerações dos funcionários.
-                  </p>
-                </div>
-              </div>
+              <p className="mt-1 text-sm text-slate-600">
+                Processe remunerações, IRT, Segurança Social e valor líquido por período.
+              </p>
             </div>
 
             <div className="flex flex-wrap gap-3">
@@ -510,16 +548,15 @@ export default function PayrollPage() {
                   h-11
                   items-center
                   gap-2
-                  rounded-xl
+                  rounded-md
                   border
                   border-slate-200
                   bg-white
                   px-4
                   text-sm
-                  font-bold
+                  font-semibold
                   text-slate-700
-                  shadow-sm
-                  transition
+                  transition-colors
                   hover:bg-slate-50
                   disabled:opacity-50
                 "
@@ -536,43 +573,27 @@ export default function PayrollPage() {
                 Actualizar
               </button>
 
-              <button
-                type="button"
-                onClick={() => {
-                  setCreateMonth(month);
-                  setCreateYear(year);
-                  setShowCreate(true);
-                }}
-                className="
-                  inline-flex
-                  h-11
-                  items-center
-                  gap-2
-                  rounded-2xl
-                  bg-gradient-to-r
-                  from-blue-600
-                  to-indigo-600
-                  px-5
-                  text-sm
-                  font-bold
-                  text-white
-                  shadow-lg
-                  shadow-blue-600/20
-                  transition
-                  hover:bg-blue-700
-                "
-              >
-                <Plus size={18} />
-
-                Nova folha
-              </button>
+              {canCalculate && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreateMonth(month);
+                    setCreateYear(year);
+                    setShowCreate(true);
+                  }}
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-[#0b6f93] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#085b79]"
+                >
+                  <Plus size={18} />
+                  Processar folha
+                </button>
+              )}
             </div>
           </div>
         </section>
 
         {/* ERRO */}
         {error && (
-          <div className="flex items-start justify-between gap-4 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
+          <div role="alert" className="flex items-start justify-between gap-4 rounded-md border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
             <div>
               <p className="font-bold">
                 Não foi possível concluir a operação
@@ -597,14 +618,14 @@ export default function PayrollPage() {
         )}
 
         {/* SELEÇÃO DO PERÍODO */}
-        <section className="rounded-[1.5rem] border border-slate-200/80 bg-white p-6 shadow-[0_10px_35px_rgba(15,35,80,0.045)]">
+        <section className="border border-slate-200 bg-white p-5">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div>
-              <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                 Período de processamento
               </p>
 
-              <h2 className="mt-1 text-lg font-black text-slate-900">
+              <h2 className="mt-1 text-base font-semibold text-slate-900">
                 Seleccione o mês e o ano
               </h2>
             </div>
@@ -637,17 +658,17 @@ export default function PayrollPage() {
                   className="
                     h-11
                     min-w-[170px]
-                    rounded-xl
+                    rounded-md
                     border
                     border-slate-200
                     bg-slate-50
                     px-4
                     text-sm
-                    font-semibold
+                    font-medium
                     outline-none
-                    focus:border-blue-500
-                    focus:ring-4
-                    focus:ring-blue-500/10
+                    focus:border-[#0b6f93]
+                    focus:ring-2
+                    focus:ring-[#0b6f93]/10
                   "
                 >
                   {MONTHS.map(
@@ -690,17 +711,17 @@ export default function PayrollPage() {
                   className="
                     h-11
                     min-w-[120px]
-                    rounded-xl
+                    rounded-md
                     border
                     border-slate-200
                     bg-slate-50
                     px-4
                     text-sm
-                    font-semibold
+                    font-medium
                     outline-none
-                    focus:border-blue-500
-                    focus:ring-4
-                    focus:ring-blue-500/10
+                    focus:border-[#0b6f93]
+                    focus:ring-2
+                    focus:ring-[#0b6f93]/10
                   "
                 >
                   {Array.from(
@@ -728,11 +749,11 @@ export default function PayrollPage() {
         {/* LOADING */}
         {loading &&
         !selectedPayroll ? (
-          <div className="flex min-h-[420px] items-center justify-center rounded-3xl border border-slate-200 bg-white">
+          <div className="flex min-h-[320px] items-center justify-center border border-slate-200 bg-white">
             <div className="text-center">
               <Loader2
                 size={32}
-                className="mx-auto animate-spin text-blue-600"
+                className="mx-auto animate-spin text-[#0b6f93]"
               />
 
               <p className="mt-3 text-sm font-semibold text-slate-500">
@@ -742,12 +763,12 @@ export default function PayrollPage() {
           </div>
         ) : !selectedPayroll ? (
           /* EMPTY STATE */
-          <section className="rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-20 text-center">
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-blue-50 text-blue-600">
-              <Wallet size={34} />
+          <section className="border border-dashed border-slate-300 bg-white px-6 py-16 text-center">
+            <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-slate-500">
+              <Wallet size={22} />
             </div>
 
-            <h2 className="mt-6 text-2xl font-black text-slate-950">
+            <h2 className="mt-4 text-lg font-semibold text-slate-950">
               Nenhuma folha neste período
             </h2>
 
@@ -756,12 +777,11 @@ export default function PayrollPage() {
               <strong>
                 {MONTHS[month - 1]} {year}
               </strong>
-              . Os funcionários activos e os
-              salários activos serão adicionados
-              automaticamente.
+              . Serão incluídos os colaboradores elegíveis
+              com salário vigente no início do mês.
             </p>
 
-            <button
+            {canCalculate && <button
               type="button"
               onClick={() => {
                 setCreateMonth(month);
@@ -774,27 +794,25 @@ export default function PayrollPage() {
                 h-11
                 items-center
                 gap-2
-                rounded-xl
-                bg-blue-600
+                rounded-md
+                bg-[#0b6f93]
                 px-5
                 text-sm
-                font-bold
+                font-semibold
                 text-white
-                shadow-lg
-                shadow-blue-600/20
-                transition
-                hover:bg-blue-700
+                transition-colors
+                hover:bg-[#085b79]
               "
             >
               <Plus size={18} />
 
               Criar folha
-            </button>
+            </button>}
           </section>
         ) : (
           <>
             {/* RESUMO */}
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <section className="grid overflow-hidden border border-slate-200 bg-white md:grid-cols-2 xl:grid-cols-4">
               <SummaryCard
                 title="Total bruto"
                 value={money(gross)}
@@ -811,7 +829,7 @@ export default function PayrollPage() {
                 value={money(
                   totalDeductions,
                 )}
-                description={`SS ${shortMoney(
+                description={`INSS trabalhador ${shortMoney(
                   socialSecurity,
                 )} · IRT ${shortMoney(irt)}`}
                 icon={
@@ -842,16 +860,22 @@ export default function PayrollPage() {
               />
             </section>
 
+            <p className="border-x border-b border-slate-200 bg-slate-50 px-5 py-3 text-xs text-slate-600">
+              Regra aplicada:{' '}
+              <strong>{selectedPayroll.taxRuleVersion || 'Legado sem versão registada'}</strong>
+              {' · '}Cálculo suportado para Grupo A e mês completo; casos sem regra validada são bloqueados.
+            </p>
+
             {/* ESTADO */}
-            <section className="rounded-[1.5rem] border border-slate-200/80 bg-white p-6 shadow-[0_10px_35px_rgba(15,35,80,0.045)]">
+            <section className="border border-slate-200 bg-white p-5">
               <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <p className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
                     Folha actual
                   </p>
 
                   <div className="mt-2 flex flex-wrap items-center gap-3">
-                    <h2 className="text-xl font-black text-slate-950">
+                    <h2 className="text-lg font-semibold text-slate-950">
                       {MONTHS[
                         selectedPayroll.month -
                           1
@@ -861,7 +885,7 @@ export default function PayrollPage() {
 
                     <span
                       className={`
-                        rounded-full
+                        rounded-md
                         border
                         px-3
                         py-1.5
@@ -884,61 +908,60 @@ export default function PayrollPage() {
                 </div>
 
                 <div className="flex flex-wrap gap-3">
-                  <ActionButton
-                    label="Calcular"
-                    icon={
-                      <Calculator
-                        size={17}
-                      />
-                    }
-                    onClick={
-                      handleCalculate
-                    }
-                    disabled={
-                      working ||
-                      selectedPayroll.status ===
-                        'PAID' ||
-                      selectedPayroll.status ===
-                        'CLOSED'
-                    }
-                    primary
-                  />
+                  {canCalculate && (
+                    <ActionButton
+                      label="Calcular"
+                      icon={<Calculator size={17} />}
+                      onClick={handleCalculate}
+                      disabled={
+                        working ||
+                        ['APPROVED', 'PAID', 'CLOSED'].includes(
+                          selectedPayroll.status,
+                        )
+                      }
+                      primary
+                    />
+                  )}
 
-                  <ActionButton
-                    label="Aprovar"
-                    icon={
-                      <CheckCircle2
-                        size={17}
+                  {canApprove && (
+                    <>
+                      <ActionButton
+                        label="Aprovar"
+                        icon={<CheckCircle2 size={17} />}
+                        onClick={() => setPendingAction('APPROVE')}
+                        disabled={
+                          working ||
+                          selectedPayroll.status !== 'CALCULATED'
+                        }
                       />
-                    }
-                    onClick={
-                      handleApprove
-                    }
-                    disabled={
-                      working ||
-                      selectedPayroll.status !==
-                        'CALCULATED'
-                    }
-                  />
 
-                  <ActionButton
-                    label="Marcar como paga"
-                    icon={
-                      <Wallet size={17} />
-                    }
-                    onClick={handlePay}
-                    disabled={
-                      working ||
-                      selectedPayroll.status !==
-                        'APPROVED'
-                    }
-                  />
+                      <ActionButton
+                        label="Marcar como paga"
+                        icon={<Wallet size={17} />}
+                        onClick={() => setPendingAction('PAY')}
+                        disabled={
+                          working ||
+                          selectedPayroll.status !== 'APPROVED'
+                        }
+                      />
+
+                      <ActionButton
+                        label="Fechar folha"
+                        icon={<Lock size={17} />}
+                        onClick={() => setPendingAction('CLOSE')}
+                        disabled={
+                          working ||
+                          selectedPayroll.status !== 'PAID'
+                        }
+                      />
+                    </>
+                  )}
                 </div>
               </div>
             </section>
 
             {/* INDICADORES */}
-            <section className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <section className="grid overflow-hidden border border-slate-200 bg-white md:grid-cols-2 xl:grid-cols-4">
               <MiniMetric
                 label="Massa salarial base"
                 value={money(
@@ -970,10 +993,16 @@ export default function PayrollPage() {
                   <FileText size={19} />
                 }
               />
+
+              <MiniMetric
+                label="INSS entidade empregadora"
+                value={money(employerSocialSecurity)}
+                icon={<ShieldCheck size={19} />}
+              />
             </section>
 
             {/* FUNCIONÁRIOS */}
-            <section className="overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white shadow-[0_12px_40px_rgba(15,35,80,0.05)]">
+            <section className="overflow-hidden border border-slate-200 bg-white">
               <div className="flex flex-col gap-4 border-b border-slate-200 p-5 lg:flex-row lg:items-center lg:justify-between">
                 <div>
                   <h2 className="text-lg font-black tracking-tight text-slate-950">
@@ -1009,7 +1038,7 @@ export default function PayrollPage() {
                     className="
                       h-11
                       w-full
-                      rounded-xl
+                      rounded-md
                       border
                       border-slate-200
                       bg-slate-50
@@ -1018,19 +1047,19 @@ export default function PayrollPage() {
                       text-sm
                       outline-none
                       transition
-                      focus:border-blue-500
+                      focus:border-[#0b6f93]
                       focus:bg-white
-                      focus:ring-4
-                      focus:ring-blue-500/10
+                      focus:ring-2
+                      focus:ring-[#0b6f93]/10
                     "
                   />
                 </div>
               </div>
 
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1100px]">
+                <table className="w-full min-w-[1240px]">
                   <thead>
-                    <tr className="border-b border-slate-100 bg-gradient-to-r from-slate-50 to-blue-50/40 text-left">
+                    <tr className="border-b border-slate-200 bg-slate-50 text-left">
                       <TableHeader>
                         Funcionário
                       </TableHeader>
@@ -1048,7 +1077,11 @@ export default function PayrollPage() {
                       </TableHeader>
 
                       <TableHeader align="right">
-                        Segurança Social
+                        INSS trabalhador
+                      </TableHeader>
+
+                      <TableHeader align="right">
+                        INSS empregador
                       </TableHeader>
 
                       <TableHeader align="right">
@@ -1066,7 +1099,7 @@ export default function PayrollPage() {
                     0 ? (
                       <tr>
                         <td
-                          colSpan={7}
+                          colSpan={8}
                           className="px-5 py-16 text-center text-sm text-slate-500"
                         >
                           Nenhum funcionário
@@ -1116,7 +1149,7 @@ export default function PayrollPage() {
                                       shrink-0
                                       items-center
                                       justify-center
-                                      rounded-xl
+                                      rounded-md
                                       bg-blue-50
                                       text-sm
                                       font-black
@@ -1171,6 +1204,12 @@ export default function PayrollPage() {
                               <TableCell align="right">
                                 {money(
                                   item.socialSecurityAmount,
+                                )}
+                              </TableCell>
+
+                              <TableCell align="right">
+                                {money(
+                                  item.employerSocialSecurityAmount,
                                 )}
                               </TableCell>
 
@@ -1234,13 +1273,26 @@ export default function PayrollPage() {
                         <td className="px-5 py-4 text-right text-sm font-black">
                           {money(
                             filteredItems.reduce(
+                              (total, item) =>
+                                total +
+                                numberValue(
+                                  item.socialSecurityAmount,
+                                ),
+                              0,
+                            ),
+                          )}
+                        </td>
+
+                        <td className="px-5 py-4 text-right text-sm font-black">
+                          {money(
+                            filteredItems.reduce(
                               (
                                 total,
                                 item,
                               ) =>
                                 total +
                                 numberValue(
-                                  item.socialSecurityAmount,
+                                  item.employerSocialSecurityAmount,
                                 ),
                               0,
                             ),
@@ -1297,7 +1349,7 @@ export default function PayrollPage() {
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <ProcessStep
                   number="01"
                   title="Calcular"
@@ -1344,16 +1396,89 @@ export default function PayrollPage() {
                     'CLOSED'
                   }
                 />
+
+                <ProcessStep
+                  number="04"
+                  title="Fecho"
+                  description="Bloqueia a folha paga contra novas transições."
+                  active={false}
+                  done={selectedPayroll.status === 'CLOSED'}
+                />
               </div>
             </section>
           </>
         )}
       </div>
 
+      {pendingAction && selectedPayroll && (
+        <div
+          className="fd-theme-scope fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/55 p-4"
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !working) {
+              setPendingAction(null);
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="payroll-confirm-title"
+            className="w-full max-w-md rounded-lg border border-slate-200 bg-white p-6 shadow-xl"
+          >
+            <h2
+              id="payroll-confirm-title"
+              className="text-lg font-semibold text-slate-950"
+            >
+              {pendingAction === 'APPROVE'
+                ? 'Aprovar folha salarial'
+                : pendingAction === 'PAY'
+                  ? 'Confirmar pagamento da folha'
+                  : 'Fechar folha salarial'}
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-600">
+              {pendingAction === 'APPROVE'
+                ? 'Confirme que os valores e os colaboradores foram revistos. Uma folha aprovada deixa de poder ser recalculada.'
+                : pendingAction === 'PAY'
+                  ? 'Esta acção regista o pagamento no fluxo interno. Confirme apenas depois de validar o pagamento efectivo fora da plataforma.'
+                  : 'O fecho bloqueia novas transições nesta folha paga.'}
+            </p>
+
+            <p className="mt-3 text-sm font-medium text-slate-800">
+              {MONTHS[selectedPayroll.month - 1]} {selectedPayroll.year}
+              {' · '}{money(selectedPayroll.netAmount)}
+            </p>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setPendingAction(null)}
+                disabled={working}
+                className="h-10 rounded-md border border-slate-200 px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={() => void confirmPendingAction()}
+                disabled={working}
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-[#0b6f93] px-4 text-sm font-semibold text-white hover:bg-[#085b79] disabled:opacity-50"
+              >
+                {working && <Loader2 size={16} className="animate-spin" />}
+                Confirmar
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
       {/* MODAL CRIAR */}
-      {showCreate && (
+      {showCreate && canCalculate && (
         <div
           className="
+            fd-theme-scope
             fixed
             inset-0
             z-[100]
@@ -1362,7 +1487,7 @@ export default function PayrollPage() {
             justify-center
             bg-slate-950/50
             p-4
-            backdrop-blur-sm
+
           "
         >
           <div
@@ -1370,9 +1495,9 @@ export default function PayrollPage() {
               w-full
               max-w-[500px]
               overflow-hidden
-              rounded-3xl
+              rounded-lg
               bg-white
-              shadow-2xl
+              shadow-lg
             "
           >
             <div className="flex items-center justify-between border-b border-slate-200 px-6 py-5">
@@ -1396,7 +1521,7 @@ export default function PayrollPage() {
                   setShowCreate(false)
                 }
                 className="
-                  rounded-xl
+                  rounded-md
                   p-2
                   text-slate-400
                   hover:bg-slate-100
@@ -1430,7 +1555,7 @@ export default function PayrollPage() {
                   className="
                     h-12
                     w-full
-                    rounded-xl
+                    rounded-md
                     border
                     border-slate-200
                     bg-slate-50
@@ -1479,7 +1604,7 @@ export default function PayrollPage() {
                   className="
                     h-12
                     w-full
-                    rounded-xl
+                    rounded-md
                     border
                     border-slate-200
                     bg-slate-50
@@ -1496,21 +1621,23 @@ export default function PayrollPage() {
             </div>
 
             <div className="border-t border-slate-100 bg-slate-50 px-6 py-5">
-              <div className="rounded-2xl border border-blue-100 bg-blue-50 p-4">
+              <div className="rounded-lg border border-blue-100 bg-blue-50 p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-white text-blue-600">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-white text-blue-600">
                     <Users size={18} />
                   </div>
 
                   <div>
                     <p className="text-sm font-black text-blue-900">
-                      Funcionários activos
+                      Colaboradores elegíveis
                     </p>
 
                     <p className="mt-1 text-xs leading-5 text-blue-700">
-                      A folha será criada automaticamente
-                      com os funcionários activos e os
-                      salários activos registados.
+                      A folha usa o salário vigente no início
+                      do período. Admissões, cessações ou
+                      alterações salariais a meio do mês são
+                      bloqueadas até existir regra de
+                      proporcionalidade validada.
                     </p>
                   </div>
                 </div>
@@ -1524,7 +1651,7 @@ export default function PayrollPage() {
                   }
                   className="
                     h-11
-                    rounded-xl
+                    rounded-md
                     border
                     border-slate-200
                     bg-white
@@ -1554,7 +1681,7 @@ export default function PayrollPage() {
                     h-11
                     items-center
                     gap-2
-                    rounded-xl
+                    rounded-md
                     bg-blue-600
                     px-5
                     text-sm
@@ -1599,23 +1726,23 @@ function SummaryCard({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="group relative overflow-hidden rounded-[1.5rem] border border-slate-200/80 bg-white p-5 shadow-[0_10px_35px_rgba(15,35,80,0.045)] transition duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-[0_18px_45px_rgba(37,99,235,0.10)]">
+    <div className="border-b border-slate-200 p-5 last:border-b-0 xl:border-b-0 xl:border-r xl:last:border-r-0">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0">
-          <p className="text-xs font-black uppercase tracking-wider text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             {title}
           </p>
 
-          <p className="mt-3 truncate text-2xl font-black tracking-tight text-slate-950">
+          <p className="mt-2 truncate text-xl font-semibold tabular-nums tracking-tight text-slate-950">
             {value}
           </p>
 
-          <p className="mt-2 text-xs font-medium text-slate-400">
+          <p className="mt-1 text-xs text-slate-500">
             {description}
           </p>
         </div>
 
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
+        <div className="shrink-0 text-slate-400">
           {icon}
         </div>
       </div>
@@ -1633,17 +1760,17 @@ function MiniMetric({
   icon: React.ReactNode;
 }) {
   return (
-    <div className="flex items-center gap-4 rounded-[1.35rem] border border-slate-200/80 bg-gradient-to-br from-white to-slate-50/80 p-5 shadow-[0_8px_28px_rgba(15,35,80,0.04)] transition hover:-translate-y-0.5 hover:shadow-md">
-      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700">
+    <div className="flex items-center gap-3 border-b border-slate-200 p-4 last:border-b-0 md:border-b-0 md:border-r md:last:border-r-0">
+      <div className="shrink-0 text-slate-400">
         {icon}
       </div>
 
       <div className="min-w-0">
-        <p className="text-xs font-bold text-slate-400">
+        <p className="text-xs font-medium text-slate-500">
           {label}
         </p>
 
-        <p className="mt-1 truncate text-sm font-black text-slate-900">
+        <p className="mt-1 truncate text-sm font-semibold tabular-nums text-slate-900">
           {value}
         </p>
       </div>
@@ -1674,21 +1801,19 @@ function ActionButton({
         h-10
         items-center
         gap-2
-        rounded-xl
+        rounded-md
         px-4
         text-sm
-        font-bold
+        font-semibold
         transition
         disabled:cursor-not-allowed
         disabled:opacity-40
         ${
           primary
             ? `
-              bg-blue-600
+              bg-[#0b6f93]
               text-white
-              shadow-md
-              shadow-blue-600/20
-              hover:bg-blue-700
+              hover:bg-[#085b79]
             `
             : `
               border
@@ -1719,7 +1844,7 @@ function TableHeader({
         px-5
         py-3
         text-[11px]
-        font-black
+        font-semibold
         uppercase
         tracking-wider
         text-slate-400
@@ -1759,7 +1884,7 @@ function TableCell({
         }
         ${
           green
-            ? 'font-black text-emerald-700'
+            ? 'font-semibold text-emerald-700'
             : strong
               ? 'font-bold text-slate-900'
               : 'text-slate-600'
@@ -1785,7 +1910,7 @@ function ProcessStep({
   done: boolean;
 }) {
   return (
-    <div className="rounded-[1.5rem] border border-slate-200/80 bg-white p-6 shadow-[0_10px_35px_rgba(15,35,80,0.045)]">
+    <div className="border border-slate-200 bg-white p-5">
       <div className="flex items-start gap-4">
         <div
           className={`
@@ -1795,14 +1920,14 @@ function ProcessStep({
             shrink-0
             items-center
             justify-center
-            rounded-xl
+            rounded-md
             text-sm
-            font-black
+            font-semibold
             ${
               done
                 ? 'bg-emerald-100 text-emerald-700'
                 : active
-                  ? 'bg-blue-600 text-white'
+                  ? 'bg-[#0b6f93] text-white'
                   : 'bg-slate-100 text-slate-500'
             }
           `}
@@ -1815,7 +1940,7 @@ function ProcessStep({
         </div>
 
         <div>
-          <h3 className="font-black text-slate-900">
+          <h3 className="font-semibold text-slate-900">
             {title}
           </h3>
 

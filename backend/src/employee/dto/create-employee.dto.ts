@@ -1,14 +1,24 @@
 ﻿import {
   IsDateString,
   IsEmail,
-  IsInt,
+  IsEnum,
+  IsNotEmpty,
+  Matches,
   IsOptional,
   IsString,
-  Min,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  EmployeeStatus,
+  SocialSecurityCategory,
+} from '@prisma/client';
+import { CreateEmployeeSalaryDto } from './create-employee-salary.dto';
 
 export class CreateEmployeeDto {
   @IsString()
+  @IsNotEmpty()
+  @Matches(/\S/)
   name: string;
 
   @IsOptional()
@@ -22,6 +32,10 @@ export class CreateEmployeeDto {
   @IsOptional()
   @IsString()
   socialSecurityNumber?: string;
+
+  @IsOptional()
+  @IsEnum(SocialSecurityCategory)
+  socialSecurityCategory?: SocialSecurityCategory;
 
   @IsOptional()
   @IsEmail()
@@ -60,11 +74,19 @@ export class CreateEmployeeDto {
   maritalStatus?: string;
 
   @IsOptional()
-  @IsInt()
-  @Min(0)
-  dependentCount?: number;
+  @IsString()
+  gender?: string;
 
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @IsOptional()
+  @IsEnum(EmployeeStatus)
+  status?: EmployeeStatus;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => CreateEmployeeSalaryDto)
+  initialSalary?: CreateEmployeeSalaryDto;
 }

@@ -7,6 +7,7 @@
 
 import {
   FiscalRegime,
+  InvoiceDocumentType,
   ObligationStatus,
   ObligationType,
   Prisma,
@@ -15,6 +16,8 @@ import {
 } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
+import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 
 @Injectable()
 export class ObligationsService {
@@ -23,6 +26,8 @@ export class ObligationsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
+    private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(prisma),
   ) {}
 
   // ============================================================
@@ -190,13 +195,6 @@ export class ObligationsService {
           referenceYear:
             currentYear,
 
-          regimes: {
-            some: {
-              regime:
-                tenant.regime,
-            },
-          },
-
           dueDate: {
             gte:
               minimumDueDate,
@@ -212,14 +210,17 @@ export class ObligationsService {
         },
       });
 
-    const calendarRules =
-      rawCalendarRules.filter(
-        (rule) =>
-          this.isCalendarRuleApplicable(
-            rule,
-            tenant.regime,
-          ),
-      );
+    const calendarRules: Array<{ rule: (typeof rawCalendarRules)[number]; regime: FiscalRegime | null }> = [];
+    for (const rule of rawCalendarRules) {
+      const effectiveDate = this.ruleEffectiveDate(rule.period, rule.referenceYear, rule.dueDate);
+      const enrollmentTaxType = this.enrollmentTaxType(rule.taxType);
+      const enrollment = enrollmentTaxType
+        ? await this.enrollments.resolve(tenantId, enrollmentTaxType, effectiveDate)
+        : null;
+      if (this.isCalendarRuleApplicable(rule, enrollment?.regime ?? null, Boolean(enrollmentTaxType))) {
+        calendarRules.push({ rule, regime: enrollment?.regime ?? null });
+      }
+    }
 
     let created = 0;
     let updated = 0;
@@ -229,7 +230,7 @@ export class ObligationsService {
     // PROCESSAR REGRAS
     // ==========================================================
 
-    for (const rule of calendarRules) {
+    for (const { rule, regime } of calendarRules) {
       const period =
         rule.period ||
         String(
@@ -288,6 +289,7 @@ export class ObligationsService {
           rule.description,
           rule.dueDate,
           period,
+          regime,
         );
 
       const existingAmount =
@@ -429,45 +431,24 @@ export class ObligationsService {
           ? ObligationStatus.LATE
           : ObligationStatus.PENDING;
 
-      await this.prisma.fiscalObligation.create({
-        data: {
-          tenantId:
-            tenant.id,
-
-          fiscalCalendarId:
-            rule.id,
-
-          type:
-            rule.obligationType,
-
-          title:
-            rule.title,
-
-          description:
-            rule.description,
-
-          amount:
-            finalAmount,
-
-          dueDate:
-            rule.dueDate,
-
+      const persisted =
+        await this.obligationPersistence.persistCalendarDerived({
+          tenantId: tenant.id,
+          fiscalCalendarId: rule.id,
           period,
-
+          type: rule.obligationType,
+          title: rule.title,
+          description: rule.description,
+          amount: finalAmount,
+          dueDate: rule.dueDate,
           status,
+          alertEnabled: true,
+          alertDaysBefore: 7,
+          reminderSent: false,
+          origin: 'CALENDAR',
+        });
 
-          alertEnabled:
-            true,
-
-          alertDaysBefore:
-            7,
-
-          reminderSent:
-            false,
-        },
-      });
-
-      created++;
+      if (persisted.outcome === 'CREATED') created++;
 
       if (isLate) {
         late++;
@@ -504,7 +485,7 @@ export class ObligationsService {
       [
         `Empresa: ${tenant.name}`,
         `NIF: ${tenant.nif}`,
-        `Regime: ${tenant.regime}`,
+        'Enquadramento: resolvido por imposto e período',
         `Ano: ${currentYear}`,
         `Primeira sincronização: ${
           isFirstSynchronization
@@ -536,8 +517,7 @@ export class ObligationsService {
         nif:
           tenant.nif,
 
-        regime:
-          tenant.regime,
+        regime: null,
       },
 
       year:
@@ -551,7 +531,7 @@ export class ObligationsService {
       minimumDueDate,
 
       calendarRules:
-        calendarRules.length,
+          calendarRules.length,
 
       ignoredCalendarRules:
         rawCalendarRules.length -
@@ -574,16 +554,34 @@ export class ObligationsService {
   // VALIDAR REGRA DO CALENDÁRIO
   // ============================================================
 
+  /** Only IVA and Industrial currently use explicit regime enrollment. */
+  private enrollmentTaxType(taxType: TaxType): TaxType | null {
+    if (taxType === TaxType.IVA) return TaxType.IVA;
+    if (taxType === TaxType.INDUSTRIAL || taxType === TaxType.II) return TaxType.INDUSTRIAL;
+    return null;
+  }
+
+  /** Resolves an enrollment against the obligation's fiscal period, never today's date. */
+  private ruleEffectiveDate(period: string | null, referenceYear: number, dueDate: Date): Date {
+    const parsed = this.parseFiscalPeriod(period || '', referenceYear);
+    if (parsed) return new Date(Date.UTC(parsed.year, parsed.month - 1, 1));
+    return new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), 1));
+  }
+
   private isCalendarRuleApplicable(
     rule: {
       title: string;
       description: string | null;
       taxType: TaxType;
       obligationType: ObligationType;
+      regimes?: Array<{ regime: FiscalRegime }>;
     },
 
-    regime: FiscalRegime,
+    regime: FiscalRegime | null,
+    enrollmentRequired: boolean,
   ): boolean {
+    if (enrollmentRequired && !regime) return false;
+    if (enrollmentRequired && rule.regimes?.length && !rule.regimes.some((item) => item.regime === regime)) return false;
     const text =
       this.normalizeFiscalText(
         `${rule.title ?? ''} ${
@@ -591,15 +589,9 @@ export class ObligationsService {
         }`,
       );
 
-    const isGeneral =
-      this.isGeneralRegime(
-        regime,
-      );
+    const isGeneral = regime ? this.isGeneralRegime(regime) : false;
 
-    const isSimplified =
-      this.isSimplifiedRegime(
-        regime,
-      );
+    const isSimplified = regime ? this.isSimplifiedRegime(regime) : false;
 
     // ==========================================================
     // GERAL
@@ -690,6 +682,7 @@ export class ObligationsService {
 
     period:
       string,
+    applicableRegime: FiscalRegime | null = null,
   ): Promise<number | null> {
     const dueYear =
       dueDate.getFullYear();
@@ -740,7 +733,7 @@ export class ObligationsService {
      */
     const isGeneralIva =
       taxType === TaxType.IVA &&
-      this.isGeneralRegime(tenant.regime);
+      applicableRegime === FiscalRegime.GERAL;
 
     const referenceMonth =
       isGeneralIva
@@ -891,7 +884,7 @@ export class ObligationsService {
 
       if (
         this.isGeneralRegime(
-          tenant.regime,
+          applicableRegime,
         )
       ) {
         if (
@@ -920,6 +913,8 @@ export class ObligationsService {
             where: {
               tenantId:
                 tenant.id,
+
+              documentType: InvoiceDocumentType.NORMAL,
 
               issuedAt: {
                 gte:
@@ -980,18 +975,12 @@ export class ObligationsService {
             },
           });
 
-        const ivaDedutivel =
-          purchases.reduce(
-            (
-              sum,
-              purchase,
-            ) =>
-              sum +
-              this.number(
-                purchase.iva,
-              ),
-            0,
-          );
+        /*
+         * O IVA indicado numa factura de fornecedor é suportado,
+         * mas não se torna dedutível até existir classificação e
+         * regra fiscal confirmadas pelo motor central.
+         */
+        const ivaDedutivel = 0;
 
         /*
          * IVA a entregar:
@@ -1016,7 +1005,7 @@ export class ObligationsService {
 
       if (
         this.isSimplifiedRegime(
-          tenant.regime,
+          applicableRegime,
         )
       ) {
         return this.calculateSimplifiedVat(
@@ -1205,12 +1194,19 @@ export class ObligationsService {
     // TAX RULE
     // ==========================================================
 
-    const taxRule =
-      await this.findTaxRule(
-        tenant,
-        taxType,
-        TaxRuleOperation.OTHER,
-      );
+    const taxRule = await this.findTaxRule(
+      tenant,
+      taxType,
+      TaxRuleOperation.OTHER,
+      referenceMonth === null
+        ? null
+        : (await this.enrollments.resolve(
+            tenant.id,
+            taxType,
+            new Date(Date.UTC(referenceYear, referenceMonth - 1, 1)),
+          ))?.regime ?? null,
+      new Date(Date.UTC(referenceYear, Math.max(0, referenceMonth - 1), 1)),
+    );
 
     if (
       taxRule
@@ -2017,7 +2013,6 @@ export class ObligationsService {
   private async findTaxRule(
     tenant: {
       id: string;
-      regime: FiscalRegime;
       sector: string | null;
       companyType: string | null;
     },
@@ -2027,14 +2022,13 @@ export class ObligationsService {
 
     operation:
       TaxRuleOperation,
+    regime: FiscalRegime | null,
+    referenceDate: Date,
   ): Promise<any | null> {
     const rules =
       await this.getTaxRules(
         tenant.id,
       );
-
-    const now =
-      new Date();
 
     const candidates =
       rules.filter(
@@ -2049,7 +2043,7 @@ export class ObligationsService {
           if (
             rule.regime &&
             rule.regime !==
-              tenant.regime
+              regime
           ) {
             return false;
           }
@@ -2082,7 +2076,7 @@ export class ObligationsService {
             rule.validFrom &&
             new Date(
               rule.validFrom,
-            ) > now
+            ) > referenceDate
           ) {
             return false;
           }
@@ -2091,7 +2085,7 @@ export class ObligationsService {
             rule.validTo &&
             new Date(
               rule.validTo,
-            ) < now
+            ) < referenceDate
           ) {
             return false;
           }
@@ -2258,7 +2252,7 @@ export class ObligationsService {
       };
     }
 
-    return this.prisma.fiscalObligation.findMany({
+    const obligations = await this.prisma.fiscalObligation.findMany({
       where,
 
       include: {
@@ -2282,6 +2276,12 @@ export class ObligationsService {
         },
       ],
     });
+
+    return Promise.all(
+      obligations.map((obligation) =>
+        this.withCalculationContext(tenantId, obligation),
+      ),
+    );
   }
 
   // ============================================================
@@ -2509,7 +2509,121 @@ export class ObligationsService {
       );
     }
 
-    return obligation;
+    return this.withCalculationContext(tenantId, obligation);
+  }
+
+  /** Read-only historical listing for reports: no synchronization or status writes. */
+  async findAllReadOnly(tenantId: string, referenceYear?: number) {
+    const where: Prisma.FiscalObligationWhereInput = { tenantId };
+    if (referenceYear) {
+      where.dueDate = {
+        gte: new Date(`${referenceYear}-01-01T00:00:00`),
+        lt: new Date(`${referenceYear + 1}-01-01T00:00:00`),
+      };
+    }
+    const obligations = await this.prisma.fiscalObligation.findMany({
+      where,
+      include: { fiscalCalendar: { include: { regimes: true } } },
+      orderBy: [{ dueDate: 'asc' }, { title: 'asc' }],
+    });
+    return Promise.all(obligations.map((obligation) => this.withCalculationContext(tenantId, obligation)));
+  }
+
+  /**
+   * Exposes the calculation provenance without trusting an identifier supplied
+   * by the client. Legacy obligations without an assessment stay reviewable
+   * instead of being labelled as confirmed.
+   */
+  private async withCalculationContext(tenantId: string, obligation: any) {
+    const taxType =
+      obligation.fiscalCalendar?.taxType ??
+      this.mapObligationTypeToTaxType(obligation.type);
+    const year = Number(String(obligation.period ?? obligation.dueDate.getUTCFullYear()).slice(0, 4));
+
+    if (!taxType || !Number.isInteger(year)) {
+      return {
+        ...obligation,
+        calculation: {
+          quality: 'REVIEW_REQUIRED',
+          message: 'Não existe regra fiscal estruturada para explicar este valor.',
+        },
+      };
+    }
+
+    const assessment = await this.prisma.taxAssessment.findFirst({
+      where: {
+        tenantId,
+        taxType,
+        year,
+        period: obligation.period ?? undefined,
+      },
+      orderBy: { calculatedAt: 'desc' },
+    });
+
+    const hasPendingVat =
+      taxType === TaxType.IVA
+        ? (await this.prisma.taxTransaction.count({
+            where: {
+              tenantId,
+              taxType: TaxType.IVA,
+              period: obligation.period ?? undefined,
+              sourceType: 'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
+            },
+          })) > 0
+        : false;
+
+    const quality =
+      taxType === TaxType.INDUSTRIAL
+        ? 'REVIEW_REQUIRED'
+        : !assessment || hasPendingVat
+          ? 'REVIEW_REQUIRED'
+          : 'CALCULATED';
+
+    return {
+      ...obligation,
+      calculation: {
+        quality,
+        calculatedAt: assessment?.calculatedAt ?? null,
+        calculationStatus: assessment?.calculationStatus ?? quality,
+        period: assessment?.period ?? obligation.period ?? null,
+        ruleVersion: assessment?.ruleVersion ?? null,
+        snapshot: assessment?.calculationSnapshot ?? null,
+        amounts: assessment
+          ? {
+              taxableAmount: assessment.taxableAmountValue ?? assessment.taxableAmount,
+              taxDueAmount: assessment.taxDueAmountValue ?? assessment.taxDueAmount,
+              deductibleAmount: assessment.deductibleAmountValue ?? assessment.deductibleAmount,
+              withheldAmount: assessment.withheldAmountValue ?? assessment.withheldAmount,
+              adjustmentsAmount: assessment.adjustmentsAmountValue ?? assessment.adjustmentsAmount,
+              finalAmount: assessment.finalAmountValue ?? assessment.finalAmount,
+            }
+          : null,
+        origin: {
+          taxType,
+          calendarTitle: obligation.fiscalCalendar?.title ?? null,
+          dueDate: obligation.dueDate,
+        },
+        rule: {
+          reference:
+            assessment?.legalReference ??
+            obligation.fiscalCalendar?.officialReference ??
+            null,
+          source: obligation.fiscalCalendar?.source ?? null,
+          sourceUrl:
+            assessment?.officialSource ??
+            obligation.fiscalCalendar?.sourceUrl ??
+            null,
+        },
+        message:
+          taxType === TaxType.INDUSTRIAL
+            ? 'Revisão necessária: o sistema não dispõe de matéria colectável fiscal suficiente para um apuramento definitivo.'
+            : hasPendingVat
+              ? 'Há IVA suportado indicado pendente de revisão; esse valor não foi deduzido.'
+              : assessment
+                ? 'Valor agregado a partir das fontes internas e da regra de calendário associada.'
+                : 'Ainda não existe uma avaliação fiscal para este período.',
+      },
+    };
   }
 
   // ============================================================

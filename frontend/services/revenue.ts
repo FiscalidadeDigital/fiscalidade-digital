@@ -1,18 +1,13 @@
-﻿import axios from "axios";
-
-const API_URL = "https://fiscalidade-digital-api.onrender.com/revenue";
+import api from './api';
 
 const revenueService = {
   async findAll() {
-    const response = await axios.get(API_URL);
+    const response = await api.get('/revenue');
     return response.data;
   },
 
   async create(data: any) {
-    const response = await axios.post(
-      API_URL,
-      data,
-    );
+    const response = await api.post('/revenue', data);
 
     return response.data;
   },

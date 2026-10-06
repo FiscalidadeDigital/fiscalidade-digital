@@ -37,11 +37,12 @@ export class NotificationsService {
     });
   }
 
-  async findOne(id: string) {
+  async findOne(tenantId: string, id: string) {
     const notification =
-      await this.prisma.notification.findUnique({
+      await this.prisma.notification.findFirst({
         where: {
           id,
+          tenantId,
         },
       });
 
@@ -54,11 +55,12 @@ export class NotificationsService {
     return notification;
   }
 
-  async markAsRead(id: string) {
+  async markAsRead(tenantId: string, id: string) {
     const notification =
-      await this.prisma.notification.findUnique({
+      await this.prisma.notification.findFirst({
         where: {
           id,
+          tenantId,
         },
       });
 
@@ -92,11 +94,12 @@ export class NotificationsService {
     });
   }
 
-  async remove(id: string) {
+  async remove(tenantId: string, id: string) {
     const notification =
-      await this.prisma.notification.findUnique({
+      await this.prisma.notification.findFirst({
         where: {
           id,
+          tenantId,
         },
       });
 
@@ -108,7 +111,7 @@ export class NotificationsService {
 
     return this.prisma.notification.delete({
       where: {
-        id,
+        id: notification.id,
       },
     });
   }

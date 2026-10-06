@@ -14,6 +14,7 @@ export type PayrollItem = {
   employeeName: string;
   employeeNif?: string | null;
   socialSecurityNumber?: string | null;
+  socialSecurityCategory?: 'STANDARD' | 'RETIRED' | 'SPECIAL';
 
   dependentCount?: number | null;
 
@@ -30,6 +31,9 @@ export type PayrollItem = {
 
   socialSecurityBase?: number | string | null;
   socialSecurityAmount?: number | string | null;
+  employeeSocialSecurityRate?: number | string | null;
+  employerSocialSecurityRate?: number | string | null;
+  employerSocialSecurityAmount?: number | string | null;
 
   irtTaxableAmount?: number | string | null;
   irtAmount?: number | string | null;
@@ -37,6 +41,8 @@ export type PayrollItem = {
   otherDeductions?: number | string | null;
 
   netAmount?: number | string | null;
+  taxRuleVersion?: string | null;
+  calculationStatus?: string | null;
 };
 
 export type Payroll = {
@@ -51,9 +57,12 @@ export type Payroll = {
 
   grossAmount?: number | string | null;
   socialSecurityAmount?: number | string | null;
+  employerSocialSecurityAmount?: number | string | null;
   irtAmount?: number | string | null;
   otherDeductionsAmount?: number | string | null;
   netAmount?: number | string | null;
+  taxRuleVersion?: string | null;
+  calculationStatus?: string | null;
 
   processedAt?: string | null;
 
@@ -199,6 +208,26 @@ export async function payPayroll(
   if (!payroll) {
     throw new Error(
       'A API não devolveu a folha paga.',
+    );
+  }
+
+  return payroll;
+}
+
+export async function closePayroll(
+  id: string,
+): Promise<Payroll> {
+  const response = await api.post(
+    `/payroll/${id}/close`,
+  );
+
+  const payroll = extractPayroll(
+    response.data,
+  );
+
+  if (!payroll) {
+    throw new Error(
+      'A API não devolveu a folha fechada.',
     );
   }
 

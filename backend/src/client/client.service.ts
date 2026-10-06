@@ -1,11 +1,16 @@
 import {
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import {
   PrismaService,
 } from '../prisma/prisma.service';
+import { CreateClientDto } from './dto/create-client.dto';
+import { UpdateClientDto } from './dto/update-client.dto';
+import { SearchClientsDto } from './dto/search-clients.dto';
 
 @Injectable()
 export class ClientService {
@@ -20,38 +25,32 @@ export class ClientService {
 
   async create(
     tenantId: string,
-    body: any,
+    dto: CreateClientDto,
   ) {
-    if (
-      !body.name ||
-      !body.name.trim()
-    ) {
-      throw new Error(
-        'O nome do cliente é obrigatório.',
-      );
-    }
-
     return this.prisma.client.create({
       data: {
         tenantId,
 
         name:
-          body.name.trim(),
+          dto.name.trim(),
 
         nif:
-          body.nif?.trim() || null,
+          dto.nif?.trim() || null,
 
         email:
-          body.email?.trim() || null,
+          dto.email?.trim() || null,
 
         phone:
-          body.phone?.trim() || null,
+          dto.phone?.trim() || null,
 
         address:
-          body.address?.trim() || null,
+          dto.address?.trim() || null,
+
+        city:
+          dto.city?.trim() || null,
 
         notes:
-          body.notes?.trim() || null,
+          dto.notes?.trim() || null,
       },
     });
   }
@@ -72,6 +71,52 @@ export class ClientService {
         createdAt: 'desc',
       },
     });
+  }
+
+  async findPage(tenantId: string, query: SearchClientsDto) {
+    const page = query.page ?? 1;
+    const pageSize = query.pageSize ?? 20;
+    const search = query.search?.trim();
+    const where: Prisma.ClientWhereInput = {
+      tenantId,
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { nif: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+              { phone: { contains: search, mode: 'insensitive' } },
+            ],
+          }
+        : {}),
+    };
+    const orderBy = {
+      [query.sortBy ?? 'name']: query.sortDirection ?? 'asc',
+    } as Prisma.ClientOrderByWithRelationInput;
+    const [total, clients, directoryTotal, withEmail, withPhone] =
+      await this.prisma.$transaction([
+        this.prisma.client.count({ where }),
+        this.prisma.client.findMany({
+          where,
+          orderBy,
+          skip: (page - 1) * pageSize,
+          take: pageSize,
+        }),
+        this.prisma.client.count({ where: { tenantId } }),
+        this.prisma.client.count({ where: { tenantId, email: { not: null } } }),
+        this.prisma.client.count({ where: { tenantId, phone: { not: null } } }),
+      ]);
+
+    return {
+      data: clients,
+      summary: { total: directoryTotal, withEmail, withPhone },
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.max(1, Math.ceil(total / pageSize)),
+      },
+    };
   }
 
   // =====================================================
@@ -114,7 +159,7 @@ export class ClientService {
   async update(
     tenantId: string,
     id: string,
-    body: any,
+    dto: UpdateClientDto,
   ) {
     await this.findOne(
       tenantId,
@@ -127,35 +172,27 @@ export class ClientService {
       },
 
       data: {
-        name:
-          body.name !== undefined
-            ? body.name.trim()
-            : undefined,
-
-        nif:
-          body.nif !== undefined
-            ? body.nif?.trim() || null
-            : undefined,
-
-        email:
-          body.email !== undefined
-            ? body.email?.trim() || null
-            : undefined,
-
-        phone:
-          body.phone !== undefined
-            ? body.phone?.trim() || null
-            : undefined,
-
-        address:
-          body.address !== undefined
-            ? body.address?.trim() || null
-            : undefined,
-
-        notes:
-          body.notes !== undefined
-            ? body.notes?.trim() || null
-            : undefined,
+        ...(dto.name !== undefined && {
+          name: dto.name.trim(),
+        }),
+        ...(dto.nif !== undefined && {
+          nif: dto.nif?.trim() || null,
+        }),
+        ...(dto.email !== undefined && {
+          email: dto.email?.trim() || null,
+        }),
+        ...(dto.phone !== undefined && {
+          phone: dto.phone?.trim() || null,
+        }),
+        ...(dto.address !== undefined && {
+          address: dto.address?.trim() || null,
+        }),
+        ...(dto.city !== undefined && {
+          city: dto.city?.trim() || null,
+        }),
+        ...(dto.notes !== undefined && {
+          notes: dto.notes?.trim() || null,
+        }),
       },
     });
   }
@@ -172,6 +209,20 @@ export class ClientService {
       tenantId,
       id,
     );
+
+    const invoiceCount =
+      await this.prisma.invoice.count({
+        where: {
+          tenantId,
+          clientId: id,
+        },
+      });
+
+    if (invoiceCount > 0) {
+      throw new ConflictException(
+        'O cliente possui facturas e não pode ser eliminado.',
+      );
+    }
 
     return this.prisma.client.delete({
       where: {
