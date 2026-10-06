@@ -626,6 +626,7 @@ export default function LegislationPage() {
 
       {selected && (
         <div
+          data-testid="legislation-dialog"
           className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-2 sm:p-4"
           role="dialog"
           aria-modal="true"

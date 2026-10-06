@@ -197,7 +197,7 @@ export class AuthService {
   async completeOnboarding(dto: {
     onboardingToken: string; companyName: string; nif: string; phone?: string;
     address?: string; sector?: string; companyType?: string; employees?: number;
-    enrollments?: Array<{ taxType: any; regime: any; validFrom: string; validUntil?: string; legalReference?: string }>;
+    enrollments: Array<{ taxType: any; regime: any; validFrom: string; validUntil?: string; legalReference?: string }>;
   }) {
     let payload: { sub?: string; purpose?: string };
     try {
@@ -208,7 +208,10 @@ export class AuthService {
     if (payload.purpose !== 'ONBOARDING' || !payload.sub) {
       throw new UnauthorizedException('A sessão de onboarding é inválida.');
     }
-    const parsedEnrollments = (dto.enrollments ?? []).map((enrollment) => {
+    if (!dto.enrollments?.length) {
+      throw new BadRequestException('Indique pelo menos uma situação fiscal declarada.');
+    }
+    const parsedEnrollments = dto.enrollments.map((enrollment) => {
       const validFrom = new Date(enrollment.validFrom);
       const validUntil = enrollment.validUntil ? new Date(enrollment.validUntil) : null;
       if (Number.isNaN(validFrom.getTime()) || (validUntil && validUntil < validFrom)) {

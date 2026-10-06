@@ -1,5 +1,5 @@
 import { Type } from 'class-transformer';
-import { IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
+import { ArrayMinSize, IsArray, IsEnum, IsInt, IsNotEmpty, IsOptional, IsString, Min, ValidateNested } from 'class-validator';
 import { FiscalRegime, TaxType } from '@prisma/client';
 
 export class OnboardingEnrollmentDto {
@@ -19,6 +19,6 @@ export class CompleteOnboardingDto {
   @IsOptional() @IsString() sector?: string;
   @IsOptional() @IsString() companyType?: string;
   @IsOptional() @IsInt() @Min(0) employees?: number;
-  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => OnboardingEnrollmentDto)
-  enrollments?: OnboardingEnrollmentDto[];
+  @IsArray() @ArrayMinSize(1, { message: 'Indique pelo menos uma situação fiscal declarada.' }) @ValidateNested({ each: true }) @Type(() => OnboardingEnrollmentDto)
+  enrollments!: OnboardingEnrollmentDto[];
 }
