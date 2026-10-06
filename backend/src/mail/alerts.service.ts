@@ -485,21 +485,15 @@ export class AlertsService {
       return;
     }
 
-    const subject =
-      `Alerta Fiscal - ${obligation.title}`;
-
-    const body =
-      this.buildEmailBody(
-        obligation,
-        diffDays,
-        dueDate,
-      );
-
     try {
-      await this.mailService.sendMail(
+      await this.mailService.sendObligationAlert(
         companyEmail,
-        subject,
-        body,
+        obligation.tenant.name,
+        obligation.title,
+        obligation.period || 'Período não especificado',
+        dueDate.toLocaleDateString('pt-AO'),
+        diffDays < 0 ? 'Vencida' : 'A vencer',
+        `${process.env.APP_URL || process.env.FRONTEND_URL || 'https://fiscalidadedigital.ao'}/obligations`,
       );
 
       await this.prisma.emailLog.create({

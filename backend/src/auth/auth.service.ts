@@ -288,7 +288,8 @@ export class AuthService {
         expiresAt: new Date(now.getTime() + 48 * 60 * 60_000), createdById: requester.userId,
       } }),
     ]);
-    await this.mailService.sendUserInvitation(email, inviter.name, token);
+    const tenant = await this.prisma.tenant.findUnique({ where: { id: requester.tenantId }, select: { name: true } });
+    await this.mailService.sendUserInvitation(email, inviter.name, token, tenant?.name || 'a sua empresa', dto.role);
     return { message: 'Convite enviado.' };
   }
 
