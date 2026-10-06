@@ -10,6 +10,40 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from './mail.service';
 import { TwilioMessagingService } from './twilio-messaging.service';
 
+type AlertCheckMetrics = {
+  scanned: number;
+  alertsTriggered: number;
+  alertsCreated: number;
+  alertsReused: number;
+  notificationsCreated: number;
+  emailsSent: number;
+  emailsSkipped: number;
+  emailsFailed: number;
+  smsSent: number;
+  whatsappSent: number;
+  skipReasons: Record<string, number>;
+};
+
+function emptyAlertCheckMetrics(): AlertCheckMetrics {
+  return {
+    scanned: 0,
+    alertsTriggered: 0,
+    alertsCreated: 0,
+    alertsReused: 0,
+    notificationsCreated: 0,
+    emailsSent: 0,
+    emailsSkipped: 0,
+    emailsFailed: 0,
+    smsSent: 0,
+    whatsappSent: 0,
+    skipReasons: {},
+  };
+}
+
+function recordSkip(metrics: AlertCheckMetrics, reason: string) {
+  metrics.skipReasons[reason] = (metrics.skipReasons[reason] || 0) + 1;
+}
+
 @Injectable()
 export class AlertsService {
   private readonly logger =
@@ -58,6 +92,8 @@ export class AlertsService {
 
     try {
       const obligations = await this.findEligibleObligations();
+      const metrics = emptyAlertCheckMetrics();
+      metrics.scanned = obligations.length;
 
       this.logger.log(
         'Obrigações elegíveis carregadas para verificação.',
@@ -66,6 +102,7 @@ export class AlertsService {
       for (const obligation of obligations) {
         await this.processObligation(
           obligation,
+          metrics,
         );
       }
 
@@ -82,9 +119,7 @@ export class AlertsService {
   /**
    * Processa uma obriga????o individual.
    */
-  private async processObligation(
-    obligation: any,
-  ): Promise<void> {
+  private async processObligation(obligation: any, metrics: AlertCheckMetrics): Promise<void> {
     try {
       const today =
         this.startOfDay(
@@ -145,6 +180,7 @@ export class AlertsService {
           -1,
           today,
           dueDate,
+          metrics,
         );
 
         return;
@@ -158,6 +194,7 @@ export class AlertsService {
           diffDays,
         )
       ) {
+        recordSkip(metrics, 'OUTSIDE_WINDOW');
         return;
       }
 
@@ -166,6 +203,7 @@ export class AlertsService {
         diffDays,
         today,
         dueDate,
+        metrics,
       );
     } catch (error) {
       this.logger.error(
@@ -189,7 +227,9 @@ export class AlertsService {
     diffDays: number,
     today: Date,
     dueDate: Date,
+    metrics: AlertCheckMetrics,
   ): Promise<void> {
+    metrics.alertsTriggered += 1;
     /*
      * Verifica as configura????es da empresa.
      */
@@ -204,6 +244,8 @@ export class AlertsService {
         false;
 
     if (!alertsEnabled) {
+      if (settings?.fiscalAlertsEnabled === false) recordSkip(metrics, 'FISCAL_ALERTS_DISABLED');
+      if (settings?.fiscalReminderEnabled === false) recordSkip(metrics, 'FISCAL_REMINDER_DISABLED');
       this.logger.log(
         `Alertas desativados para a empresa ${obligation.tenant.name}.`,
       );
@@ -239,7 +281,7 @@ export class AlertsService {
      */
     if (!fiscalAlert) {
       fiscalAlert =
-        await this.prisma.fiscalAlert.create({
+      await this.prisma.fiscalAlert.create({
           data: {
             tenantId:
               obligation.tenantId,
@@ -276,10 +318,13 @@ export class AlertsService {
           },
         });
 
+      metrics.alertsCreated += 1;
+
       this.logger.log(
         'Novo alerta fiscal criado.',
       );
     } else {
+      metrics.alertsReused += 1;
       this.logger.log(
         'Alerta fiscal existente verificado.',
       );
@@ -350,6 +395,8 @@ export class AlertsService {
           notificationId,
         };
 
+        metrics.notificationsCreated += 1;
+
         this.logger.log(
           'Notificação fiscal interna criada.',
         );
@@ -371,6 +418,7 @@ export class AlertsService {
       settings,
       diffDays,
       dueDate,
+      metrics,
     );
 
     /*
@@ -383,6 +431,7 @@ export class AlertsService {
       fiscalAlert,
       settings,
       diffDays,
+      metrics,
     );
 
     /*
@@ -395,6 +444,7 @@ export class AlertsService {
       fiscalAlert,
       settings,
       diffDays,
+      metrics,
     );
 
     /*
@@ -430,11 +480,14 @@ export class AlertsService {
     settings: any,
     diffDays: number,
     dueDate: Date,
+    metrics: AlertCheckMetrics,
   ): Promise<void> {
     /*
      * Se j?? foi enviado, n??o enviamos novamente.
      */
     if (fiscalAlert.emailSent) {
+      metrics.emailsSkipped += 1;
+      recordSkip(metrics, 'ALREADY_SENT');
       return;
     }
 
@@ -446,6 +499,8 @@ export class AlertsService {
       obligation.tenant?.email;
 
     if (!emailEnabled) {
+      metrics.emailsSkipped += 1;
+      recordSkip(metrics, 'EMAIL_DISABLED');
       await this.prisma.fiscalAlert.update({
         where: {
           id: fiscalAlert.id,
@@ -464,6 +519,8 @@ export class AlertsService {
     }
 
     if (!companyEmail) {
+      metrics.emailsSkipped += 1;
+      recordSkip(metrics, 'MISSING_RECIPIENT');
       await this.prisma.fiscalAlert.update({
         where: {
           id: fiscalAlert.id,
@@ -527,10 +584,14 @@ export class AlertsService {
         },
       });
 
+      metrics.emailsSent += 1;
+
       this.logger.log(
         'E-mail de alerta enviado.',
       );
     } catch {
+      metrics.emailsFailed += 1;
+      recordSkip(metrics, 'PROVIDER_FAILED');
       const errorMessage = 'Falha de entrega do fornecedor.';
 
       /*
@@ -582,6 +643,7 @@ export class AlertsService {
     fiscalAlert: any,
     settings: any,
     diffDays: number,
+    metrics: AlertCheckMetrics,
   ): Promise<void> {
     /*
      * Se o SMS j?? foi enviado,
@@ -691,6 +753,8 @@ export class AlertsService {
         },
       });
 
+      metrics.smsSent += 1;
+
       this.logger.log(
         'SMS de alerta enviado.',
       );
@@ -762,6 +826,7 @@ export class AlertsService {
     fiscalAlert: any,
     settings: any,
     diffDays: number,
+    metrics: AlertCheckMetrics,
   ): Promise<void> {
     /*
      * Se j?? foi enviado,
@@ -900,6 +965,8 @@ export class AlertsService {
         },
       });
 
+      metrics.whatsappSent += 1;
+
       this.logger.log(
         'Mensagem WhatsApp de alerta enviada.',
       );
@@ -961,15 +1028,17 @@ export class AlertsService {
     success: boolean;
     message: string;
     processed: number;
-  }> {
+  } & AlertCheckMetrics> {
     if (!tenantId) {
       throw new BadRequestException('Empresa autenticada não identificada.');
     }
 
     const obligations = await this.findEligibleObligations(tenantId);
+    const metrics = emptyAlertCheckMetrics();
+    metrics.scanned = obligations.length;
 
     for (const obligation of obligations) {
-      await this.processObligation(obligation);
+      await this.processObligation(obligation, metrics);
     }
 
     return {
@@ -977,6 +1046,7 @@ export class AlertsService {
       message:
         'Verifica????o manual de alertas executada com sucesso.',
       processed: obligations.length,
+      ...metrics,
     };
   }
 
