@@ -1,221 +1,29 @@
-'use client';
-
-import {
-  ArrowLeft,
-  BookOpen,
-  Clock,
-  Construction,
-  Lightbulb,
-  ShieldCheck,
-} from 'lucide-react';
+import Link from 'next/link';
+import { ArrowRight, BookOpen, CalendarDays, FileText, Landmark, ReceiptText, ShieldCheck, Users } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
-export default function AssistantPage() {
-  return (
-    <DashboardLayout>
-      <main className="mx-auto w-full max-w-[1400px]">
-
-        {/* CABEÇALHO */}
-
-        <section className="mb-8">
-          <div className="mb-3 flex items-center gap-3">
-
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#eeecff] text-[#5146e5]">
-              <BookOpen size={21} />
-            </div>
-
-            <span className="text-[12px] font-bold uppercase tracking-[0.08em] text-[#5146e5]">
-              Educação Fiscal
-            </span>
-
-          </div>
-
-          <h1 className="text-[28px] font-bold tracking-[-0.03em] text-[#101b3d] sm:text-[34px]">
-            Educação Fiscal
-          </h1>
-
-          <p className="mt-2 max-w-[700px] text-[14px] leading-6 text-[#7180a2]">
-            Aprenda de forma simples sobre impostos,
-            obrigações fiscais e boas práticas para a
-            gestão financeira da sua empresa.
-          </p>
-        </section>
-
-        {/* ÁREA PRINCIPAL */}
-
-        <section className="relative overflow-hidden rounded-3xl border border-[#e5e8f1] bg-white shadow-[0_8px_35px_rgba(35,45,90,0.05)]">
-
-          {/* DECORAÇÃO DE FUNDO */}
-
-          <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#eeecff] opacity-70 blur-3xl" />
-
-          <div className="pointer-events-none absolute -bottom-32 -left-24 h-80 w-80 rounded-full bg-[#e5f6ff] opacity-60 blur-3xl" />
-
-          <div className="relative px-5 py-12 sm:px-10 sm:py-16 lg:px-20 lg:py-20">
-
-            {/* ÍCONE */}
-
-            <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl bg-[#eeecff] text-[#5146e5] shadow-sm sm:h-24 sm:w-24">
-
-              <Construction
-                size={42}
-                strokeWidth={1.6}
-              />
-
-            </div>
-
-            {/* TEXTO */}
-
-            <div className="mx-auto mt-7 max-w-[680px] text-center">
-
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#f0dca5] bg-[#fff9e8] px-4 py-2 text-[10px] font-bold uppercase tracking-wide text-[#a87916]">
-
-                <Clock size={13} />
-
-                Em manutenção
-
-              </div>
-
-              <h2 className="text-[24px] font-bold tracking-[-0.02em] text-[#101b3d] sm:text-[30px]">
-
-                Estamos a preparar algo especial
-
-              </h2>
-
-              <p className="mt-4 text-[13px] leading-7 text-[#7180a2] sm:text-[14px]">
-
-                A área de Educação Fiscal está temporariamente
-                em manutenção enquanto preparamos conteúdos
-                educativos para ajudar-te a compreender melhor
-                as regras fiscais de Angola.
-
-              </p>
-
-              <p className="mt-3 text-[13px] leading-7 text-[#7180a2] sm:text-[14px]">
-
-                Em breve, poderás encontrar explicações,
-                dicas práticas e informações úteis para
-                gerir as obrigações fiscais da tua empresa.
-
-              </p>
-
-            </div>
-
-            {/* BENEFÍCIOS */}
-
-            <div className="mx-auto mt-10 grid max-w-[850px] grid-cols-1 gap-4 md:grid-cols-3">
-
-              <div className="rounded-2xl border border-[#e9ebf3] bg-[#fafbfe] p-5 text-center">
-
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#eeecff] text-[#5146e5]">
-
-                  <BookOpen size={19} />
-
-                </div>
-
-                <h3 className="mt-4 text-[13px] font-bold text-[#253453]">
-                  Conteúdos educativos
-                </h3>
-
-                <p className="mt-2 text-[11px] leading-5 text-[#8490aa]">
-                  Conceitos fiscais explicados de forma
-                  simples e prática.
-                </p>
-
-              </div>
-
-              <div className="rounded-2xl border border-[#e9ebf3] bg-[#fafbfe] p-5 text-center">
-
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f8f0] text-[#15945b]">
-
-                  <Lightbulb size={19} />
-
-                </div>
-
-                <h3 className="mt-4 text-[13px] font-bold text-[#253453]">
-                  Dicas práticas
-                </h3>
-
-                <p className="mt-2 text-[11px] leading-5 text-[#8490aa]">
-                  Orientações para melhorar a organização
-                  fiscal da sua empresa.
-                </p>
-
-              </div>
-
-              <div className="rounded-2xl border border-[#e9ebf3] bg-[#fafbfe] p-5 text-center">
-
-                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-[#e8f3ff] text-[#2876d2]">
-
-                  <ShieldCheck size={19} />
-
-                </div>
-
-                <h3 className="mt-4 text-[13px] font-bold text-[#253453]">
-                  Maior segurança fiscal
-                </h3>
-
-                <p className="mt-2 text-[11px] leading-5 text-[#8490aa]">
-                  Conhecimentos para ajudar a evitar
-                  erros e atrasos nas obrigações.
-                </p>
-
-              </div>
-
-            </div>
-
-            {/* ESTADO DA PÁGINA */}
-
-            <div className="mx-auto mt-10 flex max-w-[600px] items-center justify-center gap-2 rounded-xl border border-[#e5e8f1] bg-white px-5 py-4 text-center">
-
-              <Clock
-                size={16}
-                className="shrink-0 text-[#8a96ad]"
-              />
-
-              <p className="text-[11px] font-medium text-[#7180a2]">
-                Esta página estará disponível brevemente.
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
-
-        {/* NOTA INFORMATIVA */}
-
-        <section className="mt-6 rounded-2xl border border-[#e5e8f1] bg-[#f8f9fd] p-5 sm:p-6">
-
-          <div className="flex items-start gap-3">
-
-            <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-white text-[#5146e5] shadow-sm">
-
-              <ShieldCheck size={16} />
-
-            </div>
-
-            <div>
-
-              <h3 className="text-[12px] font-bold text-[#253453]">
-                Informação importante
-              </h3>
-
-              <p className="mt-1 text-[11px] leading-5 text-[#8490aa]">
-                Os conteúdos educativos terão finalidade
-                informativa. Para decisões fiscais específicas,
-                consulte a legislação aplicável e um profissional
-                habilitado.
-              </p>
-
-            </div>
-
-          </div>
-
-        </section>
-
-      </main>
-    </DashboardLayout>
-  );
+const topics = [
+  { title: 'IVA', description: 'Compreenda conceitos, operações e documentação a consultar antes de tratar o imposto.', icon: ReceiptText, query: 'IVA' },
+  { title: 'IRT', description: 'Organize a leitura sobre rendimentos do trabalho e factos associados à folha salarial.', icon: Users, query: 'IRT' },
+  { title: 'Imposto Industrial', description: 'Consulte as fontes disponíveis sobre matéria colectável, enquadramento e obrigações.', icon: Landmark, query: 'Imposto Industrial' },
+  { title: 'Facturação', description: 'Explore requisitos documentais e referências relacionadas com documentos comerciais.', icon: FileText, query: 'factura' },
+  { title: 'Obrigações fiscais', description: 'Relacione enquadramentos vigentes, obrigações e prazos confirmados no sistema.', icon: ShieldCheck, href: '/obligations' },
+  { title: 'Calendário fiscal', description: 'Acompanhe datas disponíveis sem inferir prazos ainda não confirmados oficialmente.', icon: CalendarDays, href: '/calendar' },
+];
+
+export default function EducationFiscalPage() {
+  return <DashboardLayout>
+    <main className="fd-workspace-page mx-auto w-full max-w-6xl space-y-7">
+      <header className="rounded-2xl border border-slate-200 bg-white px-5 py-6 sm:px-7">
+        <div className="flex items-start gap-4"><span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e8f6fa] text-[#0b6f93]"><BookOpen size={22} /></span><div><p className="text-xs font-semibold uppercase tracking-[.12em] text-[#0b6f93]">Conhecimento</p><h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#102447] sm:text-3xl">Educação Fiscal</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">Um ponto de partida para compreender a organização fiscal da empresa e chegar às fontes documentais já disponíveis na plataforma.</p></div></div>
+      </header>
+
+      <section className="rounded-2xl bg-[#102447] px-5 py-6 text-white sm:px-7"><p className="text-xs font-semibold uppercase tracking-[.12em] text-cyan-200">Começar por aqui</p><h2 className="mt-2 text-xl font-semibold">Conhecimento para apoiar decisões, não para substituir aconselhamento.</h2><p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">Os conteúdos desta área são educativos. Confirme sempre o enquadramento da empresa, a legislação aplicável e a validação profissional antes de executar uma obrigação fiscal.</p><Link href="/fiscal-situation" className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-cyan-200 hover:text-white">Consultar situação fiscal da empresa <ArrowRight size={16} /></Link></section>
+
+      <section aria-labelledby="education-topics"><div className="mb-4"><h2 id="education-topics" className="text-xl font-semibold text-[#102447]">Percursos de aprendizagem</h2><p className="mt-1 text-sm text-slate-600">Cada tema conduz apenas a dados e documentos existentes.</p></div><div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">{topics.map((topic) => { const Icon = topic.icon; const href = topic.href || '/legislation'; return <article key={topic.title} className="flex min-h-52 flex-col rounded-2xl border border-slate-200 bg-white p-5"><span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 text-[#0b6f93]"><Icon size={20} /></span><h3 className="mt-5 font-semibold text-[#102447]">{topic.title}</h3><p className="mt-2 flex-1 text-sm leading-6 text-slate-600">{topic.description}</p><Link href={href} className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#0b6f93] hover:underline">Explorar tema <ArrowRight size={15} /></Link></article>; })}</div></section>
+
+      <section className="rounded-2xl border border-amber-200 bg-amber-50 px-5 py-5"><h2 className="font-semibold text-amber-950">Glossário e perguntas frequentes</h2><p className="mt-2 text-sm leading-6 text-amber-900">Conteúdo em preparação e validação. Esta secção será publicada por tema quando existir suporte documental suficiente.</p></section>
+    </main>
+  </DashboardLayout>;
 }

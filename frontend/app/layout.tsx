@@ -8,21 +8,6 @@ import {
   AuthProvider,
 } from '@/context/AuthContext';
 
-import {
-  ThemeProvider,
-} from '@/context/ThemeContext';
-
-const themeInitializationScript = `
-  try {
-    var preference = localStorage.getItem('fiscalidade-theme');
-    var theme = preference === 'dark' ? 'dark' : 'light';
-    document.documentElement.dataset.theme = theme;
-    document.documentElement.style.colorScheme = theme;
-  } catch (_) {
-    document.documentElement.dataset.theme = 'light';
-  }
-`;
-
 export const metadata: Metadata = {
   title: 'Fiscalidade Digital',
 
@@ -42,20 +27,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt-AO" suppressHydrationWarning>
-      <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: themeInitializationScript,
-          }}
-        />
-      </head>
+    <html lang="pt-AO">
       <body>
-        <ThemeProvider>
-          <AuthProvider>
-            {children}
-          </AuthProvider>
-        </ThemeProvider>
+        <AuthProvider>
+          {children}
+        </AuthProvider>
       </body>
     </html>
   );

@@ -83,7 +83,7 @@ export default function InvoicesPage() {
       })
         .then((data) => active && setResult(data))
         .catch((requestError) =>
-          active && setError(getInvoiceApiError(requestError, 'Não foi possível carregar as facturas.')),
+          active && setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel carregar as facturas.')),
         )
         .finally(() => active && setLoading(false));
     }, 300);
@@ -114,7 +114,7 @@ export default function InvoicesPage() {
       setReload((value) => value + 1);
     } catch (requestError) {
       setPendingAction(null);
-      setError(getInvoiceApiError(requestError, 'Não foi possível actualizar a factura.'));
+      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel actualizar a factura.'));
     } finally {
       setActionBusy(false);
     }
@@ -126,7 +126,7 @@ export default function InvoicesPage() {
     try {
       await openInvoicePdf(invoice.id);
     } catch (requestError) {
-      setError(getInvoiceApiError(requestError, 'Não foi possível abrir o PDF.'));
+      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel abrir o PDF.'));
     } finally {
       setPdfBusy(null);
     }
@@ -144,7 +144,7 @@ export default function InvoicesPage() {
       <main className="mx-auto w-full max-w-[1500px]">
         <header className="flex flex-col gap-4 border-b border-[var(--fd-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Facturação</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">FacturaÃ§Ã£o</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[var(--fd-text-primary)] sm:text-3xl">Facturas</h1>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--fd-text-secondary)]">Consulte documentos emitidos, valores e estado operacional de pagamento.</p>
           </div>
@@ -153,7 +153,7 @@ export default function InvoicesPage() {
 
         <aside className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>Os documentos permanecem internos enquanto não existir configuração, certificação e confirmação efectiva da integração de facturação electrónica com a AGT.</p>
+          <p>Os documentos permanecem internos enquanto nÃ£o existir configuraÃ§Ã£o, certificaÃ§Ã£o e confirmaÃ§Ã£o efectiva da integraÃ§Ã£o de facturaÃ§Ã£o electrÃ³nica com a AGT.</p>
         </aside>
 
         <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo de facturas">
@@ -162,21 +162,21 @@ export default function InvoicesPage() {
 
         <section className="mt-6 overflow-hidden rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
           <div className="grid gap-3 border-b border-[var(--fd-border)] p-4 lg:grid-cols-[minmax(260px,1fr)_180px_210px]">
-            <label className="relative block"><span className="sr-only">Pesquisar facturas</span><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fd-muted)]" /><input value={search} onChange={(event) => { setSearch(event.target.value); resetPage(); }} placeholder="Número, cliente ou NIF" className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>
+            <label className="relative block"><span className="sr-only">Pesquisar facturas</span><Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fd-muted)]" /><input value={search} onChange={(event) => { setSearch(event.target.value); resetPage(); }} placeholder="NÃºmero, cliente ou NIF" className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>
             <label><span className="sr-only">Filtrar por estado</span><select value={status} onChange={(event) => { setStatus(event.target.value as InvoiceStatus | ''); resetPage(); }} className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"><option value="">Todos os estados</option><option value="PENDING">Pendentes</option><option value="PAID">Pagas</option><option value="CANCELLED">Canceladas</option></select></label>
-            <label><span className="sr-only">Ordenar facturas</span><select value={sort} onChange={(event) => { setSort(event.target.value); resetPage(); }} className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"><option value="issuedAt:desc">Mais recentes</option><option value="issuedAt:asc">Mais antigas</option><option value="total:desc">Maior total</option><option value="total:asc">Menor total</option><option value="invoiceNumber:asc">Número crescente</option></select></label>
+            <label><span className="sr-only">Ordenar facturas</span><select value={sort} onChange={(event) => { setSort(event.target.value); resetPage(); }} className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"><option value="issuedAt:desc">Mais recentes</option><option value="issuedAt:asc">Mais antigas</option><option value="total:desc">Maior total</option><option value="total:asc">Menor total</option><option value="invoiceNumber:asc">NÃºmero crescente</option></select></label>
           </div>
           {notice && <div role="status" className="border-b border-emerald-200 bg-emerald-50 px-5 py-3 text-xs font-medium text-emerald-800">{notice}</div>}
           {error && <div role="alert" className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-xs font-medium text-rose-800">{error}</div>}
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]"><tr><th className="px-5 py-3 font-semibold">Factura</th><th className="px-4 py-3 font-semibold">Cliente</th><th className="px-4 py-3 text-right font-semibold">Subtotal</th><th className="px-4 py-3 text-right font-semibold">IVA</th><th className="px-4 py-3 text-right font-semibold">Total</th><th className="px-4 py-3 font-semibold">Estado</th><th className="px-5 py-3 text-right font-semibold">Acções</th></tr></thead>
+              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]"><tr><th className="px-5 py-3 font-semibold">Factura</th><th className="px-4 py-3 font-semibold">Cliente</th><th className="px-4 py-3 text-right font-semibold">Subtotal</th><th className="px-4 py-3 text-right font-semibold">IVA</th><th className="px-4 py-3 text-right font-semibold">Total</th><th className="px-4 py-3 font-semibold">Estado</th><th className="px-5 py-3 text-right font-semibold">AcÃ§Ãµes</th></tr></thead>
               <tbody className="divide-y divide-[var(--fd-border)]">
                 {loading ? <tr><td colSpan={7} className="h-52 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-sky-700" aria-label="A carregar facturas" /></td></tr> : result?.data.length ? result.data.map((invoice) => (
                   <tr key={invoice.id} className="hover:bg-slate-50/70">
-                    <td className="px-5 py-4"><div className="flex items-start gap-3"><span className="rounded-lg bg-sky-50 p-2 text-sky-700"><FileText className="h-4 w-4" /></span><div><Link href={`/invoices/${invoice.id}`} className="text-sm font-semibold text-sky-800 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2 dark:text-sky-300">{invoice.invoiceNumber}</Link><p className="mt-1 text-[11px] text-[var(--fd-muted)]">{new Date(invoice.issuedAt).toLocaleDateString('pt-AO')}</p></div></div></td>
-                    <td className="px-4 py-4"><p className="text-sm font-medium text-[var(--fd-text-primary)]">{invoice.client.name}</p><p className="mt-1 text-[11px] text-[var(--fd-muted)]">NIF {invoice.client.nif || 'não indicado'}</p></td>
+                    <td className="px-5 py-4"><div className="flex items-start gap-3"><span className="rounded-lg bg-sky-50 p-2 text-sky-700"><FileText className="h-4 w-4" /></span><div><Link href={`/invoices/${invoice.id}`} className="text-sm font-semibold text-sky-800 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2">{invoice.invoiceNumber}</Link><p className="mt-1 text-[11px] text-[var(--fd-muted)]">{new Date(invoice.issuedAt).toLocaleDateString('pt-AO')}</p></div></div></td>
+                    <td className="px-4 py-4"><p className="text-sm font-medium text-[var(--fd-text-primary)]">{invoice.client.name}</p><p className="mt-1 text-[11px] text-[var(--fd-muted)]">NIF {invoice.client.nif || 'nÃ£o indicado'}</p></td>
                     <td className="px-4 py-4 text-right text-xs tabular-nums text-[var(--fd-text-secondary)]">{money.format(Number(invoice.subtotalAmount ?? invoice.subtotal))}</td>
                     <td className="px-4 py-4 text-right text-xs tabular-nums text-[var(--fd-text-secondary)]">{money.format(Number(invoice.ivaAmount ?? invoice.iva))}</td>
                     <td className="px-4 py-4 text-right text-sm font-semibold tabular-nums text-[var(--fd-text-primary)]">{money.format(Number(invoice.totalAmount ?? invoice.total))}</td>
@@ -187,7 +187,7 @@ export default function InvoicesPage() {
               </tbody>
             </table>
           </div>
-          <div className="flex flex-col gap-3 border-t border-[var(--fd-border)] px-5 py-4 text-xs text-[var(--fd-muted)] sm:flex-row sm:items-center sm:justify-between"><span>{result?.pagination.total ?? 0} resultado(s)</span><div className="flex items-center gap-2"><button type="button" disabled={!result || result.pagination.page <= 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="Página anterior"><ChevronLeft className="h-4 w-4" /></button><span>Página {result?.pagination.page ?? page} de {result?.pagination.totalPages ?? 1}</span><button type="button" disabled={!result || result.pagination.page >= result.pagination.totalPages || loading} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="Página seguinte"><ChevronRight className="h-4 w-4" /></button></div></div>
+          <div className="flex flex-col gap-3 border-t border-[var(--fd-border)] px-5 py-4 text-xs text-[var(--fd-muted)] sm:flex-row sm:items-center sm:justify-between"><span>{result?.pagination.total ?? 0} resultado(s)</span><div className="flex items-center gap-2"><button type="button" disabled={!result || result.pagination.page <= 1 || loading} onClick={() => setPage((value) => Math.max(1, value - 1))} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="PÃ¡gina anterior"><ChevronLeft className="h-4 w-4" /></button><span>PÃ¡gina {result?.pagination.page ?? page} de {result?.pagination.totalPages ?? 1}</span><button type="button" disabled={!result || result.pagination.page >= result.pagination.totalPages || loading} onClick={() => setPage((value) => value + 1)} className="rounded-lg border border-[var(--fd-border)] p-2 disabled:opacity-40" aria-label="PÃ¡gina seguinte"><ChevronRight className="h-4 w-4" /></button></div></div>
         </section>
       </main>
       {pendingAction && <ActionDialog pending={pendingAction} busy={actionBusy} onClose={() => setPendingAction(null)} onConfirm={confirmAction} />}
@@ -197,5 +197,5 @@ export default function InvoicesPage() {
 
 function ActionDialog({ pending, busy, onClose, onConfirm }: { pending: PendingAction; busy: boolean; onClose: () => void; onConfirm: () => void }) {
   const paying = pending.action === 'pay';
-  return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--fd-overlay)] p-4"><section role="alertdialog" aria-modal="true" aria-labelledby="invoice-action-title" className="w-full max-w-md rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">Alteração de estado</p><h2 id="invoice-action-title" className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]">{paying ? 'Registar pagamento' : 'Cancelar factura'}</h2></div><button type="button" onClick={onClose} disabled={busy} className="rounded-lg p-2 text-[var(--fd-muted)]" aria-label="Fechar"><X className="h-4 w-4" /></button></div><p className="mt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">{paying ? `Confirma que ${pending.invoice.invoiceNumber} foi efectivamente paga? Esta acção influencia os valores recebidos e as obrigações.` : `Confirma o cancelamento de ${pending.invoice.invoiceNumber}? Facturas pagas exigem um fluxo de correcção e não podem ser canceladas directamente.`}</p><div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} disabled={busy} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold">Voltar</button><button type="button" onClick={onConfirm} disabled={busy} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50 ${paying ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-rose-700 hover:bg-rose-800'}`}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}{paying ? 'Confirmar pagamento' : 'Confirmar cancelamento'}</button></div></section></div>;
+  return <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--fd-overlay)] p-4"><section role="alertdialog" aria-modal="true" aria-labelledby="invoice-action-title" className="w-full max-w-md rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-2xl"><div className="flex items-start justify-between"><div><p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">AlteraÃ§Ã£o de estado</p><h2 id="invoice-action-title" className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]">{paying ? 'Registar pagamento' : 'Cancelar factura'}</h2></div><button type="button" onClick={onClose} disabled={busy} className="rounded-lg p-2 text-[var(--fd-muted)]" aria-label="Fechar"><X className="h-4 w-4" /></button></div><p className="mt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">{paying ? `Confirma que ${pending.invoice.invoiceNumber} foi efectivamente paga? Esta acÃ§Ã£o influencia os valores recebidos e as obrigaÃ§Ãµes.` : `Confirma o cancelamento de ${pending.invoice.invoiceNumber}? Facturas pagas exigem um fluxo de correcÃ§Ã£o e nÃ£o podem ser canceladas directamente.`}</p><div className="mt-5 flex justify-end gap-3"><button type="button" onClick={onClose} disabled={busy} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold">Voltar</button><button type="button" onClick={onConfirm} disabled={busy} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50 ${paying ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-rose-700 hover:bg-rose-800'}`}>{busy && <Loader2 className="h-4 w-4 animate-spin" />}{paying ? 'Confirmar pagamento' : 'Confirmar cancelamento'}</button></div></section></div>;
 }

@@ -817,7 +817,7 @@ export default function SimulatorPage() {
             SIMULADORES
         ================================================= */}
 
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 gap-6 2xl:grid-cols-3">
 
           {/* =================================================
               IVA
@@ -967,9 +967,9 @@ export default function SimulatorPage() {
             {ivaResult && (
               <div className="mt-7 pt-6 border-t border-slate-100">
 
-                {ivaResult.calculationStatus === 'REVIEW_REQUIRED' && (
+                {['REVIEW_REQUIRED', 'NEEDS_OFFICIAL_CONFIRMATION'].includes(String(ivaResult.calculationStatus)) && (
                   <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                    Este resultado é uma prévia. A classificação fiscal e a documentação da operação precisam de revisão antes de qualquer liquidação ou dedução.
+                    {ivaResult.message || 'Este resultado é uma prévia. A classificação fiscal e a documentação da operação precisam de revisão antes de qualquer liquidação ou dedução.'}
                   </div>
                 )}
 
@@ -1259,8 +1259,8 @@ export default function SimulatorPage() {
             <CalculateButton
               loading={industrialLoading}
               onClick={handleIndustrial}
-              label="Calcular imposto"
-              loadingLabel="A calcular imposto..."
+              label="Verificar dados do apuramento"
+              loadingLabel="A verificar dados..."
               className="bg-emerald-600 hover:bg-emerald-700 shadow-emerald-100"
             />
 
@@ -1317,11 +1317,7 @@ export default function SimulatorPage() {
                 </div>
 
                 {industrialResult.calculationStatus !== 'REVIEW_REQUIRED' && (
-                  <ResultHighlight
-                    label="Resultado"
-                    value="Disponível após validação"
-                    className="bg-emerald-50 border-emerald-100 text-emerald-600"
-                  />
+                  <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">Os dados foram aceites pelo motor fiscal. Consulte os campos devolvidos acima; nenhum imposto é inferido quando o backend não fornece um valor confirmado.</p>
                 )}
 
                 <ClearButton

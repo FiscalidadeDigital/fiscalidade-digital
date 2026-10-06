@@ -2,15 +2,40 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
+import { CheckCircle2 } from 'lucide-react';
 import api from '@/services/api';
+import AuthFrame from '@/components/auth/AuthFrame';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
   async function submit(event: FormEvent) {
-    event.preventDefault(); setLoading(true);
-    try { await api.post('/auth/forgot-password', { email }); } finally { setSent(true); setLoading(false); }
+    event.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/auth/forgot-password', { email: email.trim().toLowerCase() });
+      setSent(true);
+    } catch {
+      setError('Não foi possível processar o pedido agora. Aguarde e tente novamente.');
+    } finally {
+      setLoading(false);
+    }
   }
-  return <main className="fd-auth-page grid min-h-screen place-items-center bg-[#f3f5f7] p-4 text-[#172642]"><section className="w-full max-w-md rounded-xl border border-[#d9e0e7] bg-white p-6 shadow-sm sm:p-8"><h1 className="text-2xl font-semibold">Recuperar acesso</h1>{sent ? <><p className="mt-4 text-sm leading-6 text-[#526174]">Se existir uma conta associada, enviámos um código de recuperação.</p><Link href={`/reset-password?email=${encodeURIComponent(email)}`} className="mt-6 block rounded-md bg-[#0b6f93] p-3 text-center font-semibold text-white">Introduzir código</Link></> : <form onSubmit={submit}><p className="mt-2 text-sm leading-6 text-[#66758d]">Indique o email da conta. A resposta é sempre igual para proteger a sua privacidade.</p><input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-6 w-full rounded-md border p-3" placeholder="Email" /><button disabled={loading} className="mt-4 w-full rounded-md bg-[#0b6f93] p-3 font-semibold text-white disabled:opacity-60">{loading ? 'A enviar…' : 'Enviar instruções'}</button></form>}</section></main>;
+
+  return <AuthFrame title="Recuperar acesso" description="Receba um código temporário para definir uma nova palavra-passe. A resposta não confirma se o email está registado.">
+    {sent ? <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
+      <CheckCircle2 className="h-6 w-6 text-emerald-700" />
+      <h2 className="mt-3 font-semibold text-emerald-950">Pedido recebido</h2>
+      <p className="mt-2 text-sm leading-6 text-emerald-900">Se existir uma conta associada, enviámos um código de recuperação.</p>
+      <Link href={`/reset-password?email=${encodeURIComponent(email)}`} className="fd-button-primary mt-5 w-full">Introduzir código</Link>
+    </div> : <form onSubmit={submit} className="space-y-5">
+      <label className="fd-label">Email da conta<input required type="email" autoComplete="email" value={email} onChange={(event) => setEmail(event.target.value)} className="fd-field mt-1.5" placeholder="nome@empresa.ao" /></label>
+      {error && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
+      <button disabled={loading} className="fd-button-primary w-full">{loading ? 'A processar…' : 'Enviar instruções'}</button>
+    </form>}
+  </AuthFrame>;
 }

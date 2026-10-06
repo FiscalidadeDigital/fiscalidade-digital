@@ -78,6 +78,12 @@ const navigationSections = [
 
     items: [
       {
+        label: 'Empresa',
+        href: '/company',
+        icon: Building2,
+      },
+
+      {
         label: 'Dashboard',
         href: '/dashboard',
         icon: LayoutDashboard,
@@ -185,12 +191,6 @@ const navigationSections = [
       },
 
       {
-        label: 'Relatórios',
-        href: '/reports',
-        icon: FileText,
-      },
-
-      {
         label: 'SAF-T contabilístico',
         href: '/accounting/saft',
         icon: FileSpreadsheet,
@@ -199,7 +199,19 @@ const navigationSections = [
   },
 
   {
-    title: 'Documentação',
+    title: 'Análise',
+
+    items: [
+      {
+        label: 'Relatórios',
+        href: '/reports',
+        icon: FileText,
+      },
+    ],
+  },
+
+  {
+    title: 'Conhecimento',
 
     items: [
       {
@@ -240,12 +252,6 @@ const navigationSections = [
 ========================================================= */
 
 const companyNavigation = [
-  {
-    label: 'Perfil da Empresa',
-    href: '/company',
-    icon: Building2,
-  },
-
   {
     label: 'Utilizadores',
     href: '/users',
@@ -435,7 +441,7 @@ export default function DashboardLayout({
     ),
     ...companyNavigation.map((item) => ({
       ...item,
-      section: 'Empresa',
+      section: 'Administração',
     })),
   ].find(
     (item) =>
@@ -1037,7 +1043,7 @@ export default function DashboardLayout({
               text-[#93a1ba]
             "
           >
-            Empresa
+            Administração
           </div>
 
           <nav className="space-y-1">

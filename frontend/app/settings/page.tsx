@@ -3,18 +3,12 @@
 import { useEffect, useState } from 'react';
 import {
   AlertTriangle,
-  Check,
   Clock3,
   CreditCard,
-  Moon,
-  Sun,
+  ShieldCheck,
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import {
-  useTheme,
-  type ThemePreference,
-} from '@/context/ThemeContext';
 import { getCompany } from '@/services/company';
 import type { Tenant } from '@/services/auth';
 import {
@@ -22,33 +16,12 @@ import {
   type SubscriptionAccessStatus,
 } from '@/services/subscription';
 
-const themeOptions: Array<{
-  value: ThemePreference;
-  label: string;
-  description: string;
-  icon: typeof Sun;
-}> = [
-  {
-    value: 'light',
-    label: 'Claro',
-    description: 'Superfícies claras para ambientes bem iluminados.',
-    icon: Sun,
-  },
-  {
-    value: 'dark',
-    label: 'Escuro',
-    description: 'Contraste sóbrio para utilização com pouca luz.',
-    icon: Moon,
-  },
-];
-
 export default function SettingsPage() {
   const [company, setCompany] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [subscription, setSubscription] =
     useState<SubscriptionAccessStatus | null>(null);
-  const { preference, resolvedTheme, setPreference } = useTheme();
 
   useEffect(() => {
     let mounted = true;
@@ -86,7 +59,7 @@ export default function SettingsPage() {
             Definições
           </h1>
           <p className="mt-1 text-sm text-slate-600">
-            Ajuste a apresentação do sistema neste navegador.
+            Consulte a subscrição e as definições administrativas da empresa.
           </p>
         </header>
 
@@ -96,51 +69,19 @@ export default function SettingsPage() {
           </div>
         )}
 
-        <section className="mt-5 border border-slate-200 bg-white">
+        <section className="mt-5 rounded-xl border border-slate-200 bg-white">
           <div className="border-b border-slate-200 px-5 py-4">
             <h2 className="text-base font-semibold text-slate-950">
-              Tema
+              Identidade da aplicação
             </h2>
             <p className="mt-1 text-sm text-slate-600">
-              A preferência fica guardada neste dispositivo. Tema activo: {resolvedTheme === 'dark' ? 'escuro' : 'claro'}.
+              A Fiscalidade Digital utiliza uma interface clara e consistente em todos os dispositivos.
             </p>
           </div>
-
-          {loading ? (
-            <div className="px-5 py-8 text-sm text-slate-500">
-              A carregar definições...
-            </div>
-          ) : (
-            <div className="divide-y divide-slate-200">
-              {themeOptions.map((option) => {
-                const Icon = option.icon;
-                const selected = preference === option.value;
-
-                return (
-                  <button
-                    key={option.value}
-                    type="button"
-                    onClick={() => setPreference(option.value)}
-                    aria-pressed={selected}
-                    className="flex w-full items-center gap-4 px-5 py-4 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[#0b6f93]"
-                  >
-                    <Icon size={20} className="shrink-0 text-slate-500" />
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-semibold text-slate-950">
-                        {option.label}
-                      </span>
-                      <span className="mt-0.5 block text-sm text-slate-600">
-                        {option.description}
-                      </span>
-                    </span>
-                    {selected && (
-                      <Check size={19} className="shrink-0 text-[#0b6f93]" aria-hidden="true" />
-                    )}
-                  </button>
-                );
-              })}
-            </div>
-          )}
+          <div className="flex items-start gap-3 px-5 py-5 text-sm text-slate-600">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#0b6f93]" aria-hidden="true" />
+            <p>Contraste, foco visível e redução de movimento seguem as preferências de acessibilidade do dispositivo.</p>
+          </div>
         </section>
 
         <section className="mt-5 border border-[var(--fd-border)] bg-[var(--fd-surface)]">

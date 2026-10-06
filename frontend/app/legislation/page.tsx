@@ -225,6 +225,20 @@ export default function LegislationPage() {
   }
 
   useEffect(() => {
+    if (!selected) return;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') closeDocument();
+    };
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [selected]);
+
+  useEffect(() => {
     if (!mounted) {
       return;
     }
@@ -596,7 +610,10 @@ export default function LegislationPage() {
 
       {selected && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-[#10152b]/50 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="legislation-document-title"
           onMouseDown={(event) => {
             if (event.target === event.currentTarget) {
               closeDocument();
@@ -604,7 +621,7 @@ export default function LegislationPage() {
           }}
         >
 
-          <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
+          <div className="flex h-[calc(100vh-1rem)] max-h-[94vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl sm:h-auto">
 
             {/* CABEÇALHO DO MODAL */}
 
@@ -633,11 +650,11 @@ export default function LegislationPage() {
 
                 </div>
 
-                <h2 className="text-[20px] font-bold leading-7 text-[#101b3d]">
+                <h2 id="legislation-document-title" className="text-lg font-semibold leading-7 text-[#101b3d] sm:text-xl">
                   {getDocumentTitle(selected)}
                 </h2>
 
-                <p className="mt-1 text-[10px] text-[#8a96ad]">
+                <p className="mt-1 text-xs text-[#66758d]">
                   {selected.sourceFile}
                   {' • '}
                   {selected.pageCount || 0} páginas
@@ -660,11 +677,11 @@ export default function LegislationPage() {
 
             <div className="min-h-0 flex-1 overflow-hidden">
 
-              <div className="grid h-full grid-cols-1 lg:grid-cols-[320px_1fr]">
+              <div className="grid h-full grid-cols-1 grid-rows-[minmax(180px,36vh)_1fr] lg:grid-cols-[320px_1fr] lg:grid-rows-1">
 
                 {/* MENU LATERAL */}
 
-                <aside className="border-b border-[#edf0f5] bg-[#fafbfe] lg:overflow-y-auto lg:border-b-0 lg:border-r">
+                <aside className="overflow-y-auto border-b border-[#edf0f5] bg-[#fafbfe] lg:border-b-0 lg:border-r">
 
                   <div className="border-b border-[#edf0f5] bg-[#fafbfe] p-4">
 
@@ -909,7 +926,7 @@ export default function LegislationPage() {
 
                       </div>
 
-                      <div className="whitespace-pre-wrap break-words text-[12px] leading-7 text-[#394866]">
+                      <div className="whitespace-pre-wrap break-words text-sm leading-7 text-[#334155] sm:text-[15px]">
                         {fullText}
                       </div>
 
@@ -954,7 +971,7 @@ export default function LegislationPage() {
 
                       </div>
 
-                      <div className="whitespace-pre-wrap break-words text-[12px] leading-7 text-[#394866]">
+                      <div className="whitespace-pre-wrap break-words text-sm leading-7 text-[#334155] sm:text-[15px]">
                         {getArticleText(selectedArticle)}
                       </div>
 

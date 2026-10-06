@@ -2,9 +2,9 @@ import api from './api';
 
 export type FiscalTaxType =
   | 'IVA'
-  | 'INDUSTRIAL_TAX'
+  | 'INDUSTRIAL'
   | 'IRT'
-  | 'INSS'
+  | 'SS'
   | 'SAFT';
 
 export type FiscalSituationTax = {
