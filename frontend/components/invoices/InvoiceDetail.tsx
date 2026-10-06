@@ -42,12 +42,12 @@ export default function InvoiceDetail({ proForma = false }: { proForma?: boolean
       .then((data) => {
         if (!active) return;
         if ((proForma && data.documentType !== 'PRO_FORMA') || (!proForma && data.documentType !== 'NORMAL')) {
-          setError('O documento nÃ£o pertence a esta Ã¡rea.');
+          setError('O documento não pertence a esta área.');
           return;
         }
         setDocument(data);
       })
-      .catch((requestError) => active && setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel carregar o documento.')))
+      .catch((requestError) => active && setError(getInvoiceApiError(requestError, 'Não foi possível carregar o documento.')))
       .finally(() => active && setLoading(false));
     return () => { active = false; };
   }, [id, proForma]);
@@ -62,7 +62,7 @@ export default function InvoiceDetail({ proForma = false }: { proForma?: boolean
       setConfirming(false);
     } catch (requestError) {
       setConfirming(false);
-      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel converter a Pro Forma.'));
+      setError(getInvoiceApiError(requestError, 'Não foi possível converter a Pro Forma.'));
     } finally {
       setConverting(false);
     }
@@ -75,15 +75,15 @@ export default function InvoiceDetail({ proForma = false }: { proForma?: boolean
     try {
       await openInvoicePdf(document.id);
     } catch (requestError) {
-      setError(getInvoiceApiError(requestError, 'NÃ£o foi possÃ­vel abrir o PDF.'));
+      setError(getInvoiceApiError(requestError, 'Não foi possível abrir o PDF.'));
     } finally {
       setPdfBusy(false);
     }
   }
 
-  if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-slate-600"><Loader2 className="mr-2 h-4 w-4 animate-spin" />A carregar documentoâ€¦</div>;
+  if (loading) return <div className="flex min-h-screen items-center justify-center text-sm text-slate-600"><Loader2 className="mr-2 h-4 w-4 animate-spin" />A carregar documento…</div>;
 
-  if (!document) return <DashboardLayout><main className="mx-auto max-w-3xl"><Link href={collectionHref} className="text-sm font-semibold text-sky-700">Voltar</Link><p role="alert" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error || 'Documento nÃ£o encontrado.'}</p></main></DashboardLayout>;
+  if (!document) return <DashboardLayout><main className="mx-auto max-w-3xl"><Link href={collectionHref} className="text-sm font-semibold text-sky-700">Voltar</Link><p role="alert" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error || 'Documento não encontrado.'}</p></main></DashboardLayout>;
 
   const converted = document.convertedInvoice;
   return (

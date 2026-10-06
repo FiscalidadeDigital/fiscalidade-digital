@@ -153,7 +153,7 @@ export default function InvoicesPage() {
 
         <aside className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
-          <p>Os documentos permanecem internos enquanto nÃ£o existir configuraÃ§Ã£o, certificaÃ§Ã£o e confirmaÃ§Ã£o efectiva da integraÃ§Ã£o de facturaÃ§Ã£o electrÃ³nica com a AGT.</p>
+          <p>Ambiente de testes — os documentos não têm validade fiscal oficial. A integração electrónica com a AGT ainda não está activa.</p>
         </aside>
 
         <section className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumo de facturas">

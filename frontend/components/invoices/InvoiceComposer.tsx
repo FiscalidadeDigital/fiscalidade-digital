@@ -283,14 +283,14 @@ export default function InvoiceComposer({
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">FacturaÃ§Ã£o</p>
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">{isProForma ? 'Criar Pro Forma' : 'Emitir factura'}</h1>
-              <p className="mt-1 max-w-2xl text-sm text-slate-500">{isProForma ? 'Registe uma proposta comercial. O documento serÃ¡ numerado na sÃ©rie PF e nÃ£o produz efeito fiscal definitivo.' : 'Registe o cliente e as linhas. NumeraÃ§Ã£o, impostos e total sÃ£o determinados pelo servidor.'}</p>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">{isProForma ? 'Registe uma proposta comercial. O documento será numerado na série PF e não produz efeito fiscal definitivo.' : 'Ambiente de testes: registe o cliente e as linhas. Numeração, impostos e total são determinados pelo servidor.'}</p>
             </div>
           </div>
         </header>
 
         {created && (
           <section className="flex flex-col gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 sm:flex-row sm:items-center sm:justify-between" role="status">
-            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">{isProForma ? 'Pro Forma' : 'Factura'} {created.invoiceNumber} registada</p><p className="mt-1 text-sm opacity-80">{isProForma ? 'Documento preliminar guardado sem efeito fiscal definitivo.' : `Total calculado pelo servidor: ${formatCents(toScaledInteger(String(created.totalAmount ?? created.total), 2))}.`}</p></div></div>
+            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">{isProForma ? 'Pro Forma' : 'Factura'} {created.invoiceNumber} registada</p><p className="mt-1 text-sm opacity-80">{isProForma ? 'Documento preliminar guardado sem efeito fiscal definitivo.' : `Documento de teste guardado. Total calculado pelo servidor: ${formatCents(toScaledInteger(String(created.totalAmount ?? created.total), 2))}.`}</p></div></div>
             <button type="button" onClick={() => router.push(isProForma ? `/pro-formas/${created.id}` : '/invoices')} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">{isProForma ? 'Abrir Pro Forma' : 'Ver facturas'}</button>
           </section>
         )}
@@ -298,7 +298,7 @@ export default function InvoiceComposer({
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">{error}</div>}
 
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><p className="text-sm font-semibold text-amber-950">{isProForma ? 'Documento preliminar â€” nÃ£o constitui factura fiscal definitiva' : 'Documento interno em validaÃ§Ã£o fiscal'}</p><p className="mt-1 text-sm text-amber-800">{isProForma ? 'O total Ã© comercial. Qualquer IVA apresentado antes da conversÃ£o Ã© apenas estimativa; nÃ£o Ã© IVA liquidado, obrigaÃ§Ã£o, declaraÃ§Ã£o nem pagamento.' : 'A plataforma ainda nÃ£o confirma certificaÃ§Ã£o nem submissÃ£o electrÃ³nica Ã  AGT. A classificaÃ§Ã£o fiscal de cada artigo deve ser revista antes de uso oficial.'}</p></div></div>
+          <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><p className="text-sm font-semibold text-amber-950">{isProForma ? 'Documento preliminar — não constitui factura fiscal definitiva' : 'Ambiente de testes — documento sem validade fiscal oficial'}</p><p className="mt-1 text-sm text-amber-800">{isProForma ? 'O total é comercial. Qualquer IVA apresentado antes da conversão é apenas estimativa; não é IVA liquidado, obrigação, declaração nem pagamento.' : 'A integração electrónica com a AGT ainda não está activa. O IVA Simplificado, quando aplicável, permanece sem fórmula oficial de liquidação e é apresentado sem IVA de factura.'}</p></div></div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">

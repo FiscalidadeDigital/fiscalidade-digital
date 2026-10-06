@@ -231,12 +231,6 @@ export class InvoiceService {
         message: 'É necessário um enquadramento IVA vigente na data de emissão da factura.',
       });
     }
-    if (documentType === InvoiceDocumentType.NORMAL && ivaEnrollment?.regime === 'SIMPLIFICADO') {
-      throw new BadRequestException({
-        code: 'IVA_SIMPLIFIED_NEEDS_OFFICIAL_CONFIRMATION',
-        message: 'O IVA Simplificado está configurado, mas o cálculo automático aguarda confirmação oficial.',
-      });
-    }
     const vatPolicy = resolveInvoiceVatPolicy(ivaEnrollment?.regime ?? 'GERAL');
     const ivaRate =
       documentType === InvoiceDocumentType.PRO_FORMA
