@@ -2,6 +2,7 @@
 import * as XLSX from "xlsx";
 import * as path from "path";
 import * as fs from "fs";
+import { detectRegimes } from "../src/fiscal-calendar/regime-detection";
 
 const prisma = new PrismaClient();
 
@@ -218,106 +219,6 @@ function detectYear(workbook: XLSX.WorkBook): number {
   }
 
   return new Date().getFullYear();
-}
-
-function detectRegimes(
-  sheetName: string,
-  designation: string,
-): FiscalRegime[] {
-  const sheet = sheetName
-    .trim()
-    .toUpperCase();
-
-  const text = designation
-    .trim()
-    .toUpperCase();
-
-  /*
-   * =====================================================
-   * FOLHA REGIME GERAL
-   * =====================================================
-   *
-   * A folha "Regime Geral" pode conter obrigações
-   * destinadas ao Regime Geral, ao Regime Simplificado
-   * ou aos dois.
-   *
-   * Por isso o regime é determinado pela designação
-   * da obrigação e não apenas pelo nome da folha.
-   */
-
-  if (sheet.includes("REGIME GERAL")) {
-    const hasSimplified =
-      text.includes("REGIME SIMPLIFICADO");
-
-    const hasGeneral =
-      text.includes("REGIME GERAL");
-
-    const hasBoth =
-      text.includes("GERAL E SIMPLIFICADO") ||
-      text.includes("SIMPLIFICADO E GERAL");
-
-    /*
-     * Obrigação explicitamente aplicável aos dois regimes.
-     */
-    if (hasBoth) {
-      return [
-        FiscalRegime.GERAL,
-        FiscalRegime.SIMPLIFICADO,
-      ];
-    }
-
-    /*
-     * Obrigação explicitamente do Simplificado.
-     */
-    if (hasSimplified && !hasGeneral) {
-      return [
-        FiscalRegime.SIMPLIFICADO,
-      ];
-    }
-
-    /*
-     * Obrigação explicitamente do Geral.
-     */
-    if (hasGeneral && !hasSimplified) {
-      return [
-        FiscalRegime.GERAL,
-      ];
-    }
-
-    /*
-     * Quando a descrição não identifica
-     * explicitamente o regime, mantém-se GERAL
-     * como comportamento padrão do calendário.
-     */
-    return [
-      FiscalRegime.GERAL,
-    ];
-  }
-
-  /*
-   * =====================================================
-   * FOLHA REGIME ESPECIAL
-   * =====================================================
-   *
-   * O enum atual do Prisma não possui um regime
-   * específico para "REGIME ESPECIAL".
-   *
-   * Não vamos transformar artificialmente Especial
-   * em Simplificado.
-   *
-   * Mantemos GERAL temporariamente até existir no
-   * modelo um regime específico para Especial.
-   */
-
-  if (sheet.includes("REGIME ESPECIAL")) {
-    return [
-      FiscalRegime.GERAL,
-    ];
-  }
-
-  return [
-    FiscalRegime.GERAL,
-  ];
 }
 
 async function importWorkbook(
@@ -570,14 +471,16 @@ async function main() {
   );
 }
 
-main()
-  .catch((error) => {
-    console.error("");
-    console.error("❌ ERRO NO SEED:");
-    console.error(error);
-    process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+if (require.main === module) {
+  main()
+    .catch((error) => {
+      console.error("");
+      console.error("❌ ERRO NO SEED:");
+      console.error(error);
+      process.exit(1);
+    })
+    .finally(async () => {
+      await prisma.$disconnect();
+    });
+}
 
