@@ -27,6 +27,3 @@ export default function ResetPasswordPage() {
   return <Suspense fallback={<main className="fd-auth-page grid min-h-screen place-items-center bg-slate-100 p-4 text-sm text-slate-600">A carregar…</main>}><ResetPasswordContent /></Suspense>;
 }
 
-export default function ResetPasswordPage() {
-  return <Suspense fallback={<main className="fd-auth-page grid min-h-screen place-items-center bg-[#f3f5f7] p-4 text-[#172642]"><div className="w-full max-w-md rounded-xl border border-[#d9e0e7] bg-white p-6 text-sm text-[#66758d] shadow-sm sm:p-8">A carregar…</div></main>}><ResetPasswordContent /></Suspense>;
-}
