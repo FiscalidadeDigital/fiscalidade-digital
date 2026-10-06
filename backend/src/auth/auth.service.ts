@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Optional,
   UnauthorizedException,
   HttpException,
   HttpStatus,
@@ -17,6 +18,7 @@ import { calculateTrialEnd } from '../common/config/trial-policy';
 import { MailService } from '../mail/mail.service';
 import { AuthChallengePurpose, LegalDocumentType, Prisma, TaxRegimeAssignmentStatus, UserRole } from '@prisma/client';
 import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
+import { ObligationGenerationService } from '../obligation-generation/obligation-generation.service';
 
 @Injectable()
 export class AuthService {
@@ -28,6 +30,7 @@ export class AuthService {
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
     private readonly fiscalEnrollmentService: FiscalEnrollmentService,
+    @Optional() private readonly obligationGeneration?: ObligationGenerationService,
   ) {}
 
   private normalizeEmail(email: string) {
@@ -259,6 +262,9 @@ export class AuthService {
       });
       return { pending, tenant, user };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+    if (this.obligationGeneration) {
+      await this.obligationGeneration.generate(result.tenant.id, new Date());
+    }
     await this.mailService.sendMail(result.pending.email, 'Bem-vindo à Fiscalidade Digital', `Olá ${result.pending.name},\n\nA empresa ${result.tenant.name} foi configurada. Pode iniciar sessão.`);
     return { message: 'Onboarding concluído.', userId: result.user.id, tenantId: result.tenant.id };
   }

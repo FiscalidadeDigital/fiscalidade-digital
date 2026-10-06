@@ -29,6 +29,7 @@ import {
 
 import { MailModule } from '../mail/mail.module';
 import { FiscalEnrollmentModule } from '../fiscal-enrollment/fiscal-enrollment.module';
+import { ObligationGenerationModule } from '../obligation-generation/obligation-generation.module';
 
 import {
   JwtStrategy,
@@ -99,6 +100,7 @@ import {
 
     MailModule,
     FiscalEnrollmentModule,
+    ObligationGenerationModule,
   ],
 
   // =====================================================
