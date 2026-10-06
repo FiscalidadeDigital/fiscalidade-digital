@@ -43,7 +43,7 @@ describe('Fiscal HTTP RBAC', () => {
 
   it('uses JwtAuthGuard, allows VIEWER read access, and derives fiscal-situation tenant from the request', async () => {
     const service = { get: jest.fn().mockResolvedValue({}) };
-    const controller = new FiscalSituationController(service as any);
+    const controller = new FiscalSituationController(service as any, {} as any, {} as any);
     const roles = Reflect.getMetadata(REQUIRED_ROLES_KEY, FiscalSituationController.prototype.get);
     const guards = Reflect.getMetadata(GUARDS_METADATA, FiscalSituationController);
     const guard = guardFor(roles);

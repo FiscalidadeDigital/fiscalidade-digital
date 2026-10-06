@@ -57,3 +57,8 @@ export async function getFiscalSituation(period?: string): Promise<FiscalSituati
   });
   return unwrap<FiscalSituation>(response);
 }
+
+export async function confirmFiscalSituation(input: { taxType: 'IVA' | 'INDUSTRIAL'; regime: 'GERAL' | 'SIMPLIFICADO'; validFrom: string }) {
+  const response = await api.post('/fiscal-situation/confirm', input);
+  return unwrap(response);
+}

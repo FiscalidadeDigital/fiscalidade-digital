@@ -76,7 +76,7 @@ describe('FiscalSituationService', () => {
 describe('FiscalSituationController', () => {
   it('takes tenant identity from the authenticated request, never a query tenantId', async () => {
     const service = { get: jest.fn().mockResolvedValue({}) };
-    const controller = new FiscalSituationController(service as any);
+    const controller = new FiscalSituationController(service as any, {} as any, {} as any);
     await controller.get({ user: { tenantId: 'tenant-auth' } } as any, '2026-10');
     expect(service.get).toHaveBeenCalledWith('tenant-auth', new Date('2026-10-01T00:00:00.000Z'));
   });
