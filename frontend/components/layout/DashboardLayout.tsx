@@ -155,12 +155,6 @@ const navigationSections = [
         icon: ShieldAlert,
       },
       {
-        label: 'Enquadramentos',
-        href: '/fiscal-enrollments',
-        icon: ShieldCheck,
-      },
-
-      {
         label: 'Pagamentos',
         href: '/payments',
         icon: CreditCard,
