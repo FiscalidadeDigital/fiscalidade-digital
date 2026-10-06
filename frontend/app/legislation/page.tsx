@@ -62,8 +62,9 @@ function getDocumentTitle(document: LibraryDocument) {
   if (
     document.titleDetected &&
     document.titleDetected !== document.sourceFile &&
-    document.titleDetected.length <= 120 &&
-    !/[.!?].{20,}/.test(document.titleDetected)
+    document.titleDetected.length <= 90 &&
+    !/[.!?].{20,}/.test(document.titleDetected) &&
+    !/^(ser cobrados|tributária sancionada|tributaria sancionada)/i.test(document.titleDetected.trim())
   ) {
     return document.titleDetected;
   }
@@ -625,7 +626,7 @@ export default function LegislationPage() {
 
       {selected && (
         <div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-2 sm:p-4"
+          className="fixed inset-0 z-[9999] flex items-center justify-center overflow-y-auto p-2 sm:p-4"
           role="dialog"
           aria-modal="true"
           aria-labelledby="legislation-document-title"
@@ -636,7 +637,9 @@ export default function LegislationPage() {
           }}
         >
 
-          <div className="flex h-[calc(100vh-1rem)] max-h-[94vh] w-full max-w-7xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl sm:h-auto">
+          <div className="absolute inset-0 bg-slate-950/60" aria-hidden="true" />
+
+          <div className="relative z-10 flex h-[calc(100dvh-1rem)] max-h-[88dvh] w-full max-w-5xl flex-col overflow-hidden rounded-xl bg-white shadow-2xl sm:h-auto sm:max-h-[88dvh]">
 
             {/* CABEÇALHO DO MODAL */}
 

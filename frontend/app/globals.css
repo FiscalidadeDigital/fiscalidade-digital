@@ -5942,6 +5942,10 @@ button {
   .site header > div > .hidden.items-center.gap-4 a {
     white-space: nowrap;
   }
+
+  .site header > div > .hidden.items-center.gap-4 a:last-child {
+    padding: 0.55rem 0.8rem;
+  }
 }
 
 .site .marquee-track {
