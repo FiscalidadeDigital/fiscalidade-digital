@@ -54,6 +54,16 @@ describe('ObligationGenerationService', () => {
     expect(persistence.persistCalendarDerived).toHaveBeenCalledWith(expect.objectContaining({ type: 'II' }));
   });
 
+  it('includes legacy II calendar rows in the canonical Industrial domain', async () => {
+    const { service, prisma } = setup([
+      domain('INDUSTRIAL', { applicabilityStatus: 'APPLICABLE', calculationReady: true, calendarStatus: 'AVAILABLE', regime: 'GERAL' }),
+    ], [rule({ taxType: 'II', obligationType: 'II' })]);
+    await service.generate('tenant-a', new Date('2026-10-01'));
+    expect(prisma.fiscalCalendar.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ taxType: { in: ['INDUSTRIAL', 'II'] } }),
+    }));
+  });
+
   it.each(['IRT', 'SS'])('generates %s only when labour applicability is active', async (taxType) => {
     const { service, persistence } = setup([domain(taxType, { applicabilityStatus: 'APPLICABLE', calculationReady: true, calendarStatus: 'AVAILABLE', reason: 'ACTIVE_EMPLOYEES_IN_PERIOD' })], [rule({ taxType, obligationType: taxType })]);
     await expect(service.generate('tenant-a', new Date('2026-10-01'))).resolves.toEqual(expect.objectContaining({ results: [expect.objectContaining({ taxType, outcome: 'CREATED' })] }));

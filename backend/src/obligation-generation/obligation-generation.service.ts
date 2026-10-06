@@ -73,7 +73,9 @@ export class ObligationGenerationService {
   private async findRules(taxType: string, regime: string | undefined, referenceYear: number) {
     const where: any = { active: true, referenceYear };
     if (taxType === 'SAFT') where.obligationType = ObligationType.SAFT;
-    else where.taxType = taxType as TaxType;
+    else if (taxType === TaxType.INDUSTRIAL) {
+      where.taxType = { in: [TaxType.INDUSTRIAL, TaxType.II] };
+    } else where.taxType = taxType as TaxType;
     if (regime) where.regimes = { some: { regime } };
     return this.prisma.fiscalCalendar.findMany({ where, orderBy: { dueDate: 'asc' } });
   }
