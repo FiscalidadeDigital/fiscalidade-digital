@@ -45,6 +45,7 @@ import { SubscriptionAccessModule } from './subscription-access/subscription-acc
 import { UsersModule } from './users/users.module';
 import { ElectronicInvoicingModule } from './electronic-invoicing/electronic-invoicing.module';
 import { FiscalWatchModule } from './fiscal-watch/fiscal-watch.module';
+import { AiModule } from './ai/ai.module';
 
 @Module({
   imports: [
@@ -92,6 +93,7 @@ import { FiscalWatchModule } from './fiscal-watch/fiscal-watch.module';
     InvoiceModule,
     ElectronicInvoicingModule,
     FiscalWatchModule,
+    AiModule,
     PurchaseInvoiceModule,
     PurchaseInvoiceImportModule,
 

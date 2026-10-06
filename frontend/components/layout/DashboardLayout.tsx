@@ -49,6 +49,7 @@ import type {
 import {
   getCompany,
 } from '@/services/company';
+import FloatingAI from '@/components/ai/FloatingAI';
 
 /* =========================================================
    TIPOS
@@ -1555,6 +1556,8 @@ export default function DashboardLayout({
           </div>
         </main>
       </div>
+
+      <FloatingAI />
 
       <style jsx global>{`
         @keyframes dashboard-page-enter {
