@@ -1,12 +1,17 @@
 
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 
 import helmet from 'helmet';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  // Render encaminha o cliente através de um proxy. Sem esta configuração,
+  // req.ip identifica o proxy e agrupa utilizadores distintos no mesmo bucket.
+  app.set('trust proxy', 1);
 
   // =========================================================
   // SEGURANÇA HTTP
