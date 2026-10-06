@@ -26,7 +26,19 @@ describe('FiscalSituationService', () => {
   it('keeps simplified IVA review visible and disables automation', async () => {
     const { service } = setup([domain('IVA', { regime: 'SIMPLIFICADO', calculationReady: false, reason: 'NEEDS_OFFICIAL_CONFIRMATION' })]);
     const result = await service.get('tenant-a', new Date('2026-10-01'));
-    expect(result.taxes[0]).toEqual(expect.objectContaining({ automationReady: false, attentionRequired: true, applicability: expect.objectContaining({ reasonCode: 'NEEDS_OFFICIAL_CONFIRMATION' }) }));
+    expect(result.taxes[0]).toEqual(expect.objectContaining({ automationReady: false, attentionRequired: true, applicability: expect.objectContaining({ reasonCode: 'NEEDS_OFFICIAL_CONFIRMATION', reasonLabel: 'Regra fiscal pendente de confirmação oficial.' }) }));
+  });
+
+  it('presents missing enrollment and employment states without raw internal codes', async () => {
+    const { service } = setup([
+      domain('IVA', { applicabilityStatus: 'REVIEW_REQUIRED', regime: undefined, reason: 'NO_CURRENT_TAX_ENROLLMENT' }),
+      domain('IRT', { applicabilityStatus: 'NOT_APPLICABLE', regime: undefined, reason: 'NO_EMPLOYMENT_TRIGGER' }),
+    ]);
+    const result = await service.get('tenant-a', new Date('2026-10-01'));
+    expect(result.taxes.map((tax) => tax.applicability.reasonLabel)).toEqual([
+      'Enquadramento fiscal por confirmar.',
+      'Sem trabalhadores activos aplicáveis.',
+    ]);
   });
 
   it.each(['IRT', 'SS', 'SAFT'])('shows %s applicability without inventing an enrollment', async (taxType) => {
@@ -46,7 +58,7 @@ describe('FiscalSituationService', () => {
   it('shows calendar pending in 2027 without an obligation or copied deadline', async () => {
     const { service, prisma } = setup([domain('IVA', { calendarStatus: 'OFFICIAL_CALENDAR_PENDING' })], { id: '2026-obligation' });
     const result = await service.get('tenant-a', new Date('2027-01-01'));
-    expect(result.taxes[0]).toEqual(expect.objectContaining({ calendar: { status: 'OFFICIAL_CALENDAR_PENDING', referenceYear: 2027 }, nextObligation: null, attentionRequired: true }));
+    expect(result.taxes[0]).toEqual(expect.objectContaining({ calendar: { status: 'OFFICIAL_CALENDAR_PENDING', statusLabel: 'Calendário oficial pendente', referenceYear: 2027 }, nextObligation: null, attentionRequired: true }));
     expect(prisma.fiscalObligation.findFirst).toHaveBeenCalled();
   });
 

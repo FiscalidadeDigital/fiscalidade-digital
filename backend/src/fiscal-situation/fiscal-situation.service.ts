@@ -11,6 +11,19 @@ const obligationTypes: Record<string, ObligationType[]> = {
   SAFT: [ObligationType.SAFT],
 };
 
+const reasonLabels: Record<string, string> = {
+  NO_CURRENT_TAX_ENROLLMENT: 'Enquadramento fiscal por confirmar.',
+  NO_EMPLOYMENT_TRIGGER: 'Sem trabalhadores activos aplicáveis.',
+  NEEDS_OFFICIAL_CONFIRMATION: 'Regra fiscal pendente de confirmação oficial.',
+  CURRENT_ENROLLMENT: 'Enquadramento fiscal vigente.',
+};
+
+const calendarLabels: Record<string, string> = {
+  AVAILABLE: 'Calendário disponível',
+  OFFICIAL_CALENDAR_PENDING: 'Calendário oficial pendente',
+  NOT_APPLICABLE: 'Não aplicável',
+};
+
 @Injectable()
 export class FiscalSituationService {
   constructor(
@@ -35,7 +48,7 @@ export class FiscalSituationService {
         domain.calculationReady === false;
       return {
         taxType: domain.taxType,
-        applicability: { status: domain.applicabilityStatus, reasonCode: domain.reason },
+        applicability: { status: domain.applicabilityStatus, reasonCode: domain.reason, reasonLabel: reasonLabels[domain.reason] ?? 'É necessária revisão da situação fiscal.' },
         enrollment: domain.regime ? {
           regime: domain.regime,
           validFrom: domain.validFrom,
@@ -43,7 +56,7 @@ export class FiscalSituationService {
           reviewStatus: domain.reviewStatus,
           legalBasis: { diploma: domain.legalBasis, source: domain.sourceUrl },
         } : null,
-        calendar: { status: domain.calendarStatus, referenceYear: period.getUTCFullYear() },
+        calendar: { status: domain.calendarStatus, statusLabel: calendarLabels[domain.calendarStatus] ?? 'Estado do calendário por confirmar', referenceYear: period.getUTCFullYear() },
         nextObligation: domain.calendarStatus === 'OFFICIAL_CALENDAR_PENDING' ? null : nextObligation,
         automationReady: Boolean(domain.calculationReady && domain.applicabilityStatus === 'APPLICABLE'),
         attentionRequired,

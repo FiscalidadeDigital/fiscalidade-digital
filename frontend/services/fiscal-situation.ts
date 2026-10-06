@@ -9,7 +9,7 @@ export type FiscalTaxType =
 
 export type FiscalSituationTax = {
   taxType: FiscalTaxType;
-  applicability: { status: string; reasonCode?: string | null };
+  applicability: { status: string; reasonCode?: string | null; reasonLabel?: string | null };
   enrollment: {
     regime: string;
     validFrom?: string | null;
@@ -17,7 +17,7 @@ export type FiscalSituationTax = {
     reviewStatus?: string | null;
     legalBasis?: { diploma?: string | null; source?: string | null } | null;
   } | null;
-  calendar: { status: string; referenceYear: number };
+  calendar: { status: string; statusLabel?: string | null; referenceYear: number };
   nextObligation: {
     id?: string;
     title?: string | null;
