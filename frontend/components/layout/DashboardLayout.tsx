@@ -670,6 +670,7 @@ export default function DashboardLayout({
         className={`
           group
           relative
+          fd-sidebar-logo
           flex
           h-[42px]
           w-full
@@ -872,6 +873,7 @@ export default function DashboardLayout({
               closeMobileMenu
             }
             className="
+              fd-sidebar-close
               ml-auto
               flex
               h-9
@@ -899,6 +901,7 @@ export default function DashboardLayout({
 
       <div
         className="
+          fd-sidebar-company
           shrink-0
           px-4
           pb-3
@@ -977,6 +980,7 @@ export default function DashboardLayout({
 
       <div
         className="
+          fd-sidebar-scroll
           min-h-0
           flex-1
           overflow-y-auto
@@ -998,6 +1002,7 @@ export default function DashboardLayout({
             >
               <div
                 className="
+                  fd-sidebar-section-title
                   mb-2
                   px-3
                   text-[9px]
@@ -1034,6 +1039,7 @@ export default function DashboardLayout({
         <div className="pb-5">
           <div
             className="
+              fd-sidebar-section-title
               mb-2
               px-3
               text-[9px]
@@ -1062,6 +1068,7 @@ export default function DashboardLayout({
 
           <div
             className="
+              fd-sidebar-logout
               mt-3
               border-t
               border-[#edf1f6]
