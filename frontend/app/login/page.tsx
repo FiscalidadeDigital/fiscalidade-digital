@@ -39,6 +39,13 @@ export default function LoginPage() {
   const [error, setError] =
     useState('');
 
+  const [sessionNotice] = useState(() =>
+    typeof window !== 'undefined' &&
+    new URLSearchParams(window.location.search).get('reason') === 'session-expired'
+      ? 'A sua sessão terminou por segurança. Inicie sessão novamente para continuar.'
+      : '',
+  );
+
   /* ==========================================================
      LOGIN
   ========================================================== */
@@ -366,6 +373,12 @@ export default function LoginPage() {
             </div>
 
             {/* ERRO */}
+
+            {sessionNotice && (
+              <div role="status" className="mb-6 rounded-md border border-sky-200 bg-sky-50 px-4 py-3 text-sm leading-5 text-sky-900">
+                {sessionNotice}
+              </div>
+            )}
 
             {error && (
               <div

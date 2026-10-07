@@ -3,6 +3,7 @@
   type InternalAxiosRequestConfig,
 } from 'axios';
 import { API_BASE_URL, getApiBaseUrl } from './api-base-url';
+import { notifySessionExpired } from '@/lib/session-lifecycle';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -65,21 +66,7 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       typeof window !== 'undefined'
     ) {
-      localStorage.removeItem(
-        'token',
-      );
-
-      localStorage.removeItem(
-        'user',
-      );
-
-      localStorage.removeItem(
-        'tenant',
-      );
-
-      localStorage.removeItem(
-        'tenantId',
-      );
+      notifySessionExpired();
     }
 
     return Promise.reject(error);

@@ -2077,11 +2077,13 @@ export default function ObligationsPage() {
                     obligation.status ===
                     'LATE';
 
-                  const amount =
-                    Number(
-                      obligation.amount ||
-                        0,
-                    );
+                  const hasDeterminedAmount =
+                    obligation.amount !== null &&
+                    obligation.amount !== undefined;
+
+                  const amount = hasDeterminedAmount
+                    ? Number(obligation.amount)
+                    : null;
 
                   const description =
                     cleanCalendarDescription(
@@ -2423,9 +2425,9 @@ export default function ObligationsPage() {
                                 text-[#111b3b]
                               "
                             >
-                              {formatCurrency(
-                                amount,
-                              )}
+                              {amount === null
+                                ? 'Montante ainda não determinado'
+                                : formatCurrency(amount)}
                             </p>
 
                             <span

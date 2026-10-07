@@ -6,11 +6,17 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
 
 import api from '@/services/api';
+import { isAxiosError } from 'axios';
+import {
+  clearTenantSession,
+  SESSION_EXPIRED_EVENT,
+} from '@/lib/session-lifecycle';
 import {
   getToken,
   removeToken,
@@ -106,6 +112,8 @@ export function AuthProvider({
   const [initialized, setInitialized] =
     useState(false);
 
+  const sessionEndingRef = useRef(false);
+
   /* ==========================================================
      GUARDAR SESSÃO
   ========================================================== */
@@ -146,6 +154,7 @@ export function AuthProvider({
 
   const clearSession = useCallback(() => {
     removeToken();
+    clearTenantSession();
 
     setUser(null);
     setCompany(null);
@@ -267,7 +276,11 @@ export function AuthProvider({
           error,
         );
 
-        clearSession();
+        // A timeout, 5xx or Render wake-up is not proof that the session ended.
+        // Only the API's explicit 401 invalidates tenant state.
+        if (isAxiosError(error) && error.response?.status === 401) {
+          clearSession();
+        }
       } finally {
         setLoading(false);
         setInitialized(true);
@@ -466,6 +479,27 @@ export function AuthProvider({
   useEffect(() => {
     refreshSession();
   }, [refreshSession]);
+
+  useEffect(() => {
+    const handleExpiredSession = () => {
+      if (sessionEndingRef.current) return;
+      sessionEndingRef.current = true;
+      clearSession();
+      setInitialized(true);
+      window.location.replace('/login?reason=session-expired');
+    };
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key === 'token' && event.newValue === null) handleExpiredSession();
+    };
+
+    window.addEventListener(SESSION_EXPIRED_EVENT, handleExpiredSession);
+    window.addEventListener('storage', handleStorage);
+    return () => {
+      window.removeEventListener(SESSION_EXPIRED_EVENT, handleExpiredSession);
+      window.removeEventListener('storage', handleStorage);
+    };
+  }, [clearSession]);
 
   /* ==========================================================
      AUTENTICAÇÃO
