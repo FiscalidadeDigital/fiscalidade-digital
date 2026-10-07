@@ -22,6 +22,14 @@ export interface LibraryDocument {
   [key: string]: any;
 }
 
+export interface RagLibraryChunk {
+  sourceCategory: string;
+  sourceFile: string;
+  title: string;
+  article: string | null;
+  text: string;
+}
+
 @Injectable()
 export class LegislationLibraryService {
 
@@ -648,5 +656,100 @@ export class LegislationLibraryService {
       (document) =>
         document !== null,
     );
+  }
+
+  // ============================================================
+  // RECUPERAÇÃO LIMITADA PARA RAG
+  // ============================================================
+
+  retrieveForRag(
+    query: string,
+    limit = 8,
+  ): RagLibraryChunk[] {
+    const data = this.load();
+    const documents: LibraryDocument[] = Array.isArray(data.documents)
+      ? data.documents
+      : [];
+    const terms = Array.from(
+      new Set(
+        this.normalizeForSearch(query)
+          .match(/[a-z0-9-]{3,}/g)
+          ?.filter((term) => ![
+            'como', 'para', 'qual', 'quais', 'sobre', 'tenho', 'uma', 'meu',
+            'minha', 'devo', 'sao', 'das', 'dos',
+          ].includes(term)) ?? [],
+      ),
+    ).slice(0, 8);
+
+    if (!terms.length) return [];
+
+    const normalizedQuery = this.normalizeForSearch(query);
+    const excludeCustoms = /\b(irt|inss|seguranca social|imposto industrial)\b/.test(
+      normalizedQuery,
+    );
+
+    const chunks: Array<RagLibraryChunk & { score: number }> = [];
+    for (const document of documents) {
+      const prepared = this.prepareDocument(document, false);
+      if (
+        excludeCustoms &&
+        this.normalizeForSearch(prepared.sourceCategory) === 'aduaneira'
+      ) {
+        continue;
+      }
+      const title = this.resolveTitle(document);
+      const documentText = this.normalizeForSearch(
+        `${title} ${prepared.sourceFile} ${prepared.sourceCategory}`,
+      );
+      const documentScore = terms.reduce(
+        (score, term) => score + (documentText.includes(term) ? 3 : 0),
+        0,
+      );
+      const articles = Array.isArray(prepared.articles)
+        ? prepared.articles
+        : [];
+
+      for (const article of articles) {
+        const articleText = this.normalizeForSearch(
+          `${article.article} ${article.text}`,
+        );
+        const articleScore = terms.reduce(
+          (score, term) => score + (articleText.includes(term) ? 1 : 0),
+          0,
+        );
+        const score = documentScore + articleScore;
+        if (!score) continue;
+        chunks.push({
+          sourceCategory: this.normalizeText(prepared.sourceCategory),
+          sourceFile: this.normalizeText(prepared.sourceFile),
+          title,
+          article: this.normalizeText(article.article) || null,
+          text: this.normalizeText(article.text),
+          score,
+        });
+      }
+
+      if (!articles.length && documentScore && document.fullText) {
+        chunks.push({
+          sourceCategory: this.normalizeText(prepared.sourceCategory),
+          sourceFile: this.normalizeText(prepared.sourceFile),
+          title,
+          article: null,
+          text: this.normalizeText(document.fullText),
+          score: documentScore,
+        });
+      }
+    }
+
+    return chunks
+      .sort((left, right) => right.score - left.score)
+      .slice(0, Math.max(1, Math.min(limit, 12)))
+      .map((item) => ({
+        sourceCategory: item.sourceCategory,
+        sourceFile: item.sourceFile,
+        title: item.title,
+        article: item.article,
+        text: item.text,
+      }));
   }
 }

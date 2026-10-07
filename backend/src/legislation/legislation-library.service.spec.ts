@@ -16,4 +16,31 @@ describe('LegislationLibraryService extraction safeguards', () => {
 
     expect(normalize('Imposto Industrial')).toBe('imposto industrial');
   });
+
+  it('retrieves bounded verbatim legal chunks for RAG', () => {
+    const service = new LegislationLibraryService();
+    jest.spyOn(service as any, 'load').mockReturnValue({
+      documents: [
+        {
+          sourceCategory: 'AGT',
+          sourceFile: 'codigo-iva.pdf',
+          titleDetected: 'Código do IVA',
+          articles: [
+            { article: 'ARTIGO 1.º', text: 'O IVA incide sobre as operações previstas neste Código.' },
+            { article: 'ARTIGO 2.º', text: 'Texto sem correspondência.' },
+          ],
+        },
+      ],
+    });
+
+    expect(service.retrieveForRag('Como funciona o IVA?', 1)).toEqual([
+      {
+        sourceCategory: 'AGT',
+        sourceFile: 'codigo-iva.pdf',
+        title: 'Código do IVA',
+        article: 'ARTIGO 1.º',
+        text: 'O IVA incide sobre as operações previstas neste Código.',
+      },
+    ]);
+  });
 });
