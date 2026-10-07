@@ -7,7 +7,6 @@
 
 import {
   FiscalRegime,
-  InvoiceDocumentType,
   ObligationStatus,
   ObligationType,
   Prisma,
@@ -292,19 +291,18 @@ export class ObligationsService {
           regime,
         );
 
-      const existingAmount =
-        existing
-          ? this.number(
-              existing.amount,
-            )
-          : 0;
+      const existingAmount = existing?.amount ?? null;
 
-      let finalAmount =
+      /*
+       * A ausência de um apuramento confirmado não é um imposto zero.
+       * Mantemos o valor histórico já persistido, quando existe, e deixamos
+       * novas obrigações sem montante até o FiscalEngine produzir o
+       * TaxAssessment correspondente.
+       */
+      let finalAmount: number | null =
         calculatedAmount === null
           ? existingAmount
-          : this.number(
-              calculatedAmount,
-            );
+          : this.number(calculatedAmount);
 
       /*
        * Quando a fonte operacional determina
@@ -314,6 +312,7 @@ export class ObligationsService {
 
       if (
         calculatedAmount === 0 &&
+        existingAmount !== null &&
         existingAmount > 0 &&
         !this.hasReliableZeroSource(
           rule.obligationType,
@@ -326,13 +325,9 @@ export class ObligationsService {
           existingAmount;
       }
 
-      finalAmount =
-        this.round(
-          Math.max(
-            0,
-            finalAmount,
-          ),
-        );
+      if (finalAmount !== null) {
+        finalAmount = this.round(Math.max(0, finalAmount));
+      }
 
       // ========================================================
       // OBRIGAÇÃO EXISTENTE
@@ -788,6 +783,38 @@ export class ObligationsService {
         }`,
       );
 
+    /*
+     * The FiscalEngine is the sole authority for assessed IVA and Industrial
+     * amounts. Calendar synchronization may create a duty, but it must not
+     * recreate a concurrent formula when the assessment needs review.
+     */
+    const assessmentTaxType =
+      taxType === TaxType.II ? TaxType.INDUSTRIAL : taxType;
+    const centralAssessment = await this.findAssessment(
+      tenant.id,
+      assessmentTaxType,
+      period,
+      referenceYear,
+    );
+
+    if (centralAssessment) {
+      const status = centralAssessment.calculationStatus;
+      if (status === 'CALCULATED' || status === 'ZERO' || status === 'CREDIT') {
+        return this.round(
+          Math.max(
+            0,
+            this.number(
+              centralAssessment.payableAmountValue ??
+                centralAssessment.finalAmountValue ??
+                centralAssessment.finalAmount,
+            ),
+          ),
+        );
+      }
+
+      return null;
+    }
+
     // ==========================================================
     // SAF-T
     // ==========================================================
@@ -878,144 +905,7 @@ export class ObligationsService {
       taxType === TaxType.IVA ||
       obligationType === ObligationType.IVA
     ) {
-      // ========================================================
-      // IVA REGIME GERAL
-      // ========================================================
-
-      if (
-        this.isGeneralRegime(
-          applicableRegime,
-        )
-      ) {
-        if (
-          ruleText.includes(
-            'iva simplificado',
-          ) ||
-          (
-            ruleText.includes(
-              'regime simplificado',
-            ) &&
-            ruleText.includes(
-              'iva',
-            )
-          )
-        ) {
-          return 0;
-        }
-
-        /*
-         * Regime Geral:
-         * o IVA é apurado pelo período da operação,
-         * independentemente de a factura já estar paga.
-         */
-        const invoices =
-          await this.prisma.invoice.findMany({
-            where: {
-              tenantId:
-                tenant.id,
-
-              documentType: InvoiceDocumentType.NORMAL,
-
-              issuedAt: {
-                gte:
-                  start,
-
-                lt:
-                  end,
-              },
-
-              status: {
-                not:
-                  'CANCELLED',
-              },
-            },
-
-            select: {
-              iva:
-                true,
-            },
-          });
-
-        const ivaLiquidado =
-          invoices.reduce(
-            (
-              sum,
-              invoice,
-            ) =>
-              sum +
-              this.number(
-                invoice.iva,
-              ),
-            0,
-          );
-
-        const purchases =
-          await this.prisma.purchaseInvoice.findMany({
-            where: {
-              tenantId:
-                tenant.id,
-
-              issuedAt: {
-                gte:
-                  start,
-
-                lt:
-                  end,
-              },
-
-              status: {
-                not:
-                  'CANCELLED',
-              },
-            },
-
-            select: {
-              iva:
-                true,
-            },
-          });
-
-        /*
-         * O IVA indicado numa factura de fornecedor é suportado,
-         * mas não se torna dedutível até existir classificação e
-         * regra fiscal confirmadas pelo motor central.
-         */
-        const ivaDedutivel = 0;
-
-        /*
-         * IVA a entregar:
-         *
-         * IVA liquidado
-         * -
-         * IVA dedutível
-         */
-
-        return this.round(
-          Math.max(
-            0,
-            ivaLiquidado -
-              ivaDedutivel,
-          ),
-        );
-      }
-
-      // ========================================================
-      // IVA REGIME SIMPLIFICADO
-      // ========================================================
-
-      if (
-        this.isSimplifiedRegime(
-          applicableRegime,
-        )
-      ) {
-        return this.calculateSimplifiedVat(
-          tenant.id,
-          referenceYear,
-          referenceMonth,
-        );
-      }
-
-      return 0;
+      return null;
     }
 
     // ==========================================================
@@ -1078,91 +968,7 @@ export class ObligationsService {
       taxType ===
       TaxType.INDUSTRIAL
     ) {
-      /*
-       * Se o motor fiscal já produziu uma avaliação,
-       * damos prioridade ao TaxAssessment.
-       */
-
-      const assessment =
-        await this.findAssessment(
-          tenant.id,
-          TaxType.INDUSTRIAL,
-          period,
-          referenceYear,
-        );
-
-      if (
-        assessment
-      ) {
-        return this.round(
-          Math.max(
-            0,
-            this.number(
-              assessment.finalAmount,
-            ),
-          ),
-        );
-      }
-
-      /*
-       * Pagamento provisório do II:
-       *
-       * 2% das vendas dos primeiros
-       * seis meses.
-       *
-       * A obrigação de pagamento provisório
-       * é normalmente associada ao mês de Agosto.
-       */
-
-      if (
-        dueMonth === 8 ||
-        ruleText.includes(
-          'industrial provisorio',
-        ) ||
-        ruleText.includes(
-          'industrial provisório',
-        )
-      ) {
-        return this.calculateIndustrialProvisional(
-          tenant.id,
-          referenceYear,
-        );
-      }
-
-      /*
-       * Não inventar imposto industrial definitivo
-       * com base apenas no volume de facturação.
-       *
-       * O definitivo deve vir de declaração,
-       * assessment ou regra fiscal específica.
-       */
-
-      return 0;
-    }
-
-    // ==========================================================
-    // TAX ASSESSMENT
-    // ==========================================================
-
-    const assessment =
-      await this.findAssessment(
-        tenant.id,
-        taxType,
-        period,
-        referenceYear,
-      );
-
-    if (
-      assessment
-    ) {
-      return this.round(
-        Math.max(
-          0,
-          this.number(
-            assessment.finalAmount,
-          ),
-        ),
-      );
+      return null;
     }
 
     // ==========================================================

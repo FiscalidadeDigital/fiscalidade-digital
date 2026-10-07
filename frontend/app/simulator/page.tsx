@@ -768,7 +768,7 @@ export default function SimulatorPage() {
             }
             title="Retenção na Fonte"
             description="Estimativa do valor retido e do valor líquido."
-            rate="6,5%"
+            rate="Confirmação"
             iconClass="bg-orange-50 text-orange-600"
           />
 
@@ -998,7 +998,7 @@ export default function SimulatorPage() {
                     label="Regime"
                     value={
                       ivaResult.regime ||
-                      'GERAL'
+                      'Não configurado'
                     }
                   />
 
@@ -1087,8 +1087,8 @@ export default function SimulatorPage() {
                   </p>
 
                   <p className="text-xs text-slate-500 leading-5 mt-1">
-                    Informe o valor do serviço para
-                    estimar a retenção e o valor líquido.
+                    O valor é validado, mas a retenção só é calculada quando
+                    existir regra oficial versionada para a operação.
                   </p>
 
                 </div>
@@ -1123,65 +1123,21 @@ export default function SimulatorPage() {
             {retentionResult && (
               <div className="mt-7 pt-6 border-t border-slate-100">
 
-                <ResultTitle
-                  title="Resultado do cálculo"
-                  badge="Retenção"
-                />
-
-                <div className="rounded-2xl border border-slate-100 overflow-hidden">
-
-                  <ResultRow
-                    label="Regime"
-                    value={
-                      retentionResult.regime ||
-                      'GERAL'
-                    }
-                  />
-
-                  <ResultRow
-                    label="Base tributável"
-                    value={`${money(
-                      resultValue(
-                        retentionResult,
-                        'amount',
-                      ),
-                    )} AOA`}
-                  />
-
-                  <ResultRow
-                    label="Taxa aplicada"
-                    value={`${money(
-                      resultValue(
-                        retentionResult,
-                        'ratePercent',
-                      ),
-                    )}%`}
-                  />
-
-                  <ResultRow
-                    label="Retenção"
-                    value={`${money(
-                      resultValue(
-                        retentionResult,
-                        'retention',
-                      ),
-                    )} AOA`}
-                    emphasized
-                  />
-
-                </div>
-
-                <ResultHighlight
-                  label="Valor líquido"
-                  value={`${money(
-                    resultValue(
-                      retentionResult,
-                      'netAmount',
-                      'net',
-                    ),
-                  )} AOA`}
-                  className="bg-orange-50 border-orange-100 text-orange-600"
-                />
+                {retentionResult.calculationStatus === 'NEEDS_OFFICIAL_CONFIRMATION' ? (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
+                    {retentionResult.message}
+                  </div>
+                ) : (
+                  <>
+                    <ResultTitle title="Resultado do cálculo" badge="Retenção" />
+                    <div className="rounded-2xl border border-slate-100 overflow-hidden">
+                      <ResultRow label="Base tributável" value={`${money(resultValue(retentionResult, 'amount'))} AOA`} />
+                      <ResultRow label="Taxa aplicada" value={`${money(resultValue(retentionResult, 'ratePercent'))}%`} />
+                      <ResultRow label="Retenção" value={`${money(resultValue(retentionResult, 'retention'))} AOA`} emphasized />
+                    </div>
+                    <ResultHighlight label="Valor líquido" value={`${money(resultValue(retentionResult, 'netAmount', 'net'))} AOA`} className="bg-orange-50 border-orange-100 text-orange-600" />
+                  </>
+                )}
 
                 <ClearButton
                   onClick={clearRetention}
@@ -1284,7 +1240,7 @@ export default function SimulatorPage() {
                     label="Regime"
                     value={
                       industrialResult.regime ||
-                      'GERAL'
+                      'Não configurado'
                     }
                   />
 

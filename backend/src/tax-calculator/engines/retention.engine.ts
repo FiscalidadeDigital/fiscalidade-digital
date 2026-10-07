@@ -1,120 +1,59 @@
-import {
-  BadRequestException,
-  Injectable,
-} from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { CalculateRetentionDto } from '../dto/calculate-retention.dto';
 
+/**
+ * A retenção na fonte exige natureza jurídica, taxa e fonte oficial versionadas.
+ * Sem esses elementos o simulador deve falhar fechado, nunca inferir uma taxa.
+ */
 @Injectable()
 export class RetentionEngine {
-  // =====================================================
-  // TAXA DE RETENÇÃO
-  // =====================================================
-
-  /**
-   * Taxa de 6,5% aplicável às situações de rendimento
-   * sujeitas a retenção na fonte previstas na legislação
-   * aplicável.
-   *
-   * IMPORTANTE:
-   * Esta taxa não deve ser aplicada automaticamente a
-   * qualquer operação da empresa.
-   *
-   * O enquadramento da operação deve ser determinado
-   * antes de chamar este cálculo.
-   */
-  private readonly RETENTION_RATE = 0.065;
-
-  // =====================================================
-  // CALCULAR RETENÇÃO
-  // =====================================================
-
-  async calculate(
-    tenantId: string,
-    dto: CalculateRetentionDto,
-  ) {
-    // ===================================================
-    // VALIDAR EMPRESA
-    // ===================================================
-
+  async calculate(tenantId: string, dto: CalculateRetentionDto) {
     if (!tenantId) {
-      throw new BadRequestException(
-        'Empresa autenticada não identificada.',
-      );
+      throw new BadRequestException('Empresa autenticada não identificada.');
     }
-
-    // ===================================================
-    // VALIDAR DADOS
-    // ===================================================
 
     if (!dto) {
-      throw new BadRequestException(
-        'Dados do cálculo não enviados.',
-      );
+      throw new BadRequestException('Dados do cálculo não enviados.');
     }
 
-    // ===================================================
-    // VALIDAR VALOR
-    // ===================================================
-
-    const amount =
-      Number(dto.amount);
-
-    if (
-      !Number.isFinite(amount) ||
-      amount < 0
-    ) {
+    let amount: Prisma.Decimal;
+    try {
+      amount = new Prisma.Decimal(dto.amount);
+    } catch {
       throw new BadRequestException(
         'O valor do serviço deve ser um número válido.',
       );
     }
 
-    // ===================================================
-    // CÁLCULO
-    // ===================================================
+    if (!amount.isFinite() || amount.isNegative()) {
+      throw new BadRequestException(
+        'O valor do serviço deve ser um número válido.',
+      );
+    }
 
-    const rate =
-      this.RETENTION_RATE;
-
-    const retention =
-      amount * rate;
-
-    const netAmount =
-      amount - retention;
-
-    // ===================================================
-    // RESULTADO
-    // ===================================================
+    const taxableBase = amount.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
     return {
       success: true,
-
       tenantId,
-
-      amount,
-
-      taxableBase:
-        amount,
-
-      rate,
-
-      ratePercent:
-        rate * 100,
-
-      retention,
-
-      netAmount,
-
+      // Decimal is serialised as a fixed monetary string so the UI does not
+      // receive a binary-float approximation for an unconfirmed calculation.
+      amount: taxableBase.toFixed(2),
+      taxableBase: taxableBase.toFixed(2),
+      rate: null,
+      ratePercent: null,
+      retention: null,
+      netAmount: null,
       currency: 'AOA',
-
-      taxType:
-        'RETENCAO',
-
-      nature:
-        'SERVICO_SUJEITO_RETENCAO',
-
+      taxType: 'RETENCAO',
+      nature: 'SERVICO_SUJEITO_RETENCAO',
+      calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      ruleVersion: null,
+      legalSource: null,
       message:
-        'Cálculo de retenção de 6,5%. A aplicação da retenção deve ser confirmada de acordo com a natureza da operação e o enquadramento fiscal aplicável.',
+        'A retenção não foi calculada: a natureza da operação, a taxa aplicável e a respectiva fonte oficial ainda não estão configuradas como regra fiscal versionada.',
     };
   }
 }

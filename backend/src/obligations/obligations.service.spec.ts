@@ -1,4 +1,4 @@
-import { FiscalRegime, InvoiceDocumentType, ObligationType, TaxType } from '@prisma/client';
+import { FiscalRegime, ObligationType, Prisma, TaxType } from '@prisma/client';
 
 import { ObligationsService } from './obligations.service';
 
@@ -34,8 +34,16 @@ describe('ObligationsService IVA source eligibility', () => {
     expect(privateService.isCalendarRuleApplicable({ title: 'Imposto Industrial', description: null, taxType: TaxType.INDUSTRIAL, obligationType: ObligationType.II }, FiscalRegime.GERAL, true)).toBe(true);
   });
 
-  it('excludes Pro Formas and does not deduct supported purchase VAT by default', async () => {
+  it('uses the tenant-scoped central IVA assessment instead of recalculating invoice VAT', async () => {
     const prisma = {
+      taxAssessment: {
+        findFirst: jest.fn().mockResolvedValue({
+          calculationStatus: 'CALCULATED',
+          finalAmount: 0,
+          finalAmountValue: new Prisma.Decimal('140.01'),
+          payableAmountValue: new Prisma.Decimal('140.01'),
+        }),
+      },
       invoice: {
         findMany: jest.fn().mockResolvedValue([{ iva: 140.01 }]),
       },
@@ -59,9 +67,34 @@ describe('ObligationsService IVA source eligibility', () => {
     );
 
     expect(result).toBe(140.01);
-    expect(prisma.invoice.findMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ documentType: InvoiceDocumentType.NORMAL }),
+    expect(prisma.taxAssessment.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ tenantId: 'tenant-a', taxType: TaxType.IVA, period: '2026-10', year: 2026 }),
     }));
-    expect(prisma.purchaseInvoice.findMany).toHaveBeenCalled();
+    expect(prisma.invoice.findMany).not.toHaveBeenCalled();
+    expect(prisma.purchaseInvoice.findMany).not.toHaveBeenCalled();
+  });
+
+  it('keeps an IVA obligation amount undetermined while the central assessment needs review', async () => {
+    const taxAssessment = {
+      findFirst: jest.fn().mockResolvedValue({ calculationStatus: 'REVIEW_REQUIRED' }),
+    };
+    const service = new ObligationsService({ taxAssessment } as never);
+
+    await expect((service as unknown as {
+      calculateObligationAmount: (...args: unknown[]) => Promise<number | null>;
+    }).calculateObligationAmount(
+      { id: 'tenant-b', regime: FiscalRegime.GERAL, sector: null, companyType: null, retentionRate: 0 },
+      ObligationType.IVA,
+      TaxType.IVA,
+      'IVA mensal',
+      null,
+      new Date('2026-11-10T00:00:00.000Z'),
+      '2026-10',
+      FiscalRegime.GERAL,
+    )).resolves.toBeNull();
+
+    expect(taxAssessment.findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ tenantId: 'tenant-b', taxType: TaxType.IVA, period: '2026-10' }),
+    }));
   });
 });
