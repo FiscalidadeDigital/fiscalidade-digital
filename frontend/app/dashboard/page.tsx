@@ -11,11 +11,11 @@ import {
   TrendingUp,
   ShieldCheck,
   ReceiptText,
-  Building2,
   FileText,
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { PageHeader } from '@/components/ui/enterprise';
 
 import CalendarFiscal from '@/components/dashboard/CalendarFiscal';
 import Alerts from '@/components/dashboard/Alerts';
@@ -47,11 +47,7 @@ interface Deadline {
   amount?: number;
   type?: string;
   daysLeft?: number;
-  status?:
-    | 'today'
-    | 'warning'
-    | 'normal'
-    | 'success';
+  status?: 'today' | 'warning' | 'normal' | 'success';
   obligationStatus?: string;
   regime?: string;
   sector?: string;
@@ -62,11 +58,7 @@ interface Alert {
   title: string;
   description: string;
   date?: string;
-  type:
-    | 'danger'
-    | 'warning'
-    | 'info'
-    | 'success';
+  type: 'danger' | 'warning' | 'info' | 'success';
 }
 
 interface Tax {
@@ -184,133 +176,74 @@ const EMPTY_DATA: DashboardData = {
 // HELPERS
 // ============================================================
 
-function toNumber(
-  value: unknown,
-): number {
-  const number =
-    Number(value);
+function toNumber(value: unknown): number {
+  const number = Number(value);
 
-  return Number.isFinite(
-    number,
-  )
-    ? number
-    : 0;
+  return Number.isFinite(number) ? number : 0;
 }
 
-function getMessage(
-  error: any,
-): string {
-  if (
-    error?.response?.status ===
-    401
-  ) {
+function getMessage(error: any): string {
+  if (error?.response?.status === 401) {
     return 'Sessão expirada. Faça login novamente.';
   }
 
-  if (
-    error?.response?.status ===
-    403
-  ) {
+  if (error?.response?.status === 403) {
     return 'Não tem autorização para acessar o dashboard.';
   }
 
-  const serverMessage =
-    error?.response?.data?.message;
+  const serverMessage = error?.response?.data?.message;
 
-  if (
-    Array.isArray(
-      serverMessage,
-    )
-  ) {
-    return serverMessage.join(
-      ', ',
-    );
+  if (Array.isArray(serverMessage)) {
+    return serverMessage.join(', ');
   }
 
-  if (
-    serverMessage
-  ) {
-    return String(
-      serverMessage,
-    );
+  if (serverMessage) {
+    return String(serverMessage);
   }
 
-  if (
-    error instanceof Error
-  ) {
+  if (error instanceof Error) {
     return error.message;
   }
 
   return 'Erro ao carregar os dados fiscais.';
 }
 
-function formatCurrency(
-  value: number,
-): string {
-  return new Intl.NumberFormat(
-    'pt-AO',
-    {
-      style: 'currency',
-      currency: 'AOA',
-      maximumFractionDigits: 0,
-    },
-  ).format(
-    Number(value || 0),
-  );
+function formatCurrency(value: number): string {
+  return new Intl.NumberFormat('pt-AO', {
+    style: 'currency',
+    currency: 'AOA',
+    maximumFractionDigits: 0,
+  }).format(Number(value || 0));
 }
 
-function getRegimeLabel(
-  regime: string,
-): string {
-  const value =
-    String(
-      regime || '',
-    )
-      .trim()
-      .toUpperCase();
+function getRegimeLabel(regime: string): string {
+  const value = String(regime || '')
+    .trim()
+    .toUpperCase();
 
-  if (
-    value.includes(
-      'SIMPLIFICADO',
-    )
-  ) {
+  if (value.includes('SIMPLIFICADO')) {
     return 'Regime Simplificado';
   }
 
-  if (
-    value.includes(
-      'GERAL',
-    )
-  ) {
+  if (value.includes('GERAL')) {
     return 'Regime Geral';
   }
 
   return regime || 'Regime não definido';
 }
 
-function getCompanyStatus(
-  status?: string | null,
-): string {
-  const value =
-    String(
-      status || '',
-    ).toUpperCase();
+function getCompanyStatus(status?: string | null): string {
+  const value = String(status || '').toUpperCase();
 
-  if (
-    value === 'ACTIVE'
-  ) {
+  if (value === 'ACTIVE') {
     return 'Activa';
   }
 
-  if (
-    value === 'TRIAL'
-  ) {
+  if (value === 'TRIAL') {
     return 'Período experimental';
   }
 
-  if (
-    value === 'SUSPENDED'
-  ) {
+  if (value === 'SUSPENDED') {
     return 'Suspensa';
   }
 
@@ -322,55 +255,26 @@ function getCompanyStatus(
 // ============================================================
 
 export default function DashboardPage() {
-  const [
-    company,
-    setCompany,
-  ] = useState<Company>(
-    EMPTY_COMPANY,
-  );
+  const [company, setCompany] = useState<Company>(EMPTY_COMPANY);
 
-  const [
-    dashboard,
-    setDashboard,
-  ] = useState<DashboardData>(
-    EMPTY_DATA,
-  );
+  const [dashboard, setDashboard] = useState<DashboardData>(EMPTY_DATA);
 
-  const [
-    loading,
-    setLoading,
-  ] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [
-    refreshing,
-    setRefreshing,
-  ] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [
-    error,
-    setError,
-  ] = useState<string | null>(
-    null,
-  );
+  const [error, setError] = useState<string | null>(null);
 
   // ==========================================================
   // CARREGAR DADOS
   // ==========================================================
 
-  async function fetchDashboard(
-    isRefresh = false,
-  ) {
+  async function fetchDashboard(isRefresh = false) {
     try {
-      if (
-        isRefresh
-      ) {
-        setRefreshing(
-          true,
-        );
+      if (isRefresh) {
+        setRefreshing(true);
       } else {
-        setLoading(
-          true,
-        );
+        setLoading(true);
       }
 
       setError(null);
@@ -382,50 +286,31 @@ export default function DashboardPage() {
        * Não enviamos tenantId pelo frontend.
        */
 
-      const response =
-        await api.get(
-          '/dashboard',
-        );
+      const response = await api.get('/dashboard');
 
-      const data =
-        response?.data;
+      const data = response?.data;
 
       // ========================================================
       // EMPRESA
       // ========================================================
 
       const realCompany: Company = {
-        id:
-          data?.company?.id,
+        id: data?.company?.id,
 
-        name:
-          data?.company?.name ||
-          'Empresa',
+        name: data?.company?.name || 'Empresa',
 
-        nif:
-          data?.company?.nif ||
-          'Não disponível',
+        nif: data?.company?.nif || 'Não disponível',
 
-        regime:
-          data?.company?.regime ||
-          'Não definido',
+        regime: data?.company?.regime || 'Não definido',
 
-        sector:
-          data?.company?.sector ||
-          'Não definido',
+        sector: data?.company?.sector || 'Não definido',
 
-        companyType:
-          data?.company?.companyType ||
-          null,
+        companyType: data?.company?.companyType || null,
 
-        status:
-          data?.company?.status ||
-          null,
+        status: data?.company?.status || null,
       };
 
-      setCompany(
-        realCompany,
-      );
+      setCompany(realCompany);
 
       // ========================================================
       // DASHBOARD
@@ -436,93 +321,39 @@ export default function DashboardPage() {
 
         ...data,
 
-        pendingObligations:
-          toNumber(
-            data?.pendingObligations,
-          ),
+        pendingObligations: toNumber(data?.pendingObligations),
 
-        pendingObligationsAmount:
-          toNumber(
-            data?.pendingObligationsAmount,
-          ),
+        pendingObligationsAmount: toNumber(data?.pendingObligationsAmount),
 
-        upcomingDeadlines:
-          toNumber(
-            data?.upcomingDeadlines,
-          ),
+        upcomingDeadlines: toNumber(data?.upcomingDeadlines),
 
-        paymentsOnTime:
-          toNumber(
-            data?.paymentsOnTime,
-          ),
+        paymentsOnTime: toNumber(data?.paymentsOnTime),
 
         finesAvoided:
-          data?.finesAvoided ===
-          null ||
-          data?.finesAvoided ===
-          undefined
+          data?.finesAvoided === null || data?.finesAvoided === undefined
             ? null
-            : toNumber(
-                data?.finesAvoided,
-              ),
+            : toNumber(data?.finesAvoided),
 
-        deadlines:
-          Array.isArray(
-            data?.deadlines,
-          )
-            ? data.deadlines
-            : [],
+        deadlines: Array.isArray(data?.deadlines) ? data.deadlines : [],
 
-        alerts:
-          Array.isArray(
-            data?.alerts,
-          )
-            ? data.alerts
-            : [],
+        alerts: Array.isArray(data?.alerts) ? data.alerts : [],
 
-        taxes:
-          Array.isArray(
-            data?.taxes,
-          )
-            ? data.taxes
-            : [],
+        taxes: Array.isArray(data?.taxes) ? data.taxes : [],
 
-        payments:
-          Array.isArray(
-            data?.payments,
-          )
-            ? data.payments
-            : [],
+        payments: Array.isArray(data?.payments) ? data.payments : [],
       };
 
-      setDashboard(
-        realDashboard,
-      );
-    } catch (
-      dashboardError: any
-    ) {
-      console.error(
-        'Erro no dashboard:',
-        dashboardError,
-      );
+      setDashboard(realDashboard);
+    } catch (dashboardError: any) {
+      console.error('Erro no dashboard:', dashboardError);
 
-      setError(
-        getMessage(
-          dashboardError,
-        ),
-      );
+      setError(getMessage(dashboardError));
 
-      setDashboard(
-        EMPTY_DATA,
-      );
+      setDashboard(EMPTY_DATA);
     } finally {
-      setLoading(
-        false,
-      );
+      setLoading(false);
 
-      setRefreshing(
-        false,
-      );
+      setRefreshing(false);
     }
   }
 
@@ -538,13 +369,9 @@ export default function DashboardPage() {
   // LOADING
   // ==========================================================
 
-  if (
-    loading
-  ) {
+  if (loading) {
     return (
-      <DashboardLayout
-        company={company}
-      >
+      <DashboardLayout company={company}>
         <div
           className="
             flex
@@ -590,48 +417,28 @@ export default function DashboardPage() {
 
   const regime = 'Situação Fiscal';
 
-  const companyStatus =
-    getCompanyStatus(
-      company.status,
-    );
+  const companyStatus = getCompanyStatus(company.status);
 
-  const pendingAmount =
-    toNumber(
-      dashboard.pendingObligationsAmount,
-    );
+  const pendingAmount = toNumber(dashboard.pendingObligationsAmount);
 
-  const overdueCount =
-    toNumber(
-      dashboard.metrics
-        ?.overdueObligations,
-    );
+  const overdueCount = toNumber(dashboard.metrics?.overdueObligations);
 
-  const totalTaxes =
-    toNumber(
-      dashboard.metrics
-        ?.totalTaxes,
-    );
+  const totalTaxes = toNumber(dashboard.metrics?.totalTaxes);
 
-  const totalPayments =
-    toNumber(
-      dashboard.metrics
-        ?.totalPayments,
-    );
+  const totalPayments = toNumber(dashboard.metrics?.totalPayments);
 
-  const totalRevenue =
-    toNumber(
-      dashboard.metrics
-        ?.totalRevenue,
-    );
+  const totalRevenue = toNumber(dashboard.metrics?.totalRevenue);
 
   const purchaseInvoices = toNumber(dashboard.metrics?.purchaseInvoices);
-  const purchaseInvoiceTotal = toNumber(dashboard.metrics?.purchaseInvoiceTotal);
-  const pendingPurchaseImports = toNumber(dashboard.metrics?.purchaseInvoiceImportsPendingReview);
+  const purchaseInvoiceTotal = toNumber(
+    dashboard.metrics?.purchaseInvoiceTotal,
+  );
+  const pendingPurchaseImports = toNumber(
+    dashboard.metrics?.purchaseInvoiceImportsPendingReview,
+  );
 
   return (
-    <DashboardLayout
-      company={company}
-    >
+    <DashboardLayout company={company}>
       <div
         className="
           mx-auto
@@ -643,253 +450,53 @@ export default function DashboardPage() {
           lg:px-6
         "
       >
-
         {/* ==================================================
             CABEÇALHO DA EMPRESA
         ================================================== */}
 
-        <div
-          className="
-            mb-6
-            rounded-2xl
-            border
-            border-[#102447]
-            bg-[#102447]
-            px-5
-            py-5
-            shadow-sm
-            sm:px-6
-          "
-        >
-          <div
-            className="
-              flex
-              flex-col
-              gap-5
-              lg:flex-row
-              lg:items-center
-              lg:justify-between
-            "
-          >
-
-            <div
-              className="
-                flex
-                min-w-0
-                items-start
-                gap-4
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-12
-                  w-12
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-xl
-                  bg-white/10
-                  text-cyan-200
-                "
-              >
-                <Building2
-                  size={22}
-                  strokeWidth={1.8}
-                />
-              </div>
-
-              <div className="min-w-0">
-
-                <div
-                  className="
-                    mb-1
-                    flex
-                    items-center
-                    gap-2
-                  "
-                >
-                  <span
-                    className="
-                      h-2
-                      w-2
-                      rounded-full
-                      bg-emerald-500
-                    "
-                  />
-
-                  <span
-                    className="
-                      text-[10px]
-                      font-bold
-                      uppercase
-                      tracking-wider
-                      text-emerald-600
-                    "
-                  >
-                    {companyStatus}
-                  </span>
-                </div>
-
-                <h1
-                  className="
-                    truncate
-                    text-[22px]
-                    font-extrabold
-                    tracking-tight
-                    text-white
-                    sm:text-[26px]
-                  "
-                >
-                  {company.name}
-                </h1>
-
-                <div
-                  className="
-                    mt-2
-                    flex
-                    flex-wrap
-                    items-center
-                    gap-x-3
-                    gap-y-2
-                  "
-                >
-                  <span
-                    className="
-                      text-[11px]
-                      text-slate-300
-                    "
-                  >
-                    NIF: {company.nif}
-                  </span>
-
-                  <span
-                    className="
-                      hidden
-                      text-[#c9ced8]
-                      sm:inline
-                    "
-                  >
-                    •
-                  </span>
-
-                  <span
-                    className="
-                      text-[10px]
-                      font-semibold
-                      text-cyan-200
-                    "
-                  >
-                    {regime}
-                  </span>
-
-                  <span
-                    className="
-                      hidden
-                      text-[#c9ced8]
-                      sm:inline
-                    "
-                  >
-                    •
-                  </span>
-
-                  <span
-                    className="
-                      text-[10px]
-                      text-slate-300
-                    "
-                  >
-                    {company.sector}
-                  </span>
-                </div>
-
-              </div>
-            </div>
-
-            {/* ACÇÕES */}
-
-            <div
-              className="
-                flex
-                shrink-0
-                items-center
-                gap-2
-              "
-            >
+        <PageHeader
+          eyebrow={`Dashboard · ${companyStatus}`}
+          title={company.name}
+          description={`NIF ${company.nif} · ${regime}${company.sector ? ` · ${company.sector}` : ''}`}
+          actions={
+            <>
               <button
                 type="button"
-                onClick={() =>
-                  fetchDashboard(
-                    true,
-                  )
-                }
-                disabled={
-                  refreshing
-                }
-                className="
-                  flex
-                  h-10
-                  items-center
-                  gap-2
-                  rounded-xl
-                  border
-                  border-white/20
-                  bg-white/10
-                  px-3
-                  text-[11px]
-                  font-semibold
-                  text-white
-                  transition
-                  hover:bg-white/15
-                  disabled:cursor-not-allowed
-                  disabled:opacity-50
-                "
+                onClick={() => fetchDashboard(true)}
+                disabled={refreshing}
+                className="fd-button-secondary"
               >
                 <RefreshCw
-                  size={14}
-                  className={
-                    refreshing
-                      ? 'animate-spin'
-                      : ''
-                  }
+                  size={15}
+                  className={refreshing ? 'animate-spin' : ''}
                 />
-
                 Actualizar
               </button>
-
-              <Link
-                href="/obligations"
-                className="
-                  flex
-                  h-10
-                  items-center
-                  gap-2
-                  rounded-xl
-                  bg-[#0787ad]
-                  px-4
-                  text-[11px]
-                  font-bold
-                  text-white
-                  transition
-                  hover:bg-[#0a789a]
-                "
-              >
-                <FileText
-                  size={14}
-                />
-
+              <Link href="/obligations" className="fd-button-primary">
+                <FileText size={15} />
                 Obrigações
               </Link>
-            </div>
-          </div>
-        </div>
+            </>
+          }
+        />
 
         <section className="mb-6 flex flex-col gap-3 rounded-xl border border-[#e5e9f0] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#111b3b]">Facturas recebidas</p>
-            <p className="mt-1 text-xs text-[#7180a2]">{purchaseInvoices} registadas · compras no valor de {formatCurrency(purchaseInvoiceTotal)}{pendingPurchaseImports > 0 ? ` · ${pendingPurchaseImports} em revisão` : ''}</p>
+            <p className="text-sm font-semibold text-[#111b3b]">
+              Facturas recebidas
+            </p>
+            <p className="mt-1 text-xs text-[#7180a2]">
+              {purchaseInvoices} registadas · compras no valor de{' '}
+              {formatCurrency(purchaseInvoiceTotal)}
+              {pendingPurchaseImports > 0
+                ? ` · ${pendingPurchaseImports} em revisão`
+                : ''}
+            </p>
           </div>
-          <Link href="/purchase-invoices" className="inline-flex items-center gap-2 self-start text-sm font-semibold text-[#087fb3] hover:underline">
+          <Link
+            href="/purchase-invoices"
+            className="inline-flex items-center gap-2 self-start text-sm font-semibold text-[#087fb3] hover:underline"
+          >
             Abrir facturas recebidas <ArrowRight size={15} />
           </Link>
         </section>
@@ -917,10 +524,7 @@ export default function DashboardPage() {
                 gap-3
               "
             >
-              <ShieldCheck
-                size={17}
-                className="mt-0.5 shrink-0 text-red-600"
-              />
+              <ShieldCheck size={17} className="mt-0.5 shrink-0 text-red-600" />
 
               <div>
                 <p
@@ -961,17 +565,12 @@ export default function DashboardPage() {
             xl:grid-cols-4
           "
         >
-
           <DashboardStat
             title="Obrigações pendentes"
-            value={
-              dashboard.pendingObligations
-            }
+            value={dashboard.pendingObligations}
             description={
               pendingAmount > 0
-                ? `Valor pendente: ${formatCurrency(
-                    pendingAmount,
-                  )}`
+                ? `Valor pendente: ${formatCurrency(pendingAmount)}`
                 : 'Não existem valores pendentes'
             }
             type="blue"
@@ -980,12 +579,9 @@ export default function DashboardPage() {
 
           <DashboardStat
             title="Próximos prazos"
-            value={
-              dashboard.upcomingDeadlines
-            }
+            value={dashboard.upcomingDeadlines}
             description={
-              dashboard.upcomingDeadlines >
-              0
+              dashboard.upcomingDeadlines > 0
                 ? 'Obrigações a vencer'
                 : 'Não existem prazos próximos'
             }
@@ -995,50 +591,34 @@ export default function DashboardPage() {
 
           <DashboardStat
             title="Obrigações vencidas"
-            value={
-              overdueCount
-            }
+            value={overdueCount}
             description={
-              overdueCount >
-              0
+              overdueCount > 0
                 ? 'Necessitam de regularização'
                 : 'Nenhuma obrigação vencida'
             }
-            type={
-              overdueCount >
-              0
-                ? 'red'
-                : 'green'
-            }
+            type={overdueCount > 0 ? 'red' : 'green'}
             icon="warning"
           />
 
           <DashboardStat
             title="Pagamentos fiscais"
-            value={
-              formatCurrency(
-                totalPayments,
-              )
-            }
+            value={formatCurrency(totalPayments)}
             description={
-              totalPayments >
-              0
+              totalPayments > 0
                 ? 'Pagamentos registados'
                 : 'Nenhum pagamento registado'
             }
             type="green"
             icon="payment"
           />
-
         </div>
 
         {/* ==================================================
             CALENDÁRIO FISCAL
         ================================================== */}
 
-        <section
-          className="mb-6"
-        >
+        <section className="mb-6">
           <div
             className="
               mb-3
@@ -1051,7 +631,6 @@ export default function DashboardPage() {
             "
           >
             <div>
-
               <div
                 className="
                   flex
@@ -1059,10 +638,7 @@ export default function DashboardPage() {
                   gap-2
                 "
               >
-                <CalendarDays
-                  size={18}
-                  className="text-[#0ea5e9]"
-                />
+                <CalendarDays size={18} className="text-[#0ea5e9]" />
 
                 <h2
                   className="
@@ -1128,11 +704,7 @@ export default function DashboardPage() {
               rounded-2xl
             "
           >
-            <CalendarFiscal
-              deadlines={
-                dashboard.deadlines
-              }
-            />
+            <CalendarFiscal deadlines={dashboard.deadlines} />
           </div>
         </section>
 
@@ -1140,11 +712,8 @@ export default function DashboardPage() {
             ALERTAS
         ================================================== */}
 
-        {dashboard.alerts.length >
-          0 && (
-          <section
-            className="mb-6"
-          >
+        {dashboard.alerts.length > 0 && (
+          <section className="mb-6">
             <div className="mb-3">
               <h2
                 className="
@@ -1167,11 +736,7 @@ export default function DashboardPage() {
               </p>
             </div>
 
-            <Alerts
-              alerts={
-                dashboard.alerts
-              }
-            />
+            <Alerts alerts={dashboard.alerts} />
           </section>
         )}
 
@@ -1188,27 +753,17 @@ export default function DashboardPage() {
             xl:grid-cols-3
           "
         >
-
           {/* IMPOSTOS */}
 
-          <FiscalSummary
-            taxes={
-              dashboard.taxes
-            }
-          />
+          <FiscalSummary taxes={dashboard.taxes} />
 
           {/* PAGAMENTOS */}
 
-          <PaymentEvolution
-            payments={
-              dashboard.payments
-            }
-          />
+          <PaymentEvolution payments={dashboard.payments} />
 
           {/* ACÇÕES */}
 
           <QuickActions />
-
         </div>
 
         {/* ==================================================
@@ -1247,9 +802,7 @@ export default function DashboardPage() {
                 text-[#526080]
               "
             >
-              <ReceiptText
-                size={19}
-              />
+              <ReceiptText size={19} />
             </div>
 
             <div>
@@ -1283,34 +836,20 @@ export default function DashboardPage() {
               sm:grid-cols-3
             "
           >
-
             <InfoValue
               label="Facturação registada"
-              value={
-                formatCurrency(
-                  totalRevenue,
-                )
-              }
+              value={formatCurrency(totalRevenue)}
             />
 
             <InfoValue
               label="Impostos registados"
-              value={
-                formatCurrency(
-                  totalTaxes,
-                )
-              }
+              value={formatCurrency(totalTaxes)}
             />
 
             <InfoValue
               label="Pagamentos fiscais"
-              value={
-                formatCurrency(
-                  totalPayments,
-                )
-              }
+              value={formatCurrency(totalPayments)}
             />
-
           </div>
         </section>
 
@@ -1356,9 +895,7 @@ export default function DashboardPage() {
                 shadow-sm
               "
             >
-              <ShieldCheck
-                size={17}
-              />
+              <ShieldCheck size={17} />
             </div>
 
             <div>
@@ -1398,13 +935,9 @@ export default function DashboardPage() {
             "
           >
             Consultar obrigações
-
-            <ArrowRight
-              size={13}
-            />
+            <ArrowRight size={13} />
           </Link>
         </div>
-
       </div>
     </DashboardLayout>
   );
@@ -1425,68 +958,44 @@ function DashboardStat({
   value: string | number;
   description: string;
 
-  type:
-    | 'blue'
-    | 'orange'
-    | 'green'
-    | 'red';
+  type: 'blue' | 'orange' | 'green' | 'red';
 
-  icon:
-    | 'clipboard'
-    | 'calendar'
-    | 'warning'
-    | 'payment';
+  icon: 'clipboard' | 'calendar' | 'warning' | 'payment';
 }) {
   const styles = {
     blue: {
-      border:
-        'border-[#d5e8f7]',
-      bg:
-        'bg-[#eff8ff]',
-      text:
-        'text-[#0284c7]',
+      border: 'border-[#d5e8f7]',
+      bg: 'bg-[#eff8ff]',
+      text: 'text-[#0284c7]',
     },
 
     orange: {
-      border:
-        'border-[#f7dfc4]',
-      bg:
-        'bg-[#fff7ed]',
-      text:
-        'text-[#ea580c]',
+      border: 'border-[#f7dfc4]',
+      bg: 'bg-[#fff7ed]',
+      text: 'text-[#ea580c]',
     },
 
     green: {
-      border:
-        'border-[#cfeee0]',
-      bg:
-        'bg-[#ecfdf5]',
-      text:
-        'text-[#059669]',
+      border: 'border-[#cfeee0]',
+      bg: 'bg-[#ecfdf5]',
+      text: 'text-[#059669]',
     },
 
     red: {
-      border:
-        'border-[#f4d3d3]',
-      bg:
-        'bg-[#fff1f2]',
-      text:
-        'text-[#dc2626]',
+      border: 'border-[#f4d3d3]',
+      bg: 'bg-[#fff1f2]',
+      text: 'text-[#dc2626]',
     },
   };
 
-  const style =
-    styles[type];
+  const style = styles[type];
 
   const Icon =
-    icon ===
-    'clipboard'
+    icon === 'clipboard'
       ? ClipboardList
-      : icon ===
-          'calendar'
+      : icon === 'calendar'
         ? CalendarDays
-        : icon ===
-            'warning'
+        : icon === 'warning'
           ? ShieldCheck
           : TrendingUp;
 
@@ -1562,10 +1071,7 @@ function DashboardStat({
           ${style.text}
         `}
       >
-        <Icon
-          size={20}
-          strokeWidth={1.9}
-        />
+        <Icon size={20} strokeWidth={1.9} />
       </div>
     </div>
   );
@@ -1575,13 +1081,7 @@ function DashboardStat({
 // VALOR INFORMATIVO
 // ============================================================
 
-function InfoValue({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function InfoValue({ label, value }: { label: string; value: string }) {
   return (
     <div
       className="

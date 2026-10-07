@@ -1,10 +1,6 @@
 'use client';
 
-import {
-  useEffect,
-  useMemo,
-  useState,
-} from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
@@ -292,11 +288,7 @@ function getTaxLabel(taxType?: string): string {
    TOOLTIP PERSONALIZADO
 ========================================================= */
 
-function ChartTooltip({
-  active,
-  payload,
-  label,
-}: any) {
+function ChartTooltip({ active, payload, label }: any) {
   if (!active || !payload || !payload.length) {
     return null;
   }
@@ -310,21 +302,15 @@ function ChartTooltip({
       )}
 
       {payload.map((item: any, index: number) => (
-        <div
-          key={`${item.name}-${index}`}
-          className="flex items-center gap-3"
-        >
+        <div key={`${item.name}-${index}`} className="flex items-center gap-3">
           <span
             className="h-2.5 w-2.5 rounded-full"
             style={{
-              backgroundColor:
-                item.color || item.fill || '#2563eb',
+              backgroundColor: item.color || item.fill || '#2563eb',
             }}
           />
 
-          <span className="text-sm text-slate-500">
-            {item.name || 'Valor'}
-          </span>
+          <span className="text-sm text-slate-500">{item.name || 'Valor'}</span>
 
           <strong className="text-sm text-slate-900">
             {formatAOA(numberValue(item.value))}
@@ -340,32 +326,23 @@ function ChartTooltip({
 ========================================================= */
 
 export default function ReportsPage() {
-  const [company, setCompany] =
-    useState<Company | null>(null);
+  const [company, setCompany] = useState<Company | null>(null);
 
-  const [invoices, setInvoices] =
-    useState<Invoice[]>([]);
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
 
-  const [employees, setEmployees] =
-    useState<Employee[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
 
-  const [obligations, setObligations] =
-    useState<Obligation[]>([]);
+  const [obligations, setObligations] = useState<Obligation[]>([]);
 
-  const [payments, setPayments] =
-    useState<Payment[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
 
-  const [loading, setLoading] =
-    useState(true);
+  const [loading, setLoading] = useState(true);
 
-  const [refreshing, setRefreshing] =
-    useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
-  const [error, setError] =
-    useState('');
+  const [error, setError] = useState('');
 
-  const [selectedYear, setSelectedYear] =
-    useState(new Date().getFullYear());
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
   /* =======================================================
      CARREGAR DADOS
@@ -379,22 +356,19 @@ export default function ReportsPage() {
     try {
       setError('');
 
-      const results =
-        await Promise.allSettled([
-          getCompany(),
-          getInvoices(),
-          getEmployees(),
-          api.get('/obligations?readOnly=true'),
-          api.get('/payments'),
-        ]);
+      const results = await Promise.allSettled([
+        getCompany(),
+        getInvoices(),
+        getEmployees(),
+        api.get('/obligations?readOnly=true'),
+        api.get('/payments'),
+      ]);
 
       /* EMPRESA */
 
       const companyResult = results[0];
 
-      if (
-        companyResult.status === 'fulfilled'
-      ) {
+      if (companyResult.status === 'fulfilled') {
         setCompany(companyResult.value);
       }
 
@@ -402,21 +376,12 @@ export default function ReportsPage() {
 
       const invoicesResult = results[1];
 
-      if (
-        invoicesResult.status === 'fulfilled'
-      ) {
+      if (invoicesResult.status === 'fulfilled') {
         setInvoices(
-          Array.isArray(
-            invoicesResult.value,
-          )
-            ? invoicesResult.value
-            : [],
+          Array.isArray(invoicesResult.value) ? invoicesResult.value : [],
         );
       } else {
-        console.error(
-          'Erro ao carregar facturas:',
-          invoicesResult.reason,
-        );
+        console.error('Erro ao carregar facturas:', invoicesResult.reason);
 
         setInvoices([]);
       }
@@ -425,21 +390,12 @@ export default function ReportsPage() {
 
       const employeesResult = results[2];
 
-      if (
-        employeesResult.status === 'fulfilled'
-      ) {
+      if (employeesResult.status === 'fulfilled') {
         setEmployees(
-          Array.isArray(
-            employeesResult.value,
-          )
-            ? employeesResult.value
-            : [],
+          Array.isArray(employeesResult.value) ? employeesResult.value : [],
         );
       } else {
-        console.error(
-          'Erro ao carregar funcionários:',
-          employeesResult.reason,
-        );
+        console.error('Erro ao carregar funcionários:', employeesResult.reason);
 
         setEmployees([]);
       }
@@ -448,19 +404,10 @@ export default function ReportsPage() {
 
       const obligationsResult = results[3];
 
-      if (
-        obligationsResult.status === 'fulfilled'
-      ) {
-        setObligations(
-          normalizeArray(
-            obligationsResult.value?.data,
-          ),
-        );
+      if (obligationsResult.status === 'fulfilled') {
+        setObligations(normalizeArray(obligationsResult.value?.data));
       } else {
-        console.error(
-          'Erro ao carregar obrigações:',
-          obligationsResult.reason,
-        );
+        console.error('Erro ao carregar obrigações:', obligationsResult.reason);
 
         setObligations([]);
       }
@@ -469,31 +416,17 @@ export default function ReportsPage() {
 
       const paymentsResult = results[4];
 
-      if (
-        paymentsResult.status === 'fulfilled'
-      ) {
-        setPayments(
-          normalizeArray(
-            paymentsResult.value?.data,
-          ),
-        );
+      if (paymentsResult.status === 'fulfilled') {
+        setPayments(normalizeArray(paymentsResult.value?.data));
       } else {
-        console.error(
-          'Erro ao carregar pagamentos:',
-          paymentsResult.reason,
-        );
+        console.error('Erro ao carregar pagamentos:', paymentsResult.reason);
 
         setPayments([]);
       }
     } catch (err) {
-      console.error(
-        'Erro ao carregar relatórios:',
-        err,
-      );
+      console.error('Erro ao carregar relatórios:', err);
 
-      setError(
-        'Não foi possível carregar os dados dos relatórios.',
-      );
+      setError('Não foi possível carregar os dados dos relatórios.');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -512,64 +445,33 @@ export default function ReportsPage() {
 
   function handleExportCSV() {
     const rows = [
-      [
-        'Factura',
-        'Cliente',
-        'Data',
-        'Subtotal',
-        'IVA',
-        'Total',
-        'Estado',
-      ],
-      ...reportData.yearInvoices.map(
-        (invoice) => [
-          invoice.invoiceNumber || '',
-          invoice.client?.name || '',
-          formatDate(
-            invoice.issueDate ||
-              invoice.createdAt,
-          ),
-          numberValue(
-            invoice.subtotal,
-          ).toFixed(2),
-          numberValue(
-            invoice.iva,
-          ).toFixed(2),
-          numberValue(
-            invoice.total,
-          ).toFixed(2),
-          getStatusLabel(
-            invoice.status,
-          ),
-        ],
-      ),
+      ['Factura', 'Cliente', 'Data', 'Subtotal', 'IVA', 'Total', 'Estado'],
+      ...reportData.yearInvoices.map((invoice) => [
+        invoice.invoiceNumber || '',
+        invoice.client?.name || '',
+        formatDate(invoice.issueDate || invoice.createdAt),
+        numberValue(invoice.subtotal).toFixed(2),
+        numberValue(invoice.iva).toFixed(2),
+        numberValue(invoice.total).toFixed(2),
+        getStatusLabel(invoice.status),
+      ]),
     ];
 
     const csv = rows
       .map((row) =>
         row
-          .map((value) =>
-            `"${String(value).replaceAll(
-              '"',
-              '""',
-            )}"`,
-          )
+          .map((value) => `"${String(value).replaceAll('"', '""')}"`)
           .join(','),
       )
       .join('\n');
 
-    const blob = new Blob(
-      [csv],
-      {
-        type: 'text/csv;charset=utf-8;',
-      },
-    );
+    const blob = new Blob([csv], {
+      type: 'text/csv;charset=utf-8;',
+    });
 
-    const url =
-      URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
 
-    const link =
-      document.createElement('a');
+    const link = document.createElement('a');
 
     link.href = url;
 
@@ -593,287 +495,185 @@ export default function ReportsPage() {
   ======================================================= */
 
   const reportData = useMemo(() => {
-    const yearInvoices =
-      invoices.filter((invoice) => {
-        const dateValue =
-          invoice.issueDate ||
-          invoice.createdAt;
+    const yearInvoices = invoices.filter((invoice) => {
+      const dateValue = invoice.issueDate || invoice.createdAt;
 
-        if (!dateValue) {
-          return false;
-        }
+      if (!dateValue) {
+        return false;
+      }
 
-        return (
-          new Date(
-            dateValue,
-          ).getFullYear() === selectedYear
-        );
-      });
+      return new Date(dateValue).getFullYear() === selectedYear;
+    });
 
-    const yearPayments =
-      payments.filter((payment) => {
-        if (!payment.paidAt) {
-          return false;
-        }
+    const yearPayments = payments.filter((payment) => {
+      if (!payment.paidAt) {
+        return false;
+      }
 
-        return (
-          new Date(
-            payment.paidAt,
-          ).getFullYear() === selectedYear
-        );
-      });
+      return new Date(payment.paidAt).getFullYear() === selectedYear;
+    });
 
-    const yearObligations =
-      obligations.filter((item) => {
-        if (!item.dueDate) {
-          return true;
-        }
+    const yearObligations = obligations.filter((item) => {
+      if (!item.dueDate) {
+        return true;
+      }
 
-        return (
-          new Date(
-            item.dueDate,
-          ).getFullYear() === selectedYear
-        );
-      });
+      return new Date(item.dueDate).getFullYear() === selectedYear;
+    });
 
     /* TOTAL FACTURADO */
 
-    const totalInvoiced =
-      yearInvoices.reduce(
-        (total, invoice) =>
-          total +
-          numberValue(invoice.total),
-        0,
-      );
+    const totalInvoiced = yearInvoices.reduce(
+      (total, invoice) => total + numberValue(invoice.total),
+      0,
+    );
 
     /* IVA */
 
-    const totalVat =
-      yearInvoices.reduce(
-        (total, invoice) =>
-          total +
-          numberValue(invoice.iva),
-        0,
-      );
+    const totalVat = yearInvoices.reduce(
+      (total, invoice) => total + numberValue(invoice.iva),
+      0,
+    );
 
     /* SUBTOTAL */
 
-    const totalSubtotal =
-      yearInvoices.reduce(
-        (total, invoice) =>
-          total +
-          numberValue(invoice.subtotal),
-        0,
-      );
+    const totalSubtotal = yearInvoices.reduce(
+      (total, invoice) => total + numberValue(invoice.subtotal),
+      0,
+    );
 
     /* FACTURAS */
 
-    const paidInvoices =
-      yearInvoices.filter(
-        (invoice) =>
-          invoice.status === 'PAID',
-      );
+    const paidInvoices = yearInvoices.filter(
+      (invoice) => invoice.status === 'PAID',
+    );
 
-    const pendingInvoices =
-      yearInvoices.filter(
-        (invoice) =>
-          invoice.status === 'PENDING',
-      );
+    const pendingInvoices = yearInvoices.filter(
+      (invoice) => invoice.status === 'PENDING',
+    );
 
-    const cancelledInvoices =
-      yearInvoices.filter(
-        (invoice) =>
-          invoice.status === 'CANCELLED',
-      );
+    const cancelledInvoices = yearInvoices.filter(
+      (invoice) => invoice.status === 'CANCELLED',
+    );
 
-    const otherInvoices =
-      yearInvoices.filter(
-        (invoice) =>
-          ![
-            'PAID',
-            'PENDING',
-            'CANCELLED',
-          ].includes(
-            invoice.status || '',
-          ),
-      );
+    const otherInvoices = yearInvoices.filter(
+      (invoice) =>
+        !['PAID', 'PENDING', 'CANCELLED'].includes(invoice.status || ''),
+    );
 
     /* PAGAMENTOS */
 
-    const totalPayments =
-      yearPayments.reduce(
-        (total, payment) =>
-          total +
-          numberValue(payment.amount),
-        0,
-      );
+    const totalPayments = yearPayments.reduce(
+      (total, payment) => total + numberValue(payment.amount),
+      0,
+    );
 
     /* OBRIGAÇÕES */
 
-    const pendingObligations =
-      yearObligations.filter(
-        (item) =>
-          item.status === 'PENDING',
-      );
+    const pendingObligations = yearObligations.filter(
+      (item) => item.status === 'PENDING',
+    );
 
-    const paidObligations =
-      yearObligations.filter(
-        (item) =>
-          item.status === 'PAID',
-      );
+    const paidObligations = yearObligations.filter(
+      (item) => item.status === 'PAID',
+    );
 
-    const lateObligations =
-      yearObligations.filter(
-        (item) =>
-          item.status === 'LATE',
-      );
+    const lateObligations = yearObligations.filter(
+      (item) => item.status === 'LATE',
+    );
 
     /* VALORES */
 
-    const pendingObligationAmount =
-      pendingObligations.reduce(
-        (total, item) =>
-          total +
-          numberValue(item.amount),
-        0,
-      );
+    const pendingObligationAmount = pendingObligations.reduce(
+      (total, item) => total + numberValue(item.amount),
+      0,
+    );
 
-    const lateObligationAmount =
-      lateObligations.reduce(
-        (total, item) =>
-          total +
-          numberValue(item.amount),
-        0,
-      );
+    const lateObligationAmount = lateObligations.reduce(
+      (total, item) => total + numberValue(item.amount),
+      0,
+    );
 
-    const paidObligationAmount =
-      paidObligations.reduce(
-        (total, item) =>
-          total +
-          numberValue(item.amount),
-        0,
-      );
+    const paidObligationAmount = paidObligations.reduce(
+      (total, item) => total + numberValue(item.amount),
+      0,
+    );
 
     /* FUNCIONÁRIOS */
 
-    const activeEmployees =
-      employees.filter(
-        (employee) =>
-          employee.status === 'ACTIVE',
-      );
+    const activeEmployees = employees.filter(
+      (employee) => employee.status === 'ACTIVE',
+    );
 
     /* EVOLUÇÃO MENSAL */
 
-    const monthlyInvoices =
-      Array.from(
-        { length: 12 },
-        (_, index) => {
-          const month =
-            index + 1;
+    const monthlyInvoices = Array.from({ length: 12 }, (_, index) => {
+      const month = index + 1;
 
-          const value =
-            yearInvoices
-              .filter((invoice) => {
-                const dateValue =
-                  invoice.issueDate ||
-                  invoice.createdAt;
+      const value = yearInvoices
+        .filter((invoice) => {
+          const dateValue = invoice.issueDate || invoice.createdAt;
 
-                if (!dateValue) {
-                  return false;
-                }
+          if (!dateValue) {
+            return false;
+          }
 
-                const date =
-                  new Date(dateValue);
+          const date = new Date(dateValue);
 
-                return (
-                  date.getMonth() + 1 ===
-                  month
-                );
-              })
-              .reduce(
-                (total, invoice) =>
-                  total +
-                  numberValue(
-                    invoice.total,
-                  ),
-                0,
-              );
+          return date.getMonth() + 1 === month;
+        })
+        .reduce((total, invoice) => total + numberValue(invoice.total), 0);
 
-          return {
-            month,
-            label:
-              getMonthName(month),
-            value,
-          };
-        },
-      );
+      return {
+        month,
+        label: getMonthName(month),
+        value,
+      };
+    });
 
     /* PAGAMENTOS POR IMPOSTO */
 
-    const paymentsByTax =
-      yearPayments.reduce<
-        Record<string, number>
-      >(
-        (accumulator, payment) => {
-          const tax =
-            payment.taxType ||
-            'OUTROS';
+    const paymentsByTax = yearPayments.reduce<Record<string, number>>(
+      (accumulator, payment) => {
+        const tax = payment.taxType || 'OUTROS';
 
-          accumulator[tax] =
-            (accumulator[tax] || 0) +
-            numberValue(
-              payment.amount,
-            );
+        accumulator[tax] =
+          (accumulator[tax] || 0) + numberValue(payment.amount);
 
-          return accumulator;
-        },
-        {},
-      );
+        return accumulator;
+      },
+      {},
+    );
 
-    const taxDistribution =
-      Object.entries(
-        paymentsByTax,
-      )
-        .map(
-          ([taxType, value]) => ({
-            name:
-              getTaxLabel(
-                taxType,
-              ),
-            value,
-            taxType,
-          }),
-        )
-        .sort(
-          (a, b) =>
-            b.value - a.value,
-        );
+    const taxDistribution = Object.entries(paymentsByTax)
+      .map(([taxType, value]) => ({
+        name: getTaxLabel(taxType),
+        value,
+        taxType,
+      }))
+      .sort((a, b) => b.value - a.value);
 
     /* ESTADO DAS FACTURAS */
 
     const invoiceStatusData = [
       {
         name: 'Pagas',
-        value:
-          paidInvoices.length,
+        value: paidInvoices.length,
       },
       {
         name: 'Pendentes',
-        value:
-          pendingInvoices.length,
+        value: pendingInvoices.length,
       },
       {
         name: 'Canceladas',
-        value:
-          cancelledInvoices.length,
+        value: cancelledInvoices.length,
       },
     ];
 
     if (otherInvoices.length > 0) {
       invoiceStatusData.push({
         name: 'Outras',
-        value:
-          otherInvoices.length,
+        value: otherInvoices.length,
       });
     }
 
@@ -900,24 +700,13 @@ export default function ReportsPage() {
       taxDistribution,
       invoiceStatusData,
     };
-  }, [
-    invoices,
-    payments,
-    obligations,
-    employees,
-    selectedYear,
-  ]);
+  }, [invoices, payments, obligations, employees, selectedYear]);
 
   /* =======================================================
      CORES DOS GRÁFICOS
   ======================================================= */
 
-  const invoiceColors = [
-    '#10b981',
-    '#f59e0b',
-    '#ef4444',
-    '#6366f1',
-  ];
+  const invoiceColors = ['#10b981', '#f59e0b', '#ef4444', '#6366f1'];
 
   const taxColors = [
     '#2563eb',
@@ -937,10 +726,7 @@ export default function ReportsPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-slate-200">
-            <RefreshCw
-              size={30}
-              className="animate-spin text-indigo-600"
-            />
+            <RefreshCw size={30} className="animate-spin text-indigo-600" />
           </div>
 
           <h2 className="text-lg font-bold text-slate-900">
@@ -964,10 +750,7 @@ export default function ReportsPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
         <div className="w-full max-w-md rounded-3xl border border-slate-200 bg-white p-8 text-center shadow-sm">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-red-50">
-            <AlertTriangle
-              size={32}
-              className="text-red-500"
-            />
+            <AlertTriangle size={32} className="text-red-500" />
           </div>
 
           <h1 className="text-xl font-bold text-slate-900">
@@ -997,25 +780,19 @@ export default function ReportsPage() {
   return (
     <DashboardLayout company={company}>
       <div className="min-h-full space-y-6 pb-10 print:space-y-4 print:bg-white">
-
         {/* =================================================
             HERO
         ================================================= */}
 
-        <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white px-6 py-7 md:px-8">
-
+        <section className="fd-page-header print:border-slate-200">
           <div className="relative flex flex-col gap-7 xl:flex-row xl:items-center xl:justify-between">
-
             <div className="max-w-3xl">
-
               <div className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.12em] text-[#0b6f93]">
                 <BarChart3 size={15} />
                 Relatório fiscal
               </div>
 
-              <h1 className="text-3xl font-black tracking-tight text-slate-950 md:text-4xl">
-                Relatório financeiro e fiscal
-              </h1>
+              <h1>Relatório financeiro e fiscal</h1>
 
               <div className="mt-1 flex items-center gap-2">
                 <span className="text-3xl font-semibold text-[#102447] md:text-4xl">
@@ -1029,38 +806,27 @@ export default function ReportsPage() {
                 </span>
               </div>
 
-              <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-500 md:text-base">
-                Acompanhe a facturação, pagamentos,
-                impostos, obrigações e actividade
-                da sua empresa num único relatório.
+              <p className="fd-page-description">
+                Acompanhe a facturação, pagamentos, impostos, obrigações e
+                actividade da sua empresa num único relatório.
               </p>
 
               <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-slate-600">
-
                 <div className="inline-flex items-center gap-2 border-r border-slate-200 pr-3">
-                  <CalendarDays
-                    size={16}
-                    className="text-[#0b6f93]"
-                  />
+                  <CalendarDays size={16} className="text-[#0b6f93]" />
                   Exercício fiscal
-                  <strong className="text-slate-900">
-                    {selectedYear}
-                  </strong>
+                  <strong className="text-slate-900">{selectedYear}</strong>
                 </div>
 
                 <div className="inline-flex items-center gap-2 font-medium text-emerald-700">
                   <CheckCircle2 size={16} />
                   Dados em tempo real
                 </div>
-
               </div>
-
             </div>
 
-            <div className="relative hidden min-w-[260px] xl:block">
-
+            <div className="hidden" aria-hidden="true">
               <div className="relative mx-auto h-48 w-60">
-
                 <div className="absolute right-0 top-0 h-32 w-44 rotate-[-8deg] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
                   <div className="mb-3 h-2 w-20 rounded bg-slate-100" />
 
@@ -1073,28 +839,17 @@ export default function ReportsPage() {
                 </div>
 
                 <div className="absolute bottom-0 left-2 h-32 w-44 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
-
                   <div className="flex items-center justify-between">
                     <span className="text-[10px] font-bold uppercase text-slate-400">
                       Facturação
                     </span>
 
-                    <TrendingUp
-                      size={15}
-                      className="text-emerald-500"
-                    />
+                    <TrendingUp size={15} className="text-emerald-500" />
                   </div>
 
                   <div className="mt-4 h-20">
-                    <ResponsiveContainer
-                      width="100%"
-                      height="100%"
-                    >
-                      <AreaChart
-                        data={
-                          reportData.monthlyInvoices
-                        }
-                      >
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={reportData.monthlyInvoices}>
                         <Area
                           type="monotone"
                           dataKey="value"
@@ -1105,13 +860,9 @@ export default function ReportsPage() {
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
-
                 </div>
-
               </div>
-
             </div>
-
           </div>
         </section>
 
@@ -1120,32 +871,20 @@ export default function ReportsPage() {
         ================================================= */}
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between print:hidden">
-
           <div>
             <p className="text-sm font-semibold text-slate-900">
-              {company.name ||
-                company.legalName ||
-                'Empresa'}
+              {company.name || company.legalName || 'Empresa'}
             </p>
 
             {company.nif && (
-              <p className="text-xs text-slate-400">
-                NIF: {company.nif}
-              </p>
+              <p className="text-xs text-slate-400">NIF: {company.nif}</p>
             )}
           </div>
 
           <div className="flex flex-wrap gap-2">
-
             <select
               value={selectedYear}
-              onChange={(event) =>
-                setSelectedYear(
-                  Number(
-                    event.target.value,
-                  ),
-                )
-              }
+              onChange={(event) => setSelectedYear(Number(event.target.value))}
               className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
             >
               {[
@@ -1154,10 +893,7 @@ export default function ReportsPage() {
                 selectedYear,
                 selectedYear + 1,
               ].map((year) => (
-                <option
-                  key={year}
-                  value={year}
-                >
+                <option key={year} value={year}>
                   {year}
                 </option>
               ))}
@@ -1170,11 +906,7 @@ export default function ReportsPage() {
             >
               <RefreshCw
                 size={16}
-                className={
-                  refreshing
-                    ? 'animate-spin'
-                    : ''
-                }
+                className={refreshing ? 'animate-spin' : ''}
               />
               Actualizar
             </button>
@@ -1183,10 +915,7 @@ export default function ReportsPage() {
               onClick={handleExportCSV}
               className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
             >
-              <FileSpreadsheet
-                size={16}
-                className="text-emerald-600"
-              />
+              <FileSpreadsheet size={16} className="text-emerald-600" />
               Exportar
             </button>
 
@@ -1197,7 +926,6 @@ export default function ReportsPage() {
               <Printer size={16} />
               Imprimir
             </button>
-
           </div>
         </div>
 
@@ -1207,19 +935,12 @@ export default function ReportsPage() {
 
         {error && (
           <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-            <AlertTriangle
-              size={18}
-              className="mt-0.5 shrink-0"
-            />
+            <AlertTriangle size={18} className="mt-0.5 shrink-0" />
 
             <div>
-              <p className="font-semibold">
-                Atenção
-              </p>
+              <p className="font-semibold">Atenção</p>
 
-              <p className="mt-0.5">
-                {error}
-              </p>
+              <p className="mt-0.5">{error}</p>
             </div>
           </div>
         )}
@@ -1229,17 +950,13 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-
           {/* FACTURAÇÃO */}
 
           <div className="group relative overflow-hidden rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-
             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-indigo-50 transition group-hover:scale-150" />
 
             <div className="relative">
-
               <div className="flex items-start justify-between">
-
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                   <FileText size={21} />
                 </div>
@@ -1247,7 +964,6 @@ export default function ReportsPage() {
                 <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600">
                   Receita
                 </span>
-
               </div>
 
               <p className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1255,38 +971,29 @@ export default function ReportsPage() {
               </p>
 
               <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-                {formatCompactAOA(
-                  reportData.totalInvoiced,
-                )}
+                {formatCompactAOA(reportData.totalInvoiced)}
               </p>
 
               <div className="mt-3 flex items-center justify-between">
-
                 <span className="text-xs text-slate-500">
-                  {reportData.yearInvoices.length}{' '}
-                  factura(s)
+                  {reportData.yearInvoices.length} factura(s)
                 </span>
 
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
                   <ArrowUpRight size={14} />
                   Emitidas
                 </span>
-
               </div>
-
             </div>
           </div>
 
           {/* PAGAMENTOS */}
 
           <div className="group relative overflow-hidden rounded-2xl border border-emerald-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-
             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-emerald-50 transition group-hover:scale-150" />
 
             <div className="relative">
-
               <div className="flex items-start justify-between">
-
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
                   <CreditCard size={21} />
                 </div>
@@ -1294,7 +1001,6 @@ export default function ReportsPage() {
                 <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
                   Entradas
                 </span>
-
               </div>
 
               <p className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1302,38 +1008,29 @@ export default function ReportsPage() {
               </p>
 
               <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-                {formatCompactAOA(
-                  reportData.totalPayments,
-                )}
+                {formatCompactAOA(reportData.totalPayments)}
               </p>
 
               <div className="mt-3 flex items-center justify-between">
-
                 <span className="text-xs text-slate-500">
-                  {reportData.yearPayments.length}{' '}
-                  pagamento(s)
+                  {reportData.yearPayments.length} pagamento(s)
                 </span>
 
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
                   <ArrowUpRight size={14} />
                   Recebidos
                 </span>
-
               </div>
-
             </div>
           </div>
 
           {/* IVA */}
 
           <div className="group relative overflow-hidden rounded-2xl border border-orange-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-
             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-orange-50 transition group-hover:scale-150" />
 
             <div className="relative">
-
               <div className="flex items-start justify-between">
-
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
                   <Receipt size={21} />
                 </div>
@@ -1341,7 +1038,6 @@ export default function ReportsPage() {
                 <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-600">
                   Fiscal
                 </span>
-
               </div>
 
               <p className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1349,13 +1045,10 @@ export default function ReportsPage() {
               </p>
 
               <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-                {formatCompactAOA(
-                  reportData.totalVat,
-                )}
+                {formatCompactAOA(reportData.totalVat)}
               </p>
 
               <div className="mt-3 flex items-center justify-between">
-
                 <span className="text-xs text-slate-500">
                   Sobre as facturas
                 </span>
@@ -1364,22 +1057,17 @@ export default function ReportsPage() {
                   <WalletCards size={14} />
                   IVA
                 </span>
-
               </div>
-
             </div>
           </div>
 
           {/* FUNCIONÁRIOS */}
 
           <div className="group relative overflow-hidden rounded-2xl border border-blue-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-
             <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-blue-50 transition group-hover:scale-150" />
 
             <div className="relative">
-
               <div className="flex items-start justify-between">
-
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <Users size={21} />
                 </div>
@@ -1387,7 +1075,6 @@ export default function ReportsPage() {
                 <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">
                   Equipa
                 </span>
-
               </div>
 
               <p className="mt-5 text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1395,14 +1082,10 @@ export default function ReportsPage() {
               </p>
 
               <p className="mt-1 text-2xl font-black tracking-tight text-slate-950">
-                {
-                  reportData.activeEmployees
-                    .length
-                }
+                {reportData.activeEmployees.length}
               </p>
 
               <div className="mt-3 flex items-center justify-between">
-
                 <span className="text-xs text-slate-500">
                   Colaboradores activos
                 </span>
@@ -1411,12 +1094,9 @@ export default function ReportsPage() {
                   <Users size={14} />
                   Activos
                 </span>
-
               </div>
-
             </div>
           </div>
-
         </section>
 
         {/* =================================================
@@ -1424,17 +1104,12 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-[1.65fr_1fr]">
-
           {/* EVOLUÇÃO */}
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
             <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-
               <div>
-
                 <div className="flex items-center gap-2">
-
                   <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                     <TrendingUp size={18} />
                   </div>
@@ -1442,43 +1117,29 @@ export default function ReportsPage() {
                   <h2 className="text-lg font-black text-slate-950">
                     Evolução da facturação
                   </h2>
-
                 </div>
 
                 <p className="mt-2 text-sm text-slate-500">
-                  Desempenho mensal durante{' '}
-                  {selectedYear}
+                  Desempenho mensal durante {selectedYear}
                 </p>
-
               </div>
 
               <div className="rounded-xl bg-slate-50 px-3 py-2 text-right">
-
                 <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                   Total anual
                 </p>
 
                 <p className="text-sm font-black text-slate-900">
-                  {formatAOA(
-                    reportData.totalInvoiced,
-                  )}
+                  {formatAOA(reportData.totalInvoiced)}
                 </p>
-
               </div>
-
             </div>
 
             <div className="px-4 pb-5 pt-4 sm:px-6">
-
-              {reportData.totalInvoiced ===
-              0 ? (
+              {reportData.totalInvoiced === 0 ? (
                 <div className="flex min-h-[320px] flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 text-center">
-
                   <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm">
-                    <BarChart3
-                      size={26}
-                      className="text-slate-300"
-                    />
+                    <BarChart3 size={26} className="text-slate-300" />
                   </div>
 
                   <p className="font-semibold text-slate-600">
@@ -1486,23 +1147,15 @@ export default function ReportsPage() {
                   </p>
 
                   <p className="mt-1 max-w-sm text-sm text-slate-400">
-                    Quando forem emitidas facturas em{' '}
-                    {selectedYear}, a evolução aparecerá
-                    automaticamente neste gráfico.
+                    Quando forem emitidas facturas em {selectedYear}, a evolução
+                    aparecerá automaticamente neste gráfico.
                   </p>
-
                 </div>
               ) : (
                 <div className="h-[330px] w-full">
-
-                  <ResponsiveContainer
-                    width="100%"
-                    height="100%"
-                  >
+                  <ResponsiveContainer width="100%" height="100%">
                     <AreaChart
-                      data={
-                        reportData.monthlyInvoices
-                      }
+                      data={reportData.monthlyInvoices}
                       margin={{
                         top: 10,
                         right: 10,
@@ -1510,9 +1163,7 @@ export default function ReportsPage() {
                         bottom: 0,
                       }}
                     >
-
                       <defs>
-
                         <linearGradient
                           id="revenueGradient"
                           x1="0"
@@ -1532,7 +1183,6 @@ export default function ReportsPage() {
                             stopOpacity={0.02}
                           />
                         </linearGradient>
-
                       </defs>
 
                       <CartesianGrid
@@ -1560,17 +1210,11 @@ export default function ReportsPage() {
                           fontSize: 11,
                         }}
                         tickFormatter={(value) =>
-                          formatCompactAOA(
-                            Number(value),
-                          )
+                          formatCompactAOA(Number(value))
                         }
                       />
 
-                      <Tooltip
-                        content={
-                          <ChartTooltip />
-                        }
-                      />
+                      <Tooltip content={<ChartTooltip />} />
 
                       <Area
                         type="monotone"
@@ -1588,24 +1232,18 @@ export default function ReportsPage() {
                           r: 6,
                         }}
                       />
-
                     </AreaChart>
                   </ResponsiveContainer>
-
                 </div>
               )}
-
             </div>
           </div>
 
           {/* PIZZA FACTURAS */}
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
             <div className="border-b border-slate-100 px-6 py-5">
-
               <div className="flex items-center gap-2">
-
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
                   <BarChart3 size={18} />
                 </div>
@@ -1613,27 +1251,18 @@ export default function ReportsPage() {
                 <h2 className="text-lg font-black text-slate-950">
                   Estado das facturas
                 </h2>
-
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
-                Distribuição das facturas de{' '}
-                {selectedYear}
+                Distribuição das facturas de {selectedYear}
               </p>
-
             </div>
 
-            {reportData.yearInvoices.length ===
-            0 ? (
+            {reportData.yearInvoices.length === 0 ? (
               <div className="flex min-h-[350px] items-center justify-center px-6 text-center">
-
                 <div>
-
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50">
-                    <Receipt
-                      size={25}
-                      className="text-slate-300"
-                    />
+                    <Receipt size={25} className="text-slate-300" />
                   </div>
 
                   <p className="font-semibold text-slate-600">
@@ -1643,25 +1272,15 @@ export default function ReportsPage() {
                   <p className="mt-1 text-sm text-slate-400">
                     Não existem facturas para este exercício.
                   </p>
-
                 </div>
-
               </div>
             ) : (
               <div className="px-5 pb-6 pt-3">
-
                 <div className="h-[245px]">
-
-                  <ResponsiveContainer
-                    width="100%"
-                    height="100%"
-                  >
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-
                       <Pie
-                        data={
-                          reportData.invoiceStatusData
-                        }
+                        data={reportData.invoiceStatusData}
                         cx="50%"
                         cy="50%"
                         innerRadius={68}
@@ -1670,122 +1289,76 @@ export default function ReportsPage() {
                         dataKey="value"
                         strokeWidth={0}
                       >
-                        {reportData.invoiceStatusData.map(
-                          (_, index) => (
-                            <Cell
-                              key={index}
-                              fill={
-                                invoiceColors[
-                                  index %
-                                    invoiceColors.length
-                                ]
-                              }
-                            />
-                          ),
-                        )}
+                        {reportData.invoiceStatusData.map((_, index) => (
+                          <Cell
+                            key={index}
+                            fill={invoiceColors[index % invoiceColors.length]}
+                          />
+                        ))}
                       </Pie>
 
                       <Tooltip
-                        formatter={(
-                          value,
-                        ) =>
-                          [
-                            `${value} factura(s)`,
-                            'Quantidade',
-                          ]
-                        }
+                        formatter={(value) => [
+                          `${value} factura(s)`,
+                          'Quantidade',
+                        ]}
                       />
-
                     </PieChart>
                   </ResponsiveContainer>
 
                   <div className="-mt-[155px] text-center">
-
                     <p className="text-3xl font-black text-slate-950">
-                      {
-                        reportData
-                          .yearInvoices
-                          .length
-                      }
+                      {reportData.yearInvoices.length}
                     </p>
 
                     <p className="text-xs font-medium text-slate-400">
                       factura(s)
                     </p>
-
                   </div>
-
                 </div>
 
                 <div className="mt-10 space-y-3">
+                  {reportData.invoiceStatusData.map((item, index) => {
+                    const percentage =
+                      reportData.yearInvoices.length > 0
+                        ? (item.value / reportData.yearInvoices.length) * 100
+                        : 0;
 
-                  {reportData.invoiceStatusData.map(
-                    (item, index) => {
+                    return (
+                      <div
+                        key={item.name}
+                        className="flex items-center justify-between"
+                      >
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="h-2.5 w-2.5 rounded-full"
+                            style={{
+                              backgroundColor:
+                                invoiceColors[index % invoiceColors.length],
+                            }}
+                          />
 
-                      const percentage =
-                        reportData
-                          .yearInvoices
-                          .length >
-                        0
-                          ? (item.value /
-                              reportData
-                                .yearInvoices
-                                .length) *
-                            100
-                          : 0;
-
-                      return (
-                        <div
-                          key={item.name}
-                          className="flex items-center justify-between"
-                        >
-
-                          <div className="flex items-center gap-2.5">
-
-                            <span
-                              className="h-2.5 w-2.5 rounded-full"
-                              style={{
-                                backgroundColor:
-                                  invoiceColors[
-                                    index %
-                                      invoiceColors.length
-                                  ],
-                              }}
-                            />
-
-                            <span className="text-sm text-slate-600">
-                              {item.name}
-                            </span>
-
-                          </div>
-
-                          <div className="flex items-center gap-3">
-
-                            <strong className="text-sm text-slate-900">
-                              {item.value}
-                            </strong>
-
-                            <span className="w-12 text-right text-xs text-slate-400">
-                              {percentage.toFixed(
-                                0,
-                              )}
-                              %
-                            </span>
-
-                          </div>
-
+                          <span className="text-sm text-slate-600">
+                            {item.name}
+                          </span>
                         </div>
-                      );
-                    },
-                  )}
 
+                        <div className="flex items-center gap-3">
+                          <strong className="text-sm text-slate-900">
+                            {item.value}
+                          </strong>
+
+                          <span className="w-12 text-right text-xs text-slate-400">
+                            {percentage.toFixed(0)}%
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-
               </div>
             )}
-
           </div>
-
         </section>
 
         {/* =================================================
@@ -1793,13 +1366,9 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
           <div className="flex flex-col gap-4 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-
             <div>
-
               <div className="flex items-center gap-2">
-
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
                   <AlertTriangle size={18} />
                 </div>
@@ -1807,40 +1376,27 @@ export default function ReportsPage() {
                 <h2 className="text-lg font-black text-slate-950">
                   Obrigações fiscais
                 </h2>
-
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
-                Acompanhamento das obrigações de{' '}
-                {selectedYear}
+                Acompanhamento das obrigações de {selectedYear}
               </p>
-
             </div>
 
             <div className="rounded-xl bg-slate-50 px-4 py-2 text-right">
-
               <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
                 Total
               </p>
 
               <p className="text-lg font-black text-slate-900">
-                {
-                  reportData
-                    .yearObligations
-                    .length
-                }
+                {reportData.yearObligations.length}
               </p>
-
             </div>
-
           </div>
 
           <div className="grid grid-cols-1 gap-4 p-5 md:grid-cols-3">
-
             <div className="rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 to-white p-5">
-
               <div className="flex items-center justify-between">
-
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-amber-600 shadow-sm">
                   <Clock3 size={19} />
                 </div>
@@ -1848,30 +1404,19 @@ export default function ReportsPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-amber-600">
                   Pendentes
                 </span>
-
               </div>
 
               <p className="mt-5 text-3xl font-black text-amber-800">
-                {
-                  reportData
-                    .pendingObligations
-                    .length
-                }
+                {reportData.pendingObligations.length}
               </p>
 
               <p className="mt-1 text-xs text-amber-700/70">
-                {formatAOA(
-                  reportData
-                    .pendingObligationAmount,
-                )}
+                {formatAOA(reportData.pendingObligationAmount)}
               </p>
-
             </div>
 
             <div className="rounded-2xl border border-emerald-100 bg-gradient-to-br from-emerald-50 to-white p-5">
-
               <div className="flex items-center justify-between">
-
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm">
                   <CheckCircle2 size={19} />
                 </div>
@@ -1879,30 +1424,19 @@ export default function ReportsPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-emerald-600">
                   Pagas
                 </span>
-
               </div>
 
               <p className="mt-5 text-3xl font-black text-emerald-800">
-                {
-                  reportData
-                    .paidObligations
-                    .length
-                }
+                {reportData.paidObligations.length}
               </p>
 
               <p className="mt-1 text-xs text-emerald-700/70">
-                {formatAOA(
-                  reportData
-                    .paidObligationAmount,
-                )}
+                {formatAOA(reportData.paidObligationAmount)}
               </p>
-
             </div>
 
             <div className="rounded-2xl border border-red-100 bg-gradient-to-br from-red-50 to-white p-5">
-
               <div className="flex items-center justify-between">
-
                 <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
                   <AlertTriangle size={19} />
                 </div>
@@ -1910,66 +1444,37 @@ export default function ReportsPage() {
                 <span className="text-xs font-bold uppercase tracking-wider text-red-600">
                   Em atraso
                 </span>
-
               </div>
 
               <p className="mt-5 text-3xl font-black text-red-800">
-                {
-                  reportData
-                    .lateObligations
-                    .length
-                }
+                {reportData.lateObligations.length}
               </p>
 
               <p className="mt-1 text-xs text-red-700/70">
-                {formatAOA(
-                  reportData
-                    .lateObligationAmount,
-                )}
+                {formatAOA(reportData.lateObligationAmount)}
               </p>
-
             </div>
-
           </div>
 
           <div className="border-t border-slate-100 px-5 py-4">
-
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-
               <div className="flex items-center justify-between rounded-xl bg-slate-50 px-4 py-3">
-
-                <span className="text-sm text-slate-500">
-                  Valor pendente
-                </span>
+                <span className="text-sm text-slate-500">Valor pendente</span>
 
                 <strong className="text-sm text-slate-900">
-                  {formatAOA(
-                    reportData
-                      .pendingObligationAmount,
-                  )}
+                  {formatAOA(reportData.pendingObligationAmount)}
                 </strong>
-
               </div>
 
               <div className="flex items-center justify-between rounded-xl bg-red-50 px-4 py-3">
-
-                <span className="text-sm text-red-600">
-                  Valor em atraso
-                </span>
+                <span className="text-sm text-red-600">Valor em atraso</span>
 
                 <strong className="text-sm text-red-700">
-                  {formatAOA(
-                    reportData
-                      .lateObligationAmount,
-                  )}
+                  {formatAOA(reportData.lateObligationAmount)}
                 </strong>
-
               </div>
-
             </div>
-
           </div>
-
         </section>
 
         {/* =================================================
@@ -1977,15 +1482,11 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="grid grid-cols-1 gap-6 xl:grid-cols-2">
-
           {/* PIZZA PAGAMENTOS */}
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
             <div className="border-b border-slate-100 px-6 py-5">
-
               <div className="flex items-center gap-2">
-
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
                   <CreditCard size={18} />
                 </div>
@@ -1993,26 +1494,18 @@ export default function ReportsPage() {
                 <h2 className="text-lg font-black text-slate-950">
                   Distribuição dos pagamentos
                 </h2>
-
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
                 Pagamentos registados por categoria fiscal
               </p>
-
             </div>
 
-            {reportData.taxDistribution.length ===
-            0 ? (
+            {reportData.taxDistribution.length === 0 ? (
               <div className="flex min-h-[330px] items-center justify-center px-6 text-center">
-
                 <div>
-
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50">
-                    <CreditCard
-                      size={25}
-                      className="text-slate-300"
-                    />
+                    <CreditCard size={25} className="text-slate-300" />
                   </div>
 
                   <p className="font-semibold text-slate-600">
@@ -2022,25 +1515,15 @@ export default function ReportsPage() {
                   <p className="mt-1 text-sm text-slate-400">
                     A distribuição aparecerá quando existirem pagamentos.
                   </p>
-
                 </div>
-
               </div>
             ) : (
               <div className="grid grid-cols-1 items-center gap-2 px-5 py-4 md:grid-cols-[1fr_1fr]">
-
                 <div className="h-[300px]">
-
-                  <ResponsiveContainer
-                    width="100%"
-                    height="100%"
-                  >
+                  <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
-
                       <Pie
-                        data={
-                          reportData.taxDistribution
-                        }
+                        data={reportData.taxDistribution}
                         cx="50%"
                         cy="50%"
                         innerRadius={66}
@@ -2049,135 +1532,75 @@ export default function ReportsPage() {
                         dataKey="value"
                         strokeWidth={0}
                       >
-                        {reportData.taxDistribution.map(
-                          (_, index) => (
-                            <Cell
-                              key={index}
-                              fill={
-                                taxColors[
-                                  index %
-                                    taxColors.length
-                                ]
-                              }
-                            />
-                          ),
-                        )}
+                        {reportData.taxDistribution.map((_, index) => (
+                          <Cell
+                            key={index}
+                            fill={taxColors[index % taxColors.length]}
+                          />
+                        ))}
                       </Pie>
 
                       <Tooltip
-                        formatter={(
-                          value,
-                        ) =>
-                          [
-                            formatAOA(
-                              numberValue(
-                                value,
-                              ),
-                            ),
-                            'Valor',
-                          ]
-                        }
+                        formatter={(value) => [
+                          formatAOA(numberValue(value)),
+                          'Valor',
+                        ]}
                       />
-
                     </PieChart>
                   </ResponsiveContainer>
-
                 </div>
 
                 <div className="space-y-3">
+                  {reportData.taxDistribution.slice(0, 6).map((item, index) => {
+                    const total = reportData.taxDistribution.reduce(
+                      (sum, current) => sum + current.value,
+                      0,
+                    );
 
-                  {reportData.taxDistribution
-                    .slice(0, 6)
-                    .map(
-                      (
-                        item,
-                        index,
-                      ) => {
+                    const percentage =
+                      total > 0 ? (item.value / total) * 100 : 0;
 
-                        const total =
-                          reportData.taxDistribution.reduce(
-                            (
-                              sum,
-                              current,
-                            ) =>
-                              sum +
-                              current.value,
-                            0,
-                          );
+                    return (
+                      <div
+                        key={item.taxType}
+                        className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5"
+                      >
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-2">
+                            <span
+                              className="h-2.5 w-2.5 shrink-0 rounded-full"
+                              style={{
+                                backgroundColor:
+                                  taxColors[index % taxColors.length],
+                              }}
+                            />
 
-                        const percentage =
-                          total > 0
-                            ? (item.value /
-                                total) *
-                              100
-                            : 0;
-
-                        return (
-                          <div
-                            key={
-                              item.taxType
-                            }
-                            className="rounded-xl border border-slate-100 bg-slate-50/70 px-3 py-2.5"
-                          >
-
-                            <div className="flex items-center justify-between gap-3">
-
-                              <div className="flex min-w-0 items-center gap-2">
-
-                                <span
-                                  className="h-2.5 w-2.5 shrink-0 rounded-full"
-                                  style={{
-                                    backgroundColor:
-                                      taxColors[
-                                        index %
-                                          taxColors.length
-                                      ],
-                                  }}
-                                />
-
-                                <span className="truncate text-xs font-semibold text-slate-600">
-                                  {
-                                    item.name
-                                  }
-                                </span>
-
-                              </div>
-
-                              <span className="text-xs font-black text-slate-900">
-                                {percentage.toFixed(
-                                  1,
-                                )}
-                                %
-                              </span>
-
-                            </div>
-
-                            <p className="mt-1 pl-4 text-xs text-slate-400">
-                              {formatAOA(
-                                item.value,
-                              )}
-                            </p>
-
+                            <span className="truncate text-xs font-semibold text-slate-600">
+                              {item.name}
+                            </span>
                           </div>
-                        );
-                      },
-                    )}
 
+                          <span className="text-xs font-black text-slate-900">
+                            {percentage.toFixed(1)}%
+                          </span>
+                        </div>
+
+                        <p className="mt-1 pl-4 text-xs text-slate-400">
+                          {formatAOA(item.value)}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
-
               </div>
             )}
-
           </div>
 
           {/* RESUMO FINANCEIRO */}
 
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
             <div className="border-b border-slate-100 px-6 py-5">
-
               <div className="flex items-center gap-2">
-
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                   <WalletCards size={18} />
                 </div>
@@ -2185,21 +1608,16 @@ export default function ReportsPage() {
                 <h2 className="text-lg font-black text-slate-950">
                   Resumo financeiro
                 </h2>
-
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
                 Indicadores principais do exercício
               </p>
-
             </div>
 
             <div className="space-y-3 p-5">
-
               <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-
                 <div className="flex items-center gap-3">
-
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
                     <FileText size={18} />
                   </div>
@@ -2209,25 +1627,17 @@ export default function ReportsPage() {
                       Facturação bruta
                     </p>
 
-                    <p className="text-xs text-slate-400">
-                      Total das facturas
-                    </p>
+                    <p className="text-xs text-slate-400">Total das facturas</p>
                   </div>
-
                 </div>
 
                 <strong className="text-sm text-slate-950">
-                  {formatAOA(
-                    reportData.totalInvoiced,
-                  )}
+                  {formatAOA(reportData.totalInvoiced)}
                 </strong>
-
               </div>
 
               <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-
                 <div className="flex items-center gap-3">
-
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-emerald-600 shadow-sm">
                     <CreditCard size={18} />
                   </div>
@@ -2241,21 +1651,15 @@ export default function ReportsPage() {
                       Pagamentos registados
                     </p>
                   </div>
-
                 </div>
 
                 <strong className="text-sm text-emerald-600">
-                  {formatAOA(
-                    reportData.totalPayments,
-                  )}
+                  {formatAOA(reportData.totalPayments)}
                 </strong>
-
               </div>
 
               <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-
                 <div className="flex items-center gap-3">
-
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-orange-600 shadow-sm">
                     <Receipt size={18} />
                   </div>
@@ -2269,21 +1673,15 @@ export default function ReportsPage() {
                       Imposto nas facturas
                     </p>
                   </div>
-
                 </div>
 
                 <strong className="text-sm text-orange-600">
-                  {formatAOA(
-                    reportData.totalVat,
-                  )}
+                  {formatAOA(reportData.totalVat)}
                 </strong>
-
               </div>
 
               <div className="flex items-center justify-between rounded-2xl border border-red-100 bg-red-50/60 p-4">
-
                 <div className="flex items-center gap-3">
-
                   <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-red-600 shadow-sm">
                     <AlertTriangle size={18} />
                   </div>
@@ -2293,26 +1691,16 @@ export default function ReportsPage() {
                       Obrigações em atraso
                     </p>
 
-                    <p className="text-xs text-red-500">
-                      Requerem atenção
-                    </p>
+                    <p className="text-xs text-red-500">Requerem atenção</p>
                   </div>
-
                 </div>
 
                 <strong className="text-sm text-red-600">
-                  {formatAOA(
-                    reportData
-                      .lateObligationAmount,
-                  )}
+                  {formatAOA(reportData.lateObligationAmount)}
                 </strong>
-
               </div>
-
             </div>
-
           </div>
-
         </section>
 
         {/* =================================================
@@ -2320,13 +1708,9 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
           <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-
             <div>
-
               <div className="flex items-center gap-2">
-
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
                   <FileText size={18} />
                 </div>
@@ -2334,32 +1718,22 @@ export default function ReportsPage() {
                 <h2 className="text-lg font-black text-slate-950">
                   Facturas recentes
                 </h2>
-
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
-                Últimas facturas registadas em{' '}
-                {selectedYear}
+                Últimas facturas registadas em {selectedYear}
               </p>
-
             </div>
 
             <span className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500">
-              {reportData.yearInvoices.length}{' '}
-              factura(s)
+              {reportData.yearInvoices.length} factura(s)
             </span>
-
           </div>
 
-          {reportData.yearInvoices.length ===
-          0 ? (
+          {reportData.yearInvoices.length === 0 ? (
             <div className="p-12 text-center">
-
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50">
-                <FileText
-                  size={26}
-                  className="text-slate-300"
-                />
+                <FileText size={26} className="text-slate-300" />
               </div>
 
               <p className="font-semibold text-slate-600">
@@ -2369,16 +1743,12 @@ export default function ReportsPage() {
               <p className="mt-1 text-sm text-slate-400">
                 As facturas emitidas aparecerão aqui.
               </p>
-
             </div>
           ) : (
             <div className="overflow-x-auto">
-
               <table className="w-full min-w-[760px]">
-
                 <thead>
                   <tr className="bg-slate-50/80">
-
                     <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       Factura
                     </th>
@@ -2398,113 +1768,66 @@ export default function ReportsPage() {
                     <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       Estado
                     </th>
-
                   </tr>
                 </thead>
 
                 <tbody>
+                  {reportData.yearInvoices.slice(0, 10).map((invoice) => (
+                    <tr
+                      key={invoice.id}
+                      className="border-t border-slate-100 transition hover:bg-indigo-50/30"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                            <FileText size={16} />
+                          </div>
 
-                  {reportData.yearInvoices
-                    .slice(0, 10)
-                    .map(
-                      (
-                        invoice,
-                      ) => (
-                        <tr
-                          key={
-                            invoice.id
-                          }
-                          className="border-t border-slate-100 transition hover:bg-indigo-50/30"
+                          <span className="text-sm font-bold text-slate-900">
+                            {invoice.invoiceNumber || '—'}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {invoice.client?.name || 'Cliente'}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {formatDate(invoice.issueDate || invoice.createdAt)}
+                      </td>
+
+                      <td className="px-6 py-4 text-right text-sm font-black text-slate-900">
+                        {formatAOA(numberValue(invoice.total))}
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold ${getStatusClass(
+                            invoice.status,
+                          )}`}
                         >
+                          {invoice.status === 'PAID' && (
+                            <CheckCircle2 size={13} className="mr-1.5" />
+                          )}
 
-                          <td className="px-6 py-4">
+                          {invoice.status === 'PENDING' && (
+                            <Clock3 size={13} className="mr-1.5" />
+                          )}
 
-                            <div className="flex items-center gap-3">
+                          {invoice.status === 'CANCELLED' && (
+                            <XCircle size={13} className="mr-1.5" />
+                          )}
 
-                              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
-                                <FileText
-                                  size={16}
-                                />
-                              </div>
-
-                              <span className="text-sm font-bold text-slate-900">
-                                {invoice.invoiceNumber ||
-                                  '—'}
-                              </span>
-
-                            </div>
-
-                          </td>
-
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {invoice.client?.name ||
-                              'Cliente'}
-                          </td>
-
-                          <td className="px-6 py-4 text-sm text-slate-500">
-                            {formatDate(
-                              invoice.issueDate ||
-                                invoice.createdAt,
-                            )}
-                          </td>
-
-                          <td className="px-6 py-4 text-right text-sm font-black text-slate-900">
-                            {formatAOA(
-                              numberValue(
-                                invoice.total,
-                              ),
-                            )}
-                          </td>
-
-                          <td className="px-6 py-4 text-center">
-
-                            <span
-                              className={`inline-flex items-center rounded-full border px-3 py-1.5 text-xs font-bold ${getStatusClass(
-                                invoice.status,
-                              )}`}
-                            >
-                              {invoice.status ===
-                                'PAID' && (
-                                <CheckCircle2
-                                  size={13}
-                                  className="mr-1.5"
-                                />
-                              )}
-
-                              {invoice.status ===
-                                'PENDING' && (
-                                <Clock3
-                                  size={13}
-                                  className="mr-1.5"
-                                />
-                              )}
-
-                              {invoice.status ===
-                                'CANCELLED' && (
-                                <XCircle
-                                  size={13}
-                                  className="mr-1.5"
-                                />
-                              )}
-
-                              {getStatusLabel(
-                                invoice.status,
-                              )}
-                            </span>
-
-                          </td>
-
-                        </tr>
-                      ),
-                    )}
-
+                          {getStatusLabel(invoice.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
-
               </table>
-
             </div>
           )}
-
         </section>
 
         {/* =================================================
@@ -2512,13 +1835,9 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
           <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-
             <div>
-
               <div className="flex items-center gap-2">
-
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
                   <Receipt size={18} />
                 </div>
@@ -2526,35 +1845,22 @@ export default function ReportsPage() {
                 <h2 className="text-lg font-black text-slate-950">
                   Obrigações fiscais
                 </h2>
-
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
                 Obrigações que requerem acompanhamento
               </p>
-
             </div>
 
             <span className="rounded-xl bg-orange-50 px-3 py-2 text-xs font-bold text-orange-600">
-              {
-                reportData
-                  .yearObligations
-                  .length
-              }{' '}
-              obrigação(ões)
+              {reportData.yearObligations.length} obrigação(ões)
             </span>
-
           </div>
 
-          {reportData.yearObligations.length ===
-          0 ? (
+          {reportData.yearObligations.length === 0 ? (
             <div className="p-12 text-center">
-
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-50">
-                <CheckCircle2
-                  size={27}
-                  className="text-emerald-500"
-                />
+                <CheckCircle2 size={27} className="text-emerald-500" />
               </div>
 
               <p className="font-semibold text-slate-600">
@@ -2564,16 +1870,12 @@ export default function ReportsPage() {
               <p className="mt-1 text-sm text-slate-400">
                 As obrigações fiscais aparecerão aqui quando forem registadas.
               </p>
-
             </div>
           ) : (
             <div className="overflow-x-auto">
-
               <table className="w-full min-w-[850px]">
-
                 <thead>
                   <tr className="bg-slate-50/80">
-
                     <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       Obrigação
                     </th>
@@ -2593,88 +1895,54 @@ export default function ReportsPage() {
                     <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       Estado
                     </th>
-
                   </tr>
                 </thead>
 
                 <tbody>
+                  {reportData.yearObligations.slice(0, 10).map((obligation) => (
+                    <tr
+                      key={obligation.id}
+                      className="border-t border-slate-100 transition hover:bg-orange-50/30"
+                    >
+                      <td className="max-w-[480px] px-6 py-4">
+                        <div className="flex items-start gap-3">
+                          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
+                            <Receipt size={16} />
+                          </div>
 
-                  {reportData.yearObligations
-                    .slice(0, 10)
-                    .map(
-                      (
-                        obligation,
-                      ) => (
-                        <tr
-                          key={
-                            obligation.id
-                          }
-                          className="border-t border-slate-100 transition hover:bg-orange-50/30"
+                          <span className="text-sm font-bold leading-5 text-slate-900">
+                            {obligation.title || 'Obrigação fiscal'}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm font-medium uppercase text-slate-500">
+                        {obligation.type || '—'}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {formatDate(obligation.dueDate)}
+                      </td>
+
+                      <td className="px-6 py-4 text-right text-sm font-black text-slate-900">
+                        {formatAOA(numberValue(obligation.amount))}
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${getStatusClass(
+                            obligation.status,
+                          )}`}
                         >
-
-                          <td className="max-w-[480px] px-6 py-4">
-
-                            <div className="flex items-start gap-3">
-
-                              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-50 text-orange-600">
-                                <Receipt
-                                  size={16}
-                                />
-                              </div>
-
-                              <span className="text-sm font-bold leading-5 text-slate-900">
-                                {obligation.title ||
-                                  'Obrigação fiscal'}
-                              </span>
-
-                            </div>
-
-                          </td>
-
-                          <td className="px-6 py-4 text-sm font-medium uppercase text-slate-500">
-                            {obligation.type ||
-                              '—'}
-                          </td>
-
-                          <td className="px-6 py-4 text-sm text-slate-500">
-                            {formatDate(
-                              obligation.dueDate,
-                            )}
-                          </td>
-
-                          <td className="px-6 py-4 text-right text-sm font-black text-slate-900">
-                            {formatAOA(
-                              numberValue(
-                                obligation.amount,
-                              ),
-                            )}
-                          </td>
-
-                          <td className="px-6 py-4 text-center">
-
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${getStatusClass(
-                                obligation.status,
-                              )}`}
-                            >
-                              {getStatusLabel(
-                                obligation.status,
-                              )}
-                            </span>
-
-                          </td>
-
-                        </tr>
-                      ),
-                    )}
-
+                          {getStatusLabel(obligation.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
-
               </table>
-
             </div>
           )}
-
         </section>
 
         {/* =================================================
@@ -2682,13 +1950,9 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-
           <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
-
             <div>
-
               <div className="flex items-center gap-2">
-
                 <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-50 text-blue-600">
                   <Users size={18} />
                 </div>
@@ -2696,48 +1960,33 @@ export default function ReportsPage() {
                 <h2 className="text-lg font-black text-slate-950">
                   Equipa da empresa
                 </h2>
-
               </div>
 
               <p className="mt-2 text-sm text-slate-500">
                 Funcionários registados no sistema
               </p>
-
             </div>
 
             <div className="rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-600">
-              {
-                reportData.activeEmployees
-                  .length
-              }{' '}
-              activos
+              {reportData.activeEmployees.length} activos
             </div>
-
           </div>
 
           {employees.length === 0 ? (
             <div className="p-12 text-center">
-
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-50">
-                <Users
-                  size={27}
-                  className="text-slate-300"
-                />
+                <Users size={27} className="text-slate-300" />
               </div>
 
               <p className="font-semibold text-slate-600">
                 Nenhum funcionário encontrado
               </p>
-
             </div>
           ) : (
             <div className="overflow-x-auto">
-
               <table className="w-full min-w-[700px]">
-
                 <thead>
                   <tr className="bg-slate-50/80">
-
                     <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       Funcionário
                     </th>
@@ -2757,102 +2006,59 @@ export default function ReportsPage() {
                     <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
                       Estado
                     </th>
-
                   </tr>
                 </thead>
 
                 <tbody>
+                  {employees.slice(0, 10).map((employee) => (
+                    <tr
+                      key={employee.id}
+                      className="border-t border-slate-100 transition hover:bg-blue-50/30"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-black text-white">
+                            {(employee.name || 'F')
+                              .split(' ')
+                              .slice(0, 2)
+                              .map((part) => part[0])
+                              .join('')
+                              .toUpperCase()}
+                          </div>
 
-                  {employees
-                    .slice(0, 10)
-                    .map(
-                      (
-                        employee,
-                      ) => (
-                        <tr
-                          key={
-                            employee.id
-                          }
-                          className="border-t border-slate-100 transition hover:bg-blue-50/30"
+                          <span className="text-sm font-bold text-slate-900">
+                            {employee.name || '—'}
+                          </span>
+                        </div>
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-slate-500">
+                        {employee.employeeNumber || '—'}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {employee.jobTitle || '—'}
+                      </td>
+
+                      <td className="px-6 py-4 text-sm text-slate-600">
+                        {employee.department || '—'}
+                      </td>
+
+                      <td className="px-6 py-4 text-center">
+                        <span
+                          className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${getStatusClass(
+                            employee.status,
+                          )}`}
                         >
-
-                          <td className="px-6 py-4">
-
-                            <div className="flex items-center gap-3">
-
-                              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-600 text-xs font-black text-white">
-                                {(
-                                  employee.name ||
-                                  'F'
-                                )
-                                  .split(
-                                    ' ',
-                                  )
-                                  .slice(
-                                    0,
-                                    2,
-                                  )
-                                  .map(
-                                    (
-                                      part,
-                                    ) =>
-                                      part[0],
-                                  )
-                                  .join(
-                                    '',
-                                  )
-                                  .toUpperCase()}
-                              </div>
-
-                              <span className="text-sm font-bold text-slate-900">
-                                {employee.name ||
-                                  '—'}
-                              </span>
-
-                            </div>
-
-                          </td>
-
-                          <td className="px-6 py-4 text-sm text-slate-500">
-                            {employee.employeeNumber ||
-                              '—'}
-                          </td>
-
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {employee.jobTitle ||
-                              '—'}
-                          </td>
-
-                          <td className="px-6 py-4 text-sm text-slate-600">
-                            {employee.department ||
-                              '—'}
-                          </td>
-
-                          <td className="px-6 py-4 text-center">
-
-                            <span
-                              className={`inline-flex rounded-full border px-3 py-1.5 text-xs font-bold ${getStatusClass(
-                                employee.status,
-                              )}`}
-                            >
-                              {getStatusLabel(
-                                employee.status,
-                              )}
-                            </span>
-
-                          </td>
-
-                        </tr>
-                      ),
-                    )}
-
+                          {getStatusLabel(employee.status)}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
-
               </table>
-
             </div>
           )}
-
         </section>
 
         {/* =================================================
@@ -2860,67 +2066,47 @@ export default function ReportsPage() {
         ================================================= */}
 
         <section className="relative overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-cyan-50 px-6 py-5 print:border-slate-200">
-
           <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
-
             <div className="flex items-start gap-4">
-
               <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
                 <FileSpreadsheet size={21} />
               </div>
 
               <div>
-
                 <h3 className="font-bold text-slate-900">
                   Relatório fiscal integrado
                 </h3>
 
                 <p className="mt-1 max-w-xl text-xs leading-5 text-slate-500">
-                  Os dados apresentados neste relatório são
-                  carregados directamente dos registos da empresa
-                  autenticada.
+                  Os dados apresentados neste relatório são carregados
+                  directamente dos registos da empresa autenticada.
                 </p>
 
                 <p className="mt-2 text-[11px] text-slate-400">
                   Exercício fiscal: {selectedYear}
                 </p>
-
               </div>
-
             </div>
 
             <div className="flex flex-wrap gap-2 print:hidden">
-
               <button
-                onClick={
-                  handleExportCSV
-                }
+                onClick={handleExportCSV}
                 className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-xs font-bold text-slate-700 shadow-sm transition hover:bg-slate-50"
               >
-                <Download
-                  size={15}
-                />
+                <Download size={15} />
                 Exportar CSV
               </button>
 
               <button
-                onClick={
-                  handlePrint
-                }
+                onClick={handlePrint}
                 className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700"
               >
-                <Printer
-                  size={15}
-                />
+                <Printer size={15} />
                 Imprimir relatório
               </button>
-
             </div>
-
           </div>
-
         </section>
-
       </div>
 
       {/* ===================================================

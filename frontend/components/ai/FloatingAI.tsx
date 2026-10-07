@@ -85,7 +85,7 @@ export default function FloatingAI() {
         onClick={() => setOpen(true)}
         aria-label="Abrir Assistente Fiscal"
         title="Assistente Fiscal"
-        className="fixed bottom-5 right-5 z-[999] grid h-14 w-14 place-items-center rounded-full bg-[#071A2F] text-cyan-200 shadow-xl ring-1 ring-cyan-300/30 transition hover:bg-[#0b2a49] focus:outline-none focus:ring-2 focus:ring-cyan-400 sm:bottom-6 sm:right-6"
+        className="fixed bottom-4 right-4 z-[999] grid h-11 w-11 place-items-center rounded-lg border border-[#183a59] bg-[#071a2f] text-cyan-100 shadow-md transition hover:bg-[#102f4d] focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:bottom-5 sm:right-5"
       >
         <Bot size={24} />
       </button>
@@ -94,17 +94,17 @@ export default function FloatingAI() {
           role="dialog"
           aria-modal="true"
           aria-label="Assistente Fiscal"
-          className="fixed inset-x-2 bottom-2 z-[1000] flex h-[calc(100dvh-1rem)] max-h-[760px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl sm:inset-auto sm:bottom-24 sm:right-6 sm:h-[min(680px,78dvh)] sm:w-[400px]"
+          className="fixed inset-0 z-[1000] flex h-[100dvh] flex-col overflow-hidden border border-slate-200 bg-white shadow-xl sm:inset-auto sm:bottom-20 sm:right-5 sm:h-[min(650px,78dvh)] sm:w-[410px] sm:rounded-xl"
         >
-          <header className="flex items-center justify-between bg-[#071A2F] px-4 py-3 text-white">
+          <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3.5 text-[#13233c]">
             <div className="flex items-center gap-3">
-              <span className="grid h-9 w-9 place-items-center rounded-lg bg-cyan-400/15 text-cyan-200">
+              <span className="grid h-9 w-9 place-items-center rounded-md bg-[#e8f4f7] text-[#087da2]">
                 <Bot size={19} />
               </span>
               <div>
                 <h2 className="text-sm font-bold">Assistente Fiscal</h2>
-                <p className="text-[11px] text-slate-300">
-                  Informação fiscal baseada nos dados da sua empresa.
+                <p className="text-[11px] text-slate-500">
+                  Consulta assistida e fundamentada
                 </p>
               </div>
             </div>
@@ -112,7 +112,7 @@ export default function FloatingAI() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Fechar Assistente Fiscal"
-              className="rounded-lg p-2 text-slate-300 hover:bg-white/10 hover:text-white"
+              className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
             >
               <X size={18} />
             </button>
@@ -123,8 +123,9 @@ export default function FloatingAI() {
           >
             {!messages.length && (
               <>
-                <p className="rounded-xl bg-slate-100 p-3 text-sm text-slate-700">
-                  Olá. Como posso ajudar com a gestão fiscal da sua empresa?
+                <p className="border-l-2 border-[#087da2] bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
+                  Consulte obrigações, prazos e enquadramentos fiscais da
+                  empresa.
                 </p>
                 <div className="space-y-2">
                   {suggestions.map((item) => (
@@ -132,7 +133,7 @@ export default function FloatingAI() {
                       key={item}
                       type="button"
                       onClick={() => void sendMessage(item)}
-                      className="block w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-xs text-[#0b6f93] hover:bg-slate-50"
+                      className="block w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-[#0b6f93] hover:border-slate-300 hover:bg-slate-50"
                     >
                       {item}
                     </button>
@@ -145,8 +146,8 @@ export default function FloatingAI() {
                 key={`${item.role}-${index}`}
                 className={
                   item.role === 'user'
-                    ? 'ml-8 rounded-xl bg-[#102447] p-3 text-sm text-white'
-                    : 'mr-4 rounded-xl bg-slate-100 p-3 text-sm leading-6 text-slate-700'
+                    ? 'ml-10 rounded-lg bg-[#102447] px-3 py-2.5 text-sm text-white'
+                    : 'mr-3 border-l-2 border-slate-300 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-700'
                 }
               >
                 {item.content}
@@ -200,7 +201,7 @@ export default function FloatingAI() {
               event.preventDefault();
               void sendMessage();
             }}
-            className="border-t border-slate-200 p-3"
+            className="border-t border-slate-200 bg-slate-50 p-3"
           >
             <div className="flex items-end gap-2">
               <textarea
@@ -222,7 +223,7 @@ export default function FloatingAI() {
                 type="submit"
                 disabled={loading || !message.trim()}
                 aria-label="Enviar mensagem"
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-[#0b6f93] text-white disabled:opacity-40"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#102447] text-white hover:bg-[#18345f] disabled:opacity-40"
               >
                 <Send size={17} />
               </button>
