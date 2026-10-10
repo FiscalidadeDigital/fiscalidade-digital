@@ -18,6 +18,22 @@ describe('IvaEngine enrollment resolution', () => {
     expect(result).toEqual(expect.objectContaining({ regime: 'GERAL', calculationStatus: 'PREVIEW_ONLY', ratePercent: 14 }));
   });
 
+  it('resolves the IVA enrollment using the requested fiscal date instead of today', async () => {
+    const { engine, enrollments } = setup({ regime: FiscalRegime.GERAL });
+
+    const result = await engine.calculate('tenant-a', {
+      ...dto,
+      referenceDate: '2026-04-01',
+    });
+
+    expect(enrollments.resolve).toHaveBeenCalledWith(
+      'tenant-a',
+      'IVA',
+      new Date('2026-04-01T00:00:00.000Z'),
+    );
+    expect(result).toEqual(expect.objectContaining({ referenceDate: '2026-04-01' }));
+  });
+
   it('does not infer IVA from legacy Tenant.regime when enrollment is absent', async () => {
     const { engine } = setup(null);
     const result = await engine.calculate('tenant-a', dto);

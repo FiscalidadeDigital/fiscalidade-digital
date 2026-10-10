@@ -429,6 +429,7 @@ model FiscalCalendar {
   updatedAt         DateTime       @updatedAt
 
   regimes     FiscalCalendarRegime[]
+  deadlineOverride FiscalDeadlineOverride?
   obligations FiscalObligation[]
 
   @@index([taxType])
@@ -447,6 +448,27 @@ model FiscalCalendarRegime {
 
   @@unique([calendarId, regime])
   @@index([regime])
+}
+
+/// Preserves an exceptional operational deadline without overwriting the
+/// statutory/calendar date in FiscalCalendar.dueDate.
+model FiscalDeadlineOverride {
+  id                 String         @id @default(uuid())
+  fiscalCalendarId   String         @unique
+  originalDueDate    DateTime
+  operationalDueDate DateTime
+  reason             String
+  officialReference  String?
+  sourceUrl          String?
+  publishedAt        DateTime?
+  active             Boolean        @default(true)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  fiscalCalendar FiscalCalendar @relation(fields: [fiscalCalendarId], references: [id], onDelete: Cascade)
+
+  @@index([operationalDueDate])
+  @@index([active])
 }
 
 model FiscalObligation {

@@ -55,6 +55,32 @@ describe('FiscalObligationPersistenceService', () => {
     expect(prisma.fiscalObligation.create).toHaveBeenCalledWith(expect.objectContaining({ data: expect.objectContaining({ tenantId: 'tenant-a', fiscalCalendarId: 'calendar-2026-iva', period: '2026-07' }) }));
   });
 
+  it('uses a source-backed operational deadline without altering the calendar identity', async () => {
+    const { service, prisma } = setup();
+    const operationalDueDate = new Date('2026-04-30T23:59:59.000Z');
+    const fiscalDeadlineOverride = {
+      findUnique: jest.fn().mockResolvedValue({ active: true, operationalDueDate }),
+    };
+    (prisma as any).fiscalDeadlineOverride = fiscalDeadlineOverride;
+    prisma.fiscalObligation.create.mockResolvedValue({ id: 'extended-deadline' });
+
+    await service.persistCalendarDerived(calendarInput({
+      fiscalCalendarId: 'calendar-2026-iva-april',
+      dueDate: new Date('2026-04-15T23:59:59.000Z'),
+    }) as any);
+
+    expect(fiscalDeadlineOverride.findUnique).toHaveBeenCalledWith({
+      where: { fiscalCalendarId: 'calendar-2026-iva-april' },
+      select: { active: true, operationalDueDate: true },
+    });
+    expect(prisma.fiscalObligation.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        fiscalCalendarId: 'calendar-2026-iva-april',
+        dueDate: operationalDueDate,
+      }),
+    }));
+  });
+
   it('returns the calendar-derived row after its expected unique conflict', async () => {
     const { service, prisma } = setup();
     const existing = { id: 'calendar-existing', status: 'PAID' };

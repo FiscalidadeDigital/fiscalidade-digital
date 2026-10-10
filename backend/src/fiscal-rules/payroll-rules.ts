@@ -7,9 +7,10 @@ export const IRT_2026_LEGAL_SOURCE = {
   article: 'Artigo 21.º, n.º 3, e Anexo I',
   publishedAt: '2025-12-30',
   effectiveFrom: '2026-01-01',
-  // A Lei não contém cláusula de caducidade em 31/12/2026. A regra mantém-se
-  // aplicável até que uma norma posterior, registada neste módulo, a substitua.
-  effectiveTo: null,
+  // A tabela integra o OGE do exercício de 2026. Sem diploma e tabela oficial
+  // para o exercício seguinte, o motor falha fechado em vez de prolongar uma
+  // regra anual por inferência.
+  effectiveTo: '2026-12-31',
   consultedAt: '2026-09-30',
 } as const;
 
@@ -154,7 +155,7 @@ const PAYROLL_RULE_SETS: readonly PayrollRuleSet[] = [
   {
     version: PAYROLL_RULE_VERSION_2026,
     validFrom: '2026-01-01',
-    validTo: null,
+    validTo: '2026-12-31',
   },
 ] as const;
 

@@ -59,14 +59,14 @@ describe('payroll calculator', () => {
     ).toThrow('regime especial');
   });
 
-  it('continues a rule without a validTo into 2027', () => {
-    const result = calculatePayrollItem({
-      year: 2027,
-      socialSecurityCategory: SocialSecurityCategory.STANDARD,
-      baseSalary: '100000',
-    });
-
-    expect(result.taxRuleVersion).toContain('2026');
+  it('fails closed for 2027 until a new official payroll rule is registered', () => {
+    expect(() =>
+      calculatePayrollItem({
+        year: 2027,
+        socialSecurityCategory: SocialSecurityCategory.STANDARD,
+        baseSalary: '100000',
+      }),
+    ).toThrow('Não existe uma versão fiscal validada');
   });
 
   it('excludes holiday allowance from the INSS contribution base', () => {

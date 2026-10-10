@@ -57,13 +57,15 @@ export class FiscalObligationPersistenceService {
     this.assertNonBlank(input.period, 'period');
     this.assertNewOrigin(input.origin);
 
+    const dueDate = await this.resolveOperationalDueDate(input);
+
     const data = {
       tenantId: input.tenantId,
       fiscalCalendarId: input.fiscalCalendarId,
       period: input.period,
       type: input.type,
       title: input.title,
-      dueDate: input.dueDate,
+      dueDate,
       description: input.description,
       amount: input.amount,
       amountValue: input.amountValue,
@@ -154,6 +156,36 @@ export class FiscalObligationPersistenceService {
 
   private assertTenant(tenantId: string) {
     this.assertNonBlank(tenantId, 'tenantId');
+  }
+
+  /**
+   * A calendar row holds its published/legal date. A narrow, source-backed
+   * override changes only the operational deadline used by newly derived
+   * obligations; it never rewrites an existing obligation or the source row.
+   */
+  private async resolveOperationalDueDate(input: CalendarObligationInput) {
+    const overrideModel = (this.prisma as unknown as {
+      fiscalDeadlineOverride?: {
+        findUnique: (args: {
+          where: { fiscalCalendarId: string };
+          select: { active: boolean; operationalDueDate: boolean };
+        }) => Promise<{ active: boolean; operationalDueDate: Date } | null>;
+      };
+    }).fiscalDeadlineOverride;
+
+    // Keeps isolated unit tests and databases predating the additive migration
+    // on the legal calendar date. A production deployment must apply the
+    // migration before an override is seeded.
+    if (!overrideModel) return input.dueDate;
+
+    const deadlineOverride = await overrideModel.findUnique({
+      where: { fiscalCalendarId: input.fiscalCalendarId },
+      select: { active: true, operationalDueDate: true },
+    });
+
+    return deadlineOverride?.active
+      ? deadlineOverride.operationalDueDate
+      : input.dueDate;
   }
 
   private assertNonBlank(value: string | undefined | null, field: string) {

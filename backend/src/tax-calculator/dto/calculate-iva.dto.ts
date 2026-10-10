@@ -1,5 +1,6 @@
 ﻿import {
   IsEnum,
+  IsDateString,
   IsNumber,
   IsOptional,
   IsString,
@@ -21,6 +22,11 @@ export class CalculateIvaDto {
 
   @IsEnum(IvaOperation)
   operation!: IvaOperation;
+
+  /** Fiscal date used to resolve the IVA enrollment and rule version. */
+  @IsOptional()
+  @IsDateString()
+  referenceDate?: string;
 
   @IsOptional()
   @IsString()

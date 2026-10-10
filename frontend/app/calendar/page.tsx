@@ -65,6 +65,13 @@ type FiscalCalendarItem = {
   period?: string | null;
   referenceYear: number;
   dueDate: string;
+  legalDueDate?: string | null;
+  operationalDueDate?: string | null;
+  deadlineOverride?: {
+    reason: string;
+    officialReference?: string | null;
+    sourceUrl?: string | null;
+  } | null;
   officialReference?: string | null;
   source?: string | null;
   sourceUrl?: string | null;
@@ -221,6 +228,12 @@ function getDaysUntil(
   return Math.ceil(
     diff / 86400000,
   );
+}
+
+function effectiveDueDate(
+  item: FiscalCalendarItem,
+): string {
+  return item.operationalDueDate || item.dueDate;
 }
 
 function getTaxLabel(
@@ -521,7 +534,7 @@ export default function CalendarPage() {
       return filteredCalendar
         .filter((item) => {
           const date =
-            parseDate(item.dueDate);
+            parseDate(effectiveDueDate(item));
 
           return (
             date.getFullYear() ===
@@ -533,10 +546,10 @@ export default function CalendarPage() {
         .sort(
           (a, b) =>
             parseDate(
-              a.dueDate,
+              effectiveDueDate(a),
             ).getTime() -
             parseDate(
-              b.dueDate,
+              effectiveDueDate(b),
             ).getTime(),
         );
     }, [
@@ -555,7 +568,7 @@ export default function CalendarPage() {
         .filter((item) => {
           const days =
             getDaysUntil(
-              item.dueDate,
+              effectiveDueDate(item),
             );
 
           return days >= 0;
@@ -563,10 +576,10 @@ export default function CalendarPage() {
         .sort(
           (a, b) =>
             parseDate(
-              a.dueDate,
+              effectiveDueDate(a),
             ).getTime() -
             parseDate(
-              b.dueDate,
+              effectiveDueDate(b),
             ).getTime(),
         )
         .slice(0, 8);
@@ -589,7 +602,7 @@ export default function CalendarPage() {
           (item) => {
             const days =
               getDaysUntil(
-                item.dueDate,
+                effectiveDueDate(item),
               );
 
             return (
@@ -696,7 +709,7 @@ export default function CalendarPage() {
             (item) =>
               dateKey(
                 parseDate(
-                  item.dueDate,
+                  effectiveDueDate(item),
                 ),
               ) === key,
           );
@@ -1425,7 +1438,7 @@ export default function CalendarPage() {
                       (item) => {
                         const days =
                           getDaysUntil(
-                            item.dueDate,
+                            effectiveDueDate(item),
                           );
 
                         return (
@@ -1445,7 +1458,7 @@ export default function CalendarPage() {
                                 <span className="text-sm font-bold">
                                   {
                                     parseDate(
-                                      item.dueDate,
+                                      effectiveDueDate(item),
                                     ).getDate()
                                   }
                                 </span>
@@ -1454,7 +1467,7 @@ export default function CalendarPage() {
                                   {
                                     MONTHS[
                                       parseDate(
-                                        item.dueDate,
+                                        effectiveDueDate(item),
                                       ).getMonth()
                                     ].slice(
                                       0,
@@ -1485,7 +1498,7 @@ export default function CalendarPage() {
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
                                   <span className="text-[10px] font-medium text-slate-400">
                                     {shortDate(
-                                      item.dueDate,
+                                      effectiveDueDate(item),
                                     )}
                                   </span>
 
@@ -1596,7 +1609,7 @@ export default function CalendarPage() {
                           <span className="text-lg font-bold">
                             {
                               parseDate(
-                                item.dueDate,
+                                effectiveDueDate(item),
                               ).getDate()
                             }
                           </span>
@@ -1648,7 +1661,7 @@ export default function CalendarPage() {
                             <span>
                               Prazo:{' '}
                               {formatDate(
-                                item.dueDate,
+                                effectiveDueDate(item),
                               )}
                             </span>
 
@@ -1784,10 +1797,26 @@ export default function CalendarPage() {
 
                   <p className="mt-1 text-sm font-bold text-slate-800">
                     {formatDate(
-                      selectedItem.dueDate,
+                      effectiveDueDate(selectedItem),
                     )}
                   </p>
                 </div>
+
+                {selectedItem.deadlineOverride && (
+                  <div className="rounded-xl bg-sky-50 p-4 sm:col-span-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                      Prazo legal original
+                    </p>
+
+                    <p className="mt-1 text-sm font-bold text-slate-800">
+                      {formatDate(selectedItem.legalDueDate || selectedItem.dueDate)}
+                    </p>
+
+                    <p className="mt-1 text-xs leading-5 text-slate-600">
+                      Prorrogação oficial: {selectedItem.deadlineOverride.reason}
+                    </p>
+                  </div>
+                )}
 
                 <div className="rounded-xl bg-slate-50 p-4">
                   <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">

@@ -35,10 +35,11 @@ export class IndustrialEngine {
       throw new BadRequestException('Receitas e custos devem ser números válidos.');
     }
 
-    const enrollment = await this.enrollments.resolve(tenantId, TaxType.INDUSTRIAL, new Date());
+    const referenceDate = this.resolveReferenceDate(dto.referenceDate);
+    const enrollment = await this.enrollments.resolve(tenantId, TaxType.INDUSTRIAL, referenceDate);
     if (!enrollment) {
       return {
-        success: true, tenantId, currency: 'AOA', receitas: Number(receitas.toFixed(2)), custos: Number(custos.toFixed(2)),
+        success: true, tenantId, currency: 'AOA', referenceDate: referenceDate.toISOString().slice(0, 10), receitas: Number(receitas.toFixed(2)), custos: Number(custos.toFixed(2)),
         taxableBase: null, industrialTax: null, provisionalTax: null, rate: null, ratePercent: null,
         regime: null, calculationStatus: 'NEEDS_CONFIGURATION',
         message: 'Sem enquadramento vigente de Imposto Industrial. A simulação não assume Tenant.regime.',
@@ -50,6 +51,7 @@ export class IndustrialEngine {
       success: true,
       tenantId,
       currency: 'AOA',
+      referenceDate: referenceDate.toISOString().slice(0, 10),
       receitas: Number(receitas.toFixed(2)),
       custos: Number(custos.toFixed(2)),
       taxableBase: null,
@@ -60,5 +62,17 @@ export class IndustrialEngine {
       regime: enrollment.regime,
       ...review,
     };
+  }
+
+  private resolveReferenceDate(value?: string): Date {
+    if (!value) return new Date();
+
+    const dateOnly = value.slice(0, 10);
+    const referenceDate = new Date(`${dateOnly}T00:00:00.000Z`);
+    if (Number.isNaN(referenceDate.getTime())) {
+      throw new BadRequestException('A data fiscal da simulação é inválida.');
+    }
+
+    return referenceDate;
   }
 }

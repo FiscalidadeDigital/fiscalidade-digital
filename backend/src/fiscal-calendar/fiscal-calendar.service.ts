@@ -34,11 +34,12 @@ export class FiscalCalendarService {
       where.referenceYear = referenceYear;
     }
 
-    return this.prisma.fiscalCalendar.findMany({
+    const rules = await this.prisma.fiscalCalendar.findMany({
       where,
 
       include: {
         regimes: true,
+        deadlineOverride: true,
       },
 
       orderBy: [
@@ -50,14 +51,15 @@ export class FiscalCalendarService {
         },
       ],
     });
+
+    return rules.map((rule) => this.withOperationalDeadline(rule));
   }
 
   // =====================================================
   // CALENDÁRIO DA EMPRESA AUTENTICADA
   //
-  // O REGIME DA EMPRESA É A FONTE DE VERDADE.
-  // Uma empresa GERAL só recebe regras GERAL.
-  // Uma empresa SIMPLIFICADO só recebe regras SIMPLIFICADO.
+  // O enrollment do imposto e período é a fonte de verdade.
+  // Um regime IVA nunca é aplicado a outro imposto por inferência.
   // =====================================================
 
   async findForTenant(
@@ -122,11 +124,12 @@ export class FiscalCalendarService {
       where.referenceYear = referenceYear;
     }
 
-    return this.prisma.fiscalCalendar.findMany({
+    const rules = await this.prisma.fiscalCalendar.findMany({
       where,
 
       include: {
         regimes: true,
+        deadlineOverride: true,
       },
 
       orderBy: [
@@ -138,6 +141,8 @@ export class FiscalCalendarService {
         },
       ],
     });
+
+    return rules.map((rule) => this.withOperationalDeadline(rule));
   }
 
   private ruleReferenceDate(rule: { period: string | null; referenceYear: number; dueDate: Date }) {
@@ -173,11 +178,12 @@ export class FiscalCalendarService {
       where.referenceYear = referenceYear;
     }
 
-    return this.prisma.fiscalCalendar.findMany({
+    const rules = await this.prisma.fiscalCalendar.findMany({
       where,
 
       include: {
         regimes: true,
+        deadlineOverride: true,
       },
 
       orderBy: [
@@ -189,6 +195,8 @@ export class FiscalCalendarService {
         },
       ],
     });
+
+    return rules.map((rule) => this.withOperationalDeadline(rule));
   }
 
   // =====================================================
@@ -212,11 +220,12 @@ export class FiscalCalendarService {
       where.referenceYear = referenceYear;
     }
 
-    return this.prisma.fiscalCalendar.findMany({
+    const rules = await this.prisma.fiscalCalendar.findMany({
       where,
 
       include: {
         regimes: true,
+        deadlineOverride: true,
       },
 
       orderBy: [
@@ -228,6 +237,8 @@ export class FiscalCalendarService {
         },
       ],
     });
+
+    return rules.map((rule) => this.withOperationalDeadline(rule));
   }
 
   // =====================================================
@@ -246,6 +257,8 @@ export class FiscalCalendarService {
         include: {
           regimes: true,
 
+          deadlineOverride: true,
+
           obligations: {
             take: 20,
 
@@ -262,6 +275,31 @@ export class FiscalCalendarService {
       );
     }
 
-    return calendar;
+    return this.withOperationalDeadline(calendar);
+  }
+
+  private withOperationalDeadline<T extends {
+    dueDate: Date;
+    deadlineOverride?: {
+      active: boolean;
+      originalDueDate: Date;
+      operationalDueDate: Date;
+      reason: string;
+      officialReference: string | null;
+      sourceUrl: string | null;
+      publishedAt: Date | null;
+    } | null;
+  }>(calendar: T) {
+    const deadlineOverride = calendar.deadlineOverride?.active
+      ? calendar.deadlineOverride
+      : null;
+
+    return {
+      ...calendar,
+      legalDueDate: deadlineOverride?.originalDueDate ?? calendar.dueDate,
+      operationalDueDate:
+        deadlineOverride?.operationalDueDate ?? calendar.dueDate,
+      deadlineOverride,
+    };
   }
 }

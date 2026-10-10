@@ -157,6 +157,11 @@ export default function SimulatorPage() {
   ] = useState('');
 
   const [
+    ivaReferenceDate,
+    setIvaReferenceDate,
+  ] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const [
     productType,
     setProductType,
   ] = useState('');
@@ -218,6 +223,11 @@ export default function SimulatorPage() {
     custos,
     setCustos,
   ] = useState('');
+
+  const [
+    industrialReferenceDate,
+    setIndustrialReferenceDate,
+  ] = useState(() => new Date().toISOString().slice(0, 10));
 
   const [
     industrialLoading,
@@ -293,6 +303,8 @@ export default function SimulatorPage() {
             productType || undefined,
           description:
             description || undefined,
+          referenceDate:
+            ivaReferenceDate || undefined,
         });
 
       setIvaResult(result);
@@ -415,6 +427,7 @@ export default function SimulatorPage() {
         await calculateIndustrial(
           revenue,
           cost,
+          industrialReferenceDate || undefined,
         );
 
       setIndustrialResult(result);
@@ -458,6 +471,15 @@ export default function SimulatorPage() {
     setIndustrialResult(null);
     setIndustrialError('');
   }
+
+  const ivaAmountUndetermined = Boolean(
+    ivaResult &&
+      [
+        'NEEDS_CONFIGURATION',
+        'NEEDS_OFFICIAL_CONFIRMATION',
+        'REVIEW_REQUIRED',
+      ].includes(String(ivaResult.calculationStatus)),
+  );
 
   // ===================================================
   // LOADING
@@ -777,8 +799,8 @@ export default function SimulatorPage() {
               <TrendingUp size={18} />
             }
             title="Imposto Industrial"
-            description="Estimativa com base nas receitas e nos custos."
-            rate="25%"
+            description="Enquadramento e matéria colectável sujeitos a revisão."
+            rate="Revisão"
             iconClass="bg-emerald-50 text-emerald-600"
           />
 
@@ -927,6 +949,14 @@ export default function SimulatorPage() {
             </div>
 
             <Field
+              label="Data fiscal"
+              placeholder="AAAA-MM-DD"
+              value={ivaReferenceDate}
+              onChange={setIvaReferenceDate}
+              type="date"
+            />
+
+            <Field
               label="Valor da operação"
               placeholder="Ex.: 100000"
               value={ivaAmount}
@@ -1015,35 +1045,51 @@ export default function SimulatorPage() {
 
                   <ResultRow
                     label="Taxa aplicada"
-                    value={`${money(
-                      resultValue(
-                        ivaResult,
-                        'ratePercent',
-                      ),
-                    )}%`}
+                    value={
+                      ivaAmountUndetermined
+                        ? 'Não determinada'
+                        : `${money(
+                            resultValue(
+                              ivaResult,
+                              'ratePercent',
+                            ),
+                          )}%`
+                    }
                   />
 
                   <ResultRow
                     label="IVA calculado"
-                    value={`${money(
-                      resultValue(
-                        ivaResult,
-                        'iva',
-                      ),
-                    )} AOA`}
+                    value={
+                      ivaAmountUndetermined
+                        ? 'Montante não determinado'
+                        : `${money(
+                            resultValue(
+                              ivaResult,
+                              'iva',
+                            ),
+                          )} AOA`
+                    }
                     emphasized
                   />
 
                 </div>
 
                 <ResultHighlight
-                  label="Total da operação"
-                  value={`${money(
-                    resultValue(
-                      ivaResult,
-                      'total',
-                    ),
-                  )} AOA`}
+                  label={
+                    ivaAmountUndetermined
+                      ? 'Total fiscal'
+                      : 'Total da operação'
+                  }
+                  value={
+                    ivaAmountUndetermined
+                      ? 'Não determinado'
+                      : `${money(
+                          resultValue(
+                            ivaResult,
+                            'total',
+                          ),
+                        )} AOA`
+                  }
                   className="bg-indigo-50 border-indigo-100 text-indigo-600"
                 />
 
@@ -1187,6 +1233,14 @@ export default function SimulatorPage() {
               </div>
 
             </div>
+
+            <Field
+              label="Data fiscal"
+              placeholder="AAAA-MM-DD"
+              value={industrialReferenceDate}
+              onChange={setIndustrialReferenceDate}
+              type="date"
+            />
 
             <Field
               label="Receitas"

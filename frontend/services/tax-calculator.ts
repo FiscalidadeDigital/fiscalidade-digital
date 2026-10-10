@@ -11,6 +11,7 @@ export enum IvaOperation {
 export interface CalculateIvaPayload {
   amount: number;
   operation: IvaOperation;
+  referenceDate?: string;
   productType?: string;
   description?: string;
 }
@@ -22,6 +23,7 @@ export interface CalculateRetentionPayload {
 export interface CalculateIndustrialPayload {
   receitas: number;
   custos: number;
+  referenceDate?: string;
 }
 
 // =====================================================
@@ -65,13 +67,15 @@ export async function calculateRetention(
 export async function calculateIndustrial(
   receitas: number,
   custos: number,
+  referenceDate?: string,
 ) {
   const response =
     await api.post(
       '/tax-calculator/industrial',
       {
-        receitas,
-        custos,
+      receitas,
+      custos,
+      referenceDate,
       },
     );
 

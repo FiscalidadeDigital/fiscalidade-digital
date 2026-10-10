@@ -8,6 +8,12 @@ const prisma = new PrismaClient();
 
 const DATA_DIR = path.join(__dirname, "data");
 
+const AGT_FISCAL_CALENDAR_2026_URL =
+  "https://portaldocontribuinte.minfin.gov.ao/pdfs/CALENDARIO_FISCAL_2026.pdf";
+
+const AGT_IVA_APRIL_2026_EXTENSION_URL =
+  "https://portaldocontribuinte.minfin.gov.ao/noticia?id=985577";
+
 const MONTHS = [
   { number: 1, name: "Janeiro" },
   { number: 2, name: "Fevereiro" },
@@ -372,6 +378,10 @@ async function importWorkbook(
             dueDate,
             officialReference: "Calendário Fiscal AGT",
             source: fileName,
+            sourceUrl:
+              year === 2026
+                ? AGT_FISCAL_CALENDAR_2026_URL
+                : null,
             active: true,
           },
           create: {
@@ -385,6 +395,10 @@ async function importWorkbook(
             dueDate,
             officialReference: "Calendário Fiscal AGT",
             source: fileName,
+            sourceUrl:
+              year === 2026
+                ? AGT_FISCAL_CALENDAR_2026_URL
+                : null,
             active: true,
           },
         });
@@ -411,6 +425,59 @@ async function importWorkbook(
   }
 
   return { inserted, skipped };
+}
+
+/**
+ * The 17 April 2026 AGT communication is an exceptional operational deadline,
+ * not a mutation of the regular calendar rule. Keeping both dates makes the
+ * legal basis auditable and prevents the extension from leaking into another
+ * month or exercise.
+ */
+async function seedOfficialDeadlineOverrides() {
+  const originalDueDate = new Date(Date.UTC(2026, 3, 15, 23, 59, 59));
+  const calendar = await prisma.fiscalCalendar.findFirst({
+    where: {
+      referenceYear: 2026,
+      taxType: TaxType.IVA,
+      dueDate: originalDueDate,
+      title: { contains: "Declaração Modelo 7" },
+    },
+    select: { id: true, dueDate: true },
+  });
+
+  if (!calendar) {
+    console.log(
+      "⚠️ Override IVA Abril/2026 não registado: item oficial Modelo 7 não encontrado.",
+    );
+    return;
+  }
+
+  await prisma.fiscalDeadlineOverride.upsert({
+    where: { fiscalCalendarId: calendar.id },
+    update: {
+      originalDueDate: calendar.dueDate,
+      operationalDueDate: new Date(Date.UTC(2026, 3, 30, 23, 59, 59)),
+      reason: "Fortes chuvas — extensão excepcional comunicada pela AGT.",
+      officialReference:
+        "Comunicado AGT de 17-04-2026: extensão de 15-04-2026 para 30-04-2026.",
+      sourceUrl: AGT_IVA_APRIL_2026_EXTENSION_URL,
+      publishedAt: new Date(Date.UTC(2026, 3, 17)),
+      active: true,
+    },
+    create: {
+      fiscalCalendarId: calendar.id,
+      originalDueDate: calendar.dueDate,
+      operationalDueDate: new Date(Date.UTC(2026, 3, 30, 23, 59, 59)),
+      reason: "Fortes chuvas — extensão excepcional comunicada pela AGT.",
+      officialReference:
+        "Comunicado AGT de 17-04-2026: extensão de 15-04-2026 para 30-04-2026.",
+      sourceUrl: AGT_IVA_APRIL_2026_EXTENSION_URL,
+      publishedAt: new Date(Date.UTC(2026, 3, 17)),
+      active: true,
+    },
+  });
+
+  console.log("✓ Override oficial IVA Abril/2026 registado.");
 }
 
 async function main() {
@@ -455,6 +522,8 @@ async function main() {
     totalInserted += result.inserted;
     totalSkipped += result.skipped;
   }
+
+  await seedOfficialDeadlineOverrides();
 
   console.log("");
   console.log("==============================================");

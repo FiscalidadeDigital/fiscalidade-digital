@@ -49,13 +49,14 @@ export class IvaEngine {
       throw new NotFoundException('Empresa não encontrada.');
     }
 
-    const enrollment = await this.enrollments.resolve(tenantId, TaxType.IVA, new Date());
+    const referenceDate = this.resolveReferenceDate(dto.referenceDate);
+    const enrollment = await this.enrollments.resolve(tenantId, TaxType.IVA, referenceDate);
     if (!enrollment) {
-      return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: null, operation: dto.operation, amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_CONFIGURATION', ruleVersion: null, legalSource: null, message: 'Sem enquadramento IVA vigente para o período. A simulação não assume Tenant.regime.' };
+      return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: null, operation: dto.operation, referenceDate: referenceDate.toISOString().slice(0, 10), amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_CONFIGURATION', ruleVersion: null, legalSource: null, message: 'Sem enquadramento IVA vigente para o período. A simulação não assume Tenant.regime.' };
     }
     const isSimplified = enrollment.regime === FiscalRegime.SIMPLIFICADO;
     if (isSimplified) {
-      return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: enrollment.regime, operation: dto.operation, amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION', ruleVersion: enrollment.legalReference || null, legalSource: enrollment.officialSourceUrl || null, message: 'O enquadramento IVA Simplificado foi reconhecido, mas a fórmula definitiva não está automatizada sem confirmação oficial.' };
+      return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: enrollment.regime, operation: dto.operation, referenceDate: referenceDate.toISOString().slice(0, 10), amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION', ruleVersion: enrollment.legalReference || null, legalSource: enrollment.officialSourceUrl || null, message: 'O enquadramento IVA Simplificado foi reconhecido, mas a fórmula definitiva não está automatizada sem confirmação oficial.' };
     }
     const rate = new Prisma.Decimal(
       IVA_RATES_FROM_2023_12_28.general,
@@ -74,6 +75,7 @@ export class IvaEngine {
       company: { id: tenant.id, name: tenant.name, nif: tenant.nif },
       regime: enrollment.regime,
       operation: dto.operation,
+      referenceDate: referenceDate.toISOString().slice(0, 10),
       amount: asDisplayNumber(amount),
       taxableBase: asDisplayNumber(amount),
       rate: asDisplayNumber(rate),
@@ -94,5 +96,17 @@ export class IvaEngine {
           ? 'Prévia de IVA sujeita a revisão: faltam classificação fiscal suficiente ou enquadramento específico da operação.'
           : 'Prévia de IVA. A liquidação final depende da classificação fiscal e da documentação da operação.',
     };
+  }
+
+  private resolveReferenceDate(value?: string): Date {
+    if (!value) return new Date();
+
+    const dateOnly = value.slice(0, 10);
+    const referenceDate = new Date(`${dateOnly}T00:00:00.000Z`);
+    if (Number.isNaN(referenceDate.getTime())) {
+      throw new BadRequestException('A data fiscal da simulação é inválida.');
+    }
+
+    return referenceDate;
   }
 }
