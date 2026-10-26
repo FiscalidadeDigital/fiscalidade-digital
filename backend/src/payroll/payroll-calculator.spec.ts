@@ -20,6 +20,20 @@ describe('payroll calculator', () => {
     expect(calculateIrtGroupA2026(input).toFixed(2)).toBe(expected);
   });
 
+  it.each([
+    ['150000.004', '0.00'],
+    ['150000.005', '12500.00'],
+    ['200000.004', '20500.00'],
+    ['200000.005', '31250.00'],
+    ['300000.005', '49250.00'],
+    ['10000000.005', '2342250.00'],
+  ])(
+    'rounds before selecting the official 2026 bracket at transition %s',
+    (input, expected) => {
+      expect(calculateIrtGroupA2026(input).toFixed(2)).toBe(expected);
+    },
+  );
+
   it('calculates standard employee and employer social security with Decimal', () => {
     const result = calculatePayrollItem({
       year: 2026,
@@ -47,6 +61,24 @@ describe('payroll calculator', () => {
 
     expect(result.socialSecurityAmount.toFixed(2)).toBe('8000.00');
     expect(result.employerSocialSecurityAmount.toFixed(2)).toBe('8000.00');
+  });
+
+  it('applies the INSS rates and IRT allowance caps with Decimal precision', () => {
+    const result = calculatePayrollItem({
+      year: 2026,
+      socialSecurityCategory: SocialSecurityCategory.STANDARD,
+      baseSalary: '200000',
+      foodAllowance: '30001',
+      transportAllowance: '30001',
+    });
+
+    expect(result.grossAmount.toFixed(2)).toBe('260002.00');
+    expect(result.socialSecurityBase.toFixed(2)).toBe('260002.00');
+    expect(result.socialSecurityAmount.toFixed(2)).toBe('7800.06');
+    expect(result.employerSocialSecurityAmount.toFixed(2)).toBe('20800.16');
+    expect(result.irtTaxableAmount.toFixed(2)).toBe('192201.94');
+    expect(result.irtAmount.toFixed(2)).toBe('19252.31');
+    expect(result.netAmount.toFixed(2)).toBe('232949.63');
   });
 
   it('fails closed for an unconfigured special social security regime', () => {
