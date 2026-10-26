@@ -10,6 +10,21 @@ describe('LegislationLibraryService extraction safeguards', () => {
     expect(resolve({ fullText: 'Documento sem marcador de artigo.' })).toEqual([]);
   });
 
+  it('extracts articles only from explicit markers in source text', () => {
+    const service = new LegislationLibraryService();
+    const resolve = (service as any).resolveArticles.bind(service);
+
+    expect(
+      resolve({
+        fullText:
+          'Preâmbulo\nARTIGO 1.º\nTexto do primeiro artigo.\nARTIGO 2.º\nTexto do segundo artigo.',
+      }),
+    ).toEqual([
+      { article: 'ARTIGO 1.º', text: 'Texto do primeiro artigo.' },
+      { article: 'ARTIGO 2.º', text: 'Texto do segundo artigo.' },
+    ]);
+  });
+
   it('searches only the supplied document and article content', () => {
     const service = new LegislationLibraryService();
     const normalize = (service as any).normalizeForSearch.bind(service);

@@ -50,7 +50,9 @@ describe('ObligationGenerationService', () => {
     ], [rule({ id: 'industrial-rule', taxType: 'INDUSTRIAL', obligationType: 'II' })]);
     const result = await service.generate('tenant-a', new Date('2026-10-01'));
     expect(result.results).toEqual(expect.arrayContaining([expect.objectContaining({ taxType: 'INDUSTRIAL', outcome: 'CREATED' })]));
-    expect(prisma.fiscalCalendar.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ taxType: 'INDUSTRIAL' }) }));
+    expect(prisma.fiscalCalendar.findMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ taxType: { in: ['INDUSTRIAL', 'II'] } }),
+    }));
     expect(persistence.persistCalendarDerived).toHaveBeenCalledWith(expect.objectContaining({ type: 'II' }));
   });
 
