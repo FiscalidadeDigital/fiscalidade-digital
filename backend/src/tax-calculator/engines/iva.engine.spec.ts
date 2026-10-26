@@ -34,6 +34,52 @@ describe('IvaEngine enrollment resolution', () => {
     expect(result).toEqual(expect.objectContaining({ referenceDate: '2026-04-01' }));
   });
 
+  it('rejects an impossible fiscal date instead of normalizing it into another period', async () => {
+    const { engine, enrollments } = setup({ regime: FiscalRegime.GERAL });
+
+    await expect(
+      engine.calculate('tenant-a', { ...dto, referenceDate: '2026-02-30' }),
+    ).rejects.toThrow('data fiscal');
+
+    expect(enrollments.resolve).not.toHaveBeenCalled();
+  });
+
+  it('rounds the official 14% general-rate preview with Decimal', async () => {
+    const { engine } = setup({ regime: FiscalRegime.GERAL });
+
+    const result = await engine.calculate('tenant-a', {
+      ...dto,
+      amount: 1000.05,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        ratePercent: 14,
+        iva: 140.01,
+        total: 1140.06,
+        calculationStatus: 'PREVIEW_ONLY',
+      }),
+    );
+  });
+
+  it('keeps a zero-value IVA operation at zero without creating a tax amount', async () => {
+    const { engine } = setup({ regime: FiscalRegime.GERAL });
+
+    const result = await engine.calculate('tenant-a', { ...dto, amount: 0 });
+
+    expect(result).toEqual(
+      expect.objectContaining({ iva: 0, supportedIva: 0, total: 0 }),
+    );
+  });
+
+  it('rejects a negative IVA amount', async () => {
+    const { engine } = setup({ regime: FiscalRegime.GERAL });
+
+    await expect(engine.calculate('tenant-a', { ...dto, amount: -0.01 })).rejects.toThrow(
+      'valor da opera',
+    );
+  });
+
   it('does not infer IVA from legacy Tenant.regime when enrollment is absent', async () => {
     const { engine } = setup(null);
     const result = await engine.calculate('tenant-a', dto);
