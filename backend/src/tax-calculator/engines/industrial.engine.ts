@@ -69,7 +69,13 @@ export class IndustrialEngine {
 
     const dateOnly = value.slice(0, 10);
     const referenceDate = new Date(`${dateOnly}T00:00:00.000Z`);
-    if (Number.isNaN(referenceDate.getTime())) {
+    // Date normalizes impossible calendar dates (for example 2026-02-30) to
+    // a different month. A fiscal period must be rejected rather than silently
+    // resolving an enrollment for that normalized date.
+    if (
+      Number.isNaN(referenceDate.getTime()) ||
+      referenceDate.toISOString().slice(0, 10) !== dateOnly
+    ) {
       throw new BadRequestException('A data fiscal da simulação é inválida.');
     }
 
