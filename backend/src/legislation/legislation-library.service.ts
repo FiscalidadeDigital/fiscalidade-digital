@@ -1,8 +1,4 @@
-﻿import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-
+﻿import { Injectable, NotFoundException } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -19,7 +15,7 @@ export interface LibraryDocument {
   articlesDetected?: number;
   articles?: LibraryArticle[];
   fullText?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 export interface RagLibraryChunk {
@@ -32,103 +28,7 @@ export interface RagLibraryChunk {
 
 @Injectable()
 export class LegislationLibraryService {
-
-  // ============================================================
-  // LOCALIZAR BIBLIOTECA
-  // ============================================================
-
-  private findLibraryFile(): string | null {
-
-    const fileName =
-      'legislacao-fiscal-digital-estrutura.json';
-
-    const candidates = [
-      // Backend executado a partir de src
-      path.resolve(
-        __dirname,
-        '../../../storage/legislation-fiscal',
-        fileName,
-      ),
-
-      // Backend compilado para dist
-      path.resolve(
-        __dirname,
-        '../../../storage/legislation-fiscal',
-        fileName,
-      ),
-
-      // Executando npm a partir da pasta backend
-      path.resolve(
-        process.cwd(),
-        '../storage/legislation-fiscal',
-        fileName,
-      ),
-
-      // Caso a storage esteja dentro do backend
-      path.resolve(
-        process.cwd(),
-        'storage/legislation-fiscal',
-        fileName,
-      ),
-
-      // Raiz conhecida do projecto
-      path.resolve(
-        'C:/Users/rokhan/fiscalidade-digital/storage/legislation-fiscal',
-        fileName,
-      ),
-    ];
-
-    for (const candidate of candidates) {
-      if (fs.existsSync(candidate)) {
-        return candidate;
-      }
-    }
-
-    return null;
-  }
-
-  // ============================================================
-  // CARREGAR BIBLIOTECA
-  // ============================================================
-
-  private load(): any {
-
-    const filePath =
-      this.findLibraryFile();
-
-    if (!filePath) {
-
-      throw new NotFoundException(
-        'Biblioteca de legislação não encontrada.',
-      );
-    }
-
-    try {
-
-      const raw =
-        fs.readFileSync(
-          filePath,
-          'utf8',
-        );
-
-      return JSON.parse(raw);
-
-    } catch (error) {
-
-      throw new NotFoundException(
-        'Não foi possível ler a biblioteca de legislação.',
-      );
-    }
-  }
-
-  // ============================================================
-  // NORMALIZAR TEXTO
-  // ============================================================
-
-  private normalizeText(
-    value: unknown,
-  ): string {
-
+  private normalizeText(value: unknown): string {
     return String(value ?? '')
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n')
@@ -137,577 +37,327 @@ export class LegislationLibraryService {
       .trim();
   }
 
-  // ============================================================
-  // NORMALIZAR PESQUISA
-  // ============================================================
-
-  private normalizeForSearch(
-    value: unknown,
-  ): string {
-
+  private normalizeForSearch(value: unknown): string {
     return this.normalizeText(value)
       .toLowerCase()
       .normalize('NFD')
-      .replace(
-        /[\u0300-\u036f]/g,
-        '',
-      );
+      .replace(/[\u0300-\u036f]/g, '');
   }
 
-  // ============================================================
-  // EXTRAIR ARTIGOS
-  // ============================================================
-
-  private extractArticlesFromFullText(
-    fullText: string,
-  ): LibraryArticle[] {
-
-    const text =
-      this.normalizeText(fullText);
-
-    if (!text) {
-      return [];
-    }
+  private extractArticlesFromFullText(fullText: string): LibraryArticle[] {
+    const text = this.normalizeText(fullText);
+    if (!text) return [];
 
     const regex =
-      /(?:^|\n)\s*(?:ARTIGO|Artigo)\s+(\d{1,4})(?:\s*[º°ª.]?)?(?:\s*[-–—:]?)?\s*/g;
-
-    const matches: Array<{
-      index: number;
-      end: number;
-      number: string;
-    }> = [];
-
+      /(?:^|\n)\s*(?:ARTIGO|Artigo)\s+(\d{1,4})\s*[.º°ª]*(?:\s*[-–—:]?)?\s*/g;
+    const matches: Array<{ index: number; end: number; number: string }> = [];
     let match: RegExpExecArray | null;
 
-    while (
-      (match = regex.exec(text)) !== null
-    ) {
-
-      matches.push({
-        index: match.index,
-        end: regex.lastIndex,
-        number: match[1],
-      });
+    while ((match = regex.exec(text)) !== null) {
+      matches.push({ index: match.index, end: regex.lastIndex, number: match[1] });
     }
 
-    if (matches.length === 0) {
-      return [];
-    }
-
-    const articles: LibraryArticle[] = [];
-
-    for (
-      let index = 0;
-      index < matches.length;
-      index++
-    ) {
-
-      const current =
-        matches[index];
-
-      const next =
-        matches[index + 1];
-
-      const start =
-        current.end;
-
-      const end =
-        next
-          ? next.index
-          : text.length;
-
-      const articleText =
-        this.normalizeText(
-          text.slice(
-            start,
-            end,
-          ),
-        );
-
-      if (!articleText) {
-        continue;
+    return matches.reduce<LibraryArticle[]>((articles, current, index) => {
+      const next = matches[index + 1];
+      const articleText = this.normalizeText(
+        text.slice(current.end, next ? next.index : text.length),
+      );
+      if (articleText) {
+        articles.push({ article: `ARTIGO ${current.number}.º`, text: articleText });
       }
-
-      articles.push({
-        article:
-          `ARTIGO ${current.number}.º`,
-
-        text:
-          articleText,
-      });
-    }
-
-    return articles;
+      return articles;
+    }, []);
   }
 
-  // ============================================================
-  // RESOLVER ARTIGOS
-  // ============================================================
+  private resolveArticles(document: LibraryDocument): LibraryArticle[] {
+    const suppliedArticles = Array.isArray(document.articles)
+      ? document.articles
+      .map((article) => ({
+        article: this.normalizeText(article?.article),
+        text: this.normalizeText(article?.text),
+      }))
+      .filter((article) => article.article.length > 0 && article.text.length > 0)
+      : [];
 
-  private resolveArticles(
-    document: LibraryDocument,
-  ): LibraryArticle[] {
-
-    const original =
-      Array.isArray(document.articles)
-        ? document.articles
-        : [];
-
-    const validOriginal =
-      original
-        .filter(
-          (article) =>
-            article &&
-            String(
-              article.article ?? '',
-            ).trim() &&
-            String(
-              article.text ?? '',
-            ).trim(),
-        )
-        .map(
-          (article) => ({
-            article:
-              this.normalizeText(
-                article.article,
-              ),
-
-            text:
-              this.normalizeText(
-                article.text,
-              ),
-          }),
-        );
-
-    if (
-      validOriginal.length > 0
-    ) {
-      return validOriginal;
-    }
-
-    if (
-      document.fullText
-    ) {
-      return this.extractArticlesFromFullText(
-        document.fullText,
-      );
-    }
-
-    return [];
+    return suppliedArticles.length > 0
+      ? suppliedArticles
+      : this.extractArticlesFromFullText(this.normalizeText(document.fullText));
   }
 
-  // ============================================================
-  // RESOLVER TÍTULO
-  // ============================================================
-
-  private resolveTitle(
-    document: LibraryDocument,
-  ): string {
-
-    const detected =
-      this.normalizeText(
-        document.titleDetected,
-      );
-
-    const fileName =
-      this.normalizeText(
-        document.sourceFile,
-      );
-
+  private resolveTitle(document: LibraryDocument): string {
+    const detected = this.normalizeText(document.titleDetected);
+    const fileName = this.normalizeText(document.sourceFile);
     if (
       detected &&
       detected !== fileName &&
-      detected.length <= 180
+      detected.length <= 180 &&
+      detected.split(/\s+/).length <= 28 &&
+      !/^ARTIGO\s+\d+/i.test(detected)
     ) {
-
-      const words =
-        detected.split(/\s+/);
-
-      if (
-        words.length <= 28 &&
-        !/^ARTIGO\s+\d+/i.test(
-          detected,
-        )
-      ) {
-        return detected;
-      }
+      return detected;
     }
 
-    const fullText =
-      this.normalizeText(
-        document.fullText,
+    const titleLine = this.normalizeText(document.fullText)
+      .split('\n')
+      .map((line) => this.normalizeText(line))
+      .slice(0, 100)
+      .find(
+        (line) =>
+          line.length >= 8 &&
+          line.length <= 180 &&
+          (/^(LEI|DECRETO|DECRETO PRESIDENCIAL|DECRETO LEGISLATIVO|DESPACHO|REGULAMENTO|CÓDIGO|CODIGO|PORTARIA|AVISO|INSTRUTIVO|INSTRUÇÃO|INSTRUCAO|REGIME|MANUAL)\b/i.test(
+            line,
+          ) ||
+            (/(CÓDIGO|CODIGO|IMPOSTO|TRIBUTÁRIO|TRIBUTARIO|FISCAL|ADUANEIRO|ADUANEIRA)/i.test(
+              line,
+            ) &&
+              line.split(/\s+/).length <= 22)),
       );
 
-    if (fullText) {
-
-      const lines =
-        fullText
-          .split('\n')
-          .map(
-            (line) =>
-              this.normalizeText(line),
-          )
-          .filter(Boolean)
-          .slice(0, 100);
-
-      for (const line of lines) {
-
-        if (
-          line.length < 8 ||
-          line.length > 180
-        ) {
-          continue;
-        }
-
-        if (
-          /^(LEI|DECRETO|DECRETO PRESIDENCIAL|DECRETO LEGISLATIVO|DESPACHO|REGULAMENTO|CÓDIGO|CODIGO|PORTARIA|AVISO|INSTRUTIVO|INSTRUÇÃO|INSTRUCAO|REGIME|MANUAL)\b/i.test(
-            line,
-          )
-        ) {
-          return line;
-        }
-
-        if (
-          /(CÓDIGO|CODIGO|IMPOSTO|TRIBUTÁRIO|TRIBUTARIO|FISCAL|ADUANEIRO|ADUANEIRA)/i.test(
-            line,
-          ) &&
-          line.split(/\s+/).length <= 22
-        ) {
-          return line;
-        }
-      }
-    }
-
-    return fileName
-      .replace(
-        /\.pdf$/i,
-        '',
-      )
-      .replace(
-        /[_-]+/g,
-        ' ',
-      )
-      .trim();
+    return titleLine ||
+      fileName.replace(/\.pdf$/i, '').replace(/[_-]+/g, ' ').trim();
   }
-
-  // ============================================================
-  // PREPARAR DOCUMENTO
-  // ============================================================
 
   private prepareDocument(
     document: LibraryDocument,
     includeFullText = false,
   ): LibraryDocument {
+    const prepared: LibraryDocument = {
+      ...document,
+      titleDetected: this.resolveTitle(document),
+      articles: this.resolveArticles(document),
+      articlesDetected: this.resolveArticles(document).length,
+    };
 
-    const articles =
-      this.resolveArticles(
-        document,
-      );
-
-    const prepared: LibraryDocument =
-      {
-        ...document,
-
-        titleDetected:
-          this.resolveTitle(
-            document,
-          ),
-
-        articlesDetected:
-          articles.length,
-
-        articles,
-      };
-
-    if (!includeFullText) {
-      delete prepared.fullText;
-    }
-
+    if (!includeFullText) delete prepared.fullText;
     return prepared;
   }
 
-  // ============================================================
+  /**
+   * Localiza a biblioteca fiscal independentemente de o Nest
+   * estar a executar em desenvolvimento ou na pasta dist.
+   */
+  private getFilePath(): string {
+    const possiblePaths = [
+      // Execução normal a partir da raiz do backend
+      path.resolve(
+        process.cwd(),
+        '..',
+        'storage',
+        'legislation-fiscal',
+        'legislacao-fiscal-digital-estrutura.json',
+      ),
+
+      // Execução a partir da raiz do projeto
+      path.resolve(
+        process.cwd(),
+        'storage',
+        'legislation-fiscal',
+        'legislacao-fiscal-digital-estrutura.json',
+      ),
+
+      // Caminho relativo ao ficheiro compilado / desenvolvimento
+      path.resolve(
+        __dirname,
+        '../../../storage/legislation-fiscal/legislacao-fiscal-digital-estrutura.json',
+      ),
+
+      // Alternativa para estruturas diferentes de dist
+      path.resolve(
+        __dirname,
+        '../../../../storage/legislation-fiscal/legislacao-fiscal-digital-estrutura.json',
+      ),
+    ];
+
+    const existingPath = possiblePaths.find((filePath) =>
+      fs.existsSync(filePath),
+    );
+
+    if (!existingPath) {
+      throw new NotFoundException(
+        'Biblioteca de legislação não encontrada.',
+      );
+    }
+
+    return existingPath;
+  }
+
+  /**
+   * Carrega o JSON completo da biblioteca.
+   */
+  private load(): any {
+    const filePath = this.getFilePath();
+
+    try {
+      const raw = fs.readFileSync(filePath, 'utf8');
+
+      return JSON.parse(raw);
+    } catch (error) {
+      throw new NotFoundException(
+        'Não foi possível carregar a biblioteca de legislação.',
+      );
+    }
+  }
+
+  // =====================================================
   // BIBLIOTECA COMPLETA
-  // ============================================================
+  // =====================================================
 
   getLibrary() {
-
-    const data =
-      this.load();
-
-    const documents:
-      LibraryDocument[] =
-      Array.isArray(
-        data.documents,
-      )
-        ? data.documents
-        : [];
+    const data = this.load();
+    const documents: LibraryDocument[] = Array.isArray(data.documents)
+      ? data.documents
+      : [];
 
     return {
-      version:
-        data.version ?? '1.0',
-
-      name:
-        data.name ??
-        'Legislação Fiscal e Aduaneira de Angola',
-
-      sourceDocuments:
-        documents.length,
-
-      documents:
-        documents.map(
-          (document) =>
-            this.prepareDocument(
-              document,
-              false,
-            ),
-        ),
+      version: data.version ?? '1.0',
+      name: data.name ?? 'Legislação Fiscal e Aduaneira de Angola',
+      sourceDocuments: documents.length,
+      documents: documents.map((document) =>
+        this.prepareDocument(document, false),
+      ),
     };
   }
 
-  // ============================================================
+  // =====================================================
   // LISTAR DOCUMENTOS
-  // ============================================================
+  // =====================================================
 
   getDocuments() {
-
-    const data =
-      this.load();
-
-    const documents:
-      LibraryDocument[] =
-      Array.isArray(
-        data.documents,
-      )
-        ? data.documents
-        : [];
-
-    return documents.map(
-      (document) => {
-
-        const prepared =
-          this.prepareDocument(
-            document,
-            false,
-          );
-
-        return {
-
-          sourceCategory:
-            prepared.sourceCategory,
-
-          sourceFile:
-            prepared.sourceFile,
-
-          titleDetected:
-            prepared.titleDetected,
-
-          pageCount:
-            prepared.pageCount ?? 0,
-
-          articlesDetected:
-            prepared.articlesDetected ?? 0,
-        };
-      },
-    );
+    const data = this.load();
+    const documents: LibraryDocument[] = Array.isArray(data.documents)
+      ? data.documents
+      : [];
+    return documents.map((document) => {
+      const prepared = this.prepareDocument(document, false);
+      return {
+        sourceCategory: prepared.sourceCategory,
+        sourceFile: prepared.sourceFile,
+        titleDetected: prepared.titleDetected,
+        pageCount: prepared.pageCount ?? 0,
+        articlesDetected: prepared.articlesDetected ?? 0,
+      };
+    });
   }
 
-  // ============================================================
-  // DOCUMENTO INDIVIDUAL
-  // ============================================================
+  // =====================================================
+  // BUSCAR UM DIPLOMA
+  // =====================================================
 
-  getDocument(
-    sourceFile: string,
-  ) {
+  getDocument(sourceFile: string) {
+    const data = this.load();
 
-    const data =
-      this.load();
-
-    const documents:
-      LibraryDocument[] =
-      Array.isArray(
-        data.documents,
-      )
-        ? data.documents
-        : [];
-
-    const document =
-      documents.find(
-        (item) =>
-          item.sourceFile ===
-          sourceFile,
-      );
+    const documents: LibraryDocument[] = Array.isArray(data.documents)
+      ? data.documents
+      : [];
+    const document = documents.find(
+      (doc) => doc.sourceFile === sourceFile,
+    );
 
     if (!document) {
-
       throw new NotFoundException(
         'Diploma não encontrado.',
       );
     }
 
-    return this.prepareDocument(
-      document,
-      true,
-    );
+    return this.prepareDocument(document, true);
   }
 
-  // ============================================================
-  // PESQUISA
-  // ============================================================
+  // =====================================================
+  // PESQUISAR NA BIBLIOTECA
+  // =====================================================
 
-  search(
-    query: string,
-  ) {
+  search(query: string) {
+    const data = this.load();
 
-    const data =
-      this.load();
+    const documents: LibraryDocument[] = Array.isArray(data.documents)
+      ? data.documents
+      : [];
+    const q = this.normalizeForSearch(query);
 
-    const documents:
-      LibraryDocument[] =
-      Array.isArray(
-        data.documents,
-      )
-        ? data.documents
-        : [];
-
-    const q =
-      this.normalizeForSearch(
-        query,
-      );
-
+    // Sem pesquisa: devolver todos os documentos
     if (!q) {
-
-      return documents.map(
-        (document) =>
-          this.prepareDocument(
-            document,
-            false,
-          ),
-      );
+      return documents.map((document) => this.prepareDocument(document, false));
     }
 
-    const results =
-      documents.map(
-        (document) => {
+    return documents
+      .map((document) => {
+        const prepared = this.prepareDocument(document, false);
+        const articles = prepared.articles ?? [];
+        const matchingArticles = articles.filter((article) =>
+          this.normalizeForSearch(`${article.article} ${article.text}`).includes(q),
+        );
+        const documentMatch = this.normalizeForSearch(
+          `${prepared.titleDetected} ${prepared.sourceFile}`,
+        ).includes(q);
 
-          const prepared =
-            this.prepareDocument(
-              document,
-              false,
-            );
+        if (!documentMatch && matchingArticles.length === 0) {
+          return null;
+        }
 
-          const title =
-            this.normalizeForSearch(
-              prepared.titleDetected,
-            );
-
-          const file =
-            this.normalizeForSearch(
-              prepared.sourceFile,
-            );
-
-          const articles =
-            Array.isArray(
-              prepared.articles,
-            )
-              ? prepared.articles
-              : [];
-
-          const matchingArticles =
-            articles.filter(
-              (article) => {
-
-                const searchable =
-                  this.normalizeForSearch(
-                    `${article.article} ${article.text}`,
-                  );
-
-                return searchable.includes(
-                  q,
-                );
-              },
-            );
-
-          const documentMatch =
-            `${title} ${file}`.includes(
-              q,
-            );
-
-          if (
-            !documentMatch &&
-            matchingArticles.length === 0
-          ) {
-            return null;
-          }
-
-          return {
-            ...prepared,
-
-            articles:
-              matchingArticles.length > 0
-                ? matchingArticles
-                : articles,
-          };
-        },
-      );
-
-    return results.filter(
-      (document) =>
-        document !== null,
-    );
+        return {
+          ...prepared,
+          articles: matchingArticles.length > 0 ? matchingArticles : articles,
+        };
+      })
+      .filter(Boolean);
   }
 
-  // ============================================================
-  // RECUPERAÇÃO LIMITADA PARA RAG
-  // ============================================================
+  /**
+   * Devolve excertos jurídicos curtos e verificáveis para o contexto RAG.
+   * Não altera documentos, não cria artigos e limita a resposta ao material
+   * efectivamente carregado da biblioteca.
+   */
+  retrieveForRag(query: string, limit = 8): RagLibraryChunk[] {
+    const normalizedQuery = this.normalizeForSearch(query);
+    const terms = Array.from(
+      new Set(
+        normalizedQuery
+          .match(/[a-z0-9-]{3,}/g)
+          ?.filter(
+            (term) =>
+              ![
+                'como',
+                'para',
+                'qual',
+                'quais',
+                'sobre',
+                'tenho',
+                'uma',
+                'meu',
+                'minha',
+                'devo',
+                'sao',
+                'das',
+                'dos',
+              ].includes(term),
+          ) ?? [],
+      ),
+    ).slice(0, 8);
 
-  retrieveForRag(
-    query: string,
-    limit = 8,
-  ): RagLibraryChunk[] {
+    if (!terms.length) {
+      return [];
+    }
+
     const data = this.load();
     const documents: LibraryDocument[] = Array.isArray(data.documents)
       ? data.documents
       : [];
-    const terms = Array.from(
-      new Set(
-        this.normalizeForSearch(query)
-          .match(/[a-z0-9-]{3,}/g)
-          ?.filter((term) => ![
-            'como', 'para', 'qual', 'quais', 'sobre', 'tenho', 'uma', 'meu',
-            'minha', 'devo', 'sao', 'das', 'dos',
-          ].includes(term)) ?? [],
-      ),
-    ).slice(0, 8);
-
-    if (!terms.length) return [];
-
-    const normalizedQuery = this.normalizeForSearch(query);
-    const excludeCustoms = /\b(irt|inss|seguranca social|imposto industrial)\b/.test(
-      normalizedQuery,
-    );
-
     const chunks: Array<RagLibraryChunk & { score: number }> = [];
+
     for (const document of documents) {
-      const prepared = this.prepareDocument(document, false);
-      if (
-        excludeCustoms &&
-        this.normalizeForSearch(prepared.sourceCategory) === 'aduaneira'
-      ) {
-        continue;
-      }
-      const title = this.resolveTitle(document);
+      const sourceCategory = this.normalizeText(document.sourceCategory);
+      const sourceFile = this.normalizeText(document.sourceFile);
+      const title =
+        this.normalizeText(document.titleDetected) || sourceFile || 'Documento';
       const documentText = this.normalizeForSearch(
-        `${title} ${prepared.sourceFile} ${prepared.sourceCategory}`,
+        `${sourceCategory} ${sourceFile} ${title}`,
       );
       const documentScore = terms.reduce(
         (score, term) => score + (documentText.includes(term) ? 3 : 0),
         0,
       );
-      const articles = Array.isArray(prepared.articles)
-        ? prepared.articles
-        : [];
+      const articles = this.resolveArticles(document);
 
       for (const article of articles) {
         const articleText = this.normalizeForSearch(
@@ -718,38 +368,36 @@ export class LegislationLibraryService {
           0,
         );
         const score = documentScore + articleScore;
-        if (!score) continue;
-        chunks.push({
-          sourceCategory: this.normalizeText(prepared.sourceCategory),
-          sourceFile: this.normalizeText(prepared.sourceFile),
-          title,
-          article: this.normalizeText(article.article) || null,
-          text: this.normalizeText(article.text),
-          score,
-        });
+
+        if (score > 0) {
+          chunks.push({
+            sourceCategory,
+            sourceFile,
+            title,
+            article: article.article,
+            text: article.text,
+            score,
+          });
+        }
       }
 
-      if (!articles.length && documentScore && document.fullText) {
+      const fullText = this.normalizeText(document.fullText);
+      if (!articles.length && documentScore > 0 && fullText) {
         chunks.push({
-          sourceCategory: this.normalizeText(prepared.sourceCategory),
-          sourceFile: this.normalizeText(prepared.sourceFile),
+          sourceCategory,
+          sourceFile,
           title,
           article: null,
-          text: this.normalizeText(document.fullText),
+          text: fullText,
           score: documentScore,
         });
       }
     }
 
+    const boundedLimit = Math.max(1, Math.min(Math.trunc(limit) || 8, 12));
     return chunks
       .sort((left, right) => right.score - left.score)
-      .slice(0, Math.max(1, Math.min(limit, 12)))
-      .map((item) => ({
-        sourceCategory: item.sourceCategory,
-        sourceFile: item.sourceFile,
-        title: item.title,
-        article: item.article,
-        text: item.text,
-      }));
+      .slice(0, boundedLimit)
+      .map(({ score: _score, ...chunk }) => chunk);
   }
 }
