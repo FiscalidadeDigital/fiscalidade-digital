@@ -2,28 +2,74 @@
 
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
-import { Bot, Send, X } from 'lucide-react';
+import { Bot, ExternalLink, Send, X } from 'lucide-react';
 import api from '@/services/api';
+
+type AssistantSource = {
+  id: string;
+  kind?: 'OFFICIAL_WEB' | 'LEGISLATION' | 'LIBRARY';
+  title: string;
+  lawNumber?: string | null;
+  article?: string | null;
+  source?: string | null;
+  sourceUrl?: string | null;
+  publicationDate?: string | null;
+  effectiveDate?: string | null;
+};
 
 type Message = {
   role: 'user' | 'assistant';
   content: string;
-  sources?: Array<{
-    id: string;
-    title: string;
-    lawNumber?: string | null;
-    article?: string | null;
-    source?: string | null;
-    sourceUrl?: string | null;
-  }>;
+  sources?: AssistantSource[];
   warnings?: string[];
 };
 
 const suggestions = [
-  'Quais obrigações tenho este mês?',
-  'Tenho algum prazo próximo?',
-  'Explica a minha situação fiscal.',
+  {
+    label: 'Como funciona o IVA em Angola?',
+    message: 'Como funciona o IVA em Angola?',
+    kind: 'Geral',
+  },
+  {
+    label: 'Quais obrigações tenho este mês?',
+    message: 'Quais obrigações tenho este mês?',
+    kind: 'Empresa',
+  },
+  {
+    label: 'Tenho algum prazo próximo?',
+    message: 'Tenho algum prazo próximo?',
+    kind: 'Empresa',
+  },
 ];
+
+function safeExternalUrl(value: string | null | undefined) {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    return ['http:', 'https:'].includes(parsed.protocol)
+      ? parsed.toString()
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('pt-AO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+function sourceLabel(source: AssistantSource) {
+  if (source.kind === 'OFFICIAL_WEB') return 'Fonte oficial pesquisada';
+  if (source.kind === 'LEGISLATION') return 'Base documental';
+  return 'Referência documental';
+}
 
 export default function FloatingAI() {
   const [open, setOpen] = useState(false);
@@ -124,18 +170,26 @@ export default function FloatingAI() {
             {!messages.length && (
               <>
                 <p className="border-l-2 border-[#087da2] bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
-                  Consulte obrigações, prazos e enquadramentos fiscais da
-                  empresa.
+                  Pergunte sobre temas fiscais gerais ou sobre obrigações e
+                  enquadramentos da sua empresa.
+                </p>
+                <p className="text-xs leading-5 text-slate-500">
+                  Perguntas sobre a empresa usam apenas o contexto autorizado.
+                  Quando a pesquisa pública estiver disponível, as fontes são
+                  apresentadas na resposta.
                 </p>
                 <div className="space-y-2">
                   {suggestions.map((item) => (
                     <button
-                      key={item}
+                      key={item.message}
                       type="button"
-                      onClick={() => void sendMessage(item)}
+                      onClick={() => void sendMessage(item.message)}
                       className="block w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-[#0b6f93] hover:border-slate-300 hover:bg-slate-50"
                     >
-                      {item}
+                      <span className="mr-2 text-[10px] uppercase tracking-wide text-slate-400">
+                        {item.kind}
+                      </span>
+                      {item.label}
                     </button>
                   ))}
                 </div>
@@ -150,36 +204,52 @@ export default function FloatingAI() {
                     : 'mr-3 border-l-2 border-slate-300 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-700'
                 }
               >
-                {item.content}
+                <p className="whitespace-pre-wrap">{item.content}</p>
                 {item.sources?.length ? (
                   <details className="mt-3 text-xs">
                     <summary className="cursor-pointer font-semibold text-[#0b6f93]">
-                      Fontes verificadas
+                      Fontes e referências
                     </summary>
-                    <ul className="mt-1 space-y-1">
-                      {item.sources.map((source) => (
-                        <li key={source.id}>
-                          <span className="font-semibold">[{source.id}]</span>{' '}
-                          {source.title}
-                          {source.lawNumber ? ` — ${source.lawNumber}` : ''}
-                          {source.article ? `, ${source.article}` : ''}
-                          {source.source ? ` (${source.source})` : ''}
-                          {source.sourceUrl ? (
-                            <>
-                              {' '}
-                              —{' '}
+                    <ul className="mt-2 space-y-2">
+                      {item.sources.map((source) => {
+                        const sourceUrl = safeExternalUrl(source.sourceUrl);
+                        const publicationDate = formatDate(source.publicationDate);
+                        const effectiveDate = formatDate(source.effectiveDate);
+                        return (
+                          <li key={source.id} className="rounded-md bg-white p-2">
+                            <p className="font-semibold text-slate-700">
+                              [{source.id}] {source.title}
+                            </p>
+                            <p className="mt-0.5 text-slate-500">
+                              {sourceLabel(source)}
+                              {source.lawNumber ? ` · ${source.lawNumber}` : ''}
+                              {source.article ? ` · ${source.article}` : ''}
+                              {source.source ? ` · ${source.source}` : ''}
+                            </p>
+                            {publicationDate || effectiveDate ? (
+                              <p className="mt-0.5 text-slate-500">
+                                {publicationDate
+                                  ? `Publicação: ${publicationDate}`
+                                  : ''}
+                                {publicationDate && effectiveDate ? ' · ' : ''}
+                                {effectiveDate
+                                  ? `Vigência: ${effectiveDate}`
+                                  : ''}
+                              </p>
+                            ) : null}
+                            {sourceUrl ? (
                               <a
-                                href={source.sourceUrl}
+                                href={sourceUrl}
                                 target="_blank"
-                                rel="noreferrer"
-                                className="font-semibold text-[#0b6f93] hover:underline"
+                                rel="noopener noreferrer"
+                                className="mt-1 inline-flex items-center gap-1 font-semibold text-[#0b6f93] hover:underline"
                               >
-                                consultar fonte
+                                Abrir fonte <ExternalLink size={12} />
                               </a>
-                            </>
-                          ) : null}
-                        </li>
-                      ))}
+                            ) : null}
+                          </li>
+                        );
+                      })}
                     </ul>
                   </details>
                 ) : null}
@@ -216,7 +286,7 @@ export default function FloatingAI() {
                   }
                 }}
                 rows={2}
-                placeholder="Pergunte sobre a situação fiscal da sua empresa…"
+                placeholder="Pergunte sobre fiscalidade ou sobre a sua empresa…"
                 className="min-h-10 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
               />
               <button
@@ -229,8 +299,8 @@ export default function FloatingAI() {
               </button>
             </div>
             <p className="mt-2 text-[10px] text-slate-500">
-              O Assistente utiliza os dados e regras disponíveis na Fiscalidade
-              Digital.
+              As respostas não substituem validação profissional. Não partilhe
+              credenciais ou informação que não seja necessária.
             </p>
           </form>
         </section>
