@@ -8,8 +8,8 @@ import {
   KeyRound,
   Loader2,
   LockKeyhole,
-  ShieldCheck,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 
@@ -121,14 +121,18 @@ export default function AdminLoginPage() {
     <main className="fd-theme-scope min-h-screen bg-[var(--fd-page)] text-[var(--fd-text)] lg:grid lg:grid-cols-[minmax(320px,0.72fr)_1.28fr]">
       <section className="flex min-h-[290px] flex-col justify-between bg-slate-950 px-7 py-8 text-white sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/10">
-              <ShieldCheck className="h-5 w-5 text-teal-300" />
+          <div>
+            <div className="inline-flex rounded-lg bg-white px-2.5 py-1.5 shadow-sm">
+              <Image
+                src="/logofiscalidade.png"
+                alt="Fiscalidade Digital"
+                width={184}
+                height={62}
+                priority
+                className="h-10 w-auto object-contain"
+              />
             </div>
-            <div>
-              <p className="text-sm font-semibold">Fiscalidade Digital</p>
-              <p className="text-xs text-slate-400">Administração da plataforma</p>
-            </div>
+            <p className="mt-2 text-xs text-slate-400">Administração da plataforma</p>
           </div>
 
           <div className="mt-16 max-w-md lg:mt-28">

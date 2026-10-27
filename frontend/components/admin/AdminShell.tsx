@@ -8,6 +8,7 @@ import {
   LogOut,
   ShieldCheck,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
@@ -89,14 +90,19 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     <div className="fd-theme-scope min-h-screen bg-[var(--fd-background)] text-[var(--fd-text-primary)] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="border-b border-slate-800 bg-slate-950 text-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between px-5 py-5 lg:block lg:px-6 lg:py-7">
-          <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/10">
-              <ShieldCheck className="h-4 w-4 text-sky-300" />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold">Fiscalidade Digital</span>
-              <span className="block text-[11px] text-slate-400">Administração SaaS</span>
-            </span>
+          <Link
+            href="/admin/dashboard"
+            aria-label="Fiscalidade Digital — administração SaaS"
+            className="inline-flex rounded-lg bg-white px-2 py-1.5 shadow-sm focus:outline-none focus:ring-4 focus:ring-sky-300/40"
+          >
+            <Image
+              src="/logofiscalidade.png"
+              alt=""
+              width={164}
+              height={55}
+              priority
+              className="h-8 w-auto object-contain"
+            />
           </Link>
           <button
             type="button"
