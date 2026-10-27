@@ -14,6 +14,7 @@ import { FormEvent, useEffect, useMemo, useState } from 'react';
 import AdminShell from '@/components/admin/AdminShell';
 import {
   AdminPlanType,
+  AdminStorageMeasurement,
   AdminTenant,
   AdminTenantList,
   AdminTenantStatus,
@@ -38,6 +39,19 @@ const statusClasses: Record<AdminTenantStatus, string> = {
   TRIAL: 'border-amber-200 bg-amber-50 text-amber-700',
   SUSPENDED: 'border-rose-200 bg-rose-50 text-rose-700',
 };
+
+const storageMeasurementLabels: Record<AdminStorageMeasurement, string> = {
+  CATALOGUED_DOCUMENT_BYTES: 'Medição registada',
+};
+
+function storageMeasurementDetail(
+  measurement: AdminStorageMeasurement,
+  isEstimated: boolean,
+) {
+  return `${storageMeasurementLabels[measurement]} — ${
+    isEstimated ? 'estimativa' : 'não é estimativa'
+  }`;
+}
 
 function formatStorage(value: string) {
   const bytes = BigInt(value || '0');
@@ -219,6 +233,15 @@ export default function AdminTenantsPage() {
                         </td>
                         <td className="px-4 py-4">
                           <p className="text-xs font-semibold tabular-nums">{formatStorage(tenant.usage.storageUsedBytes)}</p>
+                          <p
+                            className="mt-1 text-[11px] text-[var(--fd-muted)]"
+                            title="Soma dos bytes registados nos documentos catalogados; não resulta de uma leitura física do object storage."
+                          >
+                            {storageMeasurementDetail(
+                              tenant.usage.storageMeasurement,
+                              tenant.usage.storageIsEstimated,
+                            )}
+                          </p>
                           {tenant.usage.storageQuotaBytes ? (
                             <>
                               <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-sky-600" style={{ width: `${percentage ?? 0}%` }} /></div>

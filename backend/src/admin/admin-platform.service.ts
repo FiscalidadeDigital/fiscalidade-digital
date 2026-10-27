@@ -117,6 +117,8 @@ export class AdminPlatformService {
             documents: tenant._count.documents,
             storageUsedBytes: tenant.storageUsedBytes.toString(),
             storageQuotaBytes: effectiveQuota?.toString() ?? null,
+            storageMeasurement: 'CATALOGUED_DOCUMENT_BYTES',
+            storageIsEstimated: false,
           },
           subscription: tenant.subscriptions[0]
             ? {
