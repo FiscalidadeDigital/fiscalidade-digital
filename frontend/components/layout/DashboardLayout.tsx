@@ -2,7 +2,6 @@
 
 import {
   Bell,
-  BookOpen,
   Building2,
   CalendarDays,
   Calculator,
@@ -213,12 +212,6 @@ const navigationSections = [
         label: 'Documentos',
         href: '/library',
         icon: Library,
-      },
-
-      {
-        label: 'Legislação Fiscal',
-        href: '/legislation',
-        icon: BookOpen,
       },
 
       {
