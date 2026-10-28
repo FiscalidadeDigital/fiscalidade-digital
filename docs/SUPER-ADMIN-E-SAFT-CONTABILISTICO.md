@@ -19,11 +19,11 @@ As operações de autenticação, bootstrap e mudança de palavra-passe são reg
 
 ### Recuperação local de acesso
 
-Quando já existe uma conta administrativa e a palavra-passe foi perdida, um operador autorizado pode usar apenas no ambiente controlado o comando `npm run admin:recover`. O processo exige `ADMIN_RECOVERY_EMAIL`, `ADMIN_RECOVERY_PASSWORD` e a confirmação explícita `ADMIN_RECOVERY_CONFIRMATION=RESET_PLATFORM_ADMIN_PASSWORD`.
+Quando já existe uma conta administrativa e a palavra-passe foi perdida, um operador autorizado pode usar apenas no ambiente controlado o comando compilado `npm run admin:recover`. O comando requer um terminal interactivo e pede localmente o email, a nova palavra-passe e a confirmação explícita `RESET_PLATFORM_ADMIN_PASSWORD`. A palavra-passe não é aceite por argumento nem variável de ambiente.
 
-Em Windows, prefira `./scripts/recover-platform-admin.ps1` a partir de `backend/`: o lançador pede localmente o email, a confirmação e a palavra-passe com entrada oculta. A palavra-passe não é passada em argumentos, não é escrita no histórico nem em ficheiros versionados; fica apenas na variável de ambiente do processo filho durante a execução. Acrescente `-Reactivate` apenas após autorização explícita para reactivar uma conta inactiva.
+Em Windows, prefira `./scripts/recover-platform-admin.ps1` a partir de `backend/`; é apenas um lançador para o recuperador compilado. A palavra-passe é introduzida sem eco pelo recuperador, não é passada em argumentos, não é escrita no histórico nem em ficheiros versionados, e só permanece na memória do processo enquanto a operação decorre. Acrescente `-Reactivate` apenas após autorização explícita para reactivar uma conta inactiva. Em ambientes Linux, execute `npm run admin:recover` directamente num terminal autorizado.
 
-O comando não cria contas, não expõe a palavra-passe, hash ou token, limpa o bloqueio por tentativas, invalida as sessões administrativas existentes, força a troca da credencial temporária no próximo acesso e regista `ADMIN_PASSWORD_RECOVERED` em `PlatformAuditLog`. Uma conta inactiva não é reactivada por omissão: exige ainda `ADMIN_RECOVERY_REACTIVATE=true`.
+O comando não cria contas, não expõe a palavra-passe, hash ou token, limpa o bloqueio por tentativas, invalida as sessões administrativas existentes, força a troca da credencial temporária no próximo acesso e regista `ADMIN_PASSWORD_RECOVERED` em `PlatformAuditLog`. Uma conta inactiva não é reactivada por omissão: exige o argumento não secreto `--reactivate` (ou `-Reactivate` no lançador PowerShell).
 
 Este é um procedimento de recuperação, não um mecanismo de aprovisionamento remoto. Não deve ser executado contra produção sem autorização explícita para alterar a credencial da conta indicada.
 
@@ -33,9 +33,6 @@ Este é um procedimento de recuperação, não um mecanismo de aprovisionamento 
 - `ADMIN_BOOTSTRAP_EMAIL`: usado apenas pelo comando de bootstrap.
 - `ADMIN_BOOTSTRAP_NAME`: nome da primeira conta.
 - `ADMIN_BOOTSTRAP_PASSWORD`: credencial temporária forte, usada apenas pelo comando e obrigatoriamente substituída no primeiro acesso.
-
-- `ADMIN_RECOVERY_EMAIL`, `ADMIN_RECOVERY_PASSWORD` e `ADMIN_RECOVERY_CONFIRMATION`: usados apenas pelo comando local de recuperação de uma conta já existente.
-- `ADMIN_RECOVERY_REACTIVATE`: só deve ser `true` quando a reactivação dessa conta tiver sido aprovada explicitamente.
 
 Nenhum valor real destas variáveis deve ser versionado. O ficheiro `backend/.env.example` contém apenas marcadores de configuração.
 
