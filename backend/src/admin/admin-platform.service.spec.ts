@@ -46,6 +46,8 @@ describe('AdminPlatformService', () => {
           activeUsers: 2,
           storageUsedBytes: '1500',
           storageQuotaBytes: '12000',
+          storageMeasurement: 'CATALOGUED_DOCUMENT_BYTES',
+          storageIsEstimated: false,
         }),
       }),
     );

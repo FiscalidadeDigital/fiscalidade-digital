@@ -19,6 +19,7 @@ import { MailService } from '../mail/mail.service';
 import { AuthChallengePurpose, LegalDocumentType, Prisma, TaxRegimeAssignmentStatus, UserRole } from '@prisma/client';
 import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 import { ObligationGenerationService } from '../obligation-generation/obligation-generation.service';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
@@ -265,10 +266,18 @@ export class AuthService {
       });
       return { pending, tenant, user };
     }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    if (this.obligationGeneration) {
-      await this.obligationGeneration.generate(result.tenant.id, new Date());
-    }
-    await this.mailService.sendMail(result.pending.email, 'Bem-vindo à Fiscalidade Digital', `Olá ${result.pending.name},\n\nA empresa ${result.tenant.name} foi configurada. Pode iniciar sessão.`);
+    // The tenant is already committed. Obligation generation and the welcome
+    // notification are independent post-onboarding work, so run them together
+    // rather than making the company-creation response wait for both in turn.
+    await Promise.all([
+      this.obligationGeneration?.generate(result.tenant.id, new Date()) ??
+        Promise.resolve(),
+      this.mailService.sendMail(
+        result.pending.email,
+        'Bem-vindo à Fiscalidade Digital',
+        `Olá ${result.pending.name},\n\nA empresa ${result.tenant.name} foi configurada. Pode iniciar sessão.`,
+      ),
+    ]);
     return { message: 'Onboarding concluído.', userId: result.user.id, tenantId: result.tenant.id };
   }
 
@@ -335,18 +344,40 @@ export class AuthService {
   // LOGIN
   // =====================================================
 
-  async login(dto: any) {
-    const user =
-      await this.prisma.user.findFirst({
-        where: {
-          email:
-            dto.email,
+  async login(dto: LoginDto) {
+    const email = this.normalizeEmail(dto.email);
+    const user = await this.prisma.user.findFirst({
+      where: { email },
+      select: {
+        id: true,
+        tenantId: true,
+        email: true,
+        password: true,
+        name: true,
+        role: true,
+        isActive: true,
+        emailVerificationRequired: true,
+        emailVerifiedAt: true,
+        tenant: {
+          select: {
+            id: true,
+            name: true,
+            nif: true,
+            email: true,
+            phone: true,
+            address: true,
+            sector: true,
+            regime: true,
+            retentionRate: true,
+            companyType: true,
+            employeeCount: true,
+            status: true,
+            planType: true,
+            trialEndsAt: true,
+          },
         },
-
-        include: {
-          tenant: true,
-        },
-      });
+      },
+    });
 
     if (!user) {
       throw new UnauthorizedException(
@@ -380,10 +411,18 @@ export class AuthService {
     // ATUALIZAR ÚLTIMO LOGIN
     // ===================================================
 
+    // Existing sessions are also rejected by JwtStrategy. Blocking here keeps
+    // a suspended tenant from receiving a fresh session in the first place.
+    if (user.tenant.status === 'SUSPENDED') {
+      throw new UnauthorizedException(
+        'O acesso desta empresa encontra-se suspenso.',
+      );
+    }
+
     const lastLogin =
       new Date();
 
-    await this.prisma.user.update({
+    const lastLoginUpdate = this.prisma.user.update({
       where: {
         id:
           user.id,
@@ -402,7 +441,7 @@ export class AuthService {
     // implementação também passam a ter CompanySettings.
     // ===================================================
 
-    await this.prisma.companySettings.upsert({
+    const companySettingsUpsert = this.prisma.companySettings.upsert({
       where: {
         tenantId:
           user.tenantId,
@@ -441,20 +480,19 @@ export class AuthService {
     // JWT
     // ===================================================
 
-    const accessToken =
-      await this.jwtService.signAsync({
-        sub:
-          user.id,
-
-        tenantId:
-          user.tenantId,
-
-        email:
-          user.email,
-
-        role:
-          user.role,
-      });
+    // These independent operations all belong to the successful login path.
+    // Starting them together shortens its critical path without making a
+    // partial success observable to the client.
+    const [, , accessToken] = await Promise.all([
+      lastLoginUpdate,
+      companySettingsUpsert,
+      this.jwtService.signAsync({
+        sub: user.id,
+        tenantId: user.tenantId,
+        email: user.email,
+        role: user.role,
+      }),
+    ]);
 
     // ===================================================
     // RESPOSTA

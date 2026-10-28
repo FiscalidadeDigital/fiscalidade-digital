@@ -17,7 +17,9 @@ import type { LucideIcon } from 'lucide-react';
 
 import AdminShell from '@/components/admin/AdminShell';
 import {
+  AdminPlanType,
   AdminDashboardSummary,
+  AdminStorageMeasurement,
   getAdminDashboard,
 } from '@/services/admin-api';
 
@@ -45,9 +47,32 @@ const auditLabels: Record<string, string> = {
   ADMIN_LOGIN_SUCCEEDED: 'Sessão administrativa iniciada',
   ADMIN_LOGIN_FAILED: 'Tentativa de acesso recusada',
   ADMIN_PASSWORD_CHANGED: 'Palavra-passe administrativa alterada',
+  ADMIN_PASSWORD_RECOVERED: 'Palavra-passe administrativa recuperada',
   TENANT_SUSPENDED: 'Empresa suspensa',
   TENANT_REACTIVATED: 'Empresa reactivada',
 };
+
+const planTypes: AdminPlanType[] = ['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'];
+
+const planLabels: Record<AdminPlanType, string> = {
+  FREE: 'FREE',
+  BASIC: 'BASIC',
+  PREMIUM: 'PREMIUM',
+  ENTERPRISE: 'ENTERPRISE',
+};
+
+const storageMeasurementLabels: Record<AdminStorageMeasurement, string> = {
+  CATALOGUED_DOCUMENT_BYTES: 'Medição registada',
+};
+
+function storageMeasurementDetail(
+  measurement: AdminStorageMeasurement,
+  isEstimated: boolean,
+) {
+  return `${storageMeasurementLabels[measurement]} — ${
+    isEstimated ? 'estimativa' : 'não é estimativa'
+  }`;
+}
 
 export default function AdminDashboardPage() {
   const [summary, setSummary] = useState<AdminDashboardSummary | null>(null);
@@ -91,7 +116,10 @@ export default function AdminDashboardPage() {
         {
           label: 'Armazenamento',
           value: formatStorage(summary.operations.storageBytes),
-          detail: 'Consumo contabilizado',
+          detail: storageMeasurementDetail(
+            summary.storage.measurement,
+            summary.storage.isEstimated,
+          ),
           icon: Database,
         },
       ]
@@ -147,6 +175,9 @@ export default function AdminDashboardPage() {
                 </article>
               ))}
             </section>
+            <p className="mt-3 text-xs text-[var(--fd-muted)]">
+              O armazenamento soma os bytes registados nos documentos catalogados; não resulta de uma leitura física do object storage.
+            </p>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
               <article className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
@@ -206,7 +237,22 @@ export default function AdminDashboardPage() {
               </article>
             </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+            <section className="mt-6 grid gap-6 xl:grid-cols-[0.7fr_0.8fr_1.15fr]">
+              <article className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
+                <div className="border-b border-[var(--fd-border)] px-5 py-4">
+                  <h2 className="text-sm font-semibold">Empresas por plano</h2>
+                  <p className="mt-1 text-xs text-[var(--fd-muted)]">Plano comercial atribuído a cada empresa.</p>
+                </div>
+                <div className="divide-y divide-[var(--fd-border)] px-5">
+                  {planTypes.map((planType) => (
+                    <div key={planType} className="flex items-center justify-between py-3.5 text-xs">
+                      <span className="text-[var(--fd-text-secondary)]">{planLabels[planType]}</span>
+                      <span className="font-semibold tabular-nums">{summary.plans.byPlanType[planType] ?? 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+
               <article className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
                 <div className="border-b border-[var(--fd-border)] px-5 py-4">
                   <h2 className="text-sm font-semibold">Subscrições activas</h2>

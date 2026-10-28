@@ -10,6 +10,7 @@ const actionLabels: Record<string, string> = {
   ADMIN_LOGIN_SUCCEEDED: 'Sessão iniciada',
   ADMIN_LOGIN_FAILED: 'Acesso recusado',
   ADMIN_PASSWORD_CHANGED: 'Palavra-passe alterada',
+  ADMIN_PASSWORD_RECOVERED: 'Palavra-passe recuperada',
   ADMIN_PASSWORD_CHANGE_FAILED: 'Alteração de palavra-passe recusada',
   TENANT_SUSPENDED: 'Empresa suspensa',
   TENANT_REACTIVATED: 'Empresa reactivada',

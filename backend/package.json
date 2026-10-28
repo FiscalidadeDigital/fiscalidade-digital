@@ -14,6 +14,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:seed": "ts-node prisma/seed.ts",
     "admin:bootstrap": "ts-node scripts/bootstrap-platform-admin.ts",
+    "admin:recover": "node dist/scripts/recover-platform-admin.js",
     "prisma:studio": "prisma studio",
     "test": "jest --config test/jest.config.json --runInBand",
     "test:integration:local": "node scripts/run-local-integration-tests.js",
