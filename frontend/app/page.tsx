@@ -2,12 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
-  BarChart3,
   Bot,
-  Briefcase,
   Check,
   ChevronRight,
   FileCheck2,
@@ -27,7 +25,6 @@ const nav = [
   ['Início', '#inicio'],
   ['Plataforma', '#plataforma'],
   ['Assistente', '#assistente'],
-  ['Para quem', '#para-quem'],
   ['Sobre nós', '#sobre'],
   ['Contacto', '#contacto'],
 ] as const;
@@ -40,10 +37,30 @@ const logos = [
 ];
 
 const features = [
-  ['Gestão fiscal', Landmark, ['Central Fiscal', 'Obrigações Fiscais', 'Calendário Fiscal', 'Alertas']],
-  ['Operação empresarial', ReceiptText, ['Facturação', 'Compras e facturas recebidas', 'Clientes']],
-  ['Pessoas', UsersRound, ['Funcionários', 'Processamento salarial', 'IRT e INSS']],
-  ['Dados e conformidade', FileCheck2, ['SAF-T', 'Relatórios', 'Histórico']],
+  {
+    name: 'Gestão fiscal',
+    Icon: Landmark,
+    benefit: 'Acompanhe enquadramentos, obrigações e prazos num ponto de partida claro.',
+    items: ['Central Fiscal', 'Obrigações Fiscais', 'Calendário Fiscal', 'Alertas'],
+  },
+  {
+    name: 'Operação empresarial',
+    Icon: ReceiptText,
+    benefit: 'Reúna os principais registos da operação quotidiana da empresa.',
+    items: ['Facturação', 'Compras e facturas recebidas', 'Clientes'],
+  },
+  {
+    name: 'Pessoas',
+    Icon: UsersRound,
+    benefit: 'Mantenha a informação laboral e o processamento salarial organizados.',
+    items: ['Funcionários', 'Processamento salarial', 'IRT e INSS'],
+  },
+  {
+    name: 'Dados e conformidade',
+    Icon: FileCheck2,
+    benefit: 'Centralize documentos e relatórios necessários para acompanhamento.',
+    items: ['SAF-T', 'Relatórios', 'Histórico'],
+  },
 ] as const;
 
 const members = [
@@ -53,6 +70,19 @@ const members = [
     image: '/Desiderio.jpeg',
     position: 'object-[center_20%]',
     link: 'https://www.linkedin.com/in/desiderio-pereira-4b1a492a7',
+    summary: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação.',
+    bio: 'Jovem angolano e finalista de Contabilidade e Finanças no Instituto Superior de Administração e Finanças — ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação. É co-fundador da Respirando Contabilidade e idealizador da Fiscalidade Digital, procurando combinar tecnologia, contabilidade e fiscalidade para desenvolver soluções mais acessíveis para empresas angolanas.',
+    education: [
+      'Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL',
+      'Finalista de Contabilidade e Finanças no ISAF',
+      'IFRS, Fiscalidade, Contabilidade, Empreendedorismo e Inovação',
+    ],
+    highlights: [
+      'Co-fundador da Respirando Contabilidade',
+      'Idealizador da Fiscalidade Digital',
+      'Embaixador da KPMG Angola no ISAF',
+      'Bolseiro de Mérito',
+    ],
   },
   {
     name: 'Edgar Gilson da Silva António',
@@ -60,6 +90,19 @@ const members = [
     image: '/edgar.jpg',
     position: 'object-[center_18%]',
     link: 'https://www.linkedin.com/in/edgar-ant%C3%B3nio-3a1048289',
+    summary: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade e Análise Financeira.',
+    bio: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade, Análise Financeira, Contabilidade de Custos, Contabilidade Gerencial, IFRS e Contabilidade Forense. O seu percurso combina formação académica, conhecimento técnico, liderança e inovação.',
+    education: [
+      'Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL',
+      'Finalista de Contabilidade e Finanças no ISAF',
+      'Excel Avançado, Primavera ERP, Portal do Contribuinte e Microsoft Office 365',
+    ],
+    highlights: [
+      'Co-fundador da Respirando Contabilidade',
+      'Monitor de Contabilidade Analítica',
+      'Bolseiro de Mérito da Fundação BAI',
+      'Investigador Científico Certificado',
+    ],
   },
   {
     name: 'Francisco António',
@@ -67,6 +110,20 @@ const members = [
     image: '/Francisco.jpeg',
     position: 'object-[center_18%]',
     link: 'https://www.linkedin.com/in/francisco-ant%C3%B3nio-891555281',
+    summary: 'Finalista de Contabilidade e Finanças no ISAF, com experiência de formação, investigação e empreendedorismo.',
+    bio: 'Finalista de Contabilidade e Finanças no ISAF, Francisco contribui para a componente contabilística e fiscal da Fiscalidade Digital, com experiência de formação, investigação e empreendedorismo.',
+    education: [
+      'Finalista de Contabilidade e Finanças — ISAF',
+      'Contabilidade e Fiscalidade — Centro de Formação Ferkund',
+      'Gestão Financeira — DW e Kixicrédito',
+      'Voluntariado — Fundação BAI',
+    ],
+    highlights: [
+      'Bolseiro de Mérito BAI',
+      'Co-Fundador da Respirando Contabilidade',
+      'Presidente do Clube de Fiscalidade do ISAF',
+      'Investigador pelo Programa de Iniciação Científica do ISAF',
+    ],
   },
   {
     name: 'Anildo Manuel João',
@@ -74,18 +131,25 @@ const members = [
     image: '/Anildodev.jpg',
     position: 'object-[center_15%]',
     link: 'https://www.linkedin.com/in/anildo-jo%C3%A3o-85643330b',
+    summary: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação e desenvolvedor Full Stack.',
+    bio: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação, desenvolvedor Full Stack e técnico com formação nas áreas de Automação Industrial, Instrumentação e Controlo. O seu percurso está na intersecção entre software, sistemas, infraestrutura tecnológica e tecnologia industrial.',
+    education: [
+      'Técnico Médio de Informática de Gestão pelo Instituto Médio de Economia de Luanda — IMEL',
+      'Engenharia Informática e Comunicação — Universidade Óscar Ribas',
+      'Full Stack, APIs, Bases de Dados, Redes, IoT, Inteligência Artificial e Gestão de Projectos',
+    ],
+    highlights: [
+      'Desenvolvimento tecnológico da Fiscalidade Digital',
+      'CEO e Fundador da Yash Hub5',
+      'Software + Automação Industrial + Instrumentação + Control Systems',
+    ],
   },
-];
+] as const;
 
-function Brand({ inverse = false }: { inverse?: boolean }) {
+function Brand() {
   return (
-    <Link href="/" aria-label="Fiscalidade Digital — início" className="inline-flex items-center gap-3">
-      <span className="rounded-xl bg-white p-1 shadow-sm">
-        <Image src="/logofiscalidade.png" alt="" width={34} height={34} priority />
-      </span>
-      <span className={`font-extrabold tracking-tight ${inverse ? 'text-white' : 'text-[#102447]'}`}>
-        Fiscalidade <span className="text-cyan-500">Digital</span>
-      </span>
+    <Link href="/" aria-label="Fiscalidade Digital — início" className="inline-flex rounded-lg bg-white p-1.5 shadow-sm">
+      <Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={180} height={54} className="h-9 w-auto object-contain" priority />
     </Link>
   );
 }
@@ -361,9 +425,9 @@ export default function HomePage() {
 
       <section id="funcionalidades" className="bg-[#f7fafc] py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <Title eyebrow="Ecossistema">Uma plataforma para organizar a operação fiscal e empresarial.</Title>
-          <div className="mt-10 grid gap-x-14 gap-y-10 lg:grid-cols-2">
-            {features.map(([name, Icon, items], index) => <article data-reveal key={name} className={`landing-reveal border-t border-slate-300 pt-5 ${index % 2 ? 'landing-reveal--d1' : ''}`}><div className="flex gap-4"><Icon size={20} className="mt-0.5 text-cyan-700" /><h3 className="text-xl font-extrabold text-[#102447]">{name}</h3></div><div className="mt-5 divide-y divide-slate-200">{items.map((item) => <p key={item} className="py-3 text-sm font-semibold text-slate-600">{item}</p>)}</div></article>)}
+          <Title eyebrow="Ecossistema">A sua operação, num só lugar.</Title>
+          <div className="mt-10 grid gap-x-6 gap-y-8 md:grid-cols-2 xl:grid-cols-4">
+            {features.map(({ name, Icon, benefit, items }, index) => <article data-reveal key={name} className={`landing-reveal border-t border-slate-300 pt-5 ${index % 2 ? 'landing-reveal--d1' : ''}`}><Icon size={20} className="text-cyan-700" /><h3 className="mt-4 text-lg font-extrabold text-[#102447]">{name}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{benefit}</p><ul className="mt-5 space-y-2.5 border-t border-slate-200 pt-4">{items.map((item) => <li key={item} className="flex items-start gap-2 text-sm font-semibold text-slate-600"><Check size={15} className="mt-0.5 shrink-0 text-cyan-700" />{item}</li>)}</ul></article>)}
           </div>
         </div>
       </section>
@@ -374,15 +438,6 @@ export default function HomePage() {
           <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
             {['Cadastre a empresa', 'Organize a operação', 'Defina o contexto fiscal', 'Acompanhe a Central Fiscal', 'Controle os próximos prazos'].map((text, index) => <li data-reveal key={text} className={`landing-reveal border-t border-slate-300 pt-4 ${index > 0 ? 'landing-reveal--d1' : ''}`}><span className="text-xs font-bold text-cyan-700">0{index + 1}</span><p className="mt-4 text-sm font-extrabold leading-6 text-[#102447]">{text}</p></li>)}
           </ol>
-        </div>
-      </section>
-
-      <section id="para-quem" className="bg-[#102447] py-16 text-white sm:py-20">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Para quem é</p><h2 className="mt-3 max-w-3xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">Informação organizada para quem acompanha a empresa todos os dias.</h2></div>
-          <div className="mt-10 grid gap-8 md:grid-cols-3">
-            {[[Briefcase, 'Empresas', 'Centralize a operação fiscal e tenha maior visibilidade sobre obrigações, facturação, equipa e prazos.'], [FileCheck2, 'Contabilistas', 'Organize informação fiscal e operacional e acompanhe responsabilidades dos clientes.'], [BarChart3, 'Equipas financeiras', 'Tenha informação empresarial e fiscal estruturada para acompanhamento e decisão.']].map(([Icon, title, text], index) => { const ItemIcon = Icon as typeof Briefcase; return <div data-reveal key={title as string} className={`landing-reveal border-t border-white/25 pt-5 ${index ? 'landing-reveal--d1' : ''}`}><ItemIcon size={22} className="text-cyan-300" /><h3 className="mt-4 text-lg font-extrabold">{title as string}</h3><p className="mt-3 text-sm leading-6 text-slate-200">{text as string}</p></div>; })}
-          </div>
         </div>
       </section>
 
@@ -406,7 +461,7 @@ export default function HomePage() {
 
       <footer className="bg-[#061a36] text-slate-300">
         <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-          <div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-4"><div><Brand inverse /><p className="mt-4 text-sm leading-6 text-slate-400">Gestão fiscal e empresarial para empresas em Angola.</p></div><Footer title="Plataforma" links={[['Plataforma', '#plataforma'], ['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} /><div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Empresa</p><div className="mt-4 grid gap-3 text-sm"><a href="#sobre" className="transition hover:text-cyan-200">Sobre nós</a><a href="#contacto" className="transition hover:text-cyan-200">Contacto</a><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-[42px] w-fit items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 font-extrabold text-[#06351b] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><WhatsAppIcon size={16} />Falar no WhatsApp</a></div></div><Footer title="Conta" links={[['Entrar', '/login'], ['Criar conta', '/register'], [contactEmail, `mailto:${contactEmail}`]]} /></div>
+          <div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-5"><div><Brand /><p className="mt-4 text-sm leading-6 text-slate-400">Gestão fiscal e empresarial para empresas em Angola.</p></div><Footer title="Plataforma" links={[['Plataforma', '#plataforma'], ['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} /><div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Empresa</p><div className="mt-4 grid gap-3 text-sm"><a href="#sobre" className="transition hover:text-cyan-200">Sobre nós</a><a href="#contacto" className="transition hover:text-cyan-200">Contacto</a><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-[42px] w-fit items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 font-extrabold text-[#06351b] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><WhatsAppIcon size={16} />Falar no WhatsApp</a></div></div><Footer title="Conta" links={[['Entrar', '/login'], ['Criar conta', '/register'], [contactEmail, `mailto:${contactEmail}`]]} /><Footer title="Legal" links={[['Termos de Utilização', '/terms'], ['Política de Privacidade', '/privacy']]} /></div>
           <p className="pt-6 text-xs text-slate-500">© {new Date().getFullYear()} Fiscalidade Digital · Angola</p>
         </div>
       </footer>
@@ -462,8 +517,126 @@ function Title({ eyebrow, children }: { eyebrow: string; children: ReactNode }) 
   return <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">{eyebrow}</p><h2 className="mt-3 text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">{children}</h2></div>;
 }
 
+type TeamMember = (typeof members)[number];
+
 function Team() {
-  return <section aria-label="Equipa" className="bg-[#f7fafc] py-16 sm:py-20"><div className="mx-auto max-w-7xl px-5 lg:px-8"><Title eyebrow="Equipa">Pessoas que combinam contexto local e construção tecnológica.</Title><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{members.map((member, index) => <figure data-reveal key={member.name} className={`landing-reveal group overflow-hidden bg-[#082755] ${index % 2 ? 'landing-reveal--d1' : ''}`}><div className="relative aspect-[4/5] overflow-hidden"><Image src={member.image} alt={`Fotografia de ${member.name}`} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-cover transition duration-700 group-hover:scale-[1.03] ${member.position}`} /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#061a36]/90 to-transparent p-5 pt-20"><p className="text-lg font-extrabold text-white">{member.name}</p><p className="mt-2 text-xs leading-5 text-cyan-100">{member.area}</p></div></div><figcaption className="flex items-center justify-between px-5 py-4 text-sm font-bold text-white"><span>Fiscalidade Digital</span><a href={member.link} target="_blank" rel="noopener noreferrer" aria-label={`Abrir LinkedIn de ${member.name}`} className="rounded p-1 text-cyan-200 transition hover:bg-white/10 hover:text-white"><Linkedin size={17} /></a></figcaption></figure>)}</div></div></section>;
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const lastTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const closeBiography = useCallback(() => {
+    setSelectedMember(null);
+    window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMember) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeBiography();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedMember, closeBiography]);
+
+  return (
+    <section aria-label="Equipa" className="bg-[#f7fafc] py-16 sm:py-20">
+      <div className="mx-auto max-w-7xl px-5 lg:px-8">
+        <Title eyebrow="Equipa">Pessoas que combinam contexto local e construção tecnológica.</Title>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {members.map((member, index) => (
+            <figure data-reveal key={member.name} className={`landing-reveal overflow-hidden rounded-2xl border border-slate-200 bg-white ${index % 2 ? 'landing-reveal--d1' : ''}`}>
+              <div className="relative aspect-[4/5] bg-slate-100">
+                <Image src={member.image} alt={`Fotografia de ${member.name}`} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-contain ${member.position}`} />
+              </div>
+              <figcaption className="p-5">
+                <p className="text-lg font-extrabold text-[#102447]">{member.name}</p>
+                <p className="mt-2 text-xs font-semibold leading-5 text-cyan-800">{member.area}</p>
+                <p className="mt-4 text-sm leading-6 text-slate-600">{member.summary}</p>
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    onClick={(event) => {
+                      lastTriggerRef.current = event.currentTarget;
+                      setSelectedMember(member);
+                    }}
+                    className="inline-flex min-h-[42px] items-center rounded-lg bg-[#102447] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#17365f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
+                  >
+                    Ver biografia
+                  </button>
+                  <a href={member.link} target="_blank" rel="noopener noreferrer" aria-label={`Abrir LinkedIn de ${member.name}`} className="inline-flex min-h-[42px] min-w-[42px] items-center justify-center rounded-lg border border-slate-200 text-[#0b6f93] transition hover:border-cyan-300 hover:bg-cyan-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={18} /></a>
+                </div>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+
+      {selectedMember && (
+        <div className="fixed inset-0 z-[70] flex items-end bg-slate-950/55 p-0 sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) closeBiography(); }}>
+          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="team-biography-title" aria-describedby="team-biography-summary" tabIndex={-1} className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
+              <p className="text-sm font-bold text-[#102447]">Equipa Fiscalidade Digital</p>
+              <button ref={closeButtonRef} type="button" onClick={closeBiography} className="inline-flex min-h-[42px] min-w-[42px] items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-[#102447] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" aria-label="Fechar biografia"><X size={20} /></button>
+            </div>
+            <div className="grid gap-7 p-5 sm:grid-cols-[180px_1fr] sm:p-7">
+              <div className="relative mx-auto aspect-[4/5] w-full max-w-[180px] overflow-hidden rounded-2xl bg-slate-100 sm:mx-0">
+                <Image src={selectedMember.image} alt={`Fotografia de ${selectedMember.name}`} fill sizes="180px" className={`object-contain ${selectedMember.position}`} />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[.14em] text-cyan-700">{selectedMember.area}</p>
+                <h3 id="team-biography-title" className="mt-3 text-3xl font-extrabold tracking-tight text-[#102447]">{selectedMember.name}</h3>
+                <p id="team-biography-summary" className="mt-4 text-base leading-7 text-slate-600">{selectedMember.bio}</p>
+                <div className="mt-7 grid gap-6 sm:grid-cols-2">
+                  <section aria-labelledby="team-education-title">
+                    <h4 id="team-education-title" className="text-sm font-extrabold text-[#102447]">Formação e competências</h4>
+                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.education.map((item) => <li key={item} className="flex gap-2"><Check size={16} className="mt-1 shrink-0 text-cyan-700" />{item}</li>)}</ul>
+                  </section>
+                  <section aria-labelledby="team-highlights-title">
+                    <h4 id="team-highlights-title" className="text-sm font-extrabold text-[#102447]">Destaques</h4>
+                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.highlights.map((item) => <li key={item} className="flex gap-2"><Check size={16} className="mt-1 shrink-0 text-cyan-700" />{item}</li>)}</ul>
+                  </section>
+                </div>
+                <a href={selectedMember.link} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-cyan-200 px-4 py-2 text-sm font-bold text-cyan-800 transition hover:bg-cyan-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={17} />Ver LinkedIn</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
 }
 
 function Footer({ title, links }: { title: string; links: readonly (readonly [string, string])[] }) {
