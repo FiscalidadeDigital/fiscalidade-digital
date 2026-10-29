@@ -20,6 +20,7 @@ import {
 
 const whatsappUrl = 'https://wa.me/244924462591';
 const contactEmail = 'fiscalidadedigital@empresa.ao';
+const landingIntroSessionKey = 'fd:landing-intro-seen';
 
 const nav = [
   ['Início', '#inicio'],
@@ -42,24 +43,32 @@ const features = [
     Icon: Landmark,
     benefit: 'Acompanhe enquadramentos, obrigações e prazos num ponto de partida claro.',
     items: ['Central Fiscal', 'Obrigações Fiscais', 'Calendário Fiscal', 'Alertas'],
+    href: undefined,
+    cta: undefined,
   },
   {
     name: 'Operação empresarial',
     Icon: ReceiptText,
     benefit: 'Reúna os principais registos da operação quotidiana da empresa.',
     items: ['Facturação', 'Compras e facturas recebidas', 'Clientes'],
+    href: undefined,
+    cta: undefined,
   },
   {
     name: 'Pessoas',
     Icon: UsersRound,
     benefit: 'Mantenha a informação laboral e o processamento salarial organizados.',
     items: ['Funcionários', 'Processamento salarial', 'IRT e INSS'],
+    href: undefined,
+    cta: undefined,
   },
   {
-    name: 'Dados e conformidade',
+    name: 'Documentos e conformidade',
     Icon: FileCheck2,
-    benefit: 'Centralize documentos e relatórios necessários para acompanhamento.',
-    items: ['SAF-T', 'Relatórios', 'Histórico'],
+    benefit: 'Reúna documentos e relatórios que ajudam a acompanhar a empresa.',
+    items: ['Biblioteca de documentos', 'SAF-T', 'Relatórios'],
+    href: '#documentos',
+    cta: 'Ver gestão documental',
   },
 ] as const;
 
@@ -274,41 +283,100 @@ function AssistantPreview() {
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logosPaused, setLogosPaused] = useState(false);
+  const [introVisible, setIntroVisible] = useState(false);
   const pageRef = useRef<HTMLElement>(null);
+  const dismissIntro = useCallback(() => setIntroVisible(false), []);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    try {
+      const storage = window.sessionStorage;
+      if (storage.getItem(landingIntroSessionKey)) return;
+      storage.setItem(landingIntroSessionKey, 'seen');
+    } catch {
+      return;
+    }
+
+    setIntroVisible(true);
+  }, []);
+
+  useEffect(() => {
+    if (!introVisible) return;
+    const timer = window.setTimeout(dismissIntro, 1500);
+    return () => window.clearTimeout(timer);
+  }, [dismissIntro, introVisible]);
 
   useEffect(() => {
     const page = pageRef.current;
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
 
     const elements = Array.from(page.querySelectorAll<HTMLElement>('[data-reveal]'));
-    page.dataset.motion = 'ready';
+    if (!elements.length) return;
+
     const revealInViewport = () => {
       elements.forEach((element) => {
         const bounds = element.getBoundingClientRect();
         if (bounds.top < window.innerHeight * 1.15 && bounds.bottom > -64) element.classList.add('is-visible');
       });
     };
-    const visibilityFallback = window.setTimeout(() => {
-      elements.forEach((element) => element.classList.add('is-visible'));
-    }, 5000);
-    window.addEventListener('scroll', revealInViewport, { passive: true });
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        });
-      },
-      { rootMargin: '0px 0px -8%', threshold: 0.12 },
-    );
 
-    elements.forEach((element) => observer.observe(element));
-    return () => {
-      window.clearTimeout(visibilityFallback);
-      window.removeEventListener('scroll', revealInViewport);
-      observer.disconnect();
+    let observer: IntersectionObserver | null = null;
+    let initialFrame = 0;
+    try {
+      page.dataset.motion = 'ready';
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer?.unobserve(entry.target);
+          });
+        },
+        { rootMargin: '0px 0px -8%', threshold: 0.12 },
+      );
+      elements.forEach((element) => observer?.observe(element));
+      initialFrame = window.requestAnimationFrame(revealInViewport);
+      window.addEventListener('scroll', revealInViewport, { passive: true });
+    } catch {
       delete page.dataset.motion;
+      elements.forEach((element) => element.classList.add('is-visible'));
+      return;
+    }
+
+    return () => {
+      window.cancelAnimationFrame(initialFrame);
+      window.removeEventListener('scroll', revealInViewport);
+      observer?.disconnect();
+      delete page.dataset.motion;
+    };
+  }, []);
+
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+
+    const loops = Array.from(page.querySelectorAll<HTMLElement>('[data-motion-loop]'));
+    if (!loops.length) return;
+
+    let observer: IntersectionObserver | null = null;
+    try {
+      page.dataset.loops = 'ready';
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => entry.target.classList.toggle('is-in-view', entry.isIntersecting));
+        },
+        { rootMargin: '96px 0px', threshold: 0.05 },
+      );
+      loops.forEach((element) => observer?.observe(element));
+    } catch {
+      delete page.dataset.loops;
+      return;
+    }
+
+    return () => {
+      observer?.disconnect();
+      delete page.dataset.loops;
     };
   }, []);
 
@@ -341,10 +409,10 @@ export default function HomePage() {
 
       <section id="inicio" className="relative overflow-hidden bg-white py-16 sm:py-20">
         <svg aria-hidden="true" className="absolute right-0 top-0 h-full w-2/3 opacity-70" viewBox="0 0 800 600" fill="none"><path d="M110 50c220 0 120 185 330 185S555 430 820 420" stroke="#A5F3FC" strokeDasharray="5 8" /><circle cx="610" cy="120" r="180" fill="#EEF9FC" /></svg>
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[.95fr_1.05fr] lg:items-center lg:px-8">
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:px-8">
           <div>
             <p className="hero-reveal r1 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.17em] text-cyan-700"><i className="h-2 w-2 rounded-full bg-cyan-500" />Fiscalidade Digital</p>
-            <h1 className="hero-reveal r2 mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl">Organize a gestão<br />da sua empresa<br /><span className="text-cyan-500">num só lugar.</span></h1>
+            <h1 className="hero-reveal r2 mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl xl:text-[3.35rem] 2xl:text-6xl"><span className="block xl:whitespace-nowrap">Organize a gestão fiscal</span><span className="block xl:whitespace-nowrap">da sua empresa</span><span className="block text-cyan-500 xl:whitespace-nowrap">num só lugar.</span></h1>
             <p className="hero-reveal r3 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">Facturação, obrigações, prazos, compras e equipa organizados num único ambiente.</p>
             <div className="hero-reveal r4 mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/register" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] transition hover:-translate-y-0.5 hover:bg-cyan-600">Criar conta <ArrowRight size={17} /></Link>
@@ -355,7 +423,7 @@ export default function HomePage() {
               {['Pensado para empresas em Angola', 'Prazos mais visíveis', 'Informação organizada'].map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-cyan-600" />{text}</span>)}
             </div>
           </div>
-          <div className="hero-reveal r5"><Mockup /></div>
+          <div data-motion-loop className="hero-reveal r5"><Mockup /></div>
         </div>
       </section>
 
@@ -366,7 +434,7 @@ export default function HomePage() {
             {logosPaused ? 'Retomar movimento' : 'Pausar movimento'}
           </button>
         </div>
-        <div className={`landing-logo-marquee ${logosPaused ? 'landing-logo-marquee--paused' : ''}`} aria-label="Ecossistema e iniciativas relacionadas">
+        <div data-motion-loop className={`landing-logo-marquee ${logosPaused ? 'landing-logo-marquee--paused' : ''}`} aria-label="Ecossistema e iniciativas relacionadas">
           <div className="landing-logo-marquee__track">
             {[0, 1].map((group) => <div key={group} aria-hidden={group === 1} className="landing-logo-marquee__group">{logos.map((logo) => <div key={`${group}-${logo.name}`} className={`landing-logo-marquee__item landing-logo-marquee__item--${logo.variant}`}><Image src={logo.image} alt={group ? '' : logo.name} width={logo.width} height={logo.height} sizes="(max-width: 639px) 232px, 260px" className="landing-logo-marquee__image" /></div>)}</div>)}
           </div>
@@ -396,7 +464,6 @@ export default function HomePage() {
         </div>
         </section>
 
-        <Team />
       </div>
 
       <section id="plataforma" className="py-16 sm:py-20">
@@ -407,7 +474,7 @@ export default function HomePage() {
             <div className="mt-7 border-l-2 border-cyan-500 pl-4 text-sm leading-7 text-slate-600"><p><b className="text-[#102447]">Enquadramento</b> por imposto e período.</p><p><b className="text-[#102447]">Obrigações</b> e prazos a acompanhar.</p><p><b className="text-[#102447]">Alertas</b> para priorizar o próximo passo.</p></div>
             <Link href="/register" className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-cyan-800 transition hover:translate-x-1 hover:text-cyan-600">Organizar a situação fiscal da empresa <ArrowRight size={16} /></Link>
           </div>
-          <div data-reveal className="landing-reveal landing-reveal--d1"><FiscalDemo /></div>
+          <div data-reveal data-motion-loop className="landing-reveal landing-reveal--d1"><FiscalDemo /></div>
         </div>
       </section>
 
@@ -420,7 +487,7 @@ export default function HomePage() {
             <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">Perguntas sobre a empresa usam apenas os dados da sua empresa a que tem acesso.</p>
             <Link href="/assistant" className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-[#102447] px-5 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(15,41,79,.16)] transition hover:-translate-y-0.5 hover:bg-[#17365f]">Usar o assistente <ArrowRight size={17} /></Link>
           </div>
-          <div data-reveal className="landing-reveal landing-reveal--d1"><AssistantPreview /></div>
+          <div data-reveal data-motion-loop className="landing-reveal landing-reveal--d1"><AssistantPreview /></div>
         </div>
       </section>
 
@@ -428,8 +495,17 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <Title eyebrow="Ecossistema">A sua operação, num só lugar.</Title>
           <div className="mt-10 grid gap-x-6 gap-y-8 md:grid-cols-2 xl:grid-cols-4">
-            {features.map(({ name, Icon, benefit, items }, index) => <article data-reveal key={name} className={`landing-reveal border-t border-slate-300 pt-5 ${index % 2 ? 'landing-reveal--d1' : ''}`}><Icon size={20} className="text-cyan-700" /><h3 className="mt-4 text-lg font-extrabold text-[#102447]">{name}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{benefit}</p><ul className="mt-5 space-y-2.5 border-t border-slate-200 pt-4">{items.map((item) => <li key={item} className="flex items-start gap-2 text-sm font-semibold text-slate-600"><Check size={15} className="mt-0.5 shrink-0 text-cyan-700" />{item}</li>)}</ul></article>)}
+            {features.map(({ name, Icon, benefit, items, href, cta }, index) => <article data-reveal key={name} style={{ animationDelay: `${index * 75}ms` }} className="landing-reveal border-t border-slate-300 pt-5"><Icon size={20} className="text-cyan-700" /><h3 className="mt-4 text-lg font-extrabold text-[#102447]">{name}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{benefit}</p><ul className="mt-5 space-y-2.5 border-t border-slate-200 pt-4">{items.map((item) => <li key={item} className="flex items-start gap-2 text-sm font-semibold text-slate-600"><Check size={15} className="mt-0.5 shrink-0 text-cyan-700" />{item}</li>)}</ul>{href && cta ? <a href={href} className="mt-5 inline-flex min-h-[42px] items-center gap-2 text-sm font-extrabold text-cyan-800 transition hover:translate-x-1 hover:text-cyan-600">{cta}<ChevronRight size={16} /></a> : null}</article>)}
           </div>
+          <article id="documentos" data-reveal data-motion-loop className="landing-reveal mt-12 grid grid-cols-1 scroll-mt-24 gap-8 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_24px_60px_rgba(15,41,79,.08)] sm:p-8 lg:grid-cols-[.82fr_1.18fr] lg:items-center">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">Gestão documental</p>
+              <h3 className="mt-3 max-w-lg text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">Os documentos da sua empresa, organizados.</h3>
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">Reúna os seus documentos num único lugar e encontre a informação de que precisa para acompanhar a sua empresa.</p>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">No ambiente autenticado, pode carregar documentos, consultar categorias e procurar a informação guardada pela sua empresa.</p>
+            </div>
+            <DocumentDemo />
+          </article>
         </div>
       </section>
 
@@ -460,6 +536,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <Team />
+
       <footer className="bg-[#061a36] text-slate-300">
         <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
           <div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-5"><div><Brand /><p className="mt-4 text-sm leading-6 text-slate-400">Gestão fiscal e empresarial para empresas em Angola.</p></div><Footer title="Plataforma" links={[['Plataforma', '#plataforma'], ['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} /><div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Empresa</p><div className="mt-4 grid gap-3 text-sm"><a href="#sobre" className="transition hover:text-cyan-200">Sobre nós</a><a href="#contacto" className="transition hover:text-cyan-200">Contacto</a><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-[42px] w-fit items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 font-extrabold text-[#06351b] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><WhatsAppIcon size={16} />Falar no WhatsApp</a></div></div><Footer title="Conta" links={[['Entrar', '/login'], ['Criar conta', '/register'], [contactEmail, `mailto:${contactEmail}`]]} /><Footer title="Legal" links={[['Termos de Utilização', '/terms'], ['Política de Privacidade', '/privacy']]} /></div>
@@ -469,44 +547,71 @@ export default function HomePage() {
 
       <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp da Fiscalidade Digital" className="fixed bottom-4 left-4 z-40 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5"><WhatsAppIcon size={20} /><span className="hidden sm:inline">Falar no WhatsApp</span><span className="sm:hidden">WhatsApp</span></a>
 
+      {introVisible && <div className="landing-intro fixed inset-0 z-[80] grid place-items-center bg-[#061a36]/96 p-5 text-white" aria-label="Preparação da Fiscalidade Digital">
+        <div className="landing-intro__content flex max-w-sm flex-col items-center text-center">
+          <div className="rounded-2xl bg-white p-3 shadow-[0_18px_48px_rgba(0,0,0,.22)]"><Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={210} height={63} className="h-11 w-auto object-contain" priority /></div>
+          <p className="mt-6 text-xl font-extrabold tracking-[-.025em]">Fiscalidade Digital</p>
+          <p className="mt-2 text-sm text-cyan-100">A preparar a sua entrada.</p>
+          <span className="landing-intro__indicator mt-5 flex gap-1.5" aria-hidden="true"><i /><i /><i /></span>
+          <button type="button" onClick={dismissIntro} className="mt-7 rounded-lg px-3 py-2 text-sm font-bold text-cyan-100 underline decoration-cyan-300 underline-offset-4 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">Saltar</button>
+        </div>
+      </div>}
+
       <style jsx global>{`
         @keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
         @keyframes row { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
         @keyframes landingLogoMarquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
         @keyframes assistantDrift { from { transform: translateY(0); } to { transform: translateY(-4px); } }
-        .hero-reveal, .hero-mockup { animation: reveal .62s both cubic-bezier(.2, .7, .2, 1); }
-        .r1 { animation-delay: 60ms; } .r2 { animation-delay: 140ms; } .r3 { animation-delay: 220ms; } .r4 { animation-delay: 300ms; } .r5 { animation-delay: 380ms; }
-        .demo-stat, .demo-row { animation: row .42s both ease-out; }
-        .demo-row:nth-child(2) { animation-delay: 80ms; } .demo-row:nth-child(3) { animation-delay: 160ms; } .demo-row:nth-child(4) { animation-delay: 240ms; } .demo-row:nth-child(5) { animation-delay: 320ms; }
-        .assistant-question { animation: assistantDrift 3.8s ease-in-out infinite alternate; }
-        .assistant-answer { animation: assistantDrift 4.6s .45s ease-in-out infinite alternate-reverse; }
-        .landing-logo-marquee { position: relative; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; isolation: isolate; }
-        .landing-logo-marquee__track { display: flex; width: max-content; align-items: center; animation: landingLogoMarquee 38s linear infinite; will-change: transform; }
-        .landing-logo-marquee__group { display: flex; flex: 0 0 auto; align-items: center; gap: 2.5rem; padding-right: 2.5rem; }
-        .landing-logo-marquee__item { display: flex; flex: 0 0 220px; width: 220px; height: 132px; align-items: center; justify-content: center; overflow: hidden; }
-        .landing-logo-marquee__image { display: block; max-width: none !important; flex: none; object-fit: contain; opacity: 1; transition: transform .3s ease; }
-        .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 252px; height: 252px; }
-        .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 282px; height: 282px; }
-        .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 352px; height: 352px; }
-        .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 286px; height: auto; }
-        .landing-logo-marquee--paused .landing-logo-marquee__track { animation-play-state: paused; }
-        @media (hover: hover) { .landing-logo-marquee:hover .landing-logo-marquee__track { animation-play-state: paused; } }
+        @keyframes heroFloat { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -8px, 0); } }
+        @keyframes documentSelect { 0%, 100% { background: #102447; box-shadow: none; } 50% { background: #0b6f93; box-shadow: 0 8px 18px rgba(8, 169, 209, .18); } }
+        @keyframes documentFocus { 0%, 100% { border-color: #e2e8f0; transform: translateX(0); } 50% { border-color: #a5f3fc; transform: translateX(4px); } }
+        @keyframes landingIntro { 0% { opacity: 0; } 12%, 80% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes landingIntroContent { 0% { opacity: 0; transform: translateY(10px) scale(.98); } 16%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px) scale(1); } }
+        @keyframes landingIntroDot { 0%, 80%, 100% { opacity: .35; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+        .site .hero-reveal { animation: reveal .62s both cubic-bezier(.2, .7, .2, 1); }
+        .site .r1 { animation-delay: 60ms; } .site .r2 { animation-delay: 140ms; } .site .r3 { animation-delay: 220ms; } .site .r4 { animation-delay: 300ms; } .site .r5 { animation-delay: 380ms; }
+        .site .landing-reveal.is-visible .demo-stat, .site .landing-reveal.is-visible .demo-row { animation: row .42s both ease-out; }
+        .site .landing-reveal.is-visible .demo-row:nth-child(2) { animation-delay: 80ms; } .site .landing-reveal.is-visible .demo-row:nth-child(3) { animation-delay: 160ms; } .site .landing-reveal.is-visible .demo-row:nth-child(4) { animation-delay: 240ms; } .site .landing-reveal.is-visible .demo-row:nth-child(5) { animation-delay: 320ms; }
+        .site .hero-mockup { animation: heroFloat 7.2s ease-in-out infinite; will-change: transform; }
+        .site .assistant-question { animation: assistantDrift 3.8s ease-in-out infinite alternate; }
+        .site .assistant-answer { animation: assistantDrift 4.6s .45s ease-in-out infinite alternate-reverse; }
+        .site .document-demo__filter { animation: documentSelect 4.8s ease-in-out infinite; }
+        .site .document-demo__row--active { animation: documentFocus 4.8s ease-in-out infinite; }
+        .site .landing-logo-marquee { position: relative; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; isolation: isolate; }
+        .site .landing-logo-marquee__track { display: flex; width: max-content; align-items: center; animation: landingLogoMarquee 38s linear infinite; will-change: transform; }
+        .site .landing-logo-marquee__group { display: flex; flex: 0 0 auto; align-items: center; gap: 2.5rem; padding-right: 2.5rem; }
+        .site .landing-logo-marquee__item { display: flex; flex: 0 0 220px; width: 220px; height: 132px; align-items: center; justify-content: center; overflow: hidden; }
+        .site .landing-logo-marquee__image { display: block; max-width: none !important; flex: none; object-fit: contain; opacity: 1; transition: transform .3s ease; }
+        .site .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 252px; height: 252px; }
+        .site .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 282px; height: 282px; }
+        .site .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 352px; height: 352px; }
+        .site .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 286px; height: auto; }
+        .site .landing-logo-marquee--paused .landing-logo-marquee__track { animation-play-state: paused !important; }
+        @media (hover: hover) { .site .landing-logo-marquee:hover .landing-logo-marquee__track { animation-play-state: paused; } }
+        [data-loops='ready'] [data-motion-loop] .hero-mockup, [data-loops='ready'] [data-motion-loop] .assistant-question, [data-loops='ready'] [data-motion-loop] .assistant-answer, [data-loops='ready'] [data-motion-loop] .document-demo__filter, [data-loops='ready'] [data-motion-loop] .document-demo__row--active, [data-loops='ready'] [data-motion-loop] .landing-logo-marquee__track { animation-play-state: paused; }
+        [data-loops='ready'] [data-motion-loop].is-in-view .hero-mockup, [data-loops='ready'] [data-motion-loop].is-in-view .assistant-question, [data-loops='ready'] [data-motion-loop].is-in-view .assistant-answer, [data-loops='ready'] [data-motion-loop].is-in-view .document-demo__filter, [data-loops='ready'] [data-motion-loop].is-in-view .document-demo__row--active, [data-loops='ready'] [data-motion-loop].is-in-view .landing-logo-marquee__track { animation-play-state: running; }
+        .site .landing-intro { background: rgba(6, 26, 54, .96); animation: landingIntro 1.5s both ease-in-out; }
+        .site .landing-intro__content { animation: landingIntroContent 1.5s both cubic-bezier(.2, .7, .2, 1); }
+        .site .landing-intro__indicator i { display: block; width: .42rem; height: .42rem; border-radius: 999px; background: #67e8f9; animation: landingIntroDot 900ms ease-in-out infinite; }
+        .site .landing-intro__indicator i:nth-child(2) { animation-delay: 130ms; }
+        .site .landing-intro__indicator i:nth-child(3) { animation-delay: 260ms; }
         [data-motion='ready'] .landing-reveal { opacity: 0; transform: translateY(20px); }
         [data-motion='ready'] .landing-reveal.is-visible { opacity: 1; transform: none; animation: reveal .7s both cubic-bezier(.2, .7, .2, 1); }
         [data-motion='ready'] .landing-reveal--d1.is-visible { animation-delay: 100ms; }
         [data-motion='ready'] .landing-reveal--d2.is-visible { animation-delay: 180ms; }
         @media (max-width: 639px) {
-          .landing-logo-marquee__track { animation-duration: 48s; }
-          .landing-logo-marquee__group { gap: 1rem; padding-right: 1rem; }
-          .landing-logo-marquee__item { flex-basis: 232px; width: 232px; height: 168px; }
-          .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 270px; height: 270px; }
-          .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 270px; height: 270px; }
-          .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 290px; height: 290px; }
-          .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 226px; height: auto; }
+          .site .hero-mockup { animation-duration: 9s; }
+          .site .landing-logo-marquee__track { animation-duration: 48s; }
+          .site .landing-logo-marquee__group { gap: 1rem; padding-right: 1rem; }
+          .site .landing-logo-marquee__item { flex-basis: 232px; width: 232px; height: 168px; }
+          .site .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 270px; height: 270px; }
+          .site .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 270px; height: 270px; }
+          .site .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 290px; height: 290px; }
+          .site .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 226px; height: auto; }
         }
         @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-          .landing-logo-marquee__track { animation: none; transform: none; }
+          .site *, .site *::before, .site *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+          .site .landing-logo-marquee__track { animation: none; transform: none; }
           [data-motion='ready'] .landing-reveal { opacity: 1 !important; transform: none !important; }
         }
       `}</style>
@@ -573,14 +678,16 @@ function Team() {
   }, [selectedMember, closeBiography]);
 
   return (
-    <section aria-label="Equipa" className="bg-[#f7fafc] py-16 sm:py-20">
+    <section id="equipa" aria-label="Equipa" className="bg-[#f7fafc] py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
-        <Title eyebrow="Equipa">Pessoas que combinam contexto local e construção tecnológica.</Title>
+        <div data-reveal className="landing-reveal max-w-3xl">
+          <h2 className="text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">A equipa por trás da Fiscalidade Digital</h2>
+        </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
           {members.map((member, index) => (
-            <figure data-reveal key={member.name} className={`landing-reveal overflow-hidden rounded-2xl border border-slate-200 bg-white ${index % 2 ? 'landing-reveal--d1' : ''}`}>
+            <figure data-reveal key={member.name} className={`landing-reveal group overflow-hidden rounded-2xl border border-slate-200 bg-white ${index % 2 ? 'landing-reveal--d1' : ''}`}>
               <div className="relative aspect-[4/5] bg-slate-100">
-                <Image src={member.image} alt={`Fotografia de ${member.name}`} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-contain ${member.position}`} />
+                <Image src={member.image} alt={`Fotografia de ${member.name}`} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-contain transition-transform duration-500 motion-reduce:transform-none group-hover:scale-[1.025] ${member.position}`} />
               </div>
               <figcaption className="p-5">
                 <p className="text-lg font-extrabold text-[#102447]">{member.name}</p>
@@ -589,6 +696,7 @@ function Team() {
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <button
                     type="button"
+                    aria-haspopup="dialog"
                     onClick={(event) => {
                       lastTriggerRef.current = event.currentTarget;
                       setSelectedMember(member);
@@ -637,6 +745,47 @@ function Team() {
         </div>
       )}
     </section>
+  );
+}
+
+function DocumentDemo() {
+  const documents = [
+    ['Declaração de IVA — demonstração.pdf', 'Declaração', 'Pronto'],
+    ['Facturas recebidas — demonstração.pdf', 'Factura', 'Organizado'],
+    ['Relatório mensal — demonstração.pdf', 'Relatório', 'Consultável'],
+  ];
+
+  return (
+    <div className="document-demo min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_24px_60px_rgba(15,41,79,.12)] sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Biblioteca documental</p>
+          <p className="mt-1 text-sm font-extrabold text-[#102447]">Demonstração visual</p>
+        </div>
+        <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-800">Sem dados reais</span>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2" aria-label="Categorias de demonstração">
+        <span className="document-demo__filter rounded-full bg-[#102447] px-3 py-1.5 text-[10px] font-bold text-white">Todos · 3</span>
+        <span className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-500">Facturas</span>
+        <span className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-500">Declarações</span>
+      </div>
+      <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs text-slate-400">
+        Procurar um documento de demonstração
+      </div>
+      <div className="mt-3 space-y-2">
+        {documents.map(([name, category, status], index) => (
+          <div key={name} className={`document-demo__row flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3 ${index === 1 ? 'document-demo__row--active' : ''}`}>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-cyan-50 text-cyan-800"><FileText size={16} /></span>
+            <span className="min-w-0 flex-1">
+              <strong className="block truncate text-xs text-[#102447]">{name}</strong>
+              <small className="mt-0.5 block text-[11px] text-slate-500">{category}</small>
+            </span>
+            <em className="rounded-full bg-slate-100 px-2 py-1 text-[10px] not-italic text-slate-600">{status}</em>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-[11px] leading-5 text-slate-500">Ilustração da organização documental disponível no ambiente autenticado.</p>
+    </div>
   );
 }
 
