@@ -41,6 +41,9 @@ export default function AuthFrame({
         </aside>
         <section className="flex items-center p-5 sm:p-9 xl:p-12">
           <div className="mx-auto w-full max-w-lg">
+            <Link href="/" className="mb-7 inline-flex rounded-lg bg-white p-1.5 shadow-sm xl:hidden" aria-label="Fiscalidade Digital — início">
+              <Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={162} height={48} className="h-8 w-auto object-contain" priority />
+            </Link>
             <Link href={backHref} className="mb-7 inline-flex min-h-[32px] items-center gap-2 text-sm font-semibold text-slate-600 underline-offset-4 hover:text-[#0b6f93] hover:underline"><ArrowLeft size={16} />{backLabel}</Link>
             <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#0b6f93]">{eyebrow}</p>
             <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#102447]">{title}</h1>

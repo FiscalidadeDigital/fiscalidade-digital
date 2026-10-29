@@ -49,6 +49,7 @@ import {
   getCompany,
 } from '@/services/company';
 import FloatingAI from '@/components/ai/FloatingAI';
+import { useAuth } from '@/context/AuthContext';
 
 /* =========================================================
    TIPOS
@@ -264,6 +265,7 @@ export default function DashboardLayout({
 }: DashboardLayoutProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { logout } = useAuth();
 
   /* =======================================================
      ESTADOS
@@ -540,83 +542,15 @@ export default function DashboardLayout({
 
     const confirmed =
       window.confirm(
-        'Tem certeza que deseja terminar a sessão?',
+        'Tem a certeza de que deseja terminar a sessão?',
       );
 
     if (!confirmed) {
       return;
     }
 
-    try {
-      setIsLoggingOut(true);
-
-      /*
-       * Limpa os dados de autenticação
-       * guardados localmente.
-       *
-       * Não usamos localStorage.clear()
-       * porque isso poderia apagar outras
-       * informações do sistema.
-       */
-
-      const storageKeys = [
-        'token',
-        'accessToken',
-        'refreshToken',
-        'authToken',
-        'user',
-        'currentUser',
-      ];
-
-      storageKeys.forEach(
-        (key) => {
-          localStorage.removeItem(key);
-          sessionStorage.removeItem(key);
-        },
-      );
-
-      /*
-       * Se existir cookie de autenticação
-       * acessível pelo browser, removemos
-       * apenas cookies relacionados.
-       */
-
-      document.cookie
-        .split(';')
-        .forEach((cookie) => {
-          const name =
-            cookie
-              .split('=')[0]
-              ?.trim();
-
-          if (
-            name &&
-            (
-              name
-                .toLowerCase()
-                .includes('token') ||
-              name
-                .toLowerCase()
-                .includes('auth') ||
-              name
-                .toLowerCase()
-                .includes('session')
-            )
-          ) {
-            document.cookie =
-              `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-          }
-        });
-
-      router.replace('/login');
-    } catch (error) {
-      console.error(
-        'Erro ao terminar sessão:',
-        error,
-      );
-
-      setIsLoggingOut(false);
-    }
+    setIsLoggingOut(true);
+    logout();
   };
 
   /* =======================================================

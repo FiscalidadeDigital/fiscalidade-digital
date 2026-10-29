@@ -7,6 +7,7 @@ import './globals.css';
 import {
   AuthProvider,
 } from '@/context/AuthContext';
+import TenantRouteGate from '@/components/auth/TenantRouteGate';
 
 export const metadata: Metadata = {
   title: 'Fiscalidade Digital',
@@ -30,7 +31,9 @@ export default function RootLayout({
     <html lang="pt-AO">
       <body>
         <AuthProvider>
-          {children}
+          <TenantRouteGate>
+            {children}
+          </TenantRouteGate>
         </AuthProvider>
       </body>
     </html>

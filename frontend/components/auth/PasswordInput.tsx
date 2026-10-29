@@ -11,6 +11,7 @@ type PasswordInputProps = {
   autoComplete: 'current-password' | 'new-password';
   error?: string;
   helperText?: string;
+  minLength?: number;
   disabled?: boolean;
 };
 
@@ -22,6 +23,7 @@ export default function PasswordInput({
   autoComplete,
   error,
   helperText,
+  minLength = 12,
   disabled = false,
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
@@ -36,7 +38,7 @@ export default function PasswordInput({
           <input
             id={id}
             required
-            minLength={12}
+            minLength={minLength}
             type={visible ? 'text' : 'password'}
             autoComplete={autoComplete}
             value={value}
