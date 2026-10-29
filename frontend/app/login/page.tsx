@@ -130,7 +130,7 @@ export default function LoginPage() {
           />
         </label>
 
-        <div className="relative">
+        <div className="relative pt-7">
           <Link href="/forgot-password" className="absolute right-0 top-0 z-10 text-sm font-semibold text-[#0b6f93] underline-offset-2 hover:underline">
             Esqueceu-se da palavra-passe?
           </Link>
