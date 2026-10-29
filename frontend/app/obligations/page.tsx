@@ -629,7 +629,7 @@ export default function ObligationsPage() {
     ) => {
       const confirmed =
         window.confirm(
-          'Tem certeza que deseja marcar esta obrigação como paga?',
+          'Tem a certeza de que deseja marcar esta obrigação como paga?',
         );
 
       if (!confirmed) {
@@ -655,7 +655,7 @@ export default function ObligationsPage() {
 
         setError(
           err?.response?.data?.message ||
-            'Não foi possível atualizar o pagamento.',
+            'Não foi possível actualizar o pagamento.',
         );
       } finally {
         setPayingId(null);
@@ -1725,7 +1725,7 @@ export default function ObligationsPage() {
                 />
               )}
 
-              Atualizar calendário
+              Actualizar calendário
             </button>
           </div>
         </section>

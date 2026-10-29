@@ -24,7 +24,7 @@ const contactEmail = 'fiscalidadedigital@empresa.ao';
 const nav = [
   ['Início', '#inicio'],
   ['Plataforma', '#plataforma'],
-  ['Assistente', '#assistente'],
+  ['Conhecer o assistente', '#assistente'],
   ['Sobre nós', '#sobre'],
   ['Contacto', '#contacto'],
 ] as const;
@@ -217,8 +217,8 @@ function FiscalDemo() {
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <Metric label="Situação fiscal" value="Organizada" dark />
-        <Metric label="Em atenção" value="01" />
-        <Metric label="Próximas" value="02" />
+        <Metric label="Em atenção" value="A acompanhar" />
+        <Metric label="Próximas" value="Planeadas" />
       </div>
       <div className="mt-4 space-y-2">
         {rows.map(([tax, text, state]) => (
@@ -348,8 +348,9 @@ export default function HomePage() {
             <p className="hero-reveal r3 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">Facturação, obrigações, prazos, compras e equipa organizados num único ambiente.</p>
             <div className="hero-reveal r4 mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/register" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] transition hover:-translate-y-0.5 hover:bg-cyan-600">Criar conta <ArrowRight size={17} /></Link>
-              <a href="#plataforma" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] transition hover:border-cyan-300 hover:text-cyan-800">Conhecer a plataforma <ChevronRight size={17} /></a>
+              <a href="#funcionalidades" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] transition hover:border-cyan-300 hover:text-cyan-800">Conhecer o ecossistema <ChevronRight size={17} /></a>
             </div>
+            <a href="#assistente" className="hero-reveal r4 mt-4 inline-flex min-h-[44px] items-center gap-2 text-sm font-extrabold text-cyan-800 underline decoration-cyan-300 underline-offset-4 transition hover:text-cyan-600">Conhecer o assistente <ChevronRight size={16} /></a>
             <div className="hero-reveal r4 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
               {['Pensado para empresas em Angola', 'Prazos mais visíveis', 'Informação organizada'].map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-cyan-600" />{text}</span>)}
             </div>
@@ -372,8 +373,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div id="sobre">
-        <section className="py-16 sm:py-20">
+      <div>
+        <section id="sobre" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
             <Title eyebrow="Sobre a Fiscalidade Digital">Tecnologia para<br /><span className="text-cyan-500">organizar</span><br />a operação fiscal.</Title>
@@ -385,11 +386,11 @@ export default function HomePage() {
           <div data-reveal className="landing-reveal landing-reveal--d2 mt-12 grid gap-x-12 gap-y-8 border-t border-slate-200 pt-8 md:grid-cols-2">
             <article>
               <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">Missão</p>
-              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Organizar a operação fiscal e empresarial num único ambiente de trabalho claro.</p>
+              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Simplificar a gestão fiscal e empresarial em Angola, reunindo informação, ferramentas e apoio num único lugar para ajudar as empresas a trabalhar com mais organização e confiança.</p>
             </article>
             <article className="md:border-l md:border-slate-200 md:pl-12">
               <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">Visão</p>
-              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Dar às empresas em Angola uma leitura mais clara da sua operação fiscal.</p>
+              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Ser uma referência em soluções digitais de gestão em Angola, aproximando as empresas da tecnologia e contribuindo para negócios mais organizados e preparados para crescer.</p>
             </article>
           </div>
         </div>
@@ -416,8 +417,8 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-800">Assistente Fiscal</p>
             <h2 className="mt-3 max-w-xl text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">Uma pergunta fiscal não precisa ficar sem contexto.</h2>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">No ambiente autenticado, o assistente apoia a consulta de temas fiscais e mostra fontes quando estão disponíveis.</p>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">Perguntas sobre a empresa respeitam o contexto autorizado da sua sessão.</p>
-            <Link href="/assistant" className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-[#102447] px-5 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(15,41,79,.16)] transition hover:-translate-y-0.5 hover:bg-[#17365f]">Experimentar o assistente <ArrowRight size={17} /></Link>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">Perguntas sobre a empresa usam apenas os dados da sua empresa a que tem acesso.</p>
+            <Link href="/assistant" className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-[#102447] px-5 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(15,41,79,.16)] transition hover:-translate-y-0.5 hover:bg-[#17365f]">Usar o assistente <ArrowRight size={17} /></Link>
           </div>
           <div data-reveal className="landing-reveal landing-reveal--d1"><AssistantPreview /></div>
         </div>
@@ -435,9 +436,9 @@ export default function HomePage() {
       <section id="como-funciona" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <Title eyebrow="Como funciona">Da operação diária a uma visão mais clara.</Title>
-          <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-            {['Cadastre a empresa', 'Organize a operação', 'Defina o contexto fiscal', 'Acompanhe a Central Fiscal', 'Controle os próximos prazos'].map((text, index) => <li data-reveal key={text} className={`landing-reveal border-t border-slate-300 pt-4 ${index > 0 ? 'landing-reveal--d1' : ''}`}><span className="text-xs font-bold text-cyan-700">0{index + 1}</span><p className="mt-4 text-sm font-extrabold leading-6 text-[#102447]">{text}</p></li>)}
-          </ol>
+          <div role="list" className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            {['Registe a empresa', 'Organize a operação', 'Defina o contexto fiscal', 'Acompanhe a Central Fiscal', 'Acompanhe os próximos prazos'].map((text, index) => <article role="listitem" data-reveal key={text} className={`landing-reveal border-t border-slate-300 pt-4 ${index > 0 ? 'landing-reveal--d1' : ''}`}><p className="mt-1 text-sm font-extrabold leading-6 text-[#102447]">{text}</p></article>)}
+          </div>
         </div>
       </section>
 
@@ -455,7 +456,7 @@ export default function HomePage() {
       <section className="bg-[#082755] py-16 text-white sm:py-20">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 px-5 lg:flex-row lg:items-end lg:px-8">
           <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">Tenha uma visão mais clara da fiscalidade da sua empresa.</h2><p className="mt-4 max-w-2xl leading-7 text-slate-200">Centralize facturação, obrigações, equipa e prazos numa única plataforma.</p></div>
-          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:-translate-y-0.5 hover:bg-cyan-200">Criar minha conta</Link><Link href="/login" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">Já tenho conta</Link></div>
+          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:-translate-y-0.5 hover:bg-cyan-200">Criar a minha conta</Link><Link href="/login" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">Já tenho conta</Link></div>
         </div>
       </section>
 

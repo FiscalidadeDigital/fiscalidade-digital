@@ -1038,7 +1038,7 @@ export default function PaymentsPage() {
                 }
               />
 
-              Atualizar
+              Actualizar
             </button>
           </div>
 
@@ -1629,7 +1629,7 @@ export default function PaymentsPage() {
                     payments.length ===
                     0
                       ? 'Quando a empresa efetuar pagamentos fiscais, eles aparecerão nesta área.'
-                      : 'Tente alterar a pesquisa ou o filtro selecionado.'
+                      : 'Tente alterar a pesquisa ou o filtro seleccionado.'
                   }
                 />
               </div>

@@ -2,7 +2,7 @@
 
 import { FormEvent, useState } from 'react';
 import Link from 'next/link';
-import { CheckCircle2, Mail } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 import api from '@/services/api';
 import AuthFrame from '@/components/auth/AuthFrame';
 import { normalizeRecoveryEmail } from '@/lib/auth-form-validation';
@@ -35,13 +35,12 @@ export default function ForgotPasswordPage() {
         <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
           <CheckCircle2 className="h-6 w-6 text-emerald-700" />
           <h2 className="mt-3 text-lg font-semibold text-emerald-950">Pedido recebido</h2>
-          <p className="mt-2 text-sm leading-6 text-emerald-900">Se existir uma conta associada, enviámos um código de recuperação para esse email.</p>
-          <Link href={`/reset-password?email=${encodeURIComponent(email)}`} className="fd-button-primary mt-5 w-full">Introduzir código</Link>
+          <p className="mt-2 text-sm leading-6 text-emerald-900">Se existir uma conta associada a este endereço, receberá instruções para recuperar o acesso.</p>
+          <Link href={`/reset-password?email=${encodeURIComponent(email)}`} className="fd-button-primary mt-5 w-full">Introduzir código recebido</Link>
           <Link href="/login" className="mt-4 block text-center text-sm font-semibold text-[#0b6f93] underline underline-offset-2">Voltar ao início de sessão</Link>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-5">
-          <div className="rounded-xl border border-cyan-100 bg-cyan-50 p-4 text-sm leading-6 text-slate-700"><Mail className="mb-2 h-5 w-5 text-cyan-800" />Por segurança, a confirmação não revela se o email está registado.</div>
           <label htmlFor="forgot-password-email" className="fd-label">Email da conta
             <input id="forgot-password-email" required type="email" autoComplete="email" value={email} disabled={loading} onChange={(event) => setEmail(event.target.value)} className="fd-field mt-1.5" placeholder="nome@empresa.ao" />
           </label>

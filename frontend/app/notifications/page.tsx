@@ -349,7 +349,7 @@ export default function NotificationsPage() {
                 }
               />
 
-              Atualizar
+              Actualizar
 
             </button>
 

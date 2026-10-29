@@ -1351,7 +1351,6 @@ export default function PayrollPage() {
 
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
                 <ProcessStep
-                  number="01"
                   title="Calcular"
                   description="Processa os valores e actualiza os totais."
                   active={
@@ -1368,7 +1367,6 @@ export default function PayrollPage() {
                 />
 
                 <ProcessStep
-                  number="02"
                   title="Aprovar"
                   description="Confirma a folha depois do cálculo."
                   active={
@@ -1384,7 +1382,6 @@ export default function PayrollPage() {
                 />
 
                 <ProcessStep
-                  number="03"
                   title="Pagamento"
                   description="Marca a folha como paga depois da aprovação."
                   active={
@@ -1398,7 +1395,6 @@ export default function PayrollPage() {
                 />
 
                 <ProcessStep
-                  number="04"
                   title="Fecho"
                   description="Bloqueia a folha paga contra novas transições."
                   active={false}
@@ -1897,13 +1893,11 @@ function TableCell({
 }
 
 function ProcessStep({
-  number,
   title,
   description,
   active,
   done,
 }: {
-  number: string;
   title: string;
   description: string;
   active: boolean;
@@ -1935,7 +1929,10 @@ function ProcessStep({
           {done ? (
             <CheckCircle2 size={20} />
           ) : (
-            number
+            <span
+              aria-hidden="true"
+              className="h-2.5 w-2.5 rounded-full bg-current"
+            />
           )}
         </div>
 

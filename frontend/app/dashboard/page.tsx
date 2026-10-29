@@ -188,7 +188,7 @@ function getMessage(error: any): string {
   }
 
   if (error?.response?.status === 403) {
-    return 'Não tem autorização para acessar o dashboard.';
+    return 'Não tem autorização para aceder ao painel.';
   }
 
   const serverMessage = error?.response?.data?.message;

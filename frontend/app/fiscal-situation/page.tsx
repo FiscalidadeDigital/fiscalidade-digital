@@ -608,7 +608,7 @@ function LoadingState() {
         A carregar a situação fiscal
       </h2>
       <p className="mt-1 text-sm text-[#7180a2]">
-        A consultar os dados do período selecionado.
+        A consultar os dados do período seleccionado.
       </p>
     </section>
   );

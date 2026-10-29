@@ -416,7 +416,7 @@ export default function DocumentsPage() {
   const handleUpload = async () => {
     if (!selectedFile) {
       setError(
-        'Selecione um ficheiro primeiro.',
+        'Seleccione um ficheiro primeiro.',
       );
 
       return;
