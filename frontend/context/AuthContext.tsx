@@ -22,6 +22,7 @@ import {
   removeToken,
   saveToken,
 } from '@/lib/auth';
+import { buildLoginPath } from '@/lib/route-access';
 
 /* ============================================================
    TIPOS
@@ -112,6 +113,9 @@ export function AuthProvider({
   const [initialized, setInitialized] =
     useState(false);
 
+  const [sessionVerified, setSessionVerified] =
+    useState(false);
+
   const sessionEndingRef = useRef(false);
 
   /* ==========================================================
@@ -125,6 +129,7 @@ export function AuthProvider({
     ) => {
       setUser(sessionUser);
       setCompany(sessionTenant);
+      setSessionVerified(true);
 
       if (
         typeof window !== 'undefined'
@@ -158,6 +163,7 @@ export function AuthProvider({
 
     setUser(null);
     setCompany(null);
+    setSessionVerified(false);
 
     if (
       typeof window !== 'undefined'
@@ -176,14 +182,16 @@ export function AuthProvider({
     useCallback(async () => {
       const token = getToken();
 
+      setSessionVerified(false);
+      setUser(null);
+      setCompany(null);
+
       /*
        * Não existe token.
        * Portanto não existe sessão para restaurar.
        */
 
       if (!token) {
-        setUser(null);
-        setCompany(null);
         setLoading(false);
         setInitialized(true);
 
@@ -224,42 +232,9 @@ export function AuthProvider({
           data?.company ??
           data?.tenantData;
 
-        /*
-         * Se o backend não devolver os dois,
-         * tentamos recuperar o tenant do localStorage.
-         */
-
-        let tenantFromStorage:
-          | Tenant
-          | null = null;
-
-        if (
-          typeof window !== 'undefined'
-        ) {
-          const storedTenant =
-            localStorage.getItem(
-              'tenant',
-            );
-
-          if (storedTenant) {
-            try {
-              tenantFromStorage =
-                JSON.parse(
-                  storedTenant,
-                );
-            } catch {
-              tenantFromStorage = null;
-            }
-          }
-        }
-
-        const finalTenant =
-          currentTenant ??
-          tenantFromStorage;
-
         if (
           !currentUser ||
-          !finalTenant
+          !currentTenant
         ) {
           throw new Error(
             'Sessão inválida.',
@@ -268,7 +243,7 @@ export function AuthProvider({
 
         saveSession(
           currentUser,
-          finalTenant,
+          currentTenant,
         );
       } catch (error) {
         console.error(
@@ -276,8 +251,13 @@ export function AuthProvider({
           error,
         );
 
-        // A timeout, 5xx or Render wake-up is not proof that the session ended.
-        // Only the API's explicit 401 invalidates tenant state.
+        setUser(null);
+        setCompany(null);
+        setSessionVerified(false);
+
+        // A falha de confirmação nunca autoriza a apresentação de dados locais.
+        // Apenas um 401 também remove o token armazenado, porque outros erros podem
+        // corresponder a uma indisponibilidade temporária do serviço.
         if (isAxiosError(error) && error.response?.status === 401) {
           clearSession();
         }
@@ -367,6 +347,8 @@ export function AuthProvider({
           data.user,
           data.tenant,
         );
+
+        sessionEndingRef.current = false;
 
         /*
          * A sessão já está inicializada.
@@ -486,7 +468,10 @@ export function AuthProvider({
       sessionEndingRef.current = true;
       clearSession();
       setInitialized(true);
-      window.location.replace('/login?reason=session-expired');
+      const intendedPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.location.replace(
+        buildLoginPath(intendedPath, 'session-expired'),
+      );
     };
 
     const handleStorage = (event: StorageEvent) => {
@@ -512,6 +497,7 @@ export function AuthProvider({
 
   const isAuthenticated =
     Boolean(token) &&
+    sessionVerified &&
     Boolean(user) &&
     Boolean(company);
 

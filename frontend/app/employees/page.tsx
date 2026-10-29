@@ -777,7 +777,7 @@ export default function EmployeesPage() {
       } else {
         setError(
           message ||
-            'Não foi possível cadastrar o funcionário.',
+            'Não foi possível registar o funcionário.',
         );
       }
     } finally {
@@ -794,7 +794,7 @@ export default function EmployeesPage() {
   ) {
     const confirmed =
       window.confirm(
-        `Tem certeza que deseja remover ${employee.name}?`,
+        `Tem a certeza de que deseja remover ${employee.name}?`,
       );
 
     if (!confirmed) {
@@ -1121,7 +1121,7 @@ export default function EmployeesPage() {
                         O sistema atribuirá
                         automaticamente o
                         próximo número disponível
-                        após o cadastro.
+                        após o registo.
                       </p>
                     </div>
                   </div>
@@ -1586,7 +1586,7 @@ export default function EmployeesPage() {
                   ? 'A guardar...'
                   : editingEmployeeId
                     ? 'Guardar alterações'
-                    : 'Cadastrar funcionário'}
+                    : 'Registar funcionário'}
               </button>
 
             </div>
@@ -3295,7 +3295,7 @@ export default function EmployeesPage() {
                   size={15}
                 />
 
-                Atualizar
+                Actualizar
               </button>
 
               <button

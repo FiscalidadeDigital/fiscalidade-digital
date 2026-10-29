@@ -2,12 +2,10 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
-  BarChart3,
   Bot,
-  Briefcase,
   Check,
   ChevronRight,
   FileCheck2,
@@ -22,12 +20,12 @@ import {
 
 const whatsappUrl = 'https://wa.me/244924462591';
 const contactEmail = 'fiscalidadedigital@empresa.ao';
+const landingIntroSessionKey = 'fd:landing-intro-seen';
 
 const nav = [
   ['Início', '#inicio'],
   ['Plataforma', '#plataforma'],
-  ['Assistente', '#assistente'],
-  ['Para quem', '#para-quem'],
+  ['Conhecer o assistente', '#assistente'],
   ['Sobre nós', '#sobre'],
   ['Contacto', '#contacto'],
 ] as const;
@@ -40,10 +38,38 @@ const logos = [
 ];
 
 const features = [
-  ['Gestão fiscal', Landmark, ['Central Fiscal', 'Obrigações Fiscais', 'Calendário Fiscal', 'Alertas']],
-  ['Operação empresarial', ReceiptText, ['Facturação', 'Compras e facturas recebidas', 'Clientes']],
-  ['Pessoas', UsersRound, ['Funcionários', 'Processamento salarial', 'IRT e INSS']],
-  ['Dados e conformidade', FileCheck2, ['SAF-T', 'Relatórios', 'Histórico']],
+  {
+    name: 'Gestão fiscal',
+    Icon: Landmark,
+    benefit: 'Acompanhe enquadramentos, obrigações e prazos num ponto de partida claro.',
+    items: ['Central Fiscal', 'Obrigações Fiscais', 'Calendário Fiscal', 'Alertas'],
+    href: undefined,
+    cta: undefined,
+  },
+  {
+    name: 'Operação empresarial',
+    Icon: ReceiptText,
+    benefit: 'Reúna os principais registos da operação quotidiana da empresa.',
+    items: ['Facturação', 'Compras e facturas recebidas', 'Clientes'],
+    href: undefined,
+    cta: undefined,
+  },
+  {
+    name: 'Pessoas',
+    Icon: UsersRound,
+    benefit: 'Mantenha a informação laboral e o processamento salarial organizados.',
+    items: ['Funcionários', 'Processamento salarial', 'IRT e INSS'],
+    href: undefined,
+    cta: undefined,
+  },
+  {
+    name: 'Documentos e conformidade',
+    Icon: FileCheck2,
+    benefit: 'Reúna documentos e relatórios que ajudam a acompanhar a empresa.',
+    items: ['Biblioteca de documentos', 'SAF-T', 'Relatórios'],
+    href: '#documentos',
+    cta: 'Ver gestão documental',
+  },
 ] as const;
 
 const members = [
@@ -53,6 +79,19 @@ const members = [
     image: '/Desiderio.jpeg',
     position: 'object-[center_20%]',
     link: 'https://www.linkedin.com/in/desiderio-pereira-4b1a492a7',
+    summary: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação.',
+    bio: 'Jovem angolano e finalista de Contabilidade e Finanças no Instituto Superior de Administração e Finanças — ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação. É co-fundador da Respirando Contabilidade e idealizador da Fiscalidade Digital, procurando combinar tecnologia, contabilidade e fiscalidade para desenvolver soluções mais acessíveis para empresas angolanas.',
+    education: [
+      'Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL',
+      'Finalista de Contabilidade e Finanças no ISAF',
+      'IFRS, Fiscalidade, Contabilidade, Empreendedorismo e Inovação',
+    ],
+    highlights: [
+      'Co-fundador da Respirando Contabilidade',
+      'Idealizador da Fiscalidade Digital',
+      'Embaixador da KPMG Angola no ISAF',
+      'Bolseiro de Mérito',
+    ],
   },
   {
     name: 'Edgar Gilson da Silva António',
@@ -60,6 +99,19 @@ const members = [
     image: '/edgar.jpg',
     position: 'object-[center_18%]',
     link: 'https://www.linkedin.com/in/edgar-ant%C3%B3nio-3a1048289',
+    summary: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade e Análise Financeira.',
+    bio: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade, Análise Financeira, Contabilidade de Custos, Contabilidade Gerencial, IFRS e Contabilidade Forense. O seu percurso combina formação académica, conhecimento técnico, liderança e inovação.',
+    education: [
+      'Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL',
+      'Finalista de Contabilidade e Finanças no ISAF',
+      'Excel Avançado, Primavera ERP, Portal do Contribuinte e Microsoft Office 365',
+    ],
+    highlights: [
+      'Co-fundador da Respirando Contabilidade',
+      'Monitor de Contabilidade Analítica',
+      'Bolseiro de Mérito da Fundação BAI',
+      'Investigador Científico Certificado',
+    ],
   },
   {
     name: 'Francisco António',
@@ -67,6 +119,20 @@ const members = [
     image: '/Francisco.jpeg',
     position: 'object-[center_18%]',
     link: 'https://www.linkedin.com/in/francisco-ant%C3%B3nio-891555281',
+    summary: 'Finalista de Contabilidade e Finanças no ISAF, com experiência de formação, investigação e empreendedorismo.',
+    bio: 'Finalista de Contabilidade e Finanças no ISAF, Francisco contribui para a componente contabilística e fiscal da Fiscalidade Digital, com experiência de formação, investigação e empreendedorismo.',
+    education: [
+      'Finalista de Contabilidade e Finanças — ISAF',
+      'Contabilidade e Fiscalidade — Centro de Formação Ferkund',
+      'Gestão Financeira — DW e Kixicrédito',
+      'Voluntariado — Fundação BAI',
+    ],
+    highlights: [
+      'Bolseiro de Mérito BAI',
+      'Co-Fundador da Respirando Contabilidade',
+      'Presidente do Clube de Fiscalidade do ISAF',
+      'Investigador pelo Programa de Iniciação Científica do ISAF',
+    ],
   },
   {
     name: 'Anildo Manuel João',
@@ -74,18 +140,25 @@ const members = [
     image: '/Anildodev.jpg',
     position: 'object-[center_15%]',
     link: 'https://www.linkedin.com/in/anildo-jo%C3%A3o-85643330b',
+    summary: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação e desenvolvedor Full Stack.',
+    bio: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação, desenvolvedor Full Stack e técnico com formação nas áreas de Automação Industrial, Instrumentação e Controlo. O seu percurso está na intersecção entre software, sistemas, infraestrutura tecnológica e tecnologia industrial.',
+    education: [
+      'Técnico Médio de Informática de Gestão pelo Instituto Médio de Economia de Luanda — IMEL',
+      'Engenharia Informática e Comunicação — Universidade Óscar Ribas',
+      'Full Stack, APIs, Bases de Dados, Redes, IoT, Inteligência Artificial e Gestão de Projectos',
+    ],
+    highlights: [
+      'Desenvolvimento tecnológico da Fiscalidade Digital',
+      'CEO e Fundador da Yash Hub5',
+      'Software + Automação Industrial + Instrumentação + Control Systems',
+    ],
   },
-];
+] as const;
 
-function Brand({ inverse = false }: { inverse?: boolean }) {
+function Brand() {
   return (
-    <Link href="/" aria-label="Fiscalidade Digital — início" className="inline-flex items-center gap-3">
-      <span className="rounded-xl bg-white p-1 shadow-sm">
-        <Image src="/logofiscalidade.png" alt="" width={34} height={34} priority />
-      </span>
-      <span className={`font-extrabold tracking-tight ${inverse ? 'text-white' : 'text-[#102447]'}`}>
-        Fiscalidade <span className="text-cyan-500">Digital</span>
-      </span>
+    <Link href="/" aria-label="Fiscalidade Digital — início" className="inline-flex rounded-lg bg-white p-1.5 shadow-sm">
+      <Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={180} height={54} className="h-9 w-auto object-contain" priority />
     </Link>
   );
 }
@@ -153,8 +226,8 @@ function FiscalDemo() {
       </div>
       <div className="mt-4 grid gap-2 sm:grid-cols-3">
         <Metric label="Situação fiscal" value="Organizada" dark />
-        <Metric label="Em atenção" value="01" />
-        <Metric label="Próximas" value="02" />
+        <Metric label="Em atenção" value="A acompanhar" />
+        <Metric label="Próximas" value="Planeadas" />
       </div>
       <div className="mt-4 space-y-2">
         {rows.map(([tax, text, state]) => (
@@ -210,41 +283,100 @@ function AssistantPreview() {
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [logosPaused, setLogosPaused] = useState(false);
+  const [introVisible, setIntroVisible] = useState(false);
   const pageRef = useRef<HTMLElement>(null);
+  const dismissIntro = useCallback(() => setIntroVisible(false), []);
+
+  useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    try {
+      const storage = window.sessionStorage;
+      if (storage.getItem(landingIntroSessionKey)) return;
+      storage.setItem(landingIntroSessionKey, 'seen');
+    } catch {
+      return;
+    }
+
+    setIntroVisible(true);
+  }, []);
+
+  useEffect(() => {
+    if (!introVisible) return;
+    const timer = window.setTimeout(dismissIntro, 1500);
+    return () => window.clearTimeout(timer);
+  }, [dismissIntro, introVisible]);
 
   useEffect(() => {
     const page = pageRef.current;
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
 
     const elements = Array.from(page.querySelectorAll<HTMLElement>('[data-reveal]'));
-    page.dataset.motion = 'ready';
+    if (!elements.length) return;
+
     const revealInViewport = () => {
       elements.forEach((element) => {
         const bounds = element.getBoundingClientRect();
         if (bounds.top < window.innerHeight * 1.15 && bounds.bottom > -64) element.classList.add('is-visible');
       });
     };
-    const visibilityFallback = window.setTimeout(() => {
-      elements.forEach((element) => element.classList.add('is-visible'));
-    }, 5000);
-    window.addEventListener('scroll', revealInViewport, { passive: true });
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-visible');
-          observer.unobserve(entry.target);
-        });
-      },
-      { rootMargin: '0px 0px -8%', threshold: 0.12 },
-    );
 
-    elements.forEach((element) => observer.observe(element));
-    return () => {
-      window.clearTimeout(visibilityFallback);
-      window.removeEventListener('scroll', revealInViewport);
-      observer.disconnect();
+    let observer: IntersectionObserver | null = null;
+    let initialFrame = 0;
+    try {
+      page.dataset.motion = 'ready';
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (!entry.isIntersecting) return;
+            entry.target.classList.add('is-visible');
+            observer?.unobserve(entry.target);
+          });
+        },
+        { rootMargin: '0px 0px -8%', threshold: 0.12 },
+      );
+      elements.forEach((element) => observer?.observe(element));
+      initialFrame = window.requestAnimationFrame(revealInViewport);
+      window.addEventListener('scroll', revealInViewport, { passive: true });
+    } catch {
       delete page.dataset.motion;
+      elements.forEach((element) => element.classList.add('is-visible'));
+      return;
+    }
+
+    return () => {
+      window.cancelAnimationFrame(initialFrame);
+      window.removeEventListener('scroll', revealInViewport);
+      observer?.disconnect();
+      delete page.dataset.motion;
+    };
+  }, []);
+
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
+
+    const loops = Array.from(page.querySelectorAll<HTMLElement>('[data-motion-loop]'));
+    if (!loops.length) return;
+
+    let observer: IntersectionObserver | null = null;
+    try {
+      page.dataset.loops = 'ready';
+      observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => entry.target.classList.toggle('is-in-view', entry.isIntersecting));
+        },
+        { rootMargin: '96px 0px', threshold: 0.05 },
+      );
+      loops.forEach((element) => observer?.observe(element));
+    } catch {
+      delete page.dataset.loops;
+      return;
+    }
+
+    return () => {
+      observer?.disconnect();
+      delete page.dataset.loops;
     };
   }, []);
 
@@ -277,20 +409,21 @@ export default function HomePage() {
 
       <section id="inicio" className="relative overflow-hidden bg-white py-16 sm:py-20">
         <svg aria-hidden="true" className="absolute right-0 top-0 h-full w-2/3 opacity-70" viewBox="0 0 800 600" fill="none"><path d="M110 50c220 0 120 185 330 185S555 430 820 420" stroke="#A5F3FC" strokeDasharray="5 8" /><circle cx="610" cy="120" r="180" fill="#EEF9FC" /></svg>
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[.95fr_1.05fr] lg:items-center lg:px-8">
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:px-8">
           <div>
             <p className="hero-reveal r1 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.17em] text-cyan-700"><i className="h-2 w-2 rounded-full bg-cyan-500" />Fiscalidade Digital</p>
-            <h1 className="hero-reveal r2 mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl">Organize a gestão<br />da sua empresa<br /><span className="text-cyan-500">num só lugar.</span></h1>
+            <h1 className="hero-reveal r2 mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl xl:text-[3.35rem] 2xl:text-6xl"><span className="block xl:whitespace-nowrap">Organize a gestão fiscal</span><span className="block xl:whitespace-nowrap">da sua empresa</span><span className="block text-cyan-500 xl:whitespace-nowrap">num só lugar.</span></h1>
             <p className="hero-reveal r3 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">Facturação, obrigações, prazos, compras e equipa organizados num único ambiente.</p>
             <div className="hero-reveal r4 mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/register" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] transition hover:-translate-y-0.5 hover:bg-cyan-600">Criar conta <ArrowRight size={17} /></Link>
-              <a href="#plataforma" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] transition hover:border-cyan-300 hover:text-cyan-800">Conhecer a plataforma <ChevronRight size={17} /></a>
+              <a href="#funcionalidades" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] transition hover:border-cyan-300 hover:text-cyan-800">Conhecer o ecossistema <ChevronRight size={17} /></a>
             </div>
+            <a href="#assistente" className="hero-reveal r4 mt-4 inline-flex min-h-[44px] items-center gap-2 text-sm font-extrabold text-cyan-800 underline decoration-cyan-300 underline-offset-4 transition hover:text-cyan-600">Conhecer o assistente <ChevronRight size={16} /></a>
             <div className="hero-reveal r4 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
               {['Pensado para empresas em Angola', 'Prazos mais visíveis', 'Informação organizada'].map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-cyan-600" />{text}</span>)}
             </div>
           </div>
-          <div className="hero-reveal r5"><Mockup /></div>
+          <div data-motion-loop className="hero-reveal r5"><Mockup /></div>
         </div>
       </section>
 
@@ -301,15 +434,15 @@ export default function HomePage() {
             {logosPaused ? 'Retomar movimento' : 'Pausar movimento'}
           </button>
         </div>
-        <div className={`landing-logo-marquee ${logosPaused ? 'landing-logo-marquee--paused' : ''}`} aria-label="Ecossistema e iniciativas relacionadas">
+        <div data-motion-loop className={`landing-logo-marquee ${logosPaused ? 'landing-logo-marquee--paused' : ''}`} aria-label="Ecossistema e iniciativas relacionadas">
           <div className="landing-logo-marquee__track">
             {[0, 1].map((group) => <div key={group} aria-hidden={group === 1} className="landing-logo-marquee__group">{logos.map((logo) => <div key={`${group}-${logo.name}`} className={`landing-logo-marquee__item landing-logo-marquee__item--${logo.variant}`}><Image src={logo.image} alt={group ? '' : logo.name} width={logo.width} height={logo.height} sizes="(max-width: 639px) 232px, 260px" className="landing-logo-marquee__image" /></div>)}</div>)}
           </div>
         </div>
       </section>
 
-      <div id="sobre">
-        <section className="py-16 sm:py-20">
+      <div>
+        <section id="sobre" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
             <Title eyebrow="Sobre a Fiscalidade Digital">Tecnologia para<br /><span className="text-cyan-500">organizar</span><br />a operação fiscal.</Title>
@@ -321,17 +454,16 @@ export default function HomePage() {
           <div data-reveal className="landing-reveal landing-reveal--d2 mt-12 grid gap-x-12 gap-y-8 border-t border-slate-200 pt-8 md:grid-cols-2">
             <article>
               <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">Missão</p>
-              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Organizar a operação fiscal e empresarial num único ambiente de trabalho claro.</p>
+              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Simplificar a gestão fiscal e empresarial em Angola, reunindo informação, ferramentas e apoio num único lugar para ajudar as empresas a trabalhar com mais organização e confiança.</p>
             </article>
             <article className="md:border-l md:border-slate-200 md:pl-12">
               <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">Visão</p>
-              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Dar às empresas em Angola uma leitura mais clara da sua operação fiscal.</p>
+              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-[#102447]">Ser uma referência em soluções digitais de gestão em Angola, aproximando as empresas da tecnologia e contribuindo para negócios mais organizados e preparados para crescer.</p>
             </article>
           </div>
         </div>
         </section>
 
-        <Team />
       </div>
 
       <section id="plataforma" className="py-16 sm:py-20">
@@ -342,7 +474,7 @@ export default function HomePage() {
             <div className="mt-7 border-l-2 border-cyan-500 pl-4 text-sm leading-7 text-slate-600"><p><b className="text-[#102447]">Enquadramento</b> por imposto e período.</p><p><b className="text-[#102447]">Obrigações</b> e prazos a acompanhar.</p><p><b className="text-[#102447]">Alertas</b> para priorizar o próximo passo.</p></div>
             <Link href="/register" className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-cyan-800 transition hover:translate-x-1 hover:text-cyan-600">Organizar a situação fiscal da empresa <ArrowRight size={16} /></Link>
           </div>
-          <div data-reveal className="landing-reveal landing-reveal--d1"><FiscalDemo /></div>
+          <div data-reveal data-motion-loop className="landing-reveal landing-reveal--d1"><FiscalDemo /></div>
         </div>
       </section>
 
@@ -352,36 +484,36 @@ export default function HomePage() {
             <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-800">Assistente Fiscal</p>
             <h2 className="mt-3 max-w-xl text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">Uma pergunta fiscal não precisa ficar sem contexto.</h2>
             <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">No ambiente autenticado, o assistente apoia a consulta de temas fiscais e mostra fontes quando estão disponíveis.</p>
-            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">Perguntas sobre a empresa respeitam o contexto autorizado da sua sessão.</p>
-            <Link href="/assistant" className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-[#102447] px-5 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(15,41,79,.16)] transition hover:-translate-y-0.5 hover:bg-[#17365f]">Experimentar o assistente <ArrowRight size={17} /></Link>
+            <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">Perguntas sobre a empresa usam apenas os dados da sua empresa a que tem acesso.</p>
+            <Link href="/assistant" className="mt-8 inline-flex min-h-[48px] items-center gap-2 rounded-xl bg-[#102447] px-5 py-3 text-sm font-extrabold text-white shadow-[0_12px_24px_rgba(15,41,79,.16)] transition hover:-translate-y-0.5 hover:bg-[#17365f]">Usar o assistente <ArrowRight size={17} /></Link>
           </div>
-          <div data-reveal className="landing-reveal landing-reveal--d1"><AssistantPreview /></div>
+          <div data-reveal data-motion-loop className="landing-reveal landing-reveal--d1"><AssistantPreview /></div>
         </div>
       </section>
 
       <section id="funcionalidades" className="bg-[#f7fafc] py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <Title eyebrow="Ecossistema">Uma plataforma para organizar a operação fiscal e empresarial.</Title>
-          <div className="mt-10 grid gap-x-14 gap-y-10 lg:grid-cols-2">
-            {features.map(([name, Icon, items], index) => <article data-reveal key={name} className={`landing-reveal border-t border-slate-300 pt-5 ${index % 2 ? 'landing-reveal--d1' : ''}`}><div className="flex gap-4"><Icon size={20} className="mt-0.5 text-cyan-700" /><h3 className="text-xl font-extrabold text-[#102447]">{name}</h3></div><div className="mt-5 divide-y divide-slate-200">{items.map((item) => <p key={item} className="py-3 text-sm font-semibold text-slate-600">{item}</p>)}</div></article>)}
+          <Title eyebrow="Ecossistema">A sua operação, num só lugar.</Title>
+          <div className="mt-10 grid gap-x-6 gap-y-8 md:grid-cols-2 xl:grid-cols-4">
+            {features.map(({ name, Icon, benefit, items, href, cta }, index) => <article data-reveal key={name} style={{ animationDelay: `${index * 75}ms` }} className="landing-reveal border-t border-slate-300 pt-5"><Icon size={20} className="text-cyan-700" /><h3 className="mt-4 text-lg font-extrabold text-[#102447]">{name}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{benefit}</p><ul className="mt-5 space-y-2.5 border-t border-slate-200 pt-4">{items.map((item) => <li key={item} className="flex items-start gap-2 text-sm font-semibold text-slate-600"><Check size={15} className="mt-0.5 shrink-0 text-cyan-700" />{item}</li>)}</ul>{href && cta ? <a href={href} className="mt-5 inline-flex min-h-[42px] items-center gap-2 text-sm font-extrabold text-cyan-800 transition hover:translate-x-1 hover:text-cyan-600">{cta}<ChevronRight size={16} /></a> : null}</article>)}
           </div>
+          <article id="documentos" data-reveal data-motion-loop className="landing-reveal mt-12 grid grid-cols-1 scroll-mt-24 gap-8 overflow-hidden rounded-3xl border border-slate-200 bg-white p-5 shadow-[0_24px_60px_rgba(15,41,79,.08)] sm:p-8 lg:grid-cols-[.82fr_1.18fr] lg:items-center">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">Gestão documental</p>
+              <h3 className="mt-3 max-w-lg text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">Os documentos da sua empresa, organizados.</h3>
+              <p className="mt-5 max-w-xl text-base leading-7 text-slate-600">Reúna os seus documentos num único lugar e encontre a informação de que precisa para acompanhar a sua empresa.</p>
+              <p className="mt-4 max-w-xl text-sm leading-6 text-slate-500">No ambiente autenticado, pode carregar documentos, consultar categorias e procurar a informação guardada pela sua empresa.</p>
+            </div>
+            <DocumentDemo />
+          </article>
         </div>
       </section>
 
       <section id="como-funciona" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <Title eyebrow="Como funciona">Da operação diária a uma visão mais clara.</Title>
-          <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
-            {['Cadastre a empresa', 'Organize a operação', 'Defina o contexto fiscal', 'Acompanhe a Central Fiscal', 'Controle os próximos prazos'].map((text, index) => <li data-reveal key={text} className={`landing-reveal border-t border-slate-300 pt-4 ${index > 0 ? 'landing-reveal--d1' : ''}`}><span className="text-xs font-bold text-cyan-700">0{index + 1}</span><p className="mt-4 text-sm font-extrabold leading-6 text-[#102447]">{text}</p></li>)}
-          </ol>
-        </div>
-      </section>
-
-      <section id="para-quem" className="bg-[#102447] py-16 text-white sm:py-20">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Para quem é</p><h2 className="mt-3 max-w-3xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">Informação organizada para quem acompanha a empresa todos os dias.</h2></div>
-          <div className="mt-10 grid gap-8 md:grid-cols-3">
-            {[[Briefcase, 'Empresas', 'Centralize a operação fiscal e tenha maior visibilidade sobre obrigações, facturação, equipa e prazos.'], [FileCheck2, 'Contabilistas', 'Organize informação fiscal e operacional e acompanhe responsabilidades dos clientes.'], [BarChart3, 'Equipas financeiras', 'Tenha informação empresarial e fiscal estruturada para acompanhamento e decisão.']].map(([Icon, title, text], index) => { const ItemIcon = Icon as typeof Briefcase; return <div data-reveal key={title as string} className={`landing-reveal border-t border-white/25 pt-5 ${index ? 'landing-reveal--d1' : ''}`}><ItemIcon size={22} className="text-cyan-300" /><h3 className="mt-4 text-lg font-extrabold">{title as string}</h3><p className="mt-3 text-sm leading-6 text-slate-200">{text as string}</p></div>; })}
+          <div role="list" className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            {['Registe a empresa', 'Organize a operação', 'Defina o contexto fiscal', 'Acompanhe a Central Fiscal', 'Acompanhe os próximos prazos'].map((text, index) => <article role="listitem" data-reveal key={text} className={`landing-reveal border-t border-slate-300 pt-4 ${index > 0 ? 'landing-reveal--d1' : ''}`}><p className="mt-1 text-sm font-extrabold leading-6 text-[#102447]">{text}</p></article>)}
           </div>
         </div>
       </section>
@@ -400,57 +532,86 @@ export default function HomePage() {
       <section className="bg-[#082755] py-16 text-white sm:py-20">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 px-5 lg:flex-row lg:items-end lg:px-8">
           <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">Tenha uma visão mais clara da fiscalidade da sua empresa.</h2><p className="mt-4 max-w-2xl leading-7 text-slate-200">Centralize facturação, obrigações, equipa e prazos numa única plataforma.</p></div>
-          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:-translate-y-0.5 hover:bg-cyan-200">Criar minha conta</Link><Link href="/login" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">Já tenho conta</Link></div>
+          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:-translate-y-0.5 hover:bg-cyan-200">Criar a minha conta</Link><Link href="/login" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">Já tenho conta</Link></div>
         </div>
       </section>
 
+      <Team />
+
       <footer className="bg-[#061a36] text-slate-300">
         <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
-          <div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-4"><div><Brand inverse /><p className="mt-4 text-sm leading-6 text-slate-400">Gestão fiscal e empresarial para empresas em Angola.</p></div><Footer title="Plataforma" links={[['Plataforma', '#plataforma'], ['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} /><div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Empresa</p><div className="mt-4 grid gap-3 text-sm"><a href="#sobre" className="transition hover:text-cyan-200">Sobre nós</a><a href="#contacto" className="transition hover:text-cyan-200">Contacto</a><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-[42px] w-fit items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 font-extrabold text-[#06351b] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><WhatsAppIcon size={16} />Falar no WhatsApp</a></div></div><Footer title="Conta" links={[['Entrar', '/login'], ['Criar conta', '/register'], [contactEmail, `mailto:${contactEmail}`]]} /></div>
+          <div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-5"><div><Brand /><p className="mt-4 text-sm leading-6 text-slate-400">Gestão fiscal e empresarial para empresas em Angola.</p></div><Footer title="Plataforma" links={[['Plataforma', '#plataforma'], ['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} /><div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Empresa</p><div className="mt-4 grid gap-3 text-sm"><a href="#sobre" className="transition hover:text-cyan-200">Sobre nós</a><a href="#contacto" className="transition hover:text-cyan-200">Contacto</a><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-[42px] w-fit items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 font-extrabold text-[#06351b] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><WhatsAppIcon size={16} />Falar no WhatsApp</a></div></div><Footer title="Conta" links={[['Entrar', '/login'], ['Criar conta', '/register'], [contactEmail, `mailto:${contactEmail}`]]} /><Footer title="Legal" links={[['Termos de Utilização', '/terms'], ['Política de Privacidade', '/privacy']]} /></div>
           <p className="pt-6 text-xs text-slate-500">© {new Date().getFullYear()} Fiscalidade Digital · Angola</p>
         </div>
       </footer>
 
       <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp da Fiscalidade Digital" className="fixed bottom-4 left-4 z-40 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5"><WhatsAppIcon size={20} /><span className="hidden sm:inline">Falar no WhatsApp</span><span className="sm:hidden">WhatsApp</span></a>
 
+      {introVisible && <div className="landing-intro fixed inset-0 z-[80] grid place-items-center bg-[#061a36]/96 p-5 text-white" aria-label="Preparação da Fiscalidade Digital">
+        <div className="landing-intro__content flex max-w-sm flex-col items-center text-center">
+          <div className="rounded-2xl bg-white p-3 shadow-[0_18px_48px_rgba(0,0,0,.22)]"><Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={210} height={63} className="h-11 w-auto object-contain" priority /></div>
+          <p className="mt-6 text-xl font-extrabold tracking-[-.025em]">Fiscalidade Digital</p>
+          <p className="mt-2 text-sm text-cyan-100">A preparar a sua entrada.</p>
+          <span className="landing-intro__indicator mt-5 flex gap-1.5" aria-hidden="true"><i /><i /><i /></span>
+          <button type="button" onClick={dismissIntro} className="mt-7 rounded-lg px-3 py-2 text-sm font-bold text-cyan-100 underline decoration-cyan-300 underline-offset-4 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">Saltar</button>
+        </div>
+      </div>}
+
       <style jsx global>{`
         @keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
         @keyframes row { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
         @keyframes landingLogoMarquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
         @keyframes assistantDrift { from { transform: translateY(0); } to { transform: translateY(-4px); } }
-        .hero-reveal, .hero-mockup { animation: reveal .62s both cubic-bezier(.2, .7, .2, 1); }
-        .r1 { animation-delay: 60ms; } .r2 { animation-delay: 140ms; } .r3 { animation-delay: 220ms; } .r4 { animation-delay: 300ms; } .r5 { animation-delay: 380ms; }
-        .demo-stat, .demo-row { animation: row .42s both ease-out; }
-        .demo-row:nth-child(2) { animation-delay: 80ms; } .demo-row:nth-child(3) { animation-delay: 160ms; } .demo-row:nth-child(4) { animation-delay: 240ms; } .demo-row:nth-child(5) { animation-delay: 320ms; }
-        .assistant-question { animation: assistantDrift 3.8s ease-in-out infinite alternate; }
-        .assistant-answer { animation: assistantDrift 4.6s .45s ease-in-out infinite alternate-reverse; }
-        .landing-logo-marquee { position: relative; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; isolation: isolate; }
-        .landing-logo-marquee__track { display: flex; width: max-content; align-items: center; animation: landingLogoMarquee 38s linear infinite; will-change: transform; }
-        .landing-logo-marquee__group { display: flex; flex: 0 0 auto; align-items: center; gap: 2.5rem; padding-right: 2.5rem; }
-        .landing-logo-marquee__item { display: flex; flex: 0 0 220px; width: 220px; height: 132px; align-items: center; justify-content: center; overflow: hidden; }
-        .landing-logo-marquee__image { display: block; max-width: none !important; flex: none; object-fit: contain; opacity: 1; transition: transform .3s ease; }
-        .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 252px; height: 252px; }
-        .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 282px; height: 282px; }
-        .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 352px; height: 352px; }
-        .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 286px; height: auto; }
-        .landing-logo-marquee--paused .landing-logo-marquee__track { animation-play-state: paused; }
-        @media (hover: hover) { .landing-logo-marquee:hover .landing-logo-marquee__track { animation-play-state: paused; } }
+        @keyframes heroFloat { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -8px, 0); } }
+        @keyframes documentSelect { 0%, 100% { background: #102447; box-shadow: none; } 50% { background: #0b6f93; box-shadow: 0 8px 18px rgba(8, 169, 209, .18); } }
+        @keyframes documentFocus { 0%, 100% { border-color: #e2e8f0; transform: translateX(0); } 50% { border-color: #a5f3fc; transform: translateX(4px); } }
+        @keyframes landingIntro { 0% { opacity: 0; } 12%, 80% { opacity: 1; } 100% { opacity: 0; } }
+        @keyframes landingIntroContent { 0% { opacity: 0; transform: translateY(10px) scale(.98); } 16%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px) scale(1); } }
+        @keyframes landingIntroDot { 0%, 80%, 100% { opacity: .35; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+        .site .hero-reveal { animation: reveal .62s both cubic-bezier(.2, .7, .2, 1); }
+        .site .r1 { animation-delay: 60ms; } .site .r2 { animation-delay: 140ms; } .site .r3 { animation-delay: 220ms; } .site .r4 { animation-delay: 300ms; } .site .r5 { animation-delay: 380ms; }
+        .site .landing-reveal.is-visible .demo-stat, .site .landing-reveal.is-visible .demo-row { animation: row .42s both ease-out; }
+        .site .landing-reveal.is-visible .demo-row:nth-child(2) { animation-delay: 80ms; } .site .landing-reveal.is-visible .demo-row:nth-child(3) { animation-delay: 160ms; } .site .landing-reveal.is-visible .demo-row:nth-child(4) { animation-delay: 240ms; } .site .landing-reveal.is-visible .demo-row:nth-child(5) { animation-delay: 320ms; }
+        .site .hero-mockup { animation: heroFloat 7.2s ease-in-out infinite; will-change: transform; }
+        .site .assistant-question { animation: assistantDrift 3.8s ease-in-out infinite alternate; }
+        .site .assistant-answer { animation: assistantDrift 4.6s .45s ease-in-out infinite alternate-reverse; }
+        .site .document-demo__filter { animation: documentSelect 4.8s ease-in-out infinite; }
+        .site .document-demo__row--active { animation: documentFocus 4.8s ease-in-out infinite; }
+        .site .landing-logo-marquee { position: relative; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; isolation: isolate; }
+        .site .landing-logo-marquee__track { display: flex; width: max-content; align-items: center; animation: landingLogoMarquee 38s linear infinite; will-change: transform; }
+        .site .landing-logo-marquee__group { display: flex; flex: 0 0 auto; align-items: center; gap: 2.5rem; padding-right: 2.5rem; }
+        .site .landing-logo-marquee__item { display: flex; flex: 0 0 220px; width: 220px; height: 132px; align-items: center; justify-content: center; overflow: hidden; }
+        .site .landing-logo-marquee__image { display: block; max-width: none !important; flex: none; object-fit: contain; opacity: 1; transition: transform .3s ease; }
+        .site .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 252px; height: 252px; }
+        .site .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 282px; height: 282px; }
+        .site .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 352px; height: 352px; }
+        .site .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 286px; height: auto; }
+        .site .landing-logo-marquee--paused .landing-logo-marquee__track { animation-play-state: paused !important; }
+        @media (hover: hover) { .site .landing-logo-marquee:hover .landing-logo-marquee__track { animation-play-state: paused; } }
+        [data-loops='ready'] [data-motion-loop] .hero-mockup, [data-loops='ready'] [data-motion-loop] .assistant-question, [data-loops='ready'] [data-motion-loop] .assistant-answer, [data-loops='ready'] [data-motion-loop] .document-demo__filter, [data-loops='ready'] [data-motion-loop] .document-demo__row--active, [data-loops='ready'] [data-motion-loop] .landing-logo-marquee__track { animation-play-state: paused; }
+        [data-loops='ready'] [data-motion-loop].is-in-view .hero-mockup, [data-loops='ready'] [data-motion-loop].is-in-view .assistant-question, [data-loops='ready'] [data-motion-loop].is-in-view .assistant-answer, [data-loops='ready'] [data-motion-loop].is-in-view .document-demo__filter, [data-loops='ready'] [data-motion-loop].is-in-view .document-demo__row--active, [data-loops='ready'] [data-motion-loop].is-in-view .landing-logo-marquee__track { animation-play-state: running; }
+        .site .landing-intro { background: rgba(6, 26, 54, .96); animation: landingIntro 1.5s both ease-in-out; }
+        .site .landing-intro__content { animation: landingIntroContent 1.5s both cubic-bezier(.2, .7, .2, 1); }
+        .site .landing-intro__indicator i { display: block; width: .42rem; height: .42rem; border-radius: 999px; background: #67e8f9; animation: landingIntroDot 900ms ease-in-out infinite; }
+        .site .landing-intro__indicator i:nth-child(2) { animation-delay: 130ms; }
+        .site .landing-intro__indicator i:nth-child(3) { animation-delay: 260ms; }
         [data-motion='ready'] .landing-reveal { opacity: 0; transform: translateY(20px); }
         [data-motion='ready'] .landing-reveal.is-visible { opacity: 1; transform: none; animation: reveal .7s both cubic-bezier(.2, .7, .2, 1); }
         [data-motion='ready'] .landing-reveal--d1.is-visible { animation-delay: 100ms; }
         [data-motion='ready'] .landing-reveal--d2.is-visible { animation-delay: 180ms; }
         @media (max-width: 639px) {
-          .landing-logo-marquee__track { animation-duration: 48s; }
-          .landing-logo-marquee__group { gap: 1rem; padding-right: 1rem; }
-          .landing-logo-marquee__item { flex-basis: 232px; width: 232px; height: 168px; }
-          .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 270px; height: 270px; }
-          .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 270px; height: 270px; }
-          .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 290px; height: 290px; }
-          .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 226px; height: auto; }
+          .site .hero-mockup { animation-duration: 9s; }
+          .site .landing-logo-marquee__track { animation-duration: 48s; }
+          .site .landing-logo-marquee__group { gap: 1rem; padding-right: 1rem; }
+          .site .landing-logo-marquee__item { flex-basis: 232px; width: 232px; height: 168px; }
+          .site .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 270px; height: 270px; }
+          .site .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 270px; height: 270px; }
+          .site .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 290px; height: 290px; }
+          .site .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 226px; height: auto; }
         }
         @media (prefers-reduced-motion: reduce) {
-          *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-          .landing-logo-marquee__track { animation: none; transform: none; }
+          .site *, .site *::before, .site *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
+          .site .landing-logo-marquee__track { animation: none; transform: none; }
           [data-motion='ready'] .landing-reveal { opacity: 1 !important; transform: none !important; }
         }
       `}</style>
@@ -462,8 +623,170 @@ function Title({ eyebrow, children }: { eyebrow: string; children: ReactNode }) 
   return <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">{eyebrow}</p><h2 className="mt-3 text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">{children}</h2></div>;
 }
 
+type TeamMember = (typeof members)[number];
+
 function Team() {
-  return <section aria-label="Equipa" className="bg-[#f7fafc] py-16 sm:py-20"><div className="mx-auto max-w-7xl px-5 lg:px-8"><Title eyebrow="Equipa">Pessoas que combinam contexto local e construção tecnológica.</Title><div className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{members.map((member, index) => <figure data-reveal key={member.name} className={`landing-reveal group overflow-hidden bg-[#082755] ${index % 2 ? 'landing-reveal--d1' : ''}`}><div className="relative aspect-[4/5] overflow-hidden"><Image src={member.image} alt={`Fotografia de ${member.name}`} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-cover transition duration-700 group-hover:scale-[1.03] ${member.position}`} /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#061a36]/90 to-transparent p-5 pt-20"><p className="text-lg font-extrabold text-white">{member.name}</p><p className="mt-2 text-xs leading-5 text-cyan-100">{member.area}</p></div></div><figcaption className="flex items-center justify-between px-5 py-4 text-sm font-bold text-white"><span>Fiscalidade Digital</span><a href={member.link} target="_blank" rel="noopener noreferrer" aria-label={`Abrir LinkedIn de ${member.name}`} className="rounded p-1 text-cyan-200 transition hover:bg-white/10 hover:text-white"><Linkedin size={17} /></a></figcaption></figure>)}</div></div></section>;
+  const [selectedMember, setSelectedMember] = useState<TeamMember | null>(null);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const lastTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const closeBiography = useCallback(() => {
+    setSelectedMember(null);
+    window.requestAnimationFrame(() => lastTriggerRef.current?.focus());
+  }, []);
+
+  useEffect(() => {
+    if (!selectedMember) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => closeButtonRef.current?.focus(), 0);
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        closeBiography();
+        return;
+      }
+
+      if (event.key !== 'Tab') return;
+      const dialog = dialogRef.current;
+      if (!dialog) return;
+      const focusable = Array.from(dialog.querySelectorAll<HTMLElement>('a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])'));
+      if (!focusable.length) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [selectedMember, closeBiography]);
+
+  return (
+    <section id="equipa" aria-label="Equipa" className="bg-[#f7fafc] py-16 sm:py-20">
+      <div className="mx-auto max-w-7xl px-5 lg:px-8">
+        <div data-reveal className="landing-reveal max-w-3xl">
+          <h2 className="text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">A equipa por trás da Fiscalidade Digital</h2>
+        </div>
+        <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {members.map((member, index) => (
+            <figure data-reveal key={member.name} className={`landing-reveal group overflow-hidden rounded-2xl border border-slate-200 bg-white ${index % 2 ? 'landing-reveal--d1' : ''}`}>
+              <div className="relative aspect-[4/5] bg-slate-100">
+                <Image src={member.image} alt={`Fotografia de ${member.name}`} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-contain transition-transform duration-500 motion-reduce:transform-none group-hover:scale-[1.025] ${member.position}`} />
+              </div>
+              <figcaption className="p-5">
+                <p className="text-lg font-extrabold text-[#102447]">{member.name}</p>
+                <p className="mt-2 text-xs font-semibold leading-5 text-cyan-800">{member.area}</p>
+                <p className="mt-4 text-sm leading-6 text-slate-600">{member.summary}</p>
+                <div className="mt-5 flex items-center justify-between gap-3">
+                  <button
+                    type="button"
+                    aria-haspopup="dialog"
+                    onClick={(event) => {
+                      lastTriggerRef.current = event.currentTarget;
+                      setSelectedMember(member);
+                    }}
+                    className="inline-flex min-h-[42px] items-center rounded-lg bg-[#102447] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#17365f] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
+                  >
+                    Ver biografia
+                  </button>
+                  <a href={member.link} target="_blank" rel="noopener noreferrer" aria-label={`Abrir LinkedIn de ${member.name}`} className="inline-flex min-h-[42px] min-w-[42px] items-center justify-center rounded-lg border border-slate-200 text-[#0b6f93] transition hover:border-cyan-300 hover:bg-cyan-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={18} /></a>
+                </div>
+              </figcaption>
+            </figure>
+          ))}
+        </div>
+      </div>
+
+      {selectedMember && (
+        <div className="fixed inset-0 z-[70] flex items-end bg-slate-950/55 p-0 sm:items-center sm:p-6" onMouseDown={(event) => { if (event.target === event.currentTarget) closeBiography(); }}>
+          <div ref={dialogRef} role="dialog" aria-modal="true" aria-labelledby="team-biography-title" aria-describedby="team-biography-summary" tabIndex={-1} className="max-h-[92dvh] w-full overflow-y-auto rounded-t-3xl bg-white shadow-2xl sm:max-w-3xl sm:rounded-3xl">
+            <div className="sticky top-0 z-10 flex items-center justify-between border-b border-slate-200 bg-white/95 px-5 py-4 backdrop-blur sm:px-7">
+              <p className="text-sm font-bold text-[#102447]">Equipa Fiscalidade Digital</p>
+              <button ref={closeButtonRef} type="button" onClick={closeBiography} className="inline-flex min-h-[42px] min-w-[42px] items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-[#102447] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" aria-label="Fechar biografia"><X size={20} /></button>
+            </div>
+            <div className="grid gap-7 p-5 sm:grid-cols-[180px_1fr] sm:p-7">
+              <div className="relative mx-auto aspect-[4/5] w-full max-w-[180px] overflow-hidden rounded-2xl bg-slate-100 sm:mx-0">
+                <Image src={selectedMember.image} alt={`Fotografia de ${selectedMember.name}`} fill sizes="180px" className={`object-contain ${selectedMember.position}`} />
+              </div>
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[.14em] text-cyan-700">{selectedMember.area}</p>
+                <h3 id="team-biography-title" className="mt-3 text-3xl font-extrabold tracking-tight text-[#102447]">{selectedMember.name}</h3>
+                <p id="team-biography-summary" className="mt-4 text-base leading-7 text-slate-600">{selectedMember.bio}</p>
+                <div className="mt-7 grid gap-6 sm:grid-cols-2">
+                  <section aria-labelledby="team-education-title">
+                    <h4 id="team-education-title" className="text-sm font-extrabold text-[#102447]">Formação e competências</h4>
+                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.education.map((item) => <li key={item} className="flex gap-2"><Check size={16} className="mt-1 shrink-0 text-cyan-700" />{item}</li>)}</ul>
+                  </section>
+                  <section aria-labelledby="team-highlights-title">
+                    <h4 id="team-highlights-title" className="text-sm font-extrabold text-[#102447]">Destaques</h4>
+                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.highlights.map((item) => <li key={item} className="flex gap-2"><Check size={16} className="mt-1 shrink-0 text-cyan-700" />{item}</li>)}</ul>
+                  </section>
+                </div>
+                <a href={selectedMember.link} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-cyan-200 px-4 py-2 text-sm font-bold text-cyan-800 transition hover:bg-cyan-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={17} />Ver LinkedIn</a>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+function DocumentDemo() {
+  const documents = [
+    ['Declaração de IVA — demonstração.pdf', 'Declaração', 'Pronto'],
+    ['Facturas recebidas — demonstração.pdf', 'Factura', 'Organizado'],
+    ['Relatório mensal — demonstração.pdf', 'Relatório', 'Consultável'],
+  ];
+
+  return (
+    <div className="document-demo min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_24px_60px_rgba(15,41,79,.12)] sm:p-5">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Biblioteca documental</p>
+          <p className="mt-1 text-sm font-extrabold text-[#102447]">Demonstração visual</p>
+        </div>
+        <span className="rounded-full bg-cyan-50 px-2.5 py-1 text-[10px] font-bold text-cyan-800">Sem dados reais</span>
+      </div>
+      <div className="mt-4 flex flex-wrap gap-2" aria-label="Categorias de demonstração">
+        <span className="document-demo__filter rounded-full bg-[#102447] px-3 py-1.5 text-[10px] font-bold text-white">Todos · 3</span>
+        <span className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-500">Facturas</span>
+        <span className="rounded-full border border-slate-200 px-3 py-1.5 text-[10px] font-bold text-slate-500">Declarações</span>
+      </div>
+      <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50 px-3 py-2.5 text-xs text-slate-400">
+        Procurar um documento de demonstração
+      </div>
+      <div className="mt-3 space-y-2">
+        {documents.map(([name, category, status], index) => (
+          <div key={name} className={`document-demo__row flex items-center gap-3 rounded-xl border border-slate-100 bg-white px-3 py-3 ${index === 1 ? 'document-demo__row--active' : ''}`}>
+            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-cyan-50 text-cyan-800"><FileText size={16} /></span>
+            <span className="min-w-0 flex-1">
+              <strong className="block truncate text-xs text-[#102447]">{name}</strong>
+              <small className="mt-0.5 block text-[11px] text-slate-500">{category}</small>
+            </span>
+            <em className="rounded-full bg-slate-100 px-2 py-1 text-[10px] not-italic text-slate-600">{status}</em>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-[11px] leading-5 text-slate-500">Ilustração da organização documental disponível no ambiente autenticado.</p>
+    </div>
+  );
 }
 
 function Footer({ title, links }: { title: string; links: readonly (readonly [string, string])[] }) {

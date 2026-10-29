@@ -894,7 +894,7 @@ export default function CalendarPage() {
                   }
                 />
 
-                Atualizar
+                Actualizar
               </button>
             </div>
           </div>
@@ -1429,7 +1429,7 @@ export default function CalendarPage() {
                     <p className="mt-1 max-w-[250px] text-xs leading-5 text-slate-400">
                       Não existem prazos
                       correspondentes aos
-                      filtros selecionados.
+                      filtros seleccionados.
                     </p>
                   </div>
                 ) : (

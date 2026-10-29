@@ -87,7 +87,7 @@ export default function EducationFiscalPage() {
           <p className="mt-3 max-w-3xl text-sm leading-6 text-slate-300">
             Use o Assistente Fiscal no canto inferior direito. Perguntas gerais
             podem recorrer a fontes oficiais; perguntas sobre a empresa usam
-            apenas os dados autorizados do seu tenant.
+            apenas os dados da sua empresa a que tem acesso.
           </p>
           <Link
             href="/fiscal-situation"

@@ -599,7 +599,7 @@ export default function SimulatorPage() {
                 >
                   <RefreshCw size={17} />
 
-                  Atualizar dados
+                  Actualizar dados
                 </button>
 
                 <div className="flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-500">
