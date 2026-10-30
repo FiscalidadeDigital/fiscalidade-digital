@@ -3,6 +3,13 @@
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { Bot, ExternalLink, Send, X } from 'lucide-react';
+import {
+  assistantErrorMessage,
+  assistantWarnings,
+  parseAssistantContent,
+  safeExternalUrl,
+  sourceById,
+} from '@/lib/assistant-presentation';
 import api from '@/services/api';
 
 type AssistantSource = {
@@ -24,6 +31,18 @@ type Message = {
   warnings?: string[];
 };
 
+type PresentationToken = {
+  type: 'text' | 'strong' | 'citation';
+  value?: string;
+  id?: string;
+};
+
+type PresentationBlock = {
+  type: 'paragraph' | 'unordered-list' | 'ordered-list';
+  tokens?: PresentationToken[];
+  items?: PresentationToken[][];
+};
+
 const suggestions = [
   {
     label: 'Como funciona o IVA em Angola?',
@@ -42,18 +61,6 @@ const suggestions = [
   },
 ];
 
-function safeExternalUrl(value: string | null | undefined) {
-  if (!value) return null;
-  try {
-    const parsed = new URL(value);
-    return ['http:', 'https:'].includes(parsed.protocol)
-      ? parsed.toString()
-      : null;
-  } catch {
-    return null;
-  }
-}
-
 function formatDate(value: string | null | undefined) {
   if (!value) return null;
   const date = new Date(value);
@@ -71,22 +78,229 @@ function sourceLabel(source: AssistantSource) {
   return 'Referência documental';
 }
 
+function AnswerTokens({
+  tokens,
+  sources,
+  sourceAnchorPrefix,
+}: {
+  tokens: PresentationToken[];
+  sources: AssistantSource[];
+  sourceAnchorPrefix: string;
+}) {
+  const sourcesById = sourceById(sources) as Map<string, AssistantSource>;
+
+  return (
+    <>
+      {tokens.map((token, index) => {
+        if (token.type === 'strong') {
+          return <strong key={index}>{token.value}</strong>;
+        }
+
+        if (token.type === 'citation') {
+          const source = sourcesById.get(token.id || '');
+          const sourceUrl = safeExternalUrl(source?.sourceUrl);
+          const label = `[${token.id}]`;
+
+          if (sourceUrl) {
+            return (
+              <a
+                key={index}
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Abrir fonte ${token.id}: ${source?.title}`}
+                className="mx-0.5 inline-flex items-center gap-0.5 rounded font-semibold text-[#0b6f93] underline decoration-cyan-300 underline-offset-2 hover:text-[#075875] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              >
+                {label} <ExternalLink aria-hidden="true" size={11} />
+              </a>
+            );
+          }
+
+          if (source) {
+            return (
+              <a
+                key={index}
+                href={`#${sourceAnchorPrefix}-${encodeURIComponent(source.id)}`}
+                aria-label={`Ver referência ${token.id}: ${source.title}`}
+                className="mx-0.5 rounded font-semibold text-[#0b6f93] underline decoration-cyan-300 underline-offset-2 hover:text-[#075875] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+              >
+                {label}
+              </a>
+            );
+          }
+
+          return (
+            <span
+              key={index}
+              className="mx-0.5 text-slate-500"
+              title="A referência não foi devolvida pelo serviço."
+            >
+              {label} (referência indisponível)
+            </span>
+          );
+        }
+
+        return <span key={index}>{token.value}</span>;
+      })}
+    </>
+  );
+}
+
+function AssistantAnswer({
+  content,
+  sources,
+  sourceAnchorPrefix,
+}: {
+  content: string;
+  sources?: AssistantSource[];
+  sourceAnchorPrefix: string;
+}) {
+  const answerSources = Array.isArray(sources) ? sources : [];
+  const blocks = parseAssistantContent(content) as PresentationBlock[];
+
+  return (
+    <>
+      <div className="space-y-2 whitespace-normal">
+        {blocks.map((block, blockIndex) => {
+          if (block.type === 'unordered-list' || block.type === 'ordered-list') {
+            const List = block.type === 'ordered-list' ? 'ol' : 'ul';
+            return (
+              <List
+                key={blockIndex}
+                className={
+                  block.type === 'ordered-list'
+                    ? 'list-decimal space-y-1 pl-5'
+                    : 'list-disc space-y-1 pl-5'
+                }
+              >
+                {block.items?.map((tokens, itemIndex) => (
+                  <li key={itemIndex}>
+                    <AnswerTokens
+                      tokens={tokens}
+                      sources={answerSources}
+                      sourceAnchorPrefix={sourceAnchorPrefix}
+                    />
+                  </li>
+                ))}
+              </List>
+            );
+          }
+
+          return (
+            <p key={blockIndex}>
+              <AnswerTokens
+                tokens={block.tokens || []}
+                sources={answerSources}
+                sourceAnchorPrefix={sourceAnchorPrefix}
+              />
+            </p>
+          );
+        })}
+      </div>
+      {answerSources.length ? (
+        <section
+          className="mt-3 border-t border-slate-200 pt-2 text-xs"
+          aria-label="Fontes e referências da resposta"
+        >
+          <h3 className="font-semibold text-[#0b6f93]">Fontes e referências</h3>
+          <ul className="mt-2 space-y-2">
+            {answerSources.map((source) => {
+              const sourceUrl = safeExternalUrl(source.sourceUrl);
+              const publicationDate = formatDate(source.publicationDate);
+              const effectiveDate = formatDate(source.effectiveDate);
+              return (
+                <li
+                  id={`${sourceAnchorPrefix}-${encodeURIComponent(source.id)}`}
+                  key={source.id}
+                  className="scroll-mt-3 rounded-md bg-white p-2"
+                >
+                  <p className="font-semibold text-slate-700">
+                    [{source.id}] {source.title}
+                  </p>
+                  <p className="mt-0.5 text-slate-500">
+                    {sourceLabel(source)}
+                    {source.lawNumber ? ` · ${source.lawNumber}` : ''}
+                    {source.article ? ` · ${source.article}` : ''}
+                    {source.source ? ` · ${source.source}` : ''}
+                  </p>
+                  {publicationDate || effectiveDate ? (
+                    <p className="mt-0.5 text-slate-500">
+                      {publicationDate ? `Publicação: ${publicationDate}` : ''}
+                      {publicationDate && effectiveDate ? ' · ' : ''}
+                      {effectiveDate ? `Vigência: ${effectiveDate}` : ''}
+                    </p>
+                  ) : null}
+                  {sourceUrl ? (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 font-semibold text-[#0b6f93] hover:underline"
+                    >
+                      Abrir fonte <ExternalLink aria-hidden="true" size={12} />
+                    </a>
+                  ) : (
+                    <p className="mt-1 text-slate-500">
+                      Ligação externa não disponibilizada para esta referência.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+    </>
+  );
+}
+
 export default function FloatingAI() {
   const [open, setOpen] = useState(false);
   const [message, setMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (!open) return;
+
+    const launcher = launcherRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 0);
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => !element.hasAttribute('hidden'));
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      launcher?.focus();
+    };
   }, [open]);
 
   async function sendMessage(value = message) {
@@ -97,22 +311,25 @@ export default function FloatingAI() {
     setLoading(true);
     try {
       const { data } = await api.post('/ai/chat', { message: text });
+      const answer =
+        typeof data?.answer === 'string' && data.answer.trim()
+          ? data.answer
+          : 'O serviço não devolveu uma resposta utilizável. Tente novamente.';
       setMessages((previous) => [
         ...previous,
         {
           role: 'assistant',
-          content: data.answer,
-          sources: data.sources,
-          warnings: data.warnings,
+          content: answer,
+          sources: Array.isArray(data?.sources) ? data.sources : undefined,
+          warnings: assistantWarnings(data?.warnings),
         },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((previous) => [
         ...previous,
         {
           role: 'assistant',
-          content:
-            'Não foi possível obter uma resposta neste momento. Tente novamente.',
+          content: assistantErrorMessage(error),
         },
       ]);
     } finally {
@@ -127,6 +344,7 @@ export default function FloatingAI() {
       <button
         data-testid="fiscal-assistant-launcher"
         data-fiscal-assistant="launcher"
+        ref={launcherRef}
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Abrir Assistente Fiscal"
@@ -136,12 +354,18 @@ export default function FloatingAI() {
         <Bot size={24} />
       </button>
       {open && (
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-label="Assistente Fiscal"
-          className="fixed inset-0 z-[1000] flex h-[100dvh] flex-col overflow-hidden border border-slate-200 bg-white shadow-xl sm:inset-auto sm:bottom-20 sm:right-5 sm:h-[min(650px,78dvh)] sm:w-[410px] sm:rounded-xl"
-        >
+        <>
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 z-[999] bg-slate-950/20 backdrop-blur-[1px]"
+          />
+          <section
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Assistente Fiscal"
+            className="fixed inset-0 z-[1000] flex h-[100dvh] flex-col overflow-hidden border border-slate-200 bg-white shadow-xl sm:inset-auto sm:bottom-20 sm:right-5 sm:h-[min(650px,78dvh)] sm:w-[410px] sm:rounded-xl"
+          >
           <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3.5 text-[#13233c]">
             <div className="flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-md bg-[#e8f4f7] text-[#087da2]">
@@ -204,55 +428,15 @@ export default function FloatingAI() {
                     : 'mr-3 border-l-2 border-slate-300 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-700'
                 }
               >
-                <p className="whitespace-pre-wrap">{item.content}</p>
-                {item.sources?.length ? (
-                  <details className="mt-3 text-xs">
-                    <summary className="cursor-pointer font-semibold text-[#0b6f93]">
-                      Fontes e referências
-                    </summary>
-                    <ul className="mt-2 space-y-2">
-                      {item.sources.map((source) => {
-                        const sourceUrl = safeExternalUrl(source.sourceUrl);
-                        const publicationDate = formatDate(source.publicationDate);
-                        const effectiveDate = formatDate(source.effectiveDate);
-                        return (
-                          <li key={source.id} className="rounded-md bg-white p-2">
-                            <p className="font-semibold text-slate-700">
-                              [{source.id}] {source.title}
-                            </p>
-                            <p className="mt-0.5 text-slate-500">
-                              {sourceLabel(source)}
-                              {source.lawNumber ? ` · ${source.lawNumber}` : ''}
-                              {source.article ? ` · ${source.article}` : ''}
-                              {source.source ? ` · ${source.source}` : ''}
-                            </p>
-                            {publicationDate || effectiveDate ? (
-                              <p className="mt-0.5 text-slate-500">
-                                {publicationDate
-                                  ? `Publicação: ${publicationDate}`
-                                  : ''}
-                                {publicationDate && effectiveDate ? ' · ' : ''}
-                                {effectiveDate
-                                  ? `Vigência: ${effectiveDate}`
-                                  : ''}
-                              </p>
-                            ) : null}
-                            {sourceUrl ? (
-                              <a
-                                href={sourceUrl}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="mt-1 inline-flex items-center gap-1 font-semibold text-[#0b6f93] hover:underline"
-                              >
-                                Abrir fonte <ExternalLink size={12} />
-                              </a>
-                            ) : null}
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </details>
-                ) : null}
+                {item.role === 'assistant' ? (
+                  <AssistantAnswer
+                    content={item.content}
+                    sources={item.sources}
+                    sourceAnchorPrefix={`assistant-source-${index}`}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap">{item.content}</p>
+                )}
                 {item.warnings?.length ? (
                   <ul className="mt-3 space-y-1 border-t border-amber-200 pt-2 text-xs text-amber-800">
                     {item.warnings.map((warning) => (
@@ -303,7 +487,8 @@ export default function FloatingAI() {
               credenciais ou informação que não seja necessária.
             </p>
           </form>
-        </section>
+          </section>
+        </>
       )}
     </>,
     document.body,
