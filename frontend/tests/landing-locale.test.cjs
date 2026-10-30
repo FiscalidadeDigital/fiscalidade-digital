@@ -27,12 +27,12 @@ test('a landing identifica o idioma apresentado e mantém os documentos legais e
   assert.match(source, /function Team\(\{ locale \}: \{ locale: LandingLocale \}\)/);
 });
 
-test('a landing apresenta soluções antes do Ecossistema sem restaurar marquee', () => {
+test('a landing mantém a experiência de soluções sem restaurar o Ecossistema', () => {
   assert.match(source, /\['Funcionalidades', '#funcionalidades'\]/);
   assert.match(source, /<WhyChooseSection locale=\{locale\} \/>/);
-  assert.match(source, /<section id="ecossistema"/);
-  assert.match(source, /ecosystemPartners/);
-  assert.ok(source.indexOf('<WhyChooseSection locale={locale} />') < source.indexOf('<section id="ecossistema"'));
+  assert.doesNotMatch(source, /<section id="ecossistema"/);
+  assert.doesNotMatch(source, /ecosystemPartners/);
+  assert.doesNotMatch(source, /image: '\/(yas\.jpg|yashhublogo\.jpg|aceleralogo\.jpg|Ignitionlogo\.png)'/);
   assert.doesNotMatch(source, /landing-logo-marquee/);
   assert.doesNotMatch(source, /id="assistente"/);
   assert.doesNotMatch(source, /id="documentos"/);

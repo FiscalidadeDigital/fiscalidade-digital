@@ -38,13 +38,6 @@ const navByLocale = {
   ],
 } as const;
 
-const ecosystemPartners = [
-  { name: 'YAS', image: '/yas.jpg', width: 1080, height: 1080, imageClassName: 'h-20 w-20 object-contain sm:h-24 sm:w-24' },
-  { name: 'Yash Hub', image: '/yashhublogo.jpg', width: 1080, height: 1080, imageClassName: 'h-20 w-20 object-contain sm:h-24 sm:w-24' },
-  { name: 'Acelera Angola', image: '/aceleralogo.jpg', width: 1181, height: 1181, imageClassName: 'h-20 w-20 object-contain sm:h-24 sm:w-24' },
-  { name: 'Ignition Angola', image: '/Ignitionlogo.png', width: 300, height: 78, imageClassName: 'h-12 w-40 object-contain sm:h-14 sm:w-44' },
-] as const;
-
 const members = [
   {
     name: 'Desidério Pereira',
@@ -382,25 +375,6 @@ export default function HomePage() {
       </div>
 
       <WhyChooseSection locale={locale} />
-
-      <section id="ecossistema" aria-labelledby="ecosystem-title" className="border-y border-slate-200 bg-white py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div data-reveal className="landing-reveal flex max-w-3xl flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">{tr(locale, 'Ecossistema', 'Ecosystem')}</p>
-              <h2 id="ecosystem-title" className="mt-3 text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">{tr(locale, 'Relações que reforçam a nossa visão.', 'Relationships that reinforce our vision.')}</h2>
-            </div>
-            <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-base sm:leading-7">{tr(locale, 'Iniciativas e organizações que fazem parte do percurso da Fiscalidade Digital em Angola.', 'Initiatives and organisations that are part of Fiscalidade Digital’s journey in Angola.')}</p>
-          </div>
-          <ul data-reveal className="landing-reveal landing-reveal--d1 mt-10 grid gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-label={tr(locale, 'Parceiros e iniciativas relacionadas', 'Related partners and initiatives')}>
-            {ecosystemPartners.map((partner) => (
-              <li key={partner.name} className="flex min-h-[132px] items-center justify-center rounded-xl border border-slate-200 bg-[#f8fafc] p-6 shadow-[0_8px_22px_rgba(15,41,79,.04)] transition-[border-color,box-shadow,transform] duration-200 motion-safe:hover:-translate-y-0.5 hover:border-cyan-200 hover:shadow-[0_14px_28px_rgba(15,41,79,.08)]">
-                <Image src={partner.image} alt={partner.name} width={partner.width} height={partner.height} sizes="(min-width: 1024px) 16vw, (min-width: 640px) 38vw, 76vw" className={partner.imageClassName} />
-              </li>
-            ))}
-          </ul>
-        </div>
-      </section>
 
       <section id="como-funciona" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
