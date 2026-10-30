@@ -35,15 +35,15 @@
 ## Validações pendentes e bloqueios
 
 - O `node_modules` do worktree preservado continua reutilizado e incompatível; por isso os resultados backend foram obtidos apenas na cópia temporária independente, sem alterar dependências partilhadas. O lint backend completo continua pendente porque o pacote isolado não disponibilizou o binário ESLint.
-- Não houve chamada real ao serviço de IA. Não existe chave local configurada e a configuração da instância Render não pôde ser confirmada por presença: é necessário verificar `OPENAI_WEB_SEARCH_ENABLED=true`, `OPENAI_WEB_SEARCH_MODEL` preenchido e executar uma pergunta pública numa sessão autenticada. Não declarar pesquisa oficial funcional em produção até essa confirmação.
+- Não houve chamada real ao serviço de IA. No Render, `OPENAI_API_KEY` está presente e permaneceu mascarada, mas `OPENAI_WEB_SEARCH_ENABLED` e `OPENAI_WEB_SEARCH_MODEL` não estão na lista de variáveis da instância. Assim, a pesquisa oficial fica desactivada pelo fallback seguro do código; não declarar pesquisa oficial funcional em produção até configurar as duas variáveis e validar numa sessão autenticada.
 - A nova revisão visual local da landing está bloqueada pelo runtime desta sessão: `next start` foi tentado uma vez em segundo plano e uma vez em primeiro plano, mas não abriu a porta 3000; ambos os processos temporários foram encerrados e não ficou servidor activo. O build, TypeScript, lint e teste dirigido passaram, mas isto não substitui a revisão visual das remoções.
-- A sonda anónima ao backend Render não identifica a revisão nem expõe configuração. No código, a pesquisa só é activada com `OPENAI_WEB_SEARCH_ENABLED=true` e `OPENAI_WEB_SEARCH_MODEL` não vazio; a compatibilidade efectiva requer uma chamada autenticada e autorizada.
+- A sonda anónima ao backend Render não identifica a revisão. O painel Render confirmou o deploy automático bem-sucedido do commit `2635ef1`, mas o código só activa pesquisa com `OPENAI_WEB_SEARCH_ENABLED=true` e `OPENAI_WEB_SEARCH_MODEL` não vazio; ambas as variáveis precisam ser adicionadas com um modelo compatível antes de uma chamada autenticada e autorizada.
 - Ainda não há medições comparáveis antes/depois para afirmar melhoria de desempenho.
 - O staging/commit local no worktree preservado continua bloqueado por ACL, mas a publicação foi feita num clone temporário limpo, sem alterar permissões nem o worktree original.
-- A propagação pública da landing foi confirmada. A confirmação do deploy/configuração do backend e da integração real de pesquisa permanece pendente de uma sessão autenticada no produto ou de acesso estável ao serviço Render.
+- A propagação pública da landing e o deploy do backend foram confirmados. A integração real de pesquisa permanece bloqueada pela ausência das duas variáveis de configuração e, depois de as configurar, ainda requer uma sessão autenticada no produto.
 
 ## Retoma segura
 
-1. Confirmar no Render, sem revelar valores, a presença de `OPENAI_API_KEY`, `OPENAI_WEB_SEARCH_ENABLED=true` e `OPENAI_WEB_SEARCH_MODEL` preenchido para a revisão publicada.
+1. Adicionar no Render, sem expor segredos, `OPENAI_WEB_SEARCH_ENABLED=true` e `OPENAI_WEB_SEARCH_MODEL` com um modelo compatível com pesquisa web na Responses API; a alteração deve desencadear um novo deploy.
 2. Numa sessão autenticada autorizada, enviar uma pergunta fiscal actual a `POST /ai/chat` e confirmar uma citação `[W#]` e fonte `OFFICIAL_WEB` HTTPS permitida. Um estado `DISABLED`, `UNAVAILABLE` ou ausência de fonte verificável deve ser tratado como falha segura, não como pesquisa bem-sucedida.
 3. Se voltar a ser necessário trabalhar no worktree preservado, reparar a ACL de Git apenas pelo proprietário; não apagar worktrees, ficheiros de bloqueio nem dependências partilhadas.
