@@ -9,15 +9,14 @@ import {
   ChevronRight,
   FileText,
   Linkedin,
+  Mail,
   Menu,
-  ReceiptText,
-  UsersRound,
   X,
 } from 'lucide-react';
+import WhyChooseSection from '@/components/landing/WhyChooseSection';
 
 const whatsappUrl = 'https://wa.me/244924462591';
 const contactEmail = 'fiscalidadedigital@empresa.ao';
-const landingIntroSessionKey = 'fd:landing-intro-seen';
 const landingLocaleStorageKey = 'fd:landing-locale';
 
 type LandingLocale = 'pt-AO' | 'en';
@@ -36,54 +35,6 @@ const navByLocale = {
     ['Features', '#funcionalidades'],
     ['About us', '#sobre'],
     ['Contact', '#contacto'],
-  ],
-} as const;
-
-const logos = [
-  { name: 'YAS', image: '/yas.jpg', variant: 'yas', width: 1080, height: 1080 },
-  { name: 'Yash Hub', image: '/yashhublogo.jpg', variant: 'yash', width: 1080, height: 1080 },
-  { name: 'Acelera Angola', image: '/aceleralogo.jpg', variant: 'acelera', width: 1181, height: 1181 },
-  { name: 'Ignition Angola', image: '/Ignitionlogo.png', variant: 'ignition', width: 300, height: 78 },
-];
-
-const features = [
-  {
-    name: 'Operação empresarial',
-    Icon: ReceiptText,
-    benefit: 'Reúna os principais registos da operação quotidiana da empresa.',
-    items: ['Facturação', 'Compras e facturas recebidas', 'Clientes'],
-    href: undefined,
-    cta: undefined,
-  },
-  {
-    name: 'Pessoas',
-    Icon: UsersRound,
-    benefit: 'Mantenha a informação laboral e o processamento salarial organizados.',
-    items: ['Funcionários', 'Processamento salarial', 'IRT e INSS'],
-    href: undefined,
-    cta: undefined,
-  },
-] as const;
-
-const featuresByLocale = {
-  'pt-AO': features,
-  en: [
-    {
-      name: 'Business operations',
-      Icon: ReceiptText,
-      benefit: 'Bring together the main records from your company’s day-to-day operations.',
-      items: ['Invoicing', 'Purchases and received invoices', 'Customers'],
-      href: undefined,
-      cta: undefined,
-    },
-    {
-      name: 'People',
-      Icon: UsersRound,
-      benefit: 'Keep employment information and payroll processing organised.',
-      items: ['Employees', 'Payroll processing', 'IRT and INSS'],
-      href: undefined,
-      cta: undefined,
-    },
   ],
 } as const;
 
@@ -283,12 +234,8 @@ function Mockup({ locale }: { locale: LandingLocale }) {
 
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const [logosPaused, setLogosPaused] = useState(false);
-  const [introVisible, setIntroVisible] = useState(false);
   const [locale, setLocale] = useState<LandingLocale>('pt-AO');
-  const [localeReady, setLocaleReady] = useState(false);
   const pageRef = useRef<HTMLElement>(null);
-  const dismissIntro = useCallback(() => setIntroVisible(false), []);
   const selectLocale = useCallback((nextLocale: LandingLocale) => {
     setLocale(nextLocale);
     try {
@@ -304,31 +251,8 @@ export default function HomePage() {
       if (savedLocale === 'en' || savedLocale === 'pt-AO') setLocale(savedLocale);
     } catch {
       // Portuguese (Angola) remains the default when storage is unavailable.
-    } finally {
-      setLocaleReady(true);
     }
   }, []);
-
-  useEffect(() => {
-    if (!localeReady) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    try {
-      const storage = window.sessionStorage;
-      if (storage.getItem(landingIntroSessionKey)) return;
-      storage.setItem(landingIntroSessionKey, 'seen');
-    } catch {
-      return;
-    }
-
-    setIntroVisible(true);
-  }, [localeReady]);
-
-  useEffect(() => {
-    if (!introVisible) return;
-    const timer = window.setTimeout(dismissIntro, 1500);
-    return () => window.clearTimeout(timer);
-  }, [dismissIntro, introVisible]);
 
   useEffect(() => {
     const page = pageRef.current;
@@ -375,34 +299,6 @@ export default function HomePage() {
     };
   }, []);
 
-  useEffect(() => {
-    const page = pageRef.current;
-    if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
-
-    const loops = Array.from(page.querySelectorAll<HTMLElement>('[data-motion-loop]'));
-    if (!loops.length) return;
-
-    let observer: IntersectionObserver | null = null;
-    try {
-      page.dataset.loops = 'ready';
-      observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => entry.target.classList.toggle('is-in-view', entry.isIntersecting));
-        },
-        { rootMargin: '96px 0px', threshold: 0.05 },
-      );
-      loops.forEach((element) => observer?.observe(element));
-    } catch {
-      delete page.dataset.loops;
-      return;
-    }
-
-    return () => {
-      observer?.disconnect();
-      delete page.dataset.loops;
-    };
-  }, []);
-
   return (
     <main ref={pageRef} lang={locale} className="site min-h-screen overflow-x-hidden bg-white text-slate-800">
       <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur">
@@ -443,27 +339,13 @@ export default function HomePage() {
             <p className="hero-reveal r3 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">{tr(locale, 'Facturação, obrigações, prazos, compras e equipa organizados num único ambiente.', 'Invoicing, obligations, deadlines, purchases and your team organised in one workspace.')}</p>
             <div className="hero-reveal r4 mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/register" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] transition hover:-translate-y-0.5 hover:bg-cyan-600">{tr(locale, 'Criar conta', 'Create account')} <ArrowRight size={17} /></Link>
-              <a href="#funcionalidades" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] transition hover:border-cyan-300 hover:text-cyan-800">{tr(locale, 'Conhecer o ecossistema', 'Explore the platform')} <ChevronRight size={17} /></a>
+              <a href="#funcionalidades" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] transition hover:border-cyan-300 hover:text-cyan-800">{tr(locale, 'Conhecer as soluções', 'Explore the solutions')} <ChevronRight size={17} /></a>
             </div>
             <div className="hero-reveal r4 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
               {(locale === 'en' ? ['Built for companies in Angola', 'More visible deadlines', 'Organised information'] : ['Pensado para empresas em Angola', 'Prazos mais visíveis', 'Informação organizada']).map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-cyan-600" />{text}</span>)}
             </div>
           </div>
-          <div data-motion-loop className="hero-reveal r5"><Mockup locale={locale} /></div>
-        </div>
-      </section>
-
-      <section className="border-y border-slate-100 py-7 sm:py-8">
-        <p className="mb-4 text-center text-[10px] font-bold uppercase tracking-[.16em] text-slate-400">{tr(locale, 'Ecossistema e iniciativas relacionadas', 'Related ecosystem and initiatives')}</p>
-        <div className="mb-4 flex justify-center">
-          <button type="button" aria-pressed={logosPaused} onClick={() => setLogosPaused((paused) => !paused)} className="rounded-full px-3 py-1.5 text-xs font-bold text-slate-500 underline decoration-slate-300 underline-offset-4 transition hover:text-cyan-800 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">
-            {logosPaused ? tr(locale, 'Retomar movimento', 'Resume motion') : tr(locale, 'Pausar movimento', 'Pause motion')}
-          </button>
-        </div>
-        <div data-motion-loop className={`landing-logo-marquee ${logosPaused ? 'landing-logo-marquee--paused' : ''}`} aria-label={tr(locale, 'Ecossistema e iniciativas relacionadas', 'Related ecosystem and initiatives')}>
-          <div className="landing-logo-marquee__track">
-            {[0, 1].map((group) => <div key={group} aria-hidden={group === 1} className="landing-logo-marquee__group">{logos.map((logo) => <div key={`${group}-${logo.name}`} className={`landing-logo-marquee__item landing-logo-marquee__item--${logo.variant}`}><Image src={logo.image} alt={group ? '' : logo.name} width={logo.width} height={logo.height} sizes="(max-width: 639px) 232px, 260px" className="landing-logo-marquee__image" /></div>)}</div>)}
-          </div>
+          <div className="hero-reveal r5"><Mockup locale={locale} /></div>
         </div>
       </section>
 
@@ -492,14 +374,7 @@ export default function HomePage() {
 
       </div>
 
-      <section id="funcionalidades" className="bg-[#f7fafc] py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <Title eyebrow={tr(locale, 'Ecossistema', 'Ecosystem')}>{tr(locale, 'O essencial para a sua operação.', 'The essentials for your operations.')}</Title>
-          <div className="mt-10 grid max-w-4xl gap-x-6 gap-y-8 md:grid-cols-2">
-            {featuresByLocale[locale].map(({ name, Icon, benefit, items, href, cta }, index) => <article data-reveal key={name} style={{ animationDelay: `${index * 75}ms` }} className="landing-reveal border-t border-slate-300 pt-5"><Icon size={20} className="text-cyan-700" /><h3 className="mt-4 text-lg font-extrabold text-[#102447]">{name}</h3><p className="mt-3 text-sm leading-6 text-slate-600">{benefit}</p><ul className="mt-5 space-y-2.5 border-t border-slate-200 pt-4">{items.map((item) => <li key={item} className="flex items-start gap-2 text-sm font-semibold text-slate-600"><Check size={15} className="mt-0.5 shrink-0 text-cyan-700" />{item}</li>)}</ul>{href && cta ? <a href={href} className="mt-5 inline-flex min-h-[42px] items-center gap-2 text-sm font-extrabold text-cyan-800 transition hover:translate-x-1 hover:text-cyan-600">{cta}<ChevronRight size={16} /></a> : null}</article>)}
-          </div>
-        </div>
-      </section>
+      <WhyChooseSection locale={locale} />
 
       <section id="como-funciona" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
@@ -510,13 +385,25 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="contacto" className="relative overflow-hidden bg-[#102447] py-16 text-white sm:py-20">
+      <section id="contacto" className="relative overflow-hidden bg-[#102447] py-16 text-white sm:py-20 lg:py-24">
         <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-25" viewBox="0 0 1200 400" fill="none"><path d="M0 300c280-20 290-220 550-220s320 190 650 120" stroke="#67E8F9" strokeDasharray="5 8" /></svg>
-        <div className="relative mx-auto flex max-w-7xl flex-col justify-between gap-8 px-5 lg:flex-row lg:items-end lg:px-8">
-          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Vamos falar sobre a gestão fiscal da sua empresa?', 'Shall we talk about your company’s tax management?')}</h2><p className="mt-4 max-w-2xl text-base leading-7 text-slate-200">{tr(locale, 'Conheça a plataforma e organize a operação da sua empresa.', 'Get to know the platform and organise your company’s operations.')}</p></div>
-          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-col items-start gap-4">
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="inline-flex min-h-[52px] items-center gap-3 rounded-xl bg-[#25D366] px-5 py-3.5 text-sm font-extrabold text-[#06351b] shadow-[0_12px_24px_rgba(0,0,0,.16)] transition hover:-translate-y-0.5 hover:bg-[#53e589]"><WhatsAppIcon size={21} />{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</a>
-            <div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">{tr(locale, 'E-mail', 'Email')}</p><a href={`mailto:${contactEmail}`} className="mt-1 inline-block text-sm font-bold text-cyan-200 underline underline-offset-4 transition hover:text-white">{contactEmail}</a></div>
+        <div className="relative mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,.7fr)] lg:items-center lg:px-8">
+          <div data-reveal className="landing-reveal">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Vamos falar sobre a gestão fiscal da sua empresa?', 'Shall we talk about your company’s tax management?')}</h2>
+            <p className="mt-4 max-w-xl text-base leading-7 text-slate-200">{tr(locale, 'Conheça a plataforma, coloque as suas questões e encontre o próximo passo mais adequado para a sua empresa.', 'Get to know the platform, ask your questions and find the next step that best fits your company.')}</p>
+          </div>
+          <div data-reveal className="landing-reveal landing-reveal--d1 overflow-hidden rounded-2xl border border-white/15 bg-white/[0.055] shadow-[0_18px_42px_rgba(3,16,38,.18)]">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="group flex min-h-[104px] items-center gap-4 border-b border-white/15 p-5 transition-[background-color,transform] duration-200 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-cyan-200">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-[#06351b] transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5"><WhatsAppIcon size={22} /></span>
+              <span className="min-w-0 flex-1"><span className="block text-xs font-bold uppercase tracking-[.14em] text-cyan-200">WhatsApp</span><span className="mt-1 block text-base font-extrabold text-white">{tr(locale, 'Falar com a equipa', 'Talk to the team')}</span><span className="mt-1 block text-xs leading-5 text-slate-300">{tr(locale, 'Uma conversa directa para conhecer melhor a sua necessidade.', 'A direct conversation to better understand your needs.')}</span></span>
+              <ChevronRight size={19} className="shrink-0 text-cyan-200 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+            </a>
+            <a href={`mailto:${contactEmail}`} className="group flex min-h-[104px] items-center gap-4 p-5 transition-[background-color,transform] duration-200 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-cyan-200">
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-cyan-200 transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5"><Mail size={21} aria-hidden="true" /></span>
+              <span className="min-w-0 flex-1"><span className="block text-xs font-bold uppercase tracking-[.14em] text-cyan-200">{tr(locale, 'E-mail', 'Email')}</span><span className="mt-1 block break-all text-sm font-extrabold text-white sm:text-base">{contactEmail}</span><span className="mt-1 block text-xs leading-5 text-slate-300">{tr(locale, 'Use este canal para nos enviar o contexto da sua empresa.', 'Use this channel to send us your company context.')}</span></span>
+              <ChevronRight size={19} className="shrink-0 text-cyan-200 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+            </a>
           </div>
         </div>
       </section>
@@ -552,61 +439,16 @@ export default function HomePage() {
 
       <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="fixed bottom-4 left-4 z-40 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5"><WhatsAppIcon size={20} /><span className="hidden sm:inline">{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</span><span className="sm:hidden">WhatsApp</span></a>
 
-      {introVisible && <div className="landing-intro fixed inset-0 z-[80] grid place-items-center bg-[#061a36]/96 p-5 text-white" aria-label={tr(locale, 'Preparação da Fiscalidade Digital', 'Preparing Fiscalidade Digital')}>
-        <div className="landing-intro__content flex max-w-sm flex-col items-center text-center">
-          <div className="rounded-2xl bg-white p-3 shadow-[0_18px_48px_rgba(0,0,0,.22)]"><Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={210} height={63} className="h-11 w-auto object-contain" priority /></div>
-          <p className="mt-6 text-xl font-extrabold tracking-[-.025em]">Fiscalidade Digital</p>
-          <p className="mt-2 text-sm text-cyan-100">{tr(locale, 'A preparar a sua entrada.', 'Preparing your visit.')}</p>
-          <span className="landing-intro__indicator mt-5 flex gap-1.5" aria-hidden="true"><i /><i /><i /></span>
-          <button type="button" onClick={dismissIntro} className="mt-7 rounded-lg px-3 py-2 text-sm font-bold text-cyan-100 underline decoration-cyan-300 underline-offset-4 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">{tr(locale, 'Saltar', 'Skip')}</button>
-        </div>
-      </div>}
-
       <style jsx global>{`
         @keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-        @keyframes landingLogoMarquee { from { transform: translate3d(0, 0, 0); } to { transform: translate3d(-50%, 0, 0); } }
-        @keyframes heroFloat { 0%, 100% { transform: translate3d(0, 0, 0); } 50% { transform: translate3d(0, -8px, 0); } }
-        @keyframes landingIntro { 0% { opacity: 0; } 12%, 80% { opacity: 1; } 100% { opacity: 0; } }
-        @keyframes landingIntroContent { 0% { opacity: 0; transform: translateY(10px) scale(.98); } 16%, 80% { opacity: 1; transform: none; } 100% { opacity: 0; transform: translateY(-4px) scale(1); } }
-        @keyframes landingIntroDot { 0%, 80%, 100% { opacity: .35; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
         .site .hero-reveal { animation: reveal .62s both cubic-bezier(.2, .7, .2, 1); }
         .site .r1 { animation-delay: 60ms; } .site .r2 { animation-delay: 140ms; } .site .r3 { animation-delay: 220ms; } .site .r4 { animation-delay: 300ms; } .site .r5 { animation-delay: 380ms; }
-        .site .hero-mockup { animation: heroFloat 7.2s ease-in-out infinite; will-change: transform; }
-        .site .landing-logo-marquee { position: relative; width: 100%; max-width: 100%; min-width: 0; overflow: hidden; isolation: isolate; }
-        .site .landing-logo-marquee__track { display: flex; width: max-content; align-items: center; animation: landingLogoMarquee 38s linear infinite; will-change: transform; }
-        .site .landing-logo-marquee__group { display: flex; flex: 0 0 auto; align-items: center; gap: 2.5rem; padding-right: 2.5rem; }
-        .site .landing-logo-marquee__item { display: flex; flex: 0 0 220px; width: 220px; height: 132px; align-items: center; justify-content: center; overflow: hidden; }
-        .site .landing-logo-marquee__image { display: block; max-width: none !important; flex: none; object-fit: contain; opacity: 1; transition: transform .3s ease; }
-        .site .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 252px; height: 252px; }
-        .site .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 282px; height: 282px; }
-        .site .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 352px; height: 352px; }
-        .site .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 286px; height: auto; }
-        .site .landing-logo-marquee--paused .landing-logo-marquee__track { animation-play-state: paused !important; }
-        @media (hover: hover) { .site .landing-logo-marquee:hover .landing-logo-marquee__track { animation-play-state: paused; } }
-        [data-loops='ready'] [data-motion-loop] .hero-mockup, [data-loops='ready'] [data-motion-loop] .landing-logo-marquee__track { animation-play-state: paused; }
-        [data-loops='ready'] [data-motion-loop].is-in-view .hero-mockup, [data-loops='ready'] [data-motion-loop].is-in-view .landing-logo-marquee__track { animation-play-state: running; }
-        .site .landing-intro { background: rgba(6, 26, 54, .96); animation: landingIntro 1.5s both ease-in-out; }
-        .site .landing-intro__content { animation: landingIntroContent 1.5s both cubic-bezier(.2, .7, .2, 1); }
-        .site .landing-intro__indicator i { display: block; width: .42rem; height: .42rem; border-radius: 999px; background: #67e8f9; animation: landingIntroDot 900ms ease-in-out infinite; }
-        .site .landing-intro__indicator i:nth-child(2) { animation-delay: 130ms; }
-        .site .landing-intro__indicator i:nth-child(3) { animation-delay: 260ms; }
         [data-motion='ready'] .landing-reveal { opacity: 0; transform: translateY(20px); }
         [data-motion='ready'] .landing-reveal.is-visible { opacity: 1; transform: none; animation: reveal .7s both cubic-bezier(.2, .7, .2, 1); }
         [data-motion='ready'] .landing-reveal--d1.is-visible { animation-delay: 100ms; }
         [data-motion='ready'] .landing-reveal--d2.is-visible { animation-delay: 180ms; }
-        @media (max-width: 639px) {
-          .site .hero-mockup { animation-duration: 9s; }
-          .site .landing-logo-marquee__track { animation-duration: 48s; }
-          .site .landing-logo-marquee__group { gap: 1rem; padding-right: 1rem; }
-          .site .landing-logo-marquee__item { flex-basis: 232px; width: 232px; height: 168px; }
-          .site .landing-logo-marquee__item--yas .landing-logo-marquee__image { width: 270px; height: 270px; }
-          .site .landing-logo-marquee__item--yash .landing-logo-marquee__image { width: 270px; height: 270px; }
-          .site .landing-logo-marquee__item--acelera .landing-logo-marquee__image { width: 290px; height: 290px; }
-          .site .landing-logo-marquee__item--ignition .landing-logo-marquee__image { width: 226px; height: auto; }
-        }
         @media (prefers-reduced-motion: reduce) {
           .site *, .site *::before, .site *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-          .site .landing-logo-marquee__track { animation: none; transform: none; }
           [data-motion='ready'] .landing-reveal { opacity: 1 !important; transform: none !important; }
         }
       `}</style>

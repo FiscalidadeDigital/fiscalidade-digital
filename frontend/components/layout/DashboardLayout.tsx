@@ -620,13 +620,13 @@ export default function DashboardLayout({
           relative
           fd-sidebar-logo
           flex
-          h-[42px]
+          h-10
           w-full
           select-none
           items-center
-          gap-3
+          gap-2.5
           rounded-md
-          px-3.5
+          px-3
 
           ${
             active
@@ -664,8 +664,8 @@ export default function DashboardLayout({
         <span
           className={`
             flex
-            h-8
-            w-8
+            h-7
+            w-7
             shrink-0
             items-center
             justify-center
@@ -682,7 +682,7 @@ export default function DashboardLayout({
           `}
         >
           <Icon
-            size={18}
+            size={17}
             strokeWidth={
               active
                 ? 2.3
@@ -700,7 +700,7 @@ export default function DashboardLayout({
             min-w-0
             flex-1
             truncate
-            text-[13px]
+            text-[12px]
             tracking-[-0.01em]
           "
         >
@@ -745,12 +745,12 @@ export default function DashboardLayout({
       <div
         className="
           flex
-          h-[82px]
+          h-[76px]
           shrink-0
           items-center
           border-b
           border-[#edf1f6]
-          px-5
+          px-4
         "
       >
         <Link
@@ -770,12 +770,12 @@ export default function DashboardLayout({
             gap-3
           "
         >
-          <div className="flex h-12 w-[158px] shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white px-2 shadow-sm">
+          <div className="flex h-11 w-[152px] shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white px-2 shadow-sm">
             <img
               src="/logofiscalidade.png"
               alt="Fiscalidade Digital"
               className="
-                h-9
+                h-8
                 w-full
                 object-contain
               "
@@ -853,8 +853,8 @@ export default function DashboardLayout({
           fd-sidebar-company
           shrink-0
           px-4
-          pb-3
-          pt-5
+          pb-2
+          pt-4
         "
       >
         <div
@@ -934,8 +934,8 @@ export default function DashboardLayout({
           flex-1
           overflow-y-auto
           overscroll-contain
-          px-4
-          py-2
+          px-3.5
+          py-1.5
           scrollbar-thin
           scrollbar-thumb-slate-200
           scrollbar-track-transparent
@@ -947,12 +947,12 @@ export default function DashboardLayout({
               key={
                 section.title
               }
-              className="mb-6"
+              className="mb-4"
             >
               <div
                 className="
                   fd-sidebar-section-title
-                  mb-2
+                  mb-1.5
                   px-3
                   text-[9px]
                   font-bold
@@ -985,11 +985,11 @@ export default function DashboardLayout({
             EMPRESA
         ================================================= */}
 
-        <div className="pb-5">
+        <div className="pb-4">
           <div
             className="
               fd-sidebar-section-title
-              mb-2
+              mb-1.5
               px-3
               text-[9px]
               font-bold
@@ -1033,12 +1033,12 @@ export default function DashboardLayout({
               className="
                 group
                 flex
-                h-[42px]
+                h-10
                 w-full
                 items-center
-                gap-3
+                gap-2.5
                 rounded-xl
-                px-3.5
+                px-3
                 text-[#6f7d96]
                 transition-[background-color,color]
                 duration-150
@@ -1051,8 +1051,8 @@ export default function DashboardLayout({
               <span
                 className="
                   flex
-                  h-8
-                  w-8
+                  h-7
+                  w-7
                   shrink-0
                   items-center
                   justify-center
@@ -1064,12 +1064,12 @@ export default function DashboardLayout({
               >
                 {isLoggingOut ? (
                   <Loader2
-                    size={18}
+                    size={17}
                     className="animate-spin"
                   />
                 ) : (
                   <LogOut
-                    size={18}
+                    size={17}
                     strokeWidth={1.8}
                   />
                 )}
@@ -1077,7 +1077,7 @@ export default function DashboardLayout({
 
               <span
                 className="
-                  text-[13px]
+                  text-[12px]
                   font-medium
                 "
               >
@@ -1093,8 +1093,8 @@ export default function DashboardLayout({
       <div
         className="
           shrink-0
-          px-4
-          pb-4
+          px-3.5
+          pb-3.5
           pt-2
         "
       >
@@ -1110,12 +1110,12 @@ export default function DashboardLayout({
           className="
             flex
             items-start
-            gap-3
+            gap-2.5
             rounded-md
             border
             border-[#dbe5ed]
             bg-[#f7fafc]
-            p-3
+            p-2.5
             text-[#203451]
             transition-colors
             hover:border-[#b7d3df]
@@ -1123,7 +1123,7 @@ export default function DashboardLayout({
           "
         >
           <ShieldAlert
-            size={17}
+            size={16}
             className="mt-0.5 shrink-0 text-[#0b6f93]"
           />
           <div>
@@ -1191,7 +1191,7 @@ export default function DashboardLayout({
           top-0
           z-50
           hidden
-          w-[268px]
+          w-[244px]
           flex-col
           overflow-hidden
           border-r
@@ -1278,7 +1278,7 @@ export default function DashboardLayout({
       <div
         className="
           min-h-screen
-          lg:ml-[268px]
+          lg:ml-[244px]
         "
       >
         {/* =================================================
@@ -1291,7 +1291,7 @@ export default function DashboardLayout({
             sticky
             top-0
             z-40
-            h-[68px]
+            h-[60px]
             border-b
             border-[#e7edf5]
             bg-white
@@ -1350,10 +1350,10 @@ export default function DashboardLayout({
               "
             >
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-[#78879d]">
+                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#78879d]">
                   {currentNavigation?.section ?? 'Fiscalidade Digital'}
                 </p>
-                <p className="truncate text-[14px] font-semibold text-[#172642]">
+                <p className="truncate text-[13px] font-semibold text-[#172642]">
                   {currentNavigation?.label ?? 'Área empresarial'}
                 </p>
               </div>

@@ -17,6 +17,11 @@ const nextConfig = {
         destination: '/invoices/new',
         permanent: false,
       },
+      {
+        source: '/documents',
+        destination: '/library',
+        permanent: false,
+      },
     ];
   },
 };

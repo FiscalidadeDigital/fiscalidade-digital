@@ -5,7 +5,7 @@ import Link from 'next/link';
 import {
   Calculator,
   CalendarPlus,
-  Upload,
+  FolderOpen,
   FileText,
   ArrowUpRight,
 } from 'lucide-react';
@@ -20,7 +20,7 @@ export default function QuickActions() {
         bg-white
         p-5
         shadow-sm
-        transition-all
+        transition-[box-shadow]
         duration-200
         hover:shadow-md
       "
@@ -98,7 +98,7 @@ export default function QuickActions() {
             border-[#ddd8ff]
             bg-[#faf9ff]
             p-4
-            transition-all
+            transition-[transform,border-color,background-color,box-shadow]
             duration-200
             hover:-translate-y-0.5
             hover:border-[#b9b0ff]
@@ -167,7 +167,7 @@ export default function QuickActions() {
             border-[#ccefe0]
             bg-[#f7fffb]
             p-4
-            transition-all
+            transition-[transform,border-color,background-color,box-shadow]
             duration-200
             hover:-translate-y-0.5
             hover:border-[#a7e5cd]
@@ -220,11 +220,11 @@ export default function QuickActions() {
         </Link>
 
         {/* ===================================================
-            ENVIAR DOCUMENTO
+            GERIR DOCUMENTOS
         =================================================== */}
 
         <Link
-          href="/documents"
+          href="/library"
           className="
             group
             flex
@@ -236,7 +236,7 @@ export default function QuickActions() {
             border-[#ffe1c8]
             bg-[#fffaf5]
             p-4
-            transition-all
+            transition-[transform,border-color,background-color,box-shadow]
             duration-200
             hover:-translate-y-0.5
             hover:border-[#ffc99f]
@@ -259,7 +259,7 @@ export default function QuickActions() {
               group-hover:scale-105
             "
           >
-            <Upload
+            <FolderOpen
               size={19}
               strokeWidth={2}
             />
@@ -273,7 +273,7 @@ export default function QuickActions() {
                 text-[#17213f]
               "
             >
-              Enviar Documento
+              Gerir documentos
             </span>
 
             <ArrowUpRight
@@ -305,7 +305,7 @@ export default function QuickActions() {
             border-[#d8e5ff]
             bg-[#f7faff]
             p-4
-            transition-all
+            transition-[transform,border-color,background-color,box-shadow]
             duration-200
             hover:-translate-y-0.5
             hover:border-[#b9d0ff]

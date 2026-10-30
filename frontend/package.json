@@ -7,7 +7,7 @@
     "build": "next build",
     "lint": "eslint .",
     "test:auth-forms": "node --test tests/auth-form-validation.test.cjs",
-    "test:frontend-access": "node --test tests/auth-form-validation.test.cjs tests/route-access.test.cjs tests/invoice-management.test.cjs tests/assistant-presentation.test.cjs tests/landing-locale.test.cjs",
+    "test:frontend-access": "node --test tests/auth-form-validation.test.cjs tests/route-access.test.cjs tests/invoice-management.test.cjs tests/assistant-presentation.test.cjs tests/landing-locale.test.cjs tests/dashboard-navigation.test.cjs",
     "start": "next start"
   },
   "dependencies": {
