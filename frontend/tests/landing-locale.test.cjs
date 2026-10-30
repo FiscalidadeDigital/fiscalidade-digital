@@ -1,0 +1,32 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+
+const source = fs.readFileSync(
+  path.join(__dirname, '..', 'app', 'page.tsx'),
+  'utf8',
+);
+
+test('a preferência de idioma da landing é persistida separadamente da sessão', () => {
+  assert.match(source, /const landingLocaleStorageKey = 'fd:landing-locale';/);
+  assert.match(source, /window\.localStorage\.getItem\(landingLocaleStorageKey\)/);
+  assert.match(source, /window\.localStorage\.setItem\(landingLocaleStorageKey, nextLocale\)/);
+  assert.doesNotMatch(source, /document\.documentElement\.lang/);
+});
+
+test('a landing identifica o idioma apresentado e mantém os documentos legais em português', () => {
+  assert.match(source, /<main ref=\{pageRef\} lang=\{locale\}/);
+  assert.match(source, /Terms of Use \(Portuguese\)/);
+  assert.match(source, /Privacy Policy \(Portuguese\)/);
+  assert.match(source, /function LanguageSelector/);
+  assert.match(source, /function Team\(\{ locale \}: \{ locale: LandingLocale \}\)/);
+});
+
+test('a landing mantém as funcionalidades resumidas sem âncoras para áreas removidas', () => {
+  assert.match(source, /\['Funcionalidades', '#funcionalidades'\]/);
+  assert.doesNotMatch(source, /id="assistente"/);
+  assert.doesNotMatch(source, /id="documentos"/);
+  assert.doesNotMatch(source, /id="plataforma"/);
+  assert.doesNotMatch(source, /function DocumentDemo/);
+});
