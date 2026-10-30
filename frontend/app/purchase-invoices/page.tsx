@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import InvoiceManagementNav from "@/components/invoices/InvoiceManagementNav";
+import { useAuth } from "@/context/AuthContext";
 import {
   Plus,
   Search,
@@ -16,6 +18,8 @@ import {
   createPurchaseInvoice,
   getPurchaseInvoices,
   type PurchaseInvoice,
+  type PurchaseInvoiceDocumentStatus,
+  type PurchaseInvoicePaymentStatus,
 } from "@/services/purchase-invoice";
 import {
   getSuppliers,
@@ -28,6 +32,11 @@ type InvoiceItem = {
   quantity: string;
   unitPrice: string;
 };
+
+type PurchaseInvoiceStatusFilter =
+  | "ALL"
+  | PurchaseInvoiceDocumentStatus
+  | `PAYMENT:${PurchaseInvoicePaymentStatus}`;
 
 const emptyItem = (): InvoiceItem => ({
   id: Date.now() + Math.random(),
@@ -48,6 +57,7 @@ const formatCurrency = (value: number | string) => {
 };
 
 export default function PurchaseInvoicesPage() {
+  const { user } = useAuth();
   const [invoices, setInvoices] = useState<PurchaseInvoice[]>([]);
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -56,7 +66,8 @@ export default function PurchaseInvoicesPage() {
   const [saveError, setSaveError] = useState("");
 
   const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [statusFilter, setStatusFilter] =
+    useState<PurchaseInvoiceStatusFilter>("ALL");
   const [showModal, setShowModal] = useState(false);
 
   const [invoiceNumber, setInvoiceNumber] = useState("");
@@ -68,6 +79,10 @@ export default function PurchaseInvoicesPage() {
   const [items, setItems] = useState<InvoiceItem[]>([
     emptyItem(),
   ]);
+
+  const canWrite = ["OWNER", "ADMIN", "ACCOUNTANT"].includes(
+    user?.role ?? "",
+  );
 
   const refreshData = useCallback(async () => {
     setIsLoading(true);
@@ -108,9 +123,10 @@ export default function PurchaseInvoicesPage() {
           .includes(search.toLowerCase()) ||
         (suppliersById.get(invoice.supplierId)?.nif ?? "").includes(search);
 
-      const matchesStatus =
-        statusFilter === "ALL" ||
-        invoice.documentStatus === statusFilter;
+      const matchesStatus = statusFilter === "ALL"
+        || (statusFilter.startsWith("PAYMENT:")
+          ? invoice.paymentStatus === statusFilter.slice("PAYMENT:".length)
+          : invoice.documentStatus === statusFilter);
 
       return matchesSearch && matchesStatus;
     });
@@ -165,7 +181,21 @@ export default function PurchaseInvoicesPage() {
     setItems([emptyItem()]);
   };
 
+  const openCreateModal = () => {
+    if (!canWrite) {
+      return;
+    }
+
+    setSaveError("");
+    setShowModal(true);
+  };
+
   const saveInvoice = async () => {
+    if (!canWrite) {
+      setSaveError("Não tem permissão para registar facturas recebidas.");
+      return;
+    }
+
     if (
       !invoiceNumber.trim() ||
       !supplierId ||
@@ -248,27 +278,28 @@ export default function PurchaseInvoicesPage() {
             </p>
           </div>
 
-          <div className="grid gap-3 sm:flex sm:flex-wrap">
-            <Link
-              href="/purchase-invoices/import"
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#d9ddec] sm:w-auto bg-white px-5 py-3 text-sm font-semibold text-[#273558] shadow-sm transition hover:border-[#5146e5]"
-            >
-              <FileText size={18} />
-              Importar documento
-            </Link>
-            <button
-              onClick={() => {
-                setSaveError("");
-                setShowModal(true);
-              }}
-              disabled={isLoading || Boolean(loadError)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5146e5] sm:w-auto px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
-            >
-              <Plus size={19} />
-              Nova factura recebida
-            </button>
-          </div>
+          {canWrite && (
+            <div className="grid gap-3 sm:flex sm:flex-wrap">
+              <Link
+                href="/purchase-invoices/import"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#d9ddec] sm:w-auto bg-white px-5 py-3 text-sm font-semibold text-[#273558] shadow-sm transition hover:border-[#5146e5]"
+              >
+                <FileText size={18} />
+                Importar documento
+              </Link>
+              <button
+                onClick={openCreateModal}
+                disabled={isLoading || Boolean(loadError)}
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5146e5] sm:w-auto px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
+              >
+                <Plus size={19} />
+                Nova factura recebida
+              </button>
+            </div>
+          )}
         </div>
+
+        <InvoiceManagementNav className="mb-6" />
 
         {/* RESUMO */}
         <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
@@ -343,26 +374,27 @@ export default function PurchaseInvoicesPage() {
               <select
                 value={statusFilter}
                 onChange={(e) =>
-                  setStatusFilter(e.target.value)
+                  setStatusFilter(
+                    e.target.value as PurchaseInvoiceStatusFilter,
+                  )
                 }
                 className="appearance-none rounded-xl border border-[#e1e5ee] bg-[#fbfcfe] px-4 py-3 pr-10 text-sm outline-none"
               >
                 <option value="ALL">
                   Todos os estados
                 </option>
-                <option value="PENDING">
-                  Pendentes
-                </option>
-                <option value="REVIEW_REQUIRED">Em revisão</option>
-                <option value="VALIDATED">Validadas</option>
-                <option value="REJECTED">Rejeitadas</option>
-                <option value="CANCELLED">Canceladas</option>
-                <option value="PAID">
-                  Pagas
-                </option>
-                <option value="CANCELLED">
-                  Anuladas
-                </option>
+                <optgroup label="Documento">
+                  <option value="PENDING">Pendentes</option>
+                  <option value="REVIEW_REQUIRED">Em revisão</option>
+                  <option value="VALIDATED">Validadas</option>
+                  <option value="REJECTED">Rejeitadas</option>
+                  <option value="CANCELLED">Canceladas</option>
+                </optgroup>
+                <optgroup label="Pagamento">
+                  <option value="PAYMENT:UNPAID">Por pagar</option>
+                  <option value="PAYMENT:PARTIALLY_PAID">Parcialmente pagas</option>
+                  <option value="PAYMENT:PAID">Pagas</option>
+                </optgroup>
               </select>
 
               <ChevronDown
@@ -414,15 +446,14 @@ export default function PurchaseInvoicesPage() {
                 de um fornecedor.
               </p>
 
-              <button
-                onClick={() => {
-                  setSaveError("");
-                  setShowModal(true);
-                }}
-                className="mt-5 rounded-xl bg-[#5146e5] px-5 py-3 text-sm font-semibold text-white"
-              >
-                Registar primeira factura
-              </button>
+              {canWrite && (
+                <button
+                  onClick={openCreateModal}
+                  className="mt-5 rounded-xl bg-[#5146e5] px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Registar primeira factura
+                </button>
+              )}
             </div>
           ) : (
             <div className="max-w-full overflow-x-auto">

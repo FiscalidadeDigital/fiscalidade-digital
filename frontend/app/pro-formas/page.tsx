@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import InvoiceManagementNav from '@/components/invoices/InvoiceManagementNav';
 import { useAuth } from '@/context/AuthContext';
 import {
   getInvoiceApiError,
@@ -61,6 +62,8 @@ export default function ProFormasPage() {
           </div>
           {canWrite && <Link href="/pro-formas/new" className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-sky-700 px-4 text-xs font-semibold text-white hover:bg-sky-800 focus:outline-none focus:ring-4 focus:ring-sky-100"><Plus className="h-4 w-4" />Nova Pro Forma</Link>}
         </header>
+
+        <InvoiceManagementNav className="mt-5" />
 
         <aside className="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-900">
           Documento preliminar — não constitui factura fiscal definitiva. Os valores não integram IVA liquidado, receita definitiva, obrigações ou pagamento.

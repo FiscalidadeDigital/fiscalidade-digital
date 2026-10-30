@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Clock3, CreditCard, ShieldCheck } from 'lucide-react';
+import Link from 'next/link';
+import { Building2, Clock3, CreditCard, UsersRound } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { PageHeader } from '@/components/ui/enterprise';
+import { useAuth } from '@/context/AuthContext';
 import { getCompany } from '@/services/company';
 import type { Tenant } from '@/services/auth';
 import {
@@ -13,11 +15,13 @@ import {
 } from '@/services/subscription';
 
 export default function SettingsPage() {
+  const { user } = useAuth();
   const [company, setCompany] = useState<Tenant | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [subscription, setSubscription] =
     useState<SubscriptionAccessStatus | null>(null);
+  const canManageUsers = ['OWNER', 'ADMIN'].includes(user?.role ?? '');
 
   useEffect(() => {
     let mounted = true;
@@ -53,7 +57,7 @@ export default function SettingsPage() {
         <PageHeader
           eyebrow="Administração"
           title="Definições"
-          description="Subscrição e parâmetros administrativos da empresa."
+          description="Consulte o estado do plano e aceda às definições que o seu perfil permite gerir."
         />
 
         {error && (
@@ -66,35 +70,12 @@ export default function SettingsPage() {
         )}
 
         <section className="fd-panel mt-5">
-          <div className="border-b border-slate-200 px-5 py-4">
-            <h2 className="text-base font-semibold text-slate-950">
-              Identidade da aplicação
-            </h2>
-            <p className="mt-1 text-sm text-slate-600">
-              A Fiscalidade Digital utiliza uma interface clara e consistente em
-              todos os dispositivos.
-            </p>
-          </div>
-          <div className="flex items-start gap-3 px-5 py-5 text-sm text-slate-600">
-            <ShieldCheck
-              className="mt-0.5 h-5 w-5 shrink-0 text-[#0b6f93]"
-              aria-hidden="true"
-            />
-            <p>
-              Contraste, foco visível e redução de movimento seguem as
-              preferências de acessibilidade do dispositivo.
-            </p>
-          </div>
-        </section>
-
-        <section className="fd-panel mt-5">
           <div className="border-b border-[var(--fd-border)] px-5 py-4">
             <h2 className="text-base font-semibold text-[var(--fd-text)]">
-              Trial e subscrição
+              Plano e acesso
             </h2>
             <p className="mt-1 text-sm text-[var(--fd-muted)]">
-              Estado calculado pelo backend. Não existem cobranças activas nesta
-              fase.
+              Estado actual do plano, período experimental e pagamentos registados.
             </p>
           </div>
 
@@ -144,16 +125,17 @@ export default function SettingsPage() {
               </div>
 
               <div className="bg-[var(--fd-surface)] p-5">
-                <div className="flex items-center gap-2 text-xs font-medium text-amber-700">
-                  <AlertTriangle className="h-4 w-4" />
-                  Aplicação das regras
+                <div className="flex items-center gap-2 text-xs font-medium text-[var(--fd-muted)]">
+                  <Building2 className="h-4 w-4" />
+                  Estado comercial calculado
                 </div>
                 <p className="mt-3 text-sm font-semibold text-[var(--fd-text)]">
-                  Preparada, ainda não aplicada
+                  {subscription.commercialAccess
+                    ? 'Elegível no cálculo actual'
+                    : 'Sem elegibilidade no cálculo actual'}
                 </p>
                 <p className="mt-1 text-xs leading-5 text-[var(--fd-muted)]">
-                  O bloqueio aguarda a definição de planos e das funcionalidades
-                  essenciais.
+                  {subscription.enforcement.message}
                 </p>
               </div>
             </div>
@@ -162,6 +144,31 @@ export default function SettingsPage() {
               Estado comercial indisponível.
             </div>
           )}
+        </section>
+
+        <section className="fd-panel mt-5">
+          <div className="border-b border-[var(--fd-border)] px-5 py-4">
+            <h2 className="text-base font-semibold text-[var(--fd-text)]">
+              Gerir a empresa
+            </h2>
+            <p className="mt-1 text-sm text-[var(--fd-muted)]">
+              Aceda aos dados da empresa e à gestão de utilizadores conforme as permissões do seu perfil.
+            </p>
+          </div>
+          <div
+            className={`grid gap-3 p-5 ${canManageUsers ? 'sm:grid-cols-2' : ''}`}
+          >
+            <Link href="/company" className="fd-button-secondary justify-start">
+              <Building2 className="h-4 w-4" />
+              Dados da empresa
+            </Link>
+            {canManageUsers ? (
+              <Link href="/users" className="fd-button-secondary justify-start">
+                <UsersRound className="h-4 w-4" />
+                Utilizadores e perfis
+              </Link>
+            ) : null}
+          </div>
         </section>
       </div>
     </DashboardLayout>

@@ -4,6 +4,7 @@ import { AlertTriangle, CheckCircle2, Clock3, Loader2, RadioTower } from 'lucide
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import InvoiceManagementNav from '@/components/invoices/InvoiceManagementNav';
 import { electronicInvoicingError, getElectronicReadiness, getElectronicSubmissions, type ElectronicReadiness, type ElectronicSubmission } from '@/services/electronic-invoicing';
 
 const labels: Record<string, string> = { READY: 'Pronta', SUBMITTING: 'A submeter', SUBMITTED: 'Submetida', PROCESSING: 'Em processamento', VALID: 'Válida', INVALID: 'Inválida', REJECTED: 'Rejeitada', ERROR: 'Erro' };
@@ -28,6 +29,7 @@ export default function ElectronicInvoicingPage() {
   const counts = (status: string[]) => submissions.filter((entry) => status.includes(entry.status)).length;
   return <DashboardLayout><main className="mx-auto w-full max-w-7xl pb-12">
     <header className="border-b border-[var(--fd-border)] pb-6"><p className="text-xs font-semibold uppercase tracking-[.16em] text-sky-700">Integração fiscal</p><h1 className="mt-2 text-2xl font-semibold text-[var(--fd-text-primary)]">Facturação Electrónica</h1><p className="mt-2 max-w-3xl text-sm leading-6 text-[var(--fd-text-secondary)]">Preparação técnica para a API oficial da AGT, com submissão assíncrona, consulta e rastreabilidade.</p></header>
+    <InvoiceManagementNav className="mt-5" />
     <aside className="mt-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900"><AlertTriangle className="h-5 w-5 shrink-0"/><div><p className="font-semibold">Certificação oficial pendente</p><p className="mt-1">A integração permanece em preparação/homologação. Não representa software certificado ou homologado pela AGT.</p></div></aside>
     {error && <p role="alert" className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</p>}
     {loading ? <div className="grid min-h-52 place-items-center"><Loader2 className="h-5 w-5 animate-spin text-sky-700"/></div> : <>

@@ -18,6 +18,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import InvoiceManagementNav from '@/components/invoices/InvoiceManagementNav';
 import { EmptyState, PageHeader, StatCard } from '@/components/ui/enterprise';
 import { useAuth } from '@/context/AuthContext';
 import {
@@ -183,6 +184,8 @@ export default function InvoicesPage() {
             ) : undefined
           }
         />
+
+        <InvoiceManagementNav className="mt-5" />
 
         <aside className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />

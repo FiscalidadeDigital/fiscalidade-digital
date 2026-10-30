@@ -15,7 +15,6 @@ import {
   Menu,
   Package,
   ReceiptText,
-  RadioTower,
   Settings,
   ShieldAlert,
   ShieldCheck,
@@ -37,6 +36,7 @@ import {
 import {
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react';
@@ -50,6 +50,7 @@ import {
 } from '@/services/company';
 import FloatingAI from '@/components/ai/FloatingAI';
 import { useAuth } from '@/context/AuthContext';
+import { isInvoiceManagementPath } from '@/lib/invoice-management';
 
 /* =========================================================
    TIPOS
@@ -162,27 +163,9 @@ const navigationSections = [
       },
 
       {
-        label: 'Faturação',
+        label: 'Gestão de facturas',
         href: '/invoices',
         icon: ReceiptText,
-      },
-
-      {
-        label: 'Facturação Electrónica',
-        href: '/electronic-invoicing',
-        icon: RadioTower,
-      },
-
-      {
-        label: 'Facturas Recebidas',
-        href: '/purchase-invoices',
-        icon: FileText,
-      },
-
-      {
-        label: 'Pro Formas',
-        href: '/pro-formas',
-        icon: FileText,
       },
 
       {
@@ -286,6 +269,12 @@ export default function DashboardLayout({
   const [isLoggingOut, setIsLoggingOut] =
     useState(false);
 
+  const mobileMenuRef =
+    useRef<HTMLElement>(null);
+
+  const mobileMenuTriggerRef =
+    useRef<HTMLButtonElement>(null);
+
   /* =======================================================
      TRANSIÇÃO DA PÁGINA
   ======================================================= */
@@ -295,7 +284,7 @@ export default function DashboardLayout({
   }, [pathname]);
 
   /* =======================================================
-     ESC FECHA MOBILE
+     FOCO DO MENU MOBILE
   ======================================================= */
 
   useEffect(() => {
@@ -303,24 +292,66 @@ export default function DashboardLayout({
       return;
     }
 
-    const handleEscape = (
-      event: KeyboardEvent,
-    ) => {
+    const menu = mobileMenuRef.current;
+    const mobileMenuTrigger = mobileMenuTriggerRef.current;
+
+    if (!menu) {
+      return;
+    }
+
+    const focusable = () => Array.from(
+      menu.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    );
+
+    const focusFrame = window.requestAnimationFrame(() => {
+      menu
+        .querySelector<HTMLElement>('[data-mobile-menu-close]')
+        ?.focus();
+    });
+
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMobileOpen(false);
+        return;
+      }
+
+      if (event.key !== 'Tab') {
+        return;
+      }
+
+      const elements = focusable();
+
+      if (!elements.length) {
+        event.preventDefault();
+        return;
+      }
+
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
       }
     };
 
     window.addEventListener(
       'keydown',
-      handleEscape,
+      handleKeyDown,
     );
 
     return () => {
+      window.cancelAnimationFrame(focusFrame);
       window.removeEventListener(
         'keydown',
-        handleEscape,
+        handleKeyDown,
       );
+      mobileMenuTrigger?.focus();
     };
   }, [mobileOpen]);
 
@@ -421,6 +452,21 @@ export default function DashboardLayout({
     currentCompany?.nif?.trim() ||
     'NIF não disponível';
 
+  const matchesNavigationPath = (
+    href: string,
+  ) => {
+    if (href === '/invoices') {
+      return isInvoiceManagementPath(pathname);
+    }
+
+    return (
+      pathname === href ||
+      pathname.startsWith(
+        `${href}/`,
+      )
+    );
+  };
+
   const currentNavigation = [
     ...navigationSections.flatMap(
       (section) =>
@@ -433,11 +479,7 @@ export default function DashboardLayout({
       ...item,
       section: 'Administração',
     })),
-  ].find(
-    (item) =>
-      pathname === item.href ||
-      pathname.startsWith(`${item.href}/`),
-  );
+  ].find((item) => matchesNavigationPath(item.href));
 
   /* =======================================================
      INICIAIS
@@ -479,23 +521,7 @@ export default function DashboardLayout({
   const isActive = (
     href: string,
   ) => {
-    if (
-      href === '/dashboard'
-    ) {
-      return (
-        pathname === '/dashboard' ||
-        pathname.startsWith(
-          '/dashboard/',
-        )
-      );
-    }
-
-    return (
-      pathname === href ||
-      pathname.startsWith(
-        `${href}/`,
-      )
-    );
+    return matchesNavigationPath(href);
   };
 
   /* =======================================================
@@ -744,19 +770,19 @@ export default function DashboardLayout({
             gap-3
           "
         >
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white">
+          <div className="flex h-12 w-[158px] shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white px-2 shadow-sm">
             <img
               src="/logofiscalidade.png"
               alt="Fiscalidade Digital"
               className="
-                h-7
-                w-7
+                h-9
+                w-full
                 object-contain
               "
             />
           </div>
 
-          <div className="min-w-0">
+          <div className="min-w-0 lg:hidden">
             <div
               className="
                 truncate
@@ -794,6 +820,7 @@ export default function DashboardLayout({
             onClick={
               closeMobileMenu
             }
+            data-mobile-menu-close
             className="
               fd-sidebar-close
               ml-auto
@@ -1234,7 +1261,12 @@ export default function DashboardLayout({
               : '-translate-x-full'
           }
         `}
+        ref={mobileMenuRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Menu principal"
         aria-hidden={!mobileOpen}
+        inert={!mobileOpen}
       >
         {renderSidebar(true)}
       </aside>
@@ -1280,6 +1312,7 @@ export default function DashboardLayout({
 
             <button
               type="button"
+              ref={mobileMenuTriggerRef}
               onClick={() =>
                 setMobileOpen(true)
               }
