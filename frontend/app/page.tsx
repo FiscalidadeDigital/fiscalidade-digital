@@ -385,13 +385,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="contacto" className="relative overflow-hidden bg-[#102447] py-16 text-white sm:py-20 lg:py-24">
+      <section id="contacto" className="relative overflow-hidden bg-[#102447] py-11 text-white sm:py-14">
         <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-25" viewBox="0 0 1200 400" fill="none"><path d="M0 300c280-20 290-220 550-220s320 190 650 120" stroke="#67E8F9" strokeDasharray="5 8" /></svg>
         <div className="relative mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,.7fr)] lg:items-center lg:px-8">
           <div data-reveal className="landing-reveal">
             <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</p>
-            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Vamos falar sobre a gestão fiscal da sua empresa?', 'Shall we talk about your company’s tax management?')}</h2>
-            <p className="mt-4 max-w-xl text-base leading-7 text-slate-200">{tr(locale, 'Conheça a plataforma, coloque as suas questões e encontre o próximo passo mais adequado para a sua empresa.', 'Get to know the platform, ask your questions and find the next step that best fits your company.')}</p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Vamos falar sobre a sua empresa?', 'Shall we talk about your company?')}</h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">{tr(locale, 'Conheça as nossas soluções ou fale com a equipa sobre as necessidades fiscais e contabilísticas do seu negócio.', 'Get to know our solutions or talk to the team about your business tax and accounting needs.')}</p>
           </div>
           <div data-reveal className="landing-reveal landing-reveal--d1 overflow-hidden rounded-2xl border border-white/15 bg-white/[0.055] shadow-[0_18px_42px_rgba(3,16,38,.18)]">
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="group flex min-h-[104px] items-center gap-4 border-b border-white/15 p-5 transition-[background-color,transform] duration-200 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-cyan-200">
@@ -408,17 +408,17 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section className="bg-[#082755] py-16 text-white sm:py-20">
+      <section className="bg-[#082755] py-11 text-white sm:py-14">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 px-5 lg:flex-row lg:items-end lg:px-8">
-          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Tenha uma visão mais clara da fiscalidade da sua empresa.', 'Get a clearer view of your company’s tax position.')}</h2><p className="mt-4 max-w-2xl leading-7 text-slate-200">{tr(locale, 'Centralize facturação, obrigações, equipa e prazos numa única plataforma.', 'Centralise invoicing, obligations, people and deadlines in one platform.')}</p></div>
-          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:-translate-y-0.5 hover:bg-cyan-200">{tr(locale, 'Criar a minha conta', 'Create my account')}</Link><Link href="/login" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">{tr(locale, 'Já tenho conta', 'I already have an account')}</Link></div>
+          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Mais controlo fiscal. Mais tempo para a sua empresa.', 'More tax control. More time for your company.')}</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">{tr(locale, 'Comece a organizar a sua gestão fiscal com ferramentas digitais pensadas para as empresas angolanas.', 'Start organising your tax management with digital tools designed for Angolan companies.')}</p></div>
+          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-wrap items-center gap-3"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:-translate-y-0.5 hover:bg-cyan-200">{tr(locale, 'Criar conta', 'Create account')}</Link><a href="#plataforma" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">{tr(locale, 'Conhecer a plataforma', 'Explore the platform')}</a><Link href="/login" className="px-1 py-2 text-sm font-semibold text-cyan-100 underline underline-offset-4 transition hover:text-white">{tr(locale, 'Já tenho conta', 'I already have an account')}</Link></div>
         </div>
       </section>
 
       <Team locale={locale} />
 
       <footer className="bg-[#061a36] text-slate-300">
-        <div className="mx-auto max-w-7xl px-5 py-10 lg:px-8">
+        <div className="mx-auto max-w-7xl px-5 py-10 pb-20 sm:pb-10 lg:px-8">
           <div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-5">
             <div><Brand locale={locale} /><p className="mt-4 text-sm leading-6 text-slate-400">{tr(locale, 'Gestão fiscal e empresarial para empresas em Angola.', 'Tax and business management for companies in Angola.')}</p></div>
             <Footer title={tr(locale, 'Plataforma', 'Platform')} links={locale === 'en' ? [['Features', '#funcionalidades'], ['How it works', '#como-funciona']] : [['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} />
@@ -437,7 +437,20 @@ export default function HomePage() {
         </div>
       </footer>
 
-      <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="fixed bottom-4 left-4 z-40 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5"><WhatsAppIcon size={20} /><span className="hidden sm:inline">{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</span><span className="sm:hidden">WhatsApp</span></a>
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')}
+        className="fixed bottom-4 left-4 z-40 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5"
+        style={{
+          bottom: 'max(1rem, env(safe-area-inset-bottom))',
+          left: 'max(1rem, env(safe-area-inset-left))',
+        }}
+      >
+        <WhatsAppIcon size={20} />
+        <span className="hidden sm:inline">{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</span>
+      </a>
 
       <style jsx global>{`
         @keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }

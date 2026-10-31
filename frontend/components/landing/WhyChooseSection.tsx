@@ -9,6 +9,7 @@ import {
 import {
   ArrowRight,
   BarChart3,
+  BellRing,
   BookOpen,
   Briefcase,
   CalendarDays,
@@ -64,9 +65,9 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       number: '02',
       label: 'Gestão e cumprimento fiscal',
       eyebrow: 'Gestão e cumprimento fiscal',
-      title: 'Os compromissos fiscais, sempre mais visíveis.',
-      description: 'Acompanhe obrigações, prazos, estados e simulações com uma leitura mais organizada da situação da empresa.',
-      benefits: ['Calendário e prazos por acompanhar', 'Obrigações com estado operacional', 'Simulações para apoiar a preparação'],
+      title: 'Os impostos da sua empresa não precisam de ser uma surpresa.',
+      description: 'Conheça as obrigações, acompanhe os prazos e planeie os pagamentos com uma leitura mais organizada da situação fiscal.',
+      benefits: ['Enquadramento, obrigações e calendário', 'Simulações para apoiar a preparação', 'Alertas na plataforma e por e-mail'],
       previewTitle: 'Agenda fiscal',
       previewLabel: 'Acompanhamento',
       previewItems: ['Períodos fiscais', 'Prazos a acompanhar', 'Estados de cumprimento'],
@@ -257,7 +258,9 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
     : { duration: 0.3, ease: [0.22, 1, 0.36, 1] as [number, number, number, number] };
 
   return (
-    <section id="funcionalidades" aria-labelledby="why-choose-title" className="bg-[#f7fafc] py-16 sm:py-20 lg:py-24">
+    <section id="funcionalidades" aria-labelledby="why-choose-title" className="relative isolate overflow-hidden border-y border-cyan-100 bg-[#f5fafb] py-16 sm:py-20 lg:py-24">
+      <div aria-hidden="true" className="pointer-events-none absolute -left-32 top-16 h-72 w-72 rounded-full bg-cyan-100/60 blur-3xl" />
+      <div aria-hidden="true" className="pointer-events-none absolute right-0 top-1/3 h-48 w-48 rounded-full border border-emerald-200/70" />
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div data-reveal className="landing-reveal grid gap-7 border-b border-slate-200 pb-9 lg:grid-cols-[minmax(0,.82fr)_minmax(20rem,.58fr)] lg:items-end">
           <div>
@@ -272,7 +275,7 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
             </p>
           </div>
           <p className="max-w-xl text-sm leading-6 text-slate-600 sm:text-base sm:leading-7">
-            {copy(locale, 'Da operação diária ao acompanhamento fiscal, reunimos informação e ferramentas num ambiente mais claro para a equipa.', 'From daily operations to tax follow-up, we bring information and tools together in a clearer environment for the team.')}
+            {copy(locale, 'Da emissão de facturas ao acompanhamento das obrigações fiscais, reunimos ferramentas, informação e serviços especializados para simplificar a gestão empresarial.', 'From invoicing to tax obligation follow-up, we bring together tools, information and specialised services to simplify business management.')}
           </p>
         </div>
 
@@ -340,7 +343,7 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
               </div>
 
               <div className="border-t border-slate-200 bg-[#eef7f9] p-5 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-                <div className="border border-[#d4e8ed] bg-white p-4 shadow-[0_12px_28px_rgba(15,41,79,.08)] sm:p-5">
+                {activeGroup.id === 'compliance' ? <FiscalAlertPreview locale={locale} /> : <div className="border border-[#d4e8ed] bg-white p-4 shadow-[0_12px_28px_rgba(15,41,79,.08)] sm:p-5">
                   <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
                       <p className="text-[10px] font-bold uppercase tracking-[.15em] text-cyan-700">{activeGroup.previewLabel}</p>
@@ -357,7 +360,7 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
                       </div>
                     ))}
                   </div>
-                </div>
+                </div>}
                 <p className="mt-5 max-w-sm text-xs leading-5 text-slate-500">
                   {copy(locale, 'Uma visão ilustrativa da informação organizada por contexto — sem dados empresariais expostos.', 'An illustrative view of information organised by context — with no company data exposed.')}
                 </p>
@@ -371,5 +374,23 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
         </p>
       </div>
     </section>
+  );
+}
+
+function FiscalAlertPreview({ locale }: { locale: LandingLocale }) {
+  return (
+    <div className="border border-[#d4e8ed] bg-white p-4 shadow-[0_12px_28px_rgba(15,41,79,.08)] sm:p-5">
+      <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[.15em] text-cyan-700">{copy(locale, 'Demonstração de alerta', 'Alert demonstration')}</p>
+          <p className="mt-1 text-sm font-extrabold text-[#102447]">{copy(locale, 'Agenda fiscal', 'Tax agenda')}</p>
+        </div>
+        <BellRing size={19} className="text-emerald-600" aria-hidden="true" />
+      </div>
+      <h4 className="mt-5 text-base font-extrabold text-[#102447]">IVA — {copy(locale, 'Declaração periódica', 'Periodic return')}</h4>
+      <dl className="mt-4 space-y-3 text-xs"><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Prazo', 'Due date')}</dt><dd className="text-right font-bold text-[#102447]">30 de Novembro de 2026<small className="mt-0.5 block font-normal text-slate-500">{copy(locale, 'Exemplo ilustrativo', 'Illustrative example')}</small></dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Estado', 'Status')}</dt><dd className="font-bold text-amber-700">{copy(locale, 'Prazo a aproximar-se', 'Approaching deadline')}</dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Valor', 'Amount')}</dt><dd className="font-bold text-[#102447]">{copy(locale, 'A determinar', 'To be determined')}</dd></div></dl>
+      <div className="mt-5 rounded-xl bg-[#102447] p-4 text-white"><p className="text-xs font-extrabold text-cyan-200">Fiscalidade Digital</p><p className="mt-2 text-xs font-semibold leading-5">{copy(locale, 'A sua empresa tem uma obrigação fiscal com prazo próximo.', 'Your company has a tax obligation with an approaching deadline.')}</p><p className="mt-2 text-xs leading-5 text-slate-300">{copy(locale, 'Consulte o calendário fiscal para verificar a informação aplicável.', 'Check the tax calendar to review the applicable information.')}</p></div>
+      <p className="mt-5 text-xs leading-5 text-slate-500">{copy(locale, 'Alertas disponíveis na plataforma e por e-mail. SMS e WhatsApp dependem de configuração e consentimento.', 'Alerts are available in the platform and by email. SMS and WhatsApp depend on configuration and consent.')}</p>
+    </div>
   );
 }
