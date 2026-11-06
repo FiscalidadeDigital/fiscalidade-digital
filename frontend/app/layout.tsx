@@ -100,6 +100,24 @@ export default function RootLayout({
   return (
     <html lang="pt-AO">
       <head>
+        <link
+          rel="icon"
+          href="/icon-96.png"
+          type="image/png"
+          sizes="96x96"
+        />
+        <link
+          rel="icon"
+          href="/icon-48.png"
+          type="image/png"
+          sizes="48x48"
+        />
+        <link
+          rel="shortcut icon"
+          href="/icon-96.png"
+          type="image/png"
+          sizes="96x96"
+        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
