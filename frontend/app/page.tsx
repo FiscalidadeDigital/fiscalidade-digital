@@ -385,6 +385,29 @@ export default function HomePage() {
         </div>
       </section>
 
+      <section id="perguntas" aria-labelledby="perguntas-title" className="border-y border-slate-100 bg-[#f7fafc] py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <div data-reveal className="landing-reveal">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">{tr(locale, 'Perguntas frequentes', 'Frequently asked questions')}</p>
+            <h2 id="perguntas-title" className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">{tr(locale, 'Antes de começar, esclareça o essencial.', 'Clarify the essentials before you start.')}</h2>
+          </div>
+          <dl className="mt-10 grid gap-x-10 gap-y-7 md:grid-cols-2">
+            {[
+              [tr(locale, 'Para quem é a Fiscalidade Digital?', 'Who is Fiscalidade Digital for?'), tr(locale, 'Para empresas em Angola que querem acompanhar prazos e obrigações fiscais e ter facturas, salários e documentos organizados num só sítio.', 'For companies in Angola that want to follow tax deadlines and obligations while keeping invoices, payroll and documents organised in one place.')],
+              [tr(locale, 'O que posso acompanhar na plataforma?', 'What can I follow on the platform?'), tr(locale, 'Na parte fiscal: obrigações, prazos, alertas na plataforma e pagamentos registados. Na operação: facturas, facturas recebidas, clientes, fornecedores, produtos, funcionários, folha salarial, documentos e relatórios, conforme a informação registada.', 'On the tax side: obligations, deadlines, platform alerts and recorded payments. In operations: invoices, received invoices, clients, suppliers, products, employees, payroll, documents and reports, according to the information recorded.')],
+              [tr(locale, 'Como começo?', 'How do I get started?'), tr(locale, 'Crie a conta, confirme o e-mail, indique o nome e NIF da empresa e a situação fiscal conhecida. Depois, inicie sessão para aceder à plataforma.', 'Create an account, confirm your email, provide the company name, NIF and known tax situation. Then log in to access the platform.')],
+              [tr(locale, 'Posso pagar impostos pela plataforma?', 'Can I pay taxes through the platform?'), tr(locale, 'Não. A plataforma ajuda a organizar obrigações e a consultar pagamentos registados, mas não executa pagamentos junto de bancos ou autoridades.', 'No. The platform helps organise obligations and consult recorded payments, but it does not execute payments with banks or authorities.')],
+              [tr(locale, 'A minha equipa pode ter acesso?', 'Can my team have access?'), tr(locale, 'Sim. Pode dar acesso a outros utilizadores da empresa e definir o que cada um pode fazer na plataforma.', 'Yes. You can give access to other company users and define what each person can do on the platform.')],
+            ].map(([question, answer], index) => (
+              <div key={question} data-reveal className={`landing-reveal border-t border-slate-300 pt-5 ${index === 4 ? 'md:col-span-2' : ''} ${index > 0 ? 'landing-reveal--d1' : ''}`}>
+                <dt className="text-lg font-extrabold tracking-[-.02em] text-[#102447]">{question}</dt>
+                <dd className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">{answer}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+
       <section id="contacto" className="relative overflow-hidden bg-[#102447] py-11 text-white sm:py-14">
         <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-25" viewBox="0 0 1200 400" fill="none"><path d="M0 300c280-20 290-220 550-220s320 190 650 120" stroke="#67E8F9" strokeDasharray="5 8" /></svg>
         <div className="relative mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,.7fr)] lg:items-center lg:px-8">
@@ -610,5 +633,5 @@ function Team({ locale }: { locale: LandingLocale }) {
 }
 
 function Footer({ title, links }: { title: string; links: readonly (readonly [string, string])[] }) {
-  return <div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">{title}</p><div className="mt-4 grid gap-3 text-sm">{links.map(([name, href]) => href.startsWith('/') ? <Link key={href} href={href} className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{name}</Link> : <a key={href} href={href} target={href === whatsappUrl ? '_blank' : undefined} rel={href === whatsappUrl ? 'noopener noreferrer' : undefined} className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{name}</a>)}</div></div>;
+  return <div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">{title}</p><div className="mt-4 grid gap-3 text-sm">{links.map(([name, href]) => href.startsWith('/') ? <Link key={href} href={href} className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{name}</Link> : <a key={href} href={href} target={href === whatsappUrl ? '_blank' : undefined} rel={href === whatsappUrl ? 'noopener noreferrer' : undefined} className={`inline-flex min-h-[40px] items-center transition hover:text-cyan-200 ${href.startsWith('mailto:') ? 'normal-case' : ''}`}>{name}</a>)}</div></div>;
 }
