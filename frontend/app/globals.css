@@ -5156,3 +5156,291 @@ button {
     animation-duration: 80s;
   }
 }
+
+/* Movimento e composição exclusivos da landing pública. */
+@keyframes fd-hero-card-enter-left {
+  from {
+    opacity: 0;
+    transform: translate3d(-36px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fd-hero-card-enter-right {
+  from {
+    opacity: 0;
+    transform: translate3d(36px, 0, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fd-hero-card-float {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0);
+  }
+
+  50% {
+    transform: translate3d(0, -6px, 0);
+  }
+}
+
+.site .hero-floating-card {
+  position: absolute;
+  z-index: 20;
+  opacity: 0;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.site .hero-main-card {
+  z-index: 10;
+}
+
+.site .hero-floating-card--obligations {
+  bottom: 2rem;
+  left: 0.5rem;
+  animation: fd-hero-card-enter-left 800ms 760ms both cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site .hero-floating-card--taxes {
+  top: 1.25rem;
+  right: 0.5rem;
+  animation: fd-hero-card-enter-right 800ms 860ms both cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site .hero-floating-card__float {
+  animation: fd-hero-card-float 7.6s 1.8s ease-in-out infinite;
+  will-change: transform;
+}
+
+.site .hero-floating-card--taxes .hero-floating-card__float {
+  animation-delay: 2.35s;
+  animation-direction: reverse;
+}
+
+.site .how-path {
+  --how-path-progress: 0;
+  position: relative;
+}
+
+.site .how-path-line {
+  position: absolute;
+  top: 1.25rem;
+  bottom: 1.25rem;
+  left: 1.25rem;
+  width: 2px;
+  overflow: hidden;
+  background: rgb(186 230 253);
+  opacity: 0.8;
+}
+
+.site .how-path-line > span {
+  display: block;
+  width: 100%;
+  height: 100%;
+  background: rgb(8 169 209);
+  transform: scaleY(1);
+  transform-origin: top center;
+}
+
+.site .how-path-steps {
+  display: grid;
+  gap: 1.75rem;
+}
+
+.site .how-path-step {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr);
+  gap: 0.75rem;
+}
+
+.site .how-path-node {
+  position: relative;
+  display: inline-flex;
+  width: 2.5rem;
+  height: 2.5rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgb(165 243 252);
+  border-radius: 999px;
+  background: white;
+  color: rgb(8 145 178);
+  box-shadow: 0 8px 18px rgb(15 41 79 / 0.08);
+}
+
+.site .how-path-node::after {
+  position: absolute;
+  inset: -0.35rem;
+  z-index: -1;
+  border-radius: inherit;
+  background: rgb(103 232 249 / 0.38);
+  content: '';
+  opacity: 0;
+  transform: scale(0.72);
+}
+
+.site[data-motion='ready'] .how-path-line > span {
+  opacity: 0;
+  transform: scaleY(0);
+  transition:
+    opacity 180ms ease-out,
+    transform 120ms linear;
+  will-change: transform, opacity;
+}
+
+.site[data-motion='ready'] .how-path-step {
+  opacity: 0;
+  transform: translate3d(0, 14px, 0);
+}
+
+.site[data-motion='ready'] .how-path-node {
+  opacity: 0.45;
+  transform: scale(0.84);
+}
+
+.site[data-motion='ready'] .how-path-node::after {
+  opacity: 0;
+  transform: scale(0.72);
+}
+
+.site[data-motion='ready'] .how-path.is-path-active .how-path-line > span {
+  opacity: 1;
+  transform: scaleY(var(--how-path-progress));
+}
+
+.site[data-motion='ready'] .how-path-step.is-path-reached {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 360ms ease-out,
+    transform 480ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site[data-motion='ready'] .how-path-step.is-path-reached .how-path-node {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 240ms ease-out,
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity;
+}
+
+.site[data-motion='ready'] .how-path-step.is-path-reached .how-path-node::after {
+  opacity: 1;
+  transform: scale(1);
+  transition:
+    opacity 360ms ease-out,
+    transform 560ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.site .whatsapp-fab {
+  bottom: calc(max(1rem, env(safe-area-inset-bottom)) + 4.5rem);
+}
+
+.site .whatsapp-fab__label {
+  position: absolute;
+  right: calc(100% + 0.65rem);
+  white-space: nowrap;
+  border-radius: 999px;
+  background: rgb(6 26 54);
+  padding: 0.45rem 0.7rem;
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  opacity: 0;
+  pointer-events: none;
+  transform: translate3d(4px, 0, 0);
+  transition:
+    opacity 180ms ease-out,
+    transform 180ms ease-out;
+}
+
+.site .whatsapp-fab:hover .whatsapp-fab__label,
+.site .whatsapp-fab:focus-visible .whatsapp-fab__label {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+@media (min-width: 640px) {
+  .site .how-path-line {
+    top: 1.25rem;
+    right: clamp(1.25rem, 4vw, 3rem);
+    bottom: auto;
+    left: clamp(1.25rem, 4vw, 3rem);
+    width: auto;
+    height: 2px;
+  }
+
+  .site .how-path-line > span {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  .site .how-path-steps {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: clamp(1rem, 3vw, 2.5rem);
+  }
+
+  .site .how-path-step {
+    display: block;
+  }
+
+  .site .how-path-copy {
+    margin-top: 0.9rem;
+  }
+
+  .site .how-path-step:nth-child(even) .how-path-copy {
+    margin-top: 1.7rem;
+  }
+
+  .site .how-path-step:nth-child(3) .how-path-copy {
+    margin-top: 0.55rem;
+  }
+
+  .site[data-motion='ready'] .how-path-line > span {
+    transform: scaleX(0);
+  }
+
+  .site[data-motion='ready'] .how-path.is-path-active .how-path-line > span {
+    transform: scaleX(var(--how-path-progress));
+  }
+
+  .site .whatsapp-fab {
+    bottom: max(1.25rem, env(safe-area-inset-bottom));
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .site .how-path-step.is-path-reached:hover .how-path-node {
+    transform: translate3d(0, -2px, 0) scale(1.03);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .site .hero-floating-card,
+  .site .hero-floating-card__float {
+    animation: none !important;
+    opacity: 1;
+    transform: none !important;
+  }
+
+  .site[data-motion='ready'] .how-path-line > span,
+  .site[data-motion='ready'] .how-path-step,
+  .site[data-motion='ready'] .how-path-node,
+  .site[data-motion='ready'] .how-path-node::after {
+    opacity: 1;
+    transform: none !important;
+    transition: none !important;
+  }
+}

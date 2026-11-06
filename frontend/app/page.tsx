@@ -5,12 +5,16 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
+  Building2,
   Check,
   ChevronRight,
   FileText,
   Linkedin,
+  LogIn,
   Mail,
+  MailCheck,
   Menu,
+  UserPlus,
   X,
 } from 'lucide-react';
 import WhyChooseSection from '@/components/landing/WhyChooseSection';
@@ -24,7 +28,7 @@ type LandingLocale = 'pt-AO' | 'en';
 const nav = [
   ['Início', '#inicio'],
   ['Funcionalidades', '#funcionalidades'],
-  ['Sobre nós', '#sobre'],
+  ['Sobre nós', '#equipa'],
   ['Contacto', '#contacto'],
 ] as const;
 
@@ -33,10 +37,33 @@ const navByLocale = {
   en: [
     ['Home', '#inicio'],
     ['Features', '#funcionalidades'],
-    ['About us', '#sobre'],
+    ['About us', '#equipa'],
     ['Contact', '#contacto'],
   ],
 } as const;
+
+const onboardingSteps = [
+  {
+    title: ['Criar a conta', 'Create an account'],
+    detail: ['Comece por aqui.', 'Start here.'],
+    Icon: UserPlus,
+  },
+  {
+    title: ['Confirmar o e-mail', 'Confirm your email'],
+    detail: ['Confirme o e-mail que indicou.', 'Confirm the email address you provided.'],
+    Icon: MailCheck,
+  },
+  {
+    title: ['Indicar nome, NIF e situação fiscal', 'Add the company name, NIF and tax situation'],
+    detail: ['Registe os dados da empresa.', 'Record the company details.'],
+    Icon: Building2,
+  },
+  {
+    title: ['Iniciar sessão', 'Log in'],
+    detail: ['Entre na plataforma.', 'Access the platform.'],
+    Icon: LogIn,
+  },
+] as const;
 
 const members = [
   {
@@ -180,8 +207,8 @@ function LanguageSelector({ locale, onChange, mobile = false }: { locale: Landin
 
 function Brand({ locale }: { locale: LandingLocale }) {
   return (
-    <Link href="/" aria-label={tr(locale, 'Fiscalidade Digital — início', 'Fiscalidade Digital — home')} className="inline-flex rounded-lg bg-white p-1.5 shadow-sm">
-      <Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={256} height={85} className="h-11 w-auto object-contain sm:h-12" priority />
+    <Link href="/" aria-label={tr(locale, 'Fiscalidade Digital — início', 'Fiscalidade Digital — home')} className="inline-flex shrink-0 rounded-lg bg-white p-1.5 shadow-sm">
+      <Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={2172} height={724} className="h-10 w-auto object-contain sm:h-11" priority />
     </Link>
   );
 }
@@ -199,16 +226,20 @@ function WhatsAppIcon({ size = 18 }: { size?: number }) {
 
 function Mockup({ locale }: { locale: LandingLocale }) {
   return (
-    <div className="hero-mockup relative mx-auto max-w-[470px]">
-      <div className="absolute -left-6 bottom-8 hidden w-44 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)] sm:block">
-        <p className="text-xs font-bold text-[#102447]">{tr(locale, 'Obrigações', 'Obligations')}</p>
-        <p className="mt-1 text-[11px] text-slate-500">{tr(locale, 'Prazos organizados', 'Organised deadlines')}</p>
-      </div>
-      <div className="absolute -right-5 top-8 hidden w-44 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)] sm:block">
-        <p className="text-xs font-bold text-[#102447]">{tr(locale, 'Impostos', 'Taxes')}</p>
-        <p className="mt-1 text-[11px] text-slate-500">{tr(locale, 'Fiscalidade num só lugar', 'Tax management in one place')}</p>
-      </div>
-      <div className="rounded-[28px] border border-white bg-white p-5 shadow-[0_30px_70px_rgba(15,41,79,.16)]">
+    <div className="hero-mockup relative mx-auto max-w-[700px] py-4 min-[1280px]:py-20">
+      <aside aria-hidden="true" className="hero-floating-card hero-floating-card--obligations hidden min-[1280px]:block">
+        <div className="hero-floating-card__float w-36 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)]">
+          <p className="text-xs font-bold text-[#102447]">{tr(locale, 'Obrigações', 'Obligations')}</p>
+          <p className="mt-1 text-[11px] text-slate-500">{tr(locale, 'Prazos organizados', 'Organised deadlines')}</p>
+        </div>
+      </aside>
+      <aside aria-hidden="true" className="hero-floating-card hero-floating-card--taxes hidden min-[1280px]:block">
+        <div className="hero-floating-card__float w-36 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)]">
+          <p className="text-xs font-bold text-[#102447]">{tr(locale, 'Impostos', 'Taxes')}</p>
+          <p className="mt-1 text-[11px] text-slate-500">{tr(locale, 'Fiscalidade num só lugar', 'Tax management in one place')}</p>
+        </div>
+      </aside>
+      <div className="hero-main-card relative z-10 mx-auto max-w-[400px] rounded-[28px] border border-white bg-white p-5 shadow-[0_30px_70px_rgba(15,41,79,.16)]">
         <div className="flex gap-1.5">
           <i className="h-2 w-2 rounded-full bg-cyan-400" />
           <i className="h-2 w-2 rounded-full bg-slate-200" />
@@ -218,12 +249,12 @@ function Mockup({ locale }: { locale: LandingLocale }) {
           <p className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-cyan-700">
             <FileText size={13} /> {tr(locale, 'Gestão fiscal', 'Tax management')}
           </p>
-          <h2 className="mt-4 text-3xl font-extrabold leading-[1.05] tracking-tight text-[#102447]">
+          <p className="mt-4 text-3xl font-extrabold leading-[1.05] tracking-tight text-[#102447]">
             {locale === 'en' ? <>Simplify your<br />company’s tax<br />management.</> : <>Simplifique<br />a gestão da<br />sua empresa.</>}
-          </h2>
+          </p>
         </div>
         <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
-          <span className="rounded-xl bg-cyan-50 px-2 py-3 text-cyan-800">{tr(locale, 'Impostos', 'Taxes')}</span>
+          <span className="rounded-xl bg-cyan-50 px-2 py-3 text-cyan-800">{tr(locale, 'Facturação', 'Invoicing')}</span>
           <span className="rounded-xl bg-slate-50 px-2 py-3 text-[#102447]">{tr(locale, 'Obrigações', 'Obligations')}</span>
           <span className="rounded-xl bg-slate-50 px-2 py-3 text-[#102447]">{tr(locale, 'Folha salarial', 'Payroll')}</span>
         </div>
@@ -259,6 +290,8 @@ export default function HomePage() {
     if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
 
     const elements = Array.from(page.querySelectorAll<HTMLElement>('[data-reveal]'));
+    const howPath = page.querySelector<HTMLElement>('[data-how-path]');
+    const pathSteps = Array.from(howPath?.querySelectorAll<HTMLElement>('[data-how-step]') ?? []);
     if (!elements.length) return;
 
     const revealInViewport = () => {
@@ -268,8 +301,31 @@ export default function HomePage() {
       });
     };
 
+    const updateHowPath = () => {
+      if (!howPath || !pathSteps.length) return;
+
+      const bounds = howPath.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, (window.innerHeight * 0.78 - bounds.top) / Math.max(bounds.height + window.innerHeight * 0.35, 1)));
+      howPath.style.setProperty('--how-path-progress', progress.toFixed(3));
+      howPath.classList.toggle('is-path-active', progress > 0.01);
+
+      pathSteps.forEach((step, index) => {
+        const threshold = 0.08 + (index / Math.max(pathSteps.length - 1, 1)) * 0.82;
+        step.classList.toggle('is-path-reached', progress >= threshold);
+      });
+    };
+
     let observer: IntersectionObserver | null = null;
     let initialFrame = 0;
+    let scrollFrame = 0;
+    const handleScroll = () => {
+      if (scrollFrame) return;
+      scrollFrame = window.requestAnimationFrame(() => {
+        revealInViewport();
+        updateHowPath();
+        scrollFrame = 0;
+      });
+    };
     try {
       page.dataset.motion = 'ready';
       observer = new IntersectionObserver(
@@ -283,8 +339,12 @@ export default function HomePage() {
         { rootMargin: '0px 0px -8%', threshold: 0.12 },
       );
       elements.forEach((element) => observer?.observe(element));
-      initialFrame = window.requestAnimationFrame(revealInViewport);
-      window.addEventListener('scroll', revealInViewport, { passive: true });
+      initialFrame = window.requestAnimationFrame(() => {
+        revealInViewport();
+        updateHowPath();
+      });
+      window.addEventListener('scroll', handleScroll, { passive: true });
+      window.addEventListener('resize', handleScroll);
     } catch {
       delete page.dataset.motion;
       elements.forEach((element) => element.classList.add('is-visible'));
@@ -293,7 +353,9 @@ export default function HomePage() {
 
     return () => {
       window.cancelAnimationFrame(initialFrame);
-      window.removeEventListener('scroll', revealInViewport);
+      window.cancelAnimationFrame(scrollFrame);
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
       observer?.disconnect();
       delete page.dataset.motion;
     };
@@ -332,25 +394,24 @@ export default function HomePage() {
 
       <section id="inicio" className="relative overflow-hidden bg-white py-16 sm:py-20">
         <svg aria-hidden="true" className="absolute right-0 top-0 h-full w-2/3 opacity-70" viewBox="0 0 800 600" fill="none"><path d="M110 50c220 0 120 185 330 185S555 430 820 420" stroke="#A5F3FC" strokeDasharray="5 8" /><circle cx="610" cy="120" r="180" fill="#EEF9FC" /></svg>
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[1.1fr_.9fr] lg:items-center lg:px-8">
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] lg:items-center lg:px-8">
           <div>
             <p className="hero-reveal r1 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.17em] text-cyan-700"><i className="h-2 w-2 rounded-full bg-cyan-500" />Fiscalidade Digital</p>
-            <h1 className="hero-reveal r2 mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl xl:text-[3.35rem] 2xl:text-6xl">{locale === 'en' ? <><span className="block xl:whitespace-nowrap">Organise your company’s</span><span className="block xl:whitespace-nowrap">tax management</span><span className="block text-cyan-500 xl:whitespace-nowrap">in one place.</span></> : <><span className="block xl:whitespace-nowrap">Organize a gestão fiscal</span><span className="block xl:whitespace-nowrap">da sua empresa</span><span className="block text-cyan-500 xl:whitespace-nowrap">num só lugar.</span></>}</h1>
-            <p className="hero-reveal r3 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">{tr(locale, 'Facturação, obrigações, prazos, compras e equipa organizados num único ambiente.', 'Invoicing, obligations, deadlines, purchases and your team organised in one workspace.')}</p>
-            <div className="hero-reveal r4 mt-8 flex flex-col gap-3 sm:flex-row">
+            <h1 className="mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl xl:text-[3.35rem] 2xl:text-6xl">{locale === 'en' ? <><span className="hero-reveal r2 block xl:whitespace-nowrap">Tax deadlines under control.</span><span className="hero-reveal r3 block text-cyan-500 xl:whitespace-nowrap">An organised company.</span></> : <><span className="hero-reveal r2 block xl:whitespace-nowrap">Prazos fiscais sob controlo.</span><span className="hero-reveal r3 block text-cyan-500 xl:whitespace-nowrap">Empresa organizada.</span></>}</h1>
+            <p className="hero-reveal r5 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">{tr(locale, 'Acompanhe obrigações, facturas, salários e documentos numa plataforma feita para empresas em Angola.', 'Follow obligations, invoices, payroll and documents in a platform made for companies in Angola.')}</p>
+            <div className="hero-reveal r6 mt-8 flex flex-col gap-3 sm:flex-row">
               <Link href="/register" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] transition hover:-translate-y-0.5 hover:bg-cyan-600">{tr(locale, 'Criar conta', 'Create account')} <ArrowRight size={17} /></Link>
               <a href="#funcionalidades" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] transition hover:border-cyan-300 hover:text-cyan-800">{tr(locale, 'Conhecer as soluções', 'Explore the solutions')} <ChevronRight size={17} /></a>
             </div>
-            <div className="hero-reveal r4 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
-              {(locale === 'en' ? ['Built for companies in Angola', 'More visible deadlines', 'Organised information'] : ['Pensado para empresas em Angola', 'Prazos mais visíveis', 'Informação organizada']).map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-cyan-600" />{text}</span>)}
+            <div className="hero-reveal r7 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
+              {(locale === 'en' ? ['Calendar with day counts', 'Obligations and platform alerts', 'Invoices, payroll and documents'] : ['Calendário com contagem de dias', 'Obrigações e alertas na plataforma', 'Facturas, salários e documentos']).map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-cyan-600" />{text}</span>)}
             </div>
           </div>
-          <div className="hero-reveal r5"><Mockup locale={locale} /></div>
+          <div className="hero-reveal r6"><Mockup locale={locale} /></div>
         </div>
       </section>
 
-      <div>
-        <section id="sobre" className="py-16 sm:py-20">
+      <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
             <Title eyebrow={tr(locale, 'Sobre a Fiscalidade Digital', 'About Fiscalidade Digital')}>{locale === 'en' ? <>Technology to<br /><span className="text-cyan-500">organise</span><br />tax operations.</> : <>Tecnologia para<br /><span className="text-cyan-500">organizar</span><br />a operação fiscal.</>}</Title>
@@ -370,17 +431,29 @@ export default function HomePage() {
             </article>
           </div>
         </div>
-        </section>
-
-      </div>
+      </section>
 
       <WhyChooseSection locale={locale} />
 
       <section id="como-funciona" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <Title eyebrow={tr(locale, 'Como funciona', 'How it works')}>{tr(locale, 'Da operação diária a uma visão mais clara.', 'From daily operations to a clearer view.')}</Title>
-          <div role="list" className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-            {(locale === 'en' ? ['Register the company', 'Organise operations', 'Keep essential information together', 'Plan the next steps'] : ['Registe a empresa', 'Organize a operação', 'Mantenha a informação essencial reunida', 'Planeie os próximos passos']).map((text, index) => <article role="listitem" data-reveal key={text} className={`landing-reveal border-t border-slate-300 pt-4 ${index > 0 ? 'landing-reveal--d1' : ''}`}><p className="mt-1 text-sm font-extrabold leading-6 text-[#102447]">{text}</p></article>)}
+          <Title eyebrow={tr(locale, 'Como funciona', 'How it works')}>{tr(locale, 'Comece pela conta e pelas informações da empresa.', 'Start with the account and your company information.')}</Title>
+          <div data-how-path className="how-path mt-10">
+            <div aria-hidden="true" className="how-path-line"><span /></div>
+            <ol className="how-path-steps">
+              {onboardingSteps.map(({ title, detail, Icon }) => {
+                const copyIndex = locale === 'en' ? 1 : 0;
+                return (
+                  <li data-how-step key={title[0]} className="how-path-step">
+                    <span aria-hidden="true" className="how-path-node"><Icon size={20} /></span>
+                    <div className="how-path-copy">
+                      <p className="text-base font-extrabold leading-6 text-[#102447]">{title[copyIndex]}</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{detail[copyIndex]}</p>
+                    </div>
+                  </li>
+                );
+              })}
+            </ol>
           </div>
         </div>
       </section>
@@ -408,13 +481,15 @@ export default function HomePage() {
         </div>
       </section>
 
+      <Team locale={locale} />
+
       <section id="contacto" className="relative overflow-hidden bg-[#102447] py-11 text-white sm:py-14">
         <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-25" viewBox="0 0 1200 400" fill="none"><path d="M0 300c280-20 290-220 550-220s320 190 650 120" stroke="#67E8F9" strokeDasharray="5 8" /></svg>
         <div className="relative mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,.7fr)] lg:items-center lg:px-8">
           <div data-reveal className="landing-reveal">
             <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</p>
-            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Vamos falar sobre a sua empresa?', 'Shall we talk about your company?')}</h2>
-            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">{tr(locale, 'Conheça as nossas soluções ou fale com a equipa sobre as necessidades fiscais e contabilísticas do seu negócio.', 'Get to know our solutions or talk to the team about your business tax and accounting needs.')}</p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Tem dúvidas antes de começar?', 'Have questions before getting started?')}</h2>
+            <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">{tr(locale, 'Fale connosco no WhatsApp ou por e-mail. Se já decidiu, crie a conta.', 'Talk to us on WhatsApp or by email. If you have decided, create an account.')}</p>
           </div>
           <div data-reveal className="landing-reveal landing-reveal--d1 overflow-hidden rounded-2xl border border-white/15 bg-white/[0.055] shadow-[0_18px_42px_rgba(3,16,38,.18)]">
             <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="group flex min-h-[104px] items-center gap-4 border-b border-white/15 p-5 transition-[background-color,transform] duration-200 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-cyan-200">
@@ -433,12 +508,10 @@ export default function HomePage() {
 
       <section className="bg-[#082755] py-11 text-white sm:py-14">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 px-5 lg:flex-row lg:items-end lg:px-8">
-          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Mais controlo fiscal. Mais tempo para a sua empresa.', 'More tax control. More time for your company.')}</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">{tr(locale, 'Comece a organizar a sua gestão fiscal com ferramentas digitais pensadas para as empresas angolanas.', 'Start organising your tax management with digital tools designed for Angolan companies.')}</p></div>
+          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Crie a conta e registe a sua empresa.', 'Create an account and register your company.')}</h2></div>
           <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-wrap items-center gap-3"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:-translate-y-0.5 hover:bg-cyan-200">{tr(locale, 'Criar conta', 'Create account')}</Link><a href="#plataforma" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">{tr(locale, 'Conhecer a plataforma', 'Explore the platform')}</a><Link href="/login" className="px-1 py-2 text-sm font-semibold text-cyan-100 underline underline-offset-4 transition hover:text-white">{tr(locale, 'Já tenho conta', 'I already have an account')}</Link></div>
         </div>
       </section>
-
-      <Team locale={locale} />
 
       <footer className="bg-[#061a36] text-slate-300">
         <div className="mx-auto max-w-7xl px-5 py-10 pb-20 sm:pb-10 lg:px-8">
@@ -448,7 +521,7 @@ export default function HomePage() {
             <div>
               <p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">{tr(locale, 'Empresa', 'Company')}</p>
               <div className="mt-4 grid gap-3 text-sm">
-                <a href="#sobre" className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{tr(locale, 'Sobre nós', 'About us')}</a>
+                <a href="#equipa" className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{tr(locale, 'Equipa', 'Team')}</a>
                 <a href="#contacto" className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</a>
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-[42px] w-fit items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 font-extrabold text-[#06351b] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><WhatsAppIcon size={16} />{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</a>
               </div>
@@ -460,19 +533,29 @@ export default function HomePage() {
         </div>
       </footer>
 
+      <Link
+        href="/register"
+        className="fixed bottom-4 right-4 z-40 inline-flex min-h-[48px] items-center justify-center rounded-full bg-cyan-500 px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(15,41,79,.22)] transition-[background-color,transform] duration-200 hover:bg-cyan-600 motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:hidden"
+        style={{
+          bottom: 'max(1rem, env(safe-area-inset-bottom))',
+          right: 'max(1rem, env(safe-area-inset-right))',
+        }}
+      >
+        {tr(locale, 'Criar conta', 'Create account')}
+      </Link>
+
       <a
         href={whatsappUrl}
         target="_blank"
         rel="noopener noreferrer"
         aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')}
-        className="fixed bottom-4 left-4 z-40 inline-flex min-h-[48px] items-center gap-2 rounded-full bg-[#25D366] px-4 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5"
+        className="whatsapp-fab group fixed z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] p-0 text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition-[background-color,transform] duration-200 hover:bg-[#53e589] motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
         style={{
-          bottom: 'max(1rem, env(safe-area-inset-bottom))',
-          left: 'max(1rem, env(safe-area-inset-left))',
+          right: 'max(1rem, env(safe-area-inset-right))',
         }}
       >
         <WhatsAppIcon size={20} />
-        <span className="hidden sm:inline">{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</span>
+        <span className="whatsapp-fab__label">{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</span>
       </a>
 
       <style jsx global>{`

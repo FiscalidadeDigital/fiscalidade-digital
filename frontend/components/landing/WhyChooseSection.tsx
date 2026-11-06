@@ -29,7 +29,6 @@ type LandingLocale = 'pt-AO' | 'en';
 
 type SolutionGroup = {
   id: 'operation' | 'compliance' | 'information' | 'knowledge' | 'specialised-services';
-  number: string;
   label: string;
   eyebrow: string;
   title: string;
@@ -47,67 +46,62 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
   'pt-AO': [
     {
       id: 'operation',
-      number: '01',
       label: 'Operação empresarial',
       eyebrow: 'Operação empresarial',
-      title: 'Facturação mais simples. Negócios mais organizados.',
-      description: 'Reúna facturas, pró-formas, compras, clientes, fornecedores e produtos num fluxo de trabalho mais claro.',
-      benefits: ['Documentos comerciais no mesmo ambiente', 'Consulta organizada da operação', 'Contexto para a equipa trabalhar melhor'],
-      previewTitle: 'Documentos e operação',
-      previewLabel: 'Fluxo organizado',
-      previewItems: ['Facturação', 'Compras recebidas', 'Clientes e fornecedores'],
-      cta: 'Criar a minha conta',
+      title: 'Emita facturas e mantenha a operação da empresa organizada.',
+      description: 'Registe facturas, pró-formas, compras, clientes, fornecedores e produtos para acompanhar o dia a dia da empresa.',
+      benefits: ['Facturas e pró-formas', 'Compras e facturas recebidas', 'Clientes, fornecedores e produtos'],
+      previewTitle: 'Operação da empresa',
+      previewLabel: 'Fluxo de trabalho',
+      previewItems: ['Facturas', 'Compras recebidas', 'Clientes e fornecedores'],
+      cta: 'Criar conta',
       ctaHref: '/register',
       Icon: FileText,
     },
     {
       id: 'compliance',
-      number: '02',
       label: 'Gestão e cumprimento fiscal',
       eyebrow: 'Gestão e cumprimento fiscal',
-      title: 'Os impostos da sua empresa não precisam de ser uma surpresa.',
-      description: 'Conheça as obrigações, acompanhe os prazos e planeie os pagamentos com uma leitura mais organizada da situação fiscal.',
-      benefits: ['Enquadramento, obrigações e calendário', 'Simulações para apoiar a preparação', 'Alertas na plataforma e por e-mail'],
+      title: 'Acompanhe os prazos fiscais que se aplicam à sua empresa.',
+      description: 'Consulte obrigações, calendário por imposto e período, situação fiscal, pagamentos registados e simulações quando precisar de preparar a próxima decisão.',
+      benefits: ['Calendário com contagem de dias', 'Obrigações e Central Fiscal', 'Alertas na plataforma'],
       previewTitle: 'Agenda fiscal',
       previewLabel: 'Acompanhamento',
-      previewItems: ['Períodos fiscais', 'Prazos a acompanhar', 'Estados de cumprimento'],
-      cta: 'Conhecer a plataforma',
+      previewItems: ['Calendário fiscal', 'Obrigações a acompanhar', 'Situação fiscal'],
+      cta: 'Criar conta',
       ctaHref: '/register',
       Icon: CalendarDays,
     },
     {
       id: 'information',
-      number: '03',
       label: 'Contabilidade e informação',
       eyebrow: 'Contabilidade e informação',
-      title: 'Informação estruturada para decisões mais claras.',
-      description: 'Organize ficheiros, relatórios, informação de facturação e recursos contabilísticos sem perder o contexto do trabalho.',
-      benefits: ['Biblioteca documental privada', 'Relatórios disponíveis na plataforma', 'Estruturação de informação contabilística'],
+      title: 'Organize a informação contabilística sem procurar ficheiros em vários sítios.',
+      description: 'Organize documentos e relatórios, acompanhe a facturação e gere e exporte o ficheiro SAF-T a partir dos dados registados.',
+      benefits: ['Documentos da empresa', 'Relatórios e exportação CSV', 'Geração e exportação de SAF-T'],
       previewTitle: 'Informação da empresa',
       previewLabel: 'Consulta e organização',
-      previewItems: ['Documentos privados', 'Relatórios', 'Dados para SAF-T'],
-      cta: 'Explorar as soluções',
+      previewItems: ['Documentos', 'Relatórios', 'Ficheiro SAF-T'],
+      cta: 'Criar conta',
       ctaHref: '/register',
       Icon: FileSpreadsheet,
     },
     {
       id: 'knowledge',
-      number: '04',
       label: 'Conhecimento fiscal',
       eyebrow: 'Conhecimento fiscal',
-      title: 'Mais contexto para compreender a operação fiscal.',
-      description: 'Aceda a conteúdos de apoio e informação legislativa para preparar perguntas e decisões com melhor contexto.',
-      benefits: ['Educação fiscal acessível', 'Biblioteca de legislação', 'Informação apresentada para revisão responsável'],
+      title: 'Consulte legislação fiscal quando precisar de orientar uma decisão.',
+      description: 'Pesquise a biblioteca de legislação fiscal disponível na plataforma.',
+      benefits: ['Legislação fiscal', 'Pesquisa na biblioteca', 'Educação Fiscal'],
       previewTitle: 'Base de conhecimento',
       previewLabel: 'Apoio à consulta',
-      previewItems: ['Conceitos fiscais', 'Referências legais', 'Temas para a equipa'],
+      previewItems: ['Legislação fiscal', 'Pesquisa na biblioteca', 'Educação Fiscal'],
       cta: 'Falar com a equipa',
       ctaHref: '#contacto',
       Icon: BookOpen,
     },
     {
       id: 'specialised-services',
-      number: '05',
       label: 'Serviços especializados',
       eyebrow: 'Serviços especializados',
       title: 'Apoio especializado quando a decisão exige mais contexto.',
@@ -124,67 +118,62 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
   en: [
     {
       id: 'operation',
-      number: '01',
       label: 'Business operations',
       eyebrow: 'Business operations',
-      title: 'Simpler invoicing. Better-organised businesses.',
-      description: 'Bring invoices, pro formas, purchases, customers, suppliers and products into a clearer working flow.',
-      benefits: ['Commercial documents in one environment', 'A more organised operational view', 'Context for the team to work better'],
-      previewTitle: 'Documents and operations',
-      previewLabel: 'Organised flow',
-      previewItems: ['Invoicing', 'Received purchases', 'Customers and suppliers'],
-      cta: 'Create my account',
+      title: 'Issue invoices and keep company operations organised.',
+      description: 'Record invoices, pro formas, purchases, customers, suppliers and products to follow the company’s daily activity.',
+      benefits: ['Invoices and pro formas', 'Purchases and received invoices', 'Customers, suppliers and products'],
+      previewTitle: 'Company operations',
+      previewLabel: 'Working flow',
+      previewItems: ['Invoices', 'Received purchases', 'Customers and suppliers'],
+      cta: 'Create account',
       ctaHref: '/register',
       Icon: FileText,
     },
     {
       id: 'compliance',
-      number: '02',
       label: 'Tax management and compliance',
       eyebrow: 'Tax management and compliance',
-      title: 'Tax commitments, easier to keep in view.',
-      description: 'Follow obligations, deadlines, statuses and simulations with a better-organised view of the company.',
-      benefits: ['Calendar and deadlines to follow', 'Obligations with operational status', 'Simulations to support preparation'],
+      title: 'Follow the tax deadlines that apply to your company.',
+      description: 'Consult obligations, the tax calendar by tax and period, tax situation, recorded payments and simulations when preparing the next decision.',
+      benefits: ['Calendar with day counts', 'Obligations and Central Fiscal', 'Platform alerts'],
       previewTitle: 'Tax agenda',
       previewLabel: 'Follow-up',
-      previewItems: ['Tax periods', 'Upcoming deadlines', 'Compliance status'],
-      cta: 'Explore the platform',
+      previewItems: ['Tax calendar', 'Obligations to follow', 'Tax situation'],
+      cta: 'Create account',
       ctaHref: '/register',
       Icon: CalendarDays,
     },
     {
       id: 'information',
-      number: '03',
       label: 'Accounting and information',
       eyebrow: 'Accounting and information',
-      title: 'Structured information for clearer decisions.',
-      description: 'Organise files, reports, invoicing information and accounting resources without losing the context of the work.',
-      benefits: ['Private document library', 'Reports available in the platform', 'Structured accounting information'],
+      title: 'Organise accounting information without searching through files in different places.',
+      description: 'Organise documents and reports, follow invoicing and generate and export the SAF-T file from recorded data.',
+      benefits: ['Company documents', 'Reports and CSV export', 'SAF-T generation and export'],
       previewTitle: 'Company information',
       previewLabel: 'Review and organisation',
-      previewItems: ['Private documents', 'Reports', 'SAF-T data'],
-      cta: 'Explore the solutions',
+      previewItems: ['Documents', 'Reports', 'SAF-T file'],
+      cta: 'Create account',
       ctaHref: '/register',
       Icon: FileSpreadsheet,
     },
     {
       id: 'knowledge',
-      number: '04',
       label: 'Tax knowledge',
       eyebrow: 'Tax knowledge',
-      title: 'More context to understand tax operations.',
-      description: 'Access support content and legislative information to prepare questions and decisions with better context.',
-      benefits: ['Accessible tax education', 'Legislation library', 'Information presented for responsible review'],
+      title: 'Consult tax legislation when you need to guide a decision.',
+      description: 'Search the tax legislation library available in the platform.',
+      benefits: ['Tax legislation', 'Library search', 'Tax Education'],
       previewTitle: 'Knowledge base',
       previewLabel: 'Research support',
-      previewItems: ['Tax concepts', 'Legal references', 'Topics for the team'],
+      previewItems: ['Tax legislation', 'Library search', 'Tax Education'],
       cta: 'Talk to the team',
       ctaHref: '#contacto',
       Icon: BookOpen,
     },
     {
       id: 'specialised-services',
-      number: '05',
       label: 'Specialised services',
       eyebrow: 'Specialised services',
       title: 'Specialised support when a decision needs more context.',
@@ -300,8 +289,7 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
                 <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-white/12 text-cyan-200' : 'bg-cyan-50 text-cyan-800'}`}>
                   <Icon size={18} strokeWidth={1.9} aria-hidden="true" />
                 </span>
-                <span className={`mt-3 block text-[10px] font-bold tracking-[.14em] sm:mt-5 ${active ? 'text-cyan-200' : 'text-slate-600'}`}>{group.number}</span>
-                <span className="mt-1 block text-sm font-extrabold leading-5">{group.label}</span>
+                <span className="mt-3 block text-sm font-extrabold leading-5 sm:mt-5">{group.label}</span>
                 <span aria-hidden="true" className={`pointer-events-none absolute inset-x-4 bottom-0 h-[3px] origin-left rounded-t-full bg-cyan-200 transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none ${active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'}`} />
               </button>
             );
@@ -388,10 +376,10 @@ function FiscalAlertPreview({ locale }: { locale: LandingLocale }) {
         </div>
         <BellRing size={19} className="text-emerald-600" aria-hidden="true" />
       </div>
-      <h4 className="mt-5 text-base font-extrabold text-[#102447]">IVA — {copy(locale, 'Declaração periódica', 'Periodic return')}</h4>
-      <dl className="mt-4 space-y-3 text-xs"><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Prazo', 'Due date')}</dt><dd className="text-right font-bold text-[#102447]">30 de Novembro de 2026<small className="mt-0.5 block font-normal text-slate-500">{copy(locale, 'Exemplo ilustrativo', 'Illustrative example')}</small></dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Estado', 'Status')}</dt><dd className="font-bold text-amber-700">{copy(locale, 'Prazo a aproximar-se', 'Approaching deadline')}</dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Valor', 'Amount')}</dt><dd className="font-bold text-[#102447]">{copy(locale, 'A determinar', 'To be determined')}</dd></div></dl>
-      <div className="mt-5 rounded-xl bg-[#102447] p-4 text-white"><p className="text-xs font-extrabold text-cyan-200">Fiscalidade Digital</p><p className="mt-2 text-xs font-semibold leading-5">{copy(locale, 'A sua empresa tem uma obrigação fiscal com prazo próximo.', 'Your company has a tax obligation with an approaching deadline.')}</p><p className="mt-2 text-xs leading-5 text-slate-300">{copy(locale, 'Consulte o calendário fiscal para verificar a informação aplicável.', 'Check the tax calendar to review the applicable information.')}</p></div>
-      <p className="mt-5 text-xs leading-5 text-slate-500">{copy(locale, 'Alertas disponíveis na plataforma e por e-mail. SMS e WhatsApp dependem de configuração e consentimento.', 'Alerts are available in the platform and by email. SMS and WhatsApp depend on configuration and consent.')}</p>
+      <h4 className="mt-5 text-base font-extrabold text-[#102447]">{copy(locale, 'Obrigação fiscal', 'Tax obligation')}</h4>
+      <dl className="mt-4 space-y-3 text-xs"><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Prazo', 'Due date')}</dt><dd className="text-right font-bold text-[#102447]">{copy(locale, 'Consulte o calendário', 'Check the calendar')}<small className="mt-0.5 block font-normal text-slate-500">{copy(locale, 'Exemplo ilustrativo', 'Illustrative example')}</small></dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Estado', 'Status')}</dt><dd className="font-bold text-amber-700">{copy(locale, 'A acompanhar', 'To follow')}</dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Valor', 'Amount')}</dt><dd className="font-bold text-[#102447]">{copy(locale, 'A determinar', 'To be determined')}</dd></div></dl>
+      <div className="mt-5 rounded-xl bg-[#102447] p-4 text-white"><p className="text-xs font-extrabold text-cyan-200">Fiscalidade Digital</p><p className="mt-2 text-xs font-semibold leading-5">{copy(locale, 'Há uma obrigação fiscal a acompanhar.', 'There is a tax obligation to follow.')}</p><p className="mt-2 text-xs leading-5 text-slate-300">{copy(locale, 'Consulte o calendário fiscal para verificar a informação aplicável.', 'Check the tax calendar to review the applicable information.')}</p></div>
+      <p className="mt-5 text-xs leading-5 text-slate-500">{copy(locale, 'Demonstração fictícia. Os alertas são apresentados na plataforma.', 'Fictional demonstration. Alerts are shown in the platform.')}</p>
     </div>
   );
 }
