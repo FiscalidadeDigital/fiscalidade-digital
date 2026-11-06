@@ -295,13 +295,14 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
                 tabIndex={active ? 0 : -1}
                 onClick={() => setActiveId(group.id)}
                 onKeyDown={handleTabKeyDown}
-                className={`group min-h-[92px] min-w-[13.5rem] shrink-0 snap-start border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 motion-safe:hover:-translate-y-0.5 sm:min-h-[132px] sm:min-w-0 ${active ? 'border-[#102447] bg-[#102447] text-white shadow-[0_14px_28px_rgba(16,36,71,.14)]' : 'border-slate-200 bg-white text-[#102447] hover:border-cyan-300 hover:shadow-[0_10px_22px_rgba(15,41,79,.07)]'}`}
+                className={`group relative min-h-[92px] min-w-[13.5rem] shrink-0 snap-start overflow-hidden border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 motion-safe:hover:-translate-y-0.5 sm:min-h-[132px] sm:min-w-0 ${active ? 'border-[#102447] bg-[#102447] text-white shadow-[0_14px_28px_rgba(16,36,71,.14)]' : 'border-slate-200 bg-white text-[#102447] hover:border-cyan-300 hover:shadow-[0_10px_22px_rgba(15,41,79,.07)]'}`}
               >
                 <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-white/12 text-cyan-200' : 'bg-cyan-50 text-cyan-800'}`}>
                   <Icon size={18} strokeWidth={1.9} aria-hidden="true" />
                 </span>
                 <span className={`mt-3 block text-[10px] font-bold tracking-[.14em] sm:mt-5 ${active ? 'text-cyan-200' : 'text-slate-600'}`}>{group.number}</span>
                 <span className="mt-1 block text-sm font-extrabold leading-5">{group.label}</span>
+                <span aria-hidden="true" className={`pointer-events-none absolute inset-x-4 bottom-0 h-[3px] origin-left rounded-t-full bg-cyan-200 transition-[transform,opacity] duration-300 ease-out motion-reduce:transition-none ${active ? 'scale-x-100 opacity-100' : 'scale-x-0 opacity-0'}`} />
               </button>
             );
           })}
