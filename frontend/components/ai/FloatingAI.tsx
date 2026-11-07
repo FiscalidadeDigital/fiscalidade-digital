@@ -348,6 +348,9 @@ export default function FloatingAI() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Abrir Assistente Fiscal"
+        aria-expanded={open}
+        aria-controls="fiscal-assistant-dialog"
+        aria-haspopup="dialog"
         title="Assistente Fiscal"
         className="fixed bottom-4 right-4 z-[999] grid h-11 w-11 place-items-center rounded-lg border border-[#183a59] bg-fd-primary text-cyan-100 shadow-md transition hover:bg-fd-primary-hover focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:bottom-5 sm:right-5"
       >
@@ -361,6 +364,7 @@ export default function FloatingAI() {
           />
           <section
             ref={dialogRef}
+            id="fiscal-assistant-dialog"
             role="dialog"
             aria-modal="true"
             aria-label="Assistente Fiscal"
@@ -382,7 +386,7 @@ export default function FloatingAI() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Fechar Assistente Fiscal"
-              className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className="grid h-11 w-11 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
             >
               <X size={18} />
             </button>
@@ -408,7 +412,7 @@ export default function FloatingAI() {
                       key={item.message}
                       type="button"
                       onClick={() => void sendMessage(item.message)}
-                      className="block w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-fd-accent hover:border-slate-300 hover:bg-slate-50"
+                      className="block min-h-11 w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-fd-accent hover:border-slate-300 hover:bg-slate-50"
                     >
                       <span className="mr-2 text-xs uppercase tracking-wide text-slate-400">
                         {item.kind}
@@ -471,13 +475,13 @@ export default function FloatingAI() {
                 }}
                 rows={2}
                 placeholder="Pergunte sobre fiscalidade ou sobre a sua empresa…"
-                className="min-h-10 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-fd-accent focus:ring-2 focus:ring-fd-focus"
+                className="min-h-11 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-fd-accent focus:ring-2 focus:ring-fd-focus"
               />
               <button
                 type="submit"
                 disabled={loading || !message.trim()}
                 aria-label="Enviar mensagem"
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-fd-primary text-white hover:bg-fd-primary-hover disabled:opacity-40"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-fd-primary text-white hover:bg-fd-primary-hover disabled:opacity-40"
               >
                 <Send size={17} />
               </button>
