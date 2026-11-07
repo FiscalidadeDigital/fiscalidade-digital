@@ -122,6 +122,15 @@ body {
   outline: none;
 }
 
+.fd-field[aria-invalid='true'] {
+  border-color: var(--fd-danger);
+}
+
+.fd-field[aria-invalid='true']:focus {
+  border-color: var(--fd-danger);
+  box-shadow: 0 0 0 3px rgb(180 35 24 / 0.16);
+}
+
 .fd-button-primary,
 .fd-button-secondary {
   display: inline-flex;

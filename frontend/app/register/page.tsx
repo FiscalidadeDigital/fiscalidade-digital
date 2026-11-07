@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { register } from '@/services/auth';
@@ -23,6 +23,19 @@ export default function RegisterPage() {
   const [fieldErrors, setFieldErrors] = useState<FieldErrors<RegistrationForm>>({});
   const [formError, setFormError] = useState('');
   const [loading, setLoading] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusFirstErrorRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusFirstErrorRef.current) {
+      return;
+    }
+
+    formRef.current
+      ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+      ?.focus();
+    focusFirstErrorRef.current = false;
+  }, [fieldErrors]);
 
   function updateField<Key extends keyof RegistrationForm>(key: Key, value: RegistrationForm[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -36,6 +49,7 @@ export default function RegisterPage() {
 
     const nextErrors = validateRegistrationForm(form);
 
+    focusFirstErrorRef.current = Object.keys(nextErrors).length > 0;
     setFieldErrors(nextErrors);
     setFormError('');
     if (Object.keys(nextErrors).length) return;
@@ -57,14 +71,14 @@ export default function RegisterPage() {
 
   return (
     <AuthFrame eyebrow="CRIAR CONTA" title="Criar conta" description="Crie a conta para começar a organizar a informação da sua empresa." backHref="/" backLabel="Voltar ao site">
-      <form className="space-y-4" onSubmit={submit} noValidate>
+      <form ref={formRef} className="space-y-4" onSubmit={submit} noValidate>
         <div className="grid gap-4 sm:grid-cols-2">
           <label htmlFor="register-name" className="fd-label">Nome completo
-            <input id="register-name" required autoComplete="name" value={form.name} onChange={(event) => updateField('name', event.target.value)} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'register-name-error' : undefined} className="fd-field mt-1.5" />
+            <input id="register-name" required autoComplete="name" value={form.name} disabled={loading} onChange={(event) => updateField('name', event.target.value)} aria-invalid={Boolean(fieldErrors.name)} aria-describedby={fieldErrors.name ? 'register-name-error' : undefined} className="fd-field mt-1.5" />
             {fieldErrors.name && <span id="register-name-error" role="alert" className="mt-1.5 block text-sm font-normal text-red-700">{fieldErrors.name}</span>}
           </label>
           <label htmlFor="register-email" className="fd-label">Email
-            <input id="register-email" required type="email" autoComplete="email" value={form.email} onChange={(event) => updateField('email', event.target.value)} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'register-email-error' : undefined} className="fd-field mt-1.5" />
+            <input id="register-email" required type="email" autoComplete="email" value={form.email} disabled={loading} onChange={(event) => updateField('email', event.target.value)} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'register-email-error' : undefined} className="fd-field mt-1.5" />
             {fieldErrors.email && <span id="register-email-error" role="alert" className="mt-1.5 block text-sm font-normal text-red-700">{fieldErrors.email}</span>}
           </label>
         </div>
@@ -72,8 +86,8 @@ export default function RegisterPage() {
         <PasswordInput id="register-confirm-password" label="Confirmar palavra-passe" value={form.confirmPassword} onChange={(value) => updateField('confirmPassword', value)} autoComplete="new-password" error={fieldErrors.confirmPassword} disabled={loading} />
         <fieldset aria-describedby={fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy ? 'registration-consent-errors' : undefined} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <legend className="px-1 text-sm font-semibold text-slate-800">Consentimentos obrigatórios</legend>
-          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptTerms} disabled={loading} onChange={(event) => updateField('acceptTerms', event.target.checked)} className="mt-1" /><span>Li e aceito os <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Termos de Utilização</Link>.</span></label>
-          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptPrivacyPolicy} disabled={loading} onChange={(event) => updateField('acceptPrivacyPolicy', event.target.checked)} className="mt-1" /><span>Li e aceito a <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Política de Privacidade</Link>.</span></label>
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptTerms} disabled={loading} aria-invalid={Boolean(fieldErrors.acceptTerms)} onChange={(event) => updateField('acceptTerms', event.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-fd-primary" /><span>Li e aceito os <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Termos de Utilização</Link>.</span></label>
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptPrivacyPolicy} disabled={loading} aria-invalid={Boolean(fieldErrors.acceptPrivacyPolicy)} onChange={(event) => updateField('acceptPrivacyPolicy', event.target.checked)} className="mt-1 h-5 w-5 shrink-0 accent-fd-primary" /><span>Li e aceito a <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Política de Privacidade</Link>.</span></label>
           {(fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy) && <p id="registration-consent-errors" role="alert" className="text-sm text-red-700">{fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy}</p>}
         </fieldset>
         {formError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
