@@ -36,10 +36,10 @@ const ecosystem = [
 ];
 
 const team = [
-  { name: 'Desiderio', image: '/Desiderio.jpeg' },
-  { name: 'Edgar', image: '/edgar.jpg' },
-  { name: 'Francisco', image: '/Francisco.jpeg' },
-  { name: 'Anildodev', image: '/Anildodev.jpg' },
+  { name: 'Desiderio', image: '/team-desiderio.webp' },
+  { name: 'Edgar', image: '/team-edgar.webp' },
+  { name: 'Francisco', image: '/team-francisco.webp' },
+  { name: 'Anildodev', image: '/team-anildo.webp' },
 ];
 
 const faqs = [
