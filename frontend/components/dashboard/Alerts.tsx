@@ -187,6 +187,11 @@ export default function Alerts({
               alert.type
             );
 
+            const formattedDate =
+              formatAlertDate(
+                alert.date,
+              );
+
             const Icon = config.icon;
 
             return (
@@ -230,7 +235,7 @@ export default function Alerts({
 
                   <div className="min-w-0 flex-1">
 
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
 
                       <h4
                         className="
@@ -243,18 +248,24 @@ export default function Alerts({
                         {alert.title}
                       </h4>
 
-                      {alert.date && (
-                        <span
+                      {formattedDate && alert.date && (
+                        <time
+                          dateTime={alert.date}
                           className="
+                            w-fit
                             shrink-0
-                            text-xs
-                            font-medium
+                            rounded-md
+                            bg-white/70
+                            px-2
+                            py-1
+                            text-[11px]
+                            font-semibold
+                            tabular-nums
                             text-[var(--fd-text-muted)]
-                            whitespace-nowrap
                           "
                         >
-                          {alert.date}
-                        </span>
+                          {formattedDate}
+                        </time>
                       )}
 
                     </div>
@@ -332,4 +343,40 @@ function getAlertConfig(
         iconColor: 'text-[#2563eb]',
       };
   }
+}
+
+function formatAlertDate(
+  value?: string,
+) {
+  if (!value) {
+    return null;
+  }
+
+  const dateOnlyMatch =
+    value.match(
+      /^(\d{4})-(\d{2})-(\d{2})/,
+    );
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] =
+      dateOnlyMatch;
+
+    return `${day}/${month}/${year}`;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(
+    'pt-AO',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'UTC',
+    },
+  ).format(date);
 }

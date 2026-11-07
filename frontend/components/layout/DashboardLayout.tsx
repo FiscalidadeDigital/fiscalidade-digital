@@ -775,6 +775,7 @@ export default function DashboardLayout({
 
       <div
         className="
+          relative
           flex
           h-[76px]
           shrink-0
@@ -793,13 +794,19 @@ export default function DashboardLayout({
               mobile,
             )
           }
-          className="
+          className={`
             group
             flex
             min-w-0
             items-center
             gap-3
-          "
+
+            ${
+              mobile
+                ? 'absolute left-1/2 -translate-x-1/2'
+                : ''
+            }
+          `}
         >
           <div className="flex h-11 w-[152px] shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white px-2 shadow-sm">
             <img
@@ -824,7 +831,8 @@ export default function DashboardLayout({
             data-mobile-menu-close
             className="
               fd-sidebar-close
-              ml-auto
+              absolute
+              right-4
               flex
               h-11
               w-11

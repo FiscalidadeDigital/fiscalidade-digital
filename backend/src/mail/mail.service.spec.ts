@@ -28,6 +28,38 @@ describe('MailService', () => {
     expect(body.html).toContain('Fiscalidade');
   });
 
+  it('sends obligation payment confirmations through Resend', async () => {
+    await new MailService().sendObligationPaymentConfirmation(
+      'financeiro@example.com',
+      'Empresa Exemplo',
+      'IVA mensal',
+      '12 500,00 Kz',
+      '2026-10',
+      'https://fiscalidadedigital.ao/obligations',
+    );
+
+    const request =
+      (global.fetch as jest.Mock).mock.calls[0][1];
+
+    const body =
+      JSON.parse(
+        request.body as string,
+      );
+
+    expect(body.to).toEqual([
+      'financeiro@example.com',
+    ]);
+    expect(body.subject).toContain(
+      'Pagamento registado',
+    );
+    expect(body.text).toContain(
+      'IVA mensal',
+    );
+    expect(body.html).toContain(
+      '12 500,00 Kz',
+    );
+  });
+
   it('maps provider failures to a controlled service-unavailable error', async () => {
     (global.fetch as jest.Mock).mockResolvedValue({ ok: false, status: 503 });
     await expect(new MailService().sendMail('user@example.com', 'Teste', 'Mensagem')).rejects.toBeInstanceOf(ServiceUnavailableException);

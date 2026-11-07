@@ -1,5 +1,6 @@
 ﻿import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -9,6 +10,7 @@ import {
   FiscalRegime,
   ObligationStatus,
   ObligationType,
+  NotificationType,
   Prisma,
   TaxRuleOperation,
   TaxType,
@@ -17,6 +19,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
 import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
+import { MailService } from '../mail/mail.service';
 
 @Injectable()
 export class ObligationsService {
@@ -27,6 +30,7 @@ export class ObligationsService {
     private readonly prisma: PrismaService,
     private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
     private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(prisma),
+    private readonly mailService: MailService = new MailService(),
   ) {}
 
   // ============================================================
@@ -2257,12 +2261,23 @@ export class ObligationsService {
         obligation.type,
       );
 
-    await this.prisma.$transaction(
+    const paymentRegistered =
+      await this.prisma.$transaction(
       async (tx) => {
-        await tx.fiscalObligation.update({
+        const transition =
+          await tx.fiscalObligation.updateMany({
           where: {
             id:
               obligation.id,
+
+            tenantId,
+
+            status: {
+              in: [
+                ObligationStatus.PENDING,
+                ObligationStatus.LATE,
+              ],
+            },
           },
 
           data: {
@@ -2273,6 +2288,12 @@ export class ObligationsService {
               true,
           },
         });
+
+        if (
+          transition.count === 0
+        ) {
+          return false;
+        }
 
         const reference =
           `OBL-${obligation.id}`;
@@ -2307,7 +2328,68 @@ export class ObligationsService {
             },
           });
         }
+
+        await tx.notification.create({
+          data: {
+            tenantId,
+
+            title:
+              'Pagamento registado',
+
+            message:
+              `O pagamento da obriga\u00e7\u00e3o fiscal "${obligation.title}" no valor de ${this.formatPaymentAmount(amount)} foi registado com sucesso.`,
+
+            isRead:
+              false,
+
+            notificationType:
+              NotificationType.SUCCESS,
+          },
+        });
+
+        return true;
       },
+    );
+
+    if (
+      !paymentRegistered
+    ) {
+      const latestObligation =
+        await this.findOne(
+          tenantId,
+          id,
+        );
+
+      if (
+        latestObligation.status !==
+        ObligationStatus.PAID
+      ) {
+        throw new ConflictException(
+          'O estado da obrigação foi alterado. Atualize a página antes de tentar registar o pagamento novamente.',
+        );
+      }
+
+      await this.ensureTaxPaymentForObligation(
+        latestObligation.id,
+        tenantId,
+        latestObligation.amount,
+        latestObligation.fiscalCalendar?.taxType ??
+          this.mapObligationTypeToTaxType(
+            latestObligation.type,
+          ),
+        latestObligation.period ??
+          undefined,
+      );
+
+      return latestObligation;
+    }
+
+    await this.sendPaymentConfirmationEmail(
+      tenantId,
+      obligation.title,
+      obligation.period ??
+        'Per\u00edodo n\u00e3o especificado',
+      amount,
     );
 
     this.logger.log(
@@ -2482,6 +2564,156 @@ export class ObligationsService {
   // ============================================================
   // MAPEAR OBRIGAÇÃO PARA TAX TYPE
   // ============================================================
+
+  private async sendPaymentConfirmationEmail(
+    tenantId: string,
+    obligationTitle: string,
+    period: string,
+    amount: number,
+  ): Promise<void> {
+    const subject =
+      `Pagamento registado \u2014 ${obligationTitle}`;
+
+    try {
+      const tenant =
+        await this.prisma.tenant.findUnique({
+          where: {
+            id: tenantId,
+          },
+
+          select: {
+            name: true,
+            email: true,
+          },
+        });
+
+      if (!tenant?.email) {
+        this.logger.warn(
+          `Pagamento registado para ${tenantId}, mas a empresa n\u00e3o tem e-mail para receber a confirma\u00e7\u00e3o.`,
+        );
+
+        return;
+      }
+
+      let status =
+        'SENT';
+
+      try {
+        const applicationUrl =
+          (
+            process.env.APP_URL ||
+            process.env.FRONTEND_URL ||
+            'https://fiscalidadedigital.ao'
+          ).replace(
+            /\/$/,
+            '',
+          );
+
+        await this.mailService.sendObligationPaymentConfirmation(
+          tenant.email,
+          tenant.name,
+          obligationTitle,
+          this.formatPaymentAmount(
+            amount,
+          ),
+          period,
+          `${applicationUrl}/obligations`,
+        );
+      } catch (error) {
+        status =
+          'FAILED';
+
+        this.logger.error(
+          [
+            'Falha ao enviar a confirma\u00e7\u00e3o de pagamento por e-mail.',
+            `Empresa: ${tenantId}`,
+            error instanceof Error
+              ? error.message
+              : String(error),
+          ].join(' | '),
+        );
+      }
+
+      try {
+        await this.prisma.emailLog.create({
+          data: {
+            tenantId,
+
+            email:
+              this.maskEmail(
+                tenant.email,
+              ),
+
+            subject,
+
+            body:
+              null,
+
+            status,
+          },
+        });
+      } catch (error) {
+        this.logger.error(
+          [
+            'Falha ao registar o envio da confirma\u00e7\u00e3o de pagamento.',
+            `Empresa: ${tenantId}`,
+            error instanceof Error
+              ? error.message
+              : String(error),
+          ].join(' | '),
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        [
+          'Falha ao preparar a confirma\u00e7\u00e3o de pagamento por e-mail.',
+          `Empresa: ${tenantId}`,
+          error instanceof Error
+            ? error.message
+            : String(error),
+        ].join(' | '),
+      );
+    }
+  }
+
+  private formatPaymentAmount(
+    amount: number,
+  ): string {
+    return new Intl.NumberFormat(
+      'pt-AO',
+      {
+        style:
+          'currency',
+
+        currency:
+          'AOA',
+
+        minimumFractionDigits:
+          2,
+
+        maximumFractionDigits:
+          2,
+      },
+    ).format(amount);
+  }
+
+  private maskEmail(
+    email: string,
+  ): string {
+    const [
+      localPart,
+      domain,
+    ] = email.split('@');
+
+    if (
+      !localPart ||
+      !domain
+    ) {
+      return '***';
+    }
+
+    return `${localPart.slice(0, 1)}***@${domain}`;
+  }
 
   private mapObligationTypeToTaxType(
     type: ObligationType,
