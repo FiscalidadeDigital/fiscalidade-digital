@@ -11,10 +11,8 @@ import {
   FileText,
   Loader2,
   CircleDollarSign,
-  ArrowUpRight,
   Search,
   Filter,
-  ChevronRight,
   WalletCards,
   Building2,
   ShieldCheck,
@@ -25,7 +23,6 @@ import { ConfirmDialog, useToast } from '@/components/ui/enterprise';
 
 import {
   Obligation,
-  ObligationCalculationQuality,
   ObligationStatus,
   getObligations,
   syncObligations,
@@ -218,7 +215,7 @@ const regimeStyles = (
     default:
       return {
         wrapper:
-          'border-[#ddd9ff] bg-[#f5f3ff]',
+          'border-[var(--fd-border)] bg-[var(--fd-accent-soft)]',
         icon:
           'bg-fd-accent-soft text-fd-accent',
         text:
@@ -250,21 +247,6 @@ const statusLabel = (
   }
 };
 
-const calculationQuality = (
-  quality?: ObligationCalculationQuality,
-) => {
-  switch (quality) {
-    case 'CONFIRMED':
-      return { label: 'Confirmado', className: 'bg-emerald-50 text-emerald-700' };
-    case 'CALCULATED':
-      return { label: 'Calculado', className: 'bg-blue-50 text-blue-700' };
-    case 'ESTIMATE':
-      return { label: 'Estimativa', className: 'bg-slate-100 text-slate-700' };
-    default:
-      return { label: 'Revisão necessária', className: 'bg-amber-50 text-amber-700' };
-  }
-};
-
 /* =====================================================
    TIPO
 ===================================================== */
@@ -290,12 +272,49 @@ const typeLabel = (
     case 'DECLARACAO':
       return 'Declaração';
 
+    case 'PAGAMENTO':
+      return 'Pagamento';
+
     case 'RETENCAO':
       return 'Retenção';
 
     default:
       return type;
   }
+};
+
+const splitObligationTitle = (title?: string | null) => {
+  const value = String(title || '').trim();
+  const separator = ' — ';
+  const separatorIndex = value.indexOf(separator);
+
+  if (separatorIndex < 0) {
+    return { shortTitle: value || 'Obrigação fiscal', titleDescription: '' };
+  }
+
+  return {
+    shortTitle: value.slice(0, separatorIndex).trim() || value,
+    titleDescription: value.slice(separatorIndex + separator.length).trim(),
+  };
+};
+
+const dueGroup = (obligation: Obligation) => {
+  if (obligation.status === 'LATE') {
+    return 'late';
+  }
+
+  const dueDate = new Date(obligation.dueDate);
+  const now = new Date();
+
+  if (
+    !Number.isNaN(dueDate.getTime()) &&
+    dueDate.getFullYear() === now.getFullYear() &&
+    dueDate.getMonth() === now.getMonth()
+  ) {
+    return 'this-month';
+  }
+
+  return 'upcoming';
 };
 
 /* =====================================================
@@ -474,6 +493,12 @@ export default function ObligationsPage() {
   ] = useState<
     'ALL' | ObligationStatus
   >('ALL');
+
+  const [periodFilter, setPeriodFilter] = useState<
+    'ALL' | 'THIS_MONTH' | 'UPCOMING'
+  >('ALL');
+
+  const [taxFilter, setTaxFilter] = useState('ALL');
 
   /* Regime fiscal is contextual to each tax and period. Tenant.regime remains legacy company data only. */
   const currentRegimeLabel = 'Situação Fiscal';
@@ -814,6 +839,17 @@ export default function ObligationsPage() {
             item.status ===
               filter;
 
+          const itemDueGroup = dueGroup(item);
+          const matchesPeriod =
+            periodFilter === 'ALL' ||
+            (periodFilter === 'THIS_MONTH' && itemDueGroup === 'this-month') ||
+            (periodFilter === 'UPCOMING' && itemDueGroup === 'upcoming');
+
+          const matchesTax =
+            taxFilter === 'ALL' ||
+            item.type === taxFilter ||
+            item.fiscalCalendar?.taxType === taxFilter;
+
           const matchesSearch =
             !query ||
             item.title
@@ -836,6 +872,8 @@ export default function ObligationsPage() {
 
           return (
             matchesFilter &&
+            matchesPeriod &&
+            matchesTax &&
             matchesSearch
           );
         },
@@ -844,8 +882,34 @@ export default function ObligationsPage() {
       obligations,
       search,
       filter,
+      periodFilter,
+      taxFilter,
       currentRegimeLabel,
     ]);
+
+  const taxOptions = useMemo(
+    () => Array.from(new Set(
+      obligations
+        .map((item) => item.fiscalCalendar?.taxType || item.type)
+        .filter(Boolean),
+    )).sort(),
+    [obligations],
+  );
+
+  const groupedFilteredObligations = useMemo(() => {
+    const definitions = [
+      { id: 'late', title: 'Atrasadas' },
+      { id: 'this-month', title: 'Este mês' },
+      { id: 'upcoming', title: 'Próximas' },
+    ] as const;
+
+    return definitions.map((definition) => ({
+      ...definition,
+      items: filteredObligations
+        .filter((item) => dueGroup(item) === definition.id)
+        .sort((first, second) => new Date(first.dueDate).getTime() - new Date(second.dueDate).getTime()),
+    }));
+  }, [filteredObligations]);
 
   /* =====================================================
      RENDER
@@ -1370,6 +1434,13 @@ export default function ObligationsPage() {
               >
                 {error}
               </p>
+              <button
+                type="button"
+                onClick={() => void loadObligations()}
+                className="mt-3 inline-flex min-h-11 items-center rounded-fd-field border border-red-200 bg-white px-3 text-xs font-semibold text-fd-danger transition-colors hover:bg-[var(--fd-danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-focus"
+              >
+                Tentar novamente
+              </button>
             </div>
           </div>
         )}
@@ -1401,7 +1472,9 @@ export default function ObligationsPage() {
                 size={20}
               />
             }
-            type="purple"
+            type="info"
+            onClick={() => setFilter('ALL')}
+            active={filter === 'ALL'}
           />
 
           <SummaryCard
@@ -1418,6 +1491,8 @@ export default function ObligationsPage() {
               />
             }
             type="orange"
+            onClick={() => setFilter('PENDING')}
+            active={filter === 'PENDING'}
           />
 
           <SummaryCard
@@ -1434,6 +1509,8 @@ export default function ObligationsPage() {
               />
             }
             type="green"
+            onClick={() => setFilter('PAID')}
+            active={filter === 'PAID'}
           />
 
           <SummaryCard
@@ -1452,6 +1529,8 @@ export default function ObligationsPage() {
               />
             }
             type="red"
+            onClick={() => setFilter('LATE')}
+            active={filter === 'LATE'}
           />
         </section>
 
@@ -1747,7 +1826,9 @@ export default function ObligationsPage() {
         ================================================= */}
 
         <section
+          id="lista-obrigacoes"
           className="
+            scroll-mt-24
             overflow-hidden
             rounded-2xl
             border
@@ -1780,6 +1861,7 @@ export default function ObligationsPage() {
               <div>
                 <h2
                   className="
+                    scroll-mt-24
                     text-[16px]
                     font-bold
                     text-[#111b3b]
@@ -1914,6 +1996,27 @@ export default function ObligationsPage() {
                     </option>
                   </select>
                 </div>
+
+                <select
+                  aria-label="Filtrar por período"
+                  value={periodFilter}
+                  onChange={(event) => setPeriodFilter(event.target.value as 'ALL' | 'THIS_MONTH' | 'UPCOMING')}
+                  className="h-10 rounded-xl border border-[#e4e7ef] bg-[#fafbfe] px-3 text-xs font-semibold text-[#526080] outline-none focus:border-fd-accent focus:ring-2 focus:ring-fd-focus"
+                >
+                  <option value="ALL">Qualquer período</option>
+                  <option value="THIS_MONTH">Este mês</option>
+                  <option value="UPCOMING">Próximas</option>
+                </select>
+
+                <select
+                  aria-label="Filtrar por imposto"
+                  value={taxFilter}
+                  onChange={(event) => setTaxFilter(event.target.value)}
+                  className="h-10 rounded-xl border border-[#e4e7ef] bg-[#fafbfe] px-3 text-xs font-semibold text-[#526080] outline-none focus:border-fd-accent focus:ring-2 focus:ring-fd-focus"
+                >
+                  <option value="ALL">Todos os impostos</option>
+                  {taxOptions.map((tax) => <option key={tax} value={tax}>{typeLabel(tax)}</option>)}
+                </select>
               </div>
             </div>
           </div>
@@ -1921,52 +2024,20 @@ export default function ObligationsPage() {
           {/* LOADING */}
 
           {loading ? (
-            <div
-              className="
-                flex
-                min-h-[360px]
-                flex-col
-                items-center
-                justify-center
-                gap-3
-              "
-            >
-              <div
-                className="
-                  flex
-                  h-12
-                  w-12
-                  items-center
-                  justify-center
-                  rounded-2xl
-                  bg-fd-accent-soft
-                  text-fd-accent
-                "
-              >
-                <Loader2
-                  size={22}
-                  className="animate-spin"
-                />
-              </div>
-
-              <p
-                className="
-                  text-[12px]
-                  font-semibold
-                  text-[#526080]
-                "
-              >
-                A carregar obrigações...
-              </p>
-
-              <p
-                className="
-                  text-xs
-                  text-[var(--fd-text-muted)]
-                "
-              >
-                A obter dados da empresa.
-              </p>
+            <div className="space-y-3 p-5 sm:p-6" role="status" aria-label="A carregar obrigações">
+              {[1, 2, 3, 4].map((item) => (
+                <div key={item} className="animate-pulse rounded-fd-card border border-[var(--fd-border)] p-4">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="min-w-0 flex-1 space-y-2">
+                      <div className="h-4 w-24 rounded bg-[var(--fd-surface-subtle)]" />
+                      <div className="h-3 w-3/4 rounded bg-[var(--fd-surface-subtle)]" />
+                      <div className="h-3 w-1/2 rounded bg-[var(--fd-surface-subtle)]" />
+                    </div>
+                    <div className="h-10 w-24 rounded bg-[var(--fd-surface-subtle)]" />
+                  </div>
+                </div>
+              ))}
+              <p className="sr-only">A obter dados da empresa.</p>
             </div>
           ) : filteredObligations.length ===
             0 ? (
@@ -2077,10 +2148,14 @@ export default function ObligationsPage() {
                 divide-[#eef0f5]
               "
             >
-              {filteredObligations.map(
-                (
-                  obligation,
-                ) => {
+              {groupedFilteredObligations.map((group) => (
+                group.items.length ? (
+                  <section key={group.id} aria-labelledby={`obligations-group-${group.id}`}>
+                    <div className="flex items-center justify-between border-y border-[var(--fd-border)] bg-[var(--fd-surface-muted)] px-5 py-2.5 sm:px-6">
+                      <h3 id={`obligations-group-${group.id}`} className="text-xs font-bold uppercase tracking-[.12em] text-[var(--fd-text-secondary)]">{group.title}</h3>
+                      <span className="rounded-full bg-white px-2.5 py-1 text-xs font-semibold text-[var(--fd-text-secondary)]">{group.items.length}</span>
+                    </div>
+                    {group.items.map((obligation) => {
                   const isPaid =
                     obligation.status ===
                     'PAID';
@@ -2102,9 +2177,13 @@ export default function ObligationsPage() {
                       obligation.description,
                     );
 
-                  const quality = calculationQuality(
-                    obligation.calculation?.quality,
+                  const { shortTitle, titleDescription } = splitObligationTitle(
+                    obligation.title,
                   );
+                  const fullDescription = [titleDescription, description]
+                    .filter(Boolean)
+                    .join(' ');
+                  const needsReview = obligation.calculation?.quality === 'REVIEW_REQUIRED';
 
                   return (
                     <div
@@ -2113,10 +2192,11 @@ export default function ObligationsPage() {
                       }
                       className="
                         group
-                        p-5
+                        px-5
+                        py-4
                         transition
                         hover:bg-[#fafbfe]
-                        sm:p-6
+                        sm:px-6
                       "
                     >
                       <div
@@ -2137,7 +2217,7 @@ export default function ObligationsPage() {
                             flex
                             min-w-0
                             items-start
-                            gap-4
+                            gap-3
                           "
                         >
                           <div
@@ -2191,16 +2271,13 @@ export default function ObligationsPage() {
                             >
                               <h3
                                 className="
-                                  truncate
-                                  text-[13px]
+                                  min-w-0
+                                  text-sm
                                   font-bold
                                   text-[#111b3b]
-                                  sm:text-[14px]
                                 "
                               >
-                                {
-                                  obligation.title
-                                }
+                                {shortTitle}
                               </h3>
 
                               <span
@@ -2220,10 +2297,23 @@ export default function ObligationsPage() {
                               </span>
 
                               <span
-                                className={`rounded-md px-2 py-1 text-xs font-bold ${quality.className}`}
+                                className={`ml-auto rounded-md px-2 py-1 text-xs font-bold ${
+                                  isPaid
+                                    ? 'bg-emerald-50 text-emerald-700'
+                                    : isLate
+                                      ? 'bg-red-50 text-red-700'
+                                      : 'bg-[var(--fd-warning-soft)] text-fd-warning'
+                                }`}
                               >
-                                {quality.label}
+                                {statusLabel(obligation.status)}
                               </span>
+
+                              {needsReview && (
+                                <span title="Revisão necessária: confirme o valor antes de efetuar o pagamento." className="inline-flex h-7 w-7 items-center justify-center rounded-md text-fd-warning">
+                                  <AlertTriangle aria-hidden="true" size={16} />
+                                  <span className="sr-only">Revisão necessária</span>
+                                </span>
+                              )}
                             </div>
 
                             {/* DATA / PERÍODO */}
@@ -2288,76 +2378,13 @@ export default function ObligationsPage() {
                               )}
                             </div>
 
-                            {/* REGIME REAL */}
-
-                            <div
-                              className="
-                                mt-2
-                                flex
-                                flex-wrap
-                                items-center
-                                gap-2
-                              "
-                            >
-                              <span
-                                className={`
-                                  inline-flex
-                                  items-center
-                                  gap-1.5
-                                  rounded-md
-                                  border
-                                  px-2
-                                  py-1
-                                  text-xs
-                                  font-bold
-                                  ${currentRegimeStyles.wrapper}
-                                  ${currentRegimeStyles.text}
-                                `}
-                              >
-                                <ShieldCheck
-                                  size={11}
-                                />
-
-                                {currentRegimeLabel}
-                              </span>
-
-                              {company.sector && (
-                                <span
-                                  className="
-                                    text-xs
-                                    text-[var(--fd-text-muted)]
-                                  "
-                                >
-                                  Sector:{' '}
-
-                                  <strong
-                                    className="
-                                      font-semibold
-                                      text-[var(--fd-text-muted)]
-                                    "
-                                  >
-                                    {
-                                      company.sector
-                                    }
-                                  </strong>
-                                </span>
-                              )}
-                            </div>
-
-                            {/* DESCRIÇÃO */}
-
-                            {description && (
-                              <p
-                                className="
-                                  mt-2
-                                  max-w-[650px]
-                                  text-xs
-                                  leading-5
-                                  text-[var(--fd-text-muted)]
-                                "
-                              >
-                                {description}
-                              </p>
+                            {fullDescription && (
+                              <details className="mt-2 max-w-[650px] text-xs leading-5 text-[var(--fd-text-secondary)]">
+                                <summary className="cursor-pointer font-semibold text-fd-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-fd-focus">
+                                  Ver descrição completa
+                                </summary>
+                                <p className="mt-1">{fullDescription}</p>
+                              </details>
                             )}
 
                             {obligation.calculation && (
@@ -2430,40 +2457,25 @@ export default function ObligationsPage() {
                             </p>
 
                             <p
-                              className="
+                              className={`
                                 mt-1
                                 text-[16px]
                                 font-extrabold
-                                text-[#111b3b]
-                              "
-                            >
-                              {amount === null
-                                ? 'Montante ainda não determinado'
-                                : formatCurrency(amount)}
-                            </p>
-
-                            <span
-                              className={`
-                                mt-2
-                                inline-flex
-                                rounded-lg
-                                px-2.5
-                                py-1
-                                text-xs
-                                font-bold
-                                ${
-                                  isPaid
-                                    ? 'bg-emerald-50 text-emerald-700'
-                                    : isLate
-                                      ? 'bg-red-50 text-red-700'
-                                      : 'bg-orange-50 text-orange-700'
-                                }
+                                ${needsReview ? 'text-[var(--fd-text-muted)]' : 'text-[#111b3b]'}
                               `}
                             >
-                              {statusLabel(
-                                obligation.status,
-                              )}
-                            </span>
+                              {needsReview
+                                ? 'Por confirmar'
+                                : amount === null
+                                  ? 'Montante ainda não determinado'
+                                  : formatCurrency(amount)}
+                            </p>
+
+                            {needsReview && (
+                              <p className="mt-1 text-xs text-[var(--fd-text-muted)]">
+                                Valor registado: {formatCurrency(amount)}
+                              </p>
+                            )}
                           </div>
 
                           {/* PAGAMENTO */}
@@ -2482,20 +2494,21 @@ export default function ObligationsPage() {
                               }
                               className="
                                 inline-flex
-                                h-10
+                                h-11
                                 items-center
                                 justify-center
                                 gap-2
-                                rounded-xl
+                                whitespace-nowrap
+                                rounded-fd-field
                                 border
-                                border-[#ddd9ff]
+                                border-[var(--fd-border)]
                                 bg-white
                                 px-4
                                 text-xs
                                 font-bold
                                 text-fd-accent
                                 transition
-                                hover:bg-[#f5f3ff]
+                                hover:bg-[var(--fd-accent-soft)]
                                 disabled:cursor-not-allowed
                                 disabled:opacity-50
                               "
@@ -2542,22 +2555,14 @@ export default function ObligationsPage() {
                             </div>
                           )}
 
-                          <ChevronRight
-                            size={17}
-                            className="
-                              hidden
-                              text-[var(--fd-text-muted)]
-                              transition
-                              group-hover:text-fd-accent
-                              xl:block
-                            "
-                          />
                         </div>
                       </div>
                     </div>
                   );
-                },
-              )}
+                    })}
+                  </section>
+                ) : null
+              ))}
             </div>
           )}
 
@@ -2637,9 +2642,6 @@ export default function ObligationsPage() {
                     {currentRegimeLabel}
                   </span>
 
-                  <ArrowUpRight
-                    size={13}
-                  />
                 </div>
               </div>
             )}
@@ -2676,21 +2678,25 @@ function SummaryCard({
   description,
   icon,
   type,
+  onClick,
+  active = false,
 }: {
   title: string;
   value: number;
   description: string;
   icon: React.ReactNode;
   type:
-    | 'purple'
+    | 'info'
     | 'orange'
     | 'green'
     | 'red';
+  onClick?: () => void;
+  active?: boolean;
 }) {
   const styles = {
-    purple: {
+    info: {
       border:
-        'border-[#ddd9ff]',
+        'border-[var(--fd-border)]',
       icon:
         'bg-fd-accent-soft text-fd-accent',
     },
@@ -2721,8 +2727,14 @@ function SummaryCard({
     styles[type];
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
       className={`
+        relative
+        w-full
+        text-left
         border-b
         border-slate-200
         p-5
@@ -2730,6 +2742,13 @@ function SummaryCard({
         xl:border-b-0
         xl:border-r
         xl:last:border-r-0
+        transition-colors
+        hover:bg-[var(--fd-surface-muted)]
+        focus-visible:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-inset
+        focus-visible:ring-fd-focus
+        ${active ? 'bg-[var(--fd-accent-soft)]' : ''}
       `}
     >
       <div
@@ -2793,6 +2812,6 @@ function SummaryCard({
           {icon}
         </div>
       </div>
-    </div>
+    </button>
   );
 }
