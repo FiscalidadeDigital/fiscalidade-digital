@@ -48,7 +48,7 @@ export default function TermsPage() {
       <section id="proteccao-de-dados">
         <h2 className="text-xl font-semibold text-slate-900">7. Protecção de dados</h2>
         <p className="mt-3">O tratamento de dados pessoais é realizado de acordo com a Política de Privacidade da Fiscalidade Digital.</p>
-        <Link href="/privacy" className="mt-3 inline-block font-semibold text-[#0b6f93] underline-offset-4 hover:underline">Consultar Política de Privacidade</Link>
+        <Link href="/privacy" className="mt-3 inline-block font-semibold text-fd-accent underline-offset-4 hover:underline">Consultar Política de Privacidade</Link>
       </section>
       <section id="alteracoes-aos-termos">
         <h2 className="text-xl font-semibold text-slate-900">8. Alterações aos termos</h2>

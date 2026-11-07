@@ -37,7 +37,7 @@ export default function ForgotPasswordPage() {
           <h2 className="mt-3 text-lg font-semibold text-emerald-950">Pedido recebido</h2>
           <p className="mt-2 text-sm leading-6 text-emerald-900">Se existir uma conta associada a este endereço, receberá instruções para recuperar o acesso.</p>
           <Link href={`/reset-password?email=${encodeURIComponent(email)}`} className="fd-button-primary mt-5 w-full">Introduzir código recebido</Link>
-          <Link href="/login" className="mt-4 block text-center text-sm font-semibold text-[#0b6f93] underline underline-offset-2">Voltar ao início de sessão</Link>
+          <Link href="/login" className="mt-4 block text-center text-sm font-semibold text-fd-accent underline underline-offset-2">Voltar ao início de sessão</Link>
         </div>
       ) : (
         <form onSubmit={submit} className="space-y-5">

@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import { useEffect, useMemo, useState } from 'react';
 
@@ -219,11 +219,11 @@ const regimeStyles = (
         wrapper:
           'border-[#ddd9ff] bg-[#f5f3ff]',
         icon:
-          'bg-[#e9e5ff] text-[#5146e5]',
+          'bg-fd-accent-soft text-fd-accent',
         text:
-          'text-[#5146e5]',
+          'text-fd-accent',
         dot:
-          'bg-[#5146e5]',
+          'bg-fd-primary',
       };
   }
 };
@@ -913,13 +913,13 @@ export default function ObligationsPage() {
               justify-center
               gap-2
               rounded-md
-              bg-[#0b6f93]
+              bg-fd-primary
               px-5
               text-[11px]
               font-semibold
               text-white
               transition-colors
-              hover:bg-[#085b79]
+              hover:bg-fd-primary-hover
               disabled:cursor-not-allowed
               disabled:opacity-60
             "
@@ -1230,8 +1230,8 @@ export default function ObligationsPage() {
                   items-center
                   justify-center
                   rounded-xl
-                  bg-[#f0edff]
-                  text-[#5146e5]
+                  bg-fd-accent-soft
+                  text-fd-accent
                 "
               >
                 <CalendarDays
@@ -1522,8 +1522,8 @@ export default function ObligationsPage() {
                   items-center
                   justify-center
                   rounded-xl
-                  bg-[#f0edff]
-                  text-[#5146e5]
+                  bg-fd-accent-soft
+                  text-fd-accent
                 "
               >
                 <WalletCards
@@ -1545,7 +1545,7 @@ export default function ObligationsPage() {
                 className="
                   h-full
                   rounded-full
-                  bg-[#5146e5]
+                  bg-fd-primary
                   transition-all
                   duration-500
                 "
@@ -1577,7 +1577,7 @@ export default function ObligationsPage() {
                 className="
                   text-[11px]
                   font-bold
-                  text-[#5146e5]
+                  text-fd-accent
                 "
               >
                 {completionRate}%
@@ -1708,9 +1708,9 @@ export default function ObligationsPage() {
                 py-2.5
                 text-[10px]
                 font-bold
-                text-[#5146e5]
+                text-fd-accent
                 transition
-                hover:bg-[#f0edff]
+                hover:bg-fd-accent-soft
                 disabled:opacity-50
               "
             >
@@ -1927,8 +1927,8 @@ export default function ObligationsPage() {
                   items-center
                   justify-center
                   rounded-2xl
-                  bg-[#f0edff]
-                  text-[#5146e5]
+                  bg-fd-accent-soft
+                  text-fd-accent
                 "
               >
                 <Loader2
@@ -1979,8 +1979,8 @@ export default function ObligationsPage() {
                   items-center
                   justify-center
                   rounded-2xl
-                  bg-[#f0edff]
-                  text-[#5146e5]
+                  bg-fd-accent-soft
+                  text-fd-accent
                 "
               >
                 <FileText
@@ -2028,7 +2028,7 @@ export default function ObligationsPage() {
                     items-center
                     gap-2
                     rounded-xl
-                    bg-[#5146e5]
+                    bg-fd-primary
                     px-4
                     py-2.5
                     text-[10px]
@@ -2142,7 +2142,7 @@ export default function ObligationsPage() {
                                   ? 'bg-emerald-50 text-emerald-600'
                                   : isLate
                                     ? 'bg-red-50 text-red-600'
-                                    : 'bg-[#f0edff] text-[#5146e5]'
+                                    : 'bg-fd-accent-soft text-fd-accent'
                               }
                             `}
                           >
@@ -2370,7 +2370,7 @@ export default function ObligationsPage() {
                                 )}
                                 {obligation.calculation.rule?.sourceUrl && (
                                   <a
-                                    className="mt-2 inline-block font-semibold text-[#5146e5] hover:underline"
+                                    className="mt-2 inline-block font-semibold text-fd-accent hover:underline"
                                     href={obligation.calculation.rule.sourceUrl}
                                     target="_blank"
                                     rel="noreferrer"
@@ -2481,7 +2481,7 @@ export default function ObligationsPage() {
                                 px-4
                                 text-[10px]
                                 font-bold
-                                text-[#5146e5]
+                                text-fd-accent
                                 transition
                                 hover:bg-[#f5f3ff]
                                 disabled:cursor-not-allowed
@@ -2536,7 +2536,7 @@ export default function ObligationsPage() {
                               hidden
                               text-[#c1c7d4]
                               transition
-                              group-hover:text-[#5146e5]
+                              group-hover:text-fd-accent
                               xl:block
                             "
                           />
@@ -2663,7 +2663,7 @@ function SummaryCard({
       border:
         'border-[#ddd9ff]',
       icon:
-        'bg-[#f0edff] text-[#5146e5]',
+        'bg-fd-accent-soft text-fd-accent',
     },
 
     orange: {

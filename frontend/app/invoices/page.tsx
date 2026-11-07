@@ -213,7 +213,7 @@ export default function InvoicesPage() {
                   resetPage();
                 }}
                 placeholder="Número, cliente ou NIF"
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               />
             </label>
             <label>
@@ -224,7 +224,7 @@ export default function InvoicesPage() {
                   setStatus(event.target.value as InvoiceStatus | '');
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="">Todos os estados</option>
                 <option value="PENDING">Pendentes</option>
@@ -240,7 +240,7 @@ export default function InvoicesPage() {
                   setSort(event.target.value);
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="issuedAt:desc">Mais recentes</option>
                 <option value="issuedAt:asc">Mais antigas</option>
@@ -287,7 +287,7 @@ export default function InvoicesPage() {
                   <tr>
                     <td colSpan={7} className="h-52 text-center">
                       <Loader2
-                        className="mx-auto h-5 w-5 animate-spin text-sky-700"
+                        className="mx-auto h-5 w-5 animate-spin text-fd-accent"
                         aria-label="A carregar facturas"
                       />
                     </td>
@@ -297,13 +297,13 @@ export default function InvoicesPage() {
                     <tr key={invoice.id} className="hover:bg-slate-50/70">
                       <td className="px-5 py-4">
                         <div className="flex items-start gap-3">
-                          <span className="rounded-lg bg-sky-50 p-2 text-sky-700">
+                          <span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent">
                             <FileText className="h-4 w-4" />
                           </span>
                           <div>
                             <Link
                               href={`/invoices/${invoice.id}`}
-                              className="text-sm font-semibold text-sky-800 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
+                              className="text-sm font-semibold text-fd-primary underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-fd-focus focus:ring-offset-2"
                             >
                               {invoice.invoiceNumber}
                             </Link>
@@ -348,7 +348,7 @@ export default function InvoicesPage() {
                           <Link
                             href={`/invoices/${invoice.id}`}
                             title="Ver detalhes"
-                            className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                            className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-fd-accent hover:text-fd-primary focus:outline-none focus:ring-2 focus:ring-fd-focus"
                             aria-label={`Ver detalhes de ${invoice.invoiceNumber}`}
                           >
                             <Eye className="h-4 w-4" />
@@ -361,7 +361,7 @@ export default function InvoicesPage() {
                             title="Abrir PDF"
                             disabled={pdfBusy === invoice.id}
                             onClick={() => void downloadPdf(invoice)}
-                            className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800 disabled:opacity-50"
+                            className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-fd-accent hover:text-fd-primary disabled:opacity-50"
                             aria-label={`Abrir PDF de ${invoice.invoiceNumber}`}
                           >
                             {pdfBusy === invoice.id ? (
@@ -478,7 +478,7 @@ function ActionDialog({
       >
         <div className="flex items-start justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-fd-accent">
               Alteração de estado
             </p>
             <h2

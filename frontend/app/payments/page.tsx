@@ -882,7 +882,7 @@ export default function PaymentsPage() {
                 rounded-full
                 border-4
                 border-slate-200
-                border-t-[#5146e5]
+                border-t-fd-primary
               "
             />
 
@@ -1227,8 +1227,8 @@ export default function PaymentsPage() {
                     items-center
                     justify-center
                     rounded-xl
-                    bg-[#f0edff]
-                    text-[#5146e5]
+                    bg-fd-accent-soft
+                    text-fd-accent
                   "
                 >
                   <TrendingUp
@@ -1272,7 +1272,7 @@ export default function PaymentsPage() {
               >
                 <CalendarDays
                   size={13}
-                  className="text-[#5146e5]"
+                  className="text-fd-accent"
                 />
 
                 <span
@@ -1420,14 +1420,14 @@ export default function PaymentsPage() {
                       type="monotone"
                       dataKey="value"
                       name="Pagamentos"
-                      stroke="#5146e5"
+                      stroke="var(--fd-primary)"
                       strokeWidth={
                         3
                       }
                       dot={{
                         r: 4,
                         fill:
-                          '#5146e5',
+                          'var(--fd-primary)',
                         strokeWidth:
                           2,
                         stroke:
@@ -1436,7 +1436,7 @@ export default function PaymentsPage() {
                       activeDot={{
                         r: 6,
                         fill:
-                          '#5146e5',
+                          'var(--fd-primary)',
                         stroke:
                           '#ffffff',
                         strokeWidth:
@@ -1552,7 +1552,7 @@ export default function PaymentsPage() {
                       placeholder:text-[#a3acc0]
                       focus:border-[#b9b3ff]
                       focus:ring-2
-                      focus:ring-[#5146e5]/10
+                      focus:ring-fd-focus
                     "
                   />
                 </div>
@@ -1718,8 +1718,8 @@ export default function PaymentsPage() {
                                     items-center
                                     justify-center
                                     rounded-lg
-                                    bg-[#f0edff]
-                                    text-[#5146e5]
+                                    bg-fd-accent-soft
+                                    text-fd-accent
                                   "
                                 >
                                   <FileText
@@ -1862,8 +1862,8 @@ export default function PaymentsPage() {
                                 items-center
                                 justify-center
                                 rounded-lg
-                                bg-[#f0edff]
-                                text-[#5146e5]
+                                bg-fd-accent-soft
+                                text-fd-accent
                               "
                             >
                               <FileText
@@ -2007,9 +2007,9 @@ function PaymentStat({
       border:
         'border-[#dcd9ff]',
       bg:
-        'bg-[#f0edff]',
+        'bg-fd-accent-soft',
       text:
-        'text-[#5146e5]',
+        'text-fd-accent',
     },
   };
 
@@ -2135,8 +2135,8 @@ function EmptyState({
           items-center
           justify-center
           rounded-xl
-          bg-[#f0edff]
-          text-[#5146e5]
+          bg-fd-accent-soft
+          text-fd-accent
         "
       >
         {icon}

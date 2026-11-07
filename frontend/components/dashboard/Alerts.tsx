@@ -111,7 +111,7 @@ export default function Alerts({
                 gap-1
                 text-[11px]
                 font-semibold
-                text-[#5146e5]
+                text-fd-accent
                 hover:text-[#4338ca]
               "
             >

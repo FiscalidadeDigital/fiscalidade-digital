@@ -101,7 +101,7 @@ export default function LoginPage() {
     >
       <form onSubmit={handleLogin} noValidate className="space-y-4">
         {sessionNotice && (
-          <p role="status" className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
+          <p role="status" className="rounded-lg border border-fd-accent-soft bg-fd-accent-soft p-3 text-sm leading-6 text-fd-primary">
             {sessionNotice}
           </p>
         )}
@@ -131,7 +131,7 @@ export default function LoginPage() {
         </label>
 
         <div className="relative pt-7">
-          <Link href="/forgot-password" className="absolute right-0 top-0 z-10 text-sm font-semibold text-[#0b6f93] underline-offset-2 hover:underline">
+          <Link href="/forgot-password" className="absolute right-0 top-0 z-10 text-sm font-semibold text-fd-accent underline-offset-2 hover:underline">
             Esqueceu-se da palavra-passe?
           </Link>
           <PasswordInput
@@ -155,7 +155,7 @@ export default function LoginPage() {
 
       <p className="mt-6 text-center text-sm text-[#66758d]">
         Ainda não tem conta?{' '}
-        <Link className="font-semibold text-[#0b6f93] underline-offset-2 hover:underline" href="/register">
+        <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/register">
           Criar conta
         </Link>
       </p>

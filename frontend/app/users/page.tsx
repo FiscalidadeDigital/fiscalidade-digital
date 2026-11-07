@@ -35,8 +35,8 @@ const roleLabels: Record<TenantUserRole, string> = {
 };
 
 const roleStyles: Record<TenantUserRole, string> = {
-  OWNER: 'border-sky-200 bg-sky-50 text-sky-800',
-  ADMIN: 'border-indigo-200 bg-indigo-50 text-indigo-800',
+  OWNER: 'border-fd-accent-soft bg-fd-accent-soft text-fd-primary',
+  ADMIN: 'border-fd-accent-soft bg-fd-accent-soft text-fd-primary',
   ACCOUNTANT: 'border-amber-200 bg-amber-50 text-amber-800',
   VIEWER: 'border-slate-200 bg-slate-50 text-slate-700',
 };
@@ -193,7 +193,7 @@ export default function UsersPage() {
               </select>
               <button
                 disabled={inviting}
-                className="h-10 rounded-lg bg-sky-700 px-4 text-sm font-semibold text-white disabled:opacity-60"
+                className="h-10 rounded-lg bg-fd-primary px-4 text-sm font-semibold text-white disabled:opacity-60"
               >
                 {inviting ? 'A enviar…' : 'Convidar'}
               </button>
@@ -222,7 +222,7 @@ export default function UsersPage() {
                   resetPage();
                 }}
                 placeholder="Nome ou email"
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               />
             </label>
             <label>
@@ -233,7 +233,7 @@ export default function UsersPage() {
                   setRole(event.target.value as TenantUserRole | '');
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="">Todas as funções</option>
                 {Object.entries(roleLabels).map(([value, label]) => (
@@ -251,7 +251,7 @@ export default function UsersPage() {
                   setStatus(event.target.value as 'ACTIVE' | 'INACTIVE' | '');
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="">Todos os estados</option>
                 <option value="ACTIVE">Activos</option>
@@ -266,7 +266,7 @@ export default function UsersPage() {
                   setSort(event.target.value);
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="name:asc">Nome A–Z</option>
                 <option value="name:desc">Nome Z–A</option>
@@ -309,7 +309,7 @@ export default function UsersPage() {
                   <tr>
                     <td colSpan={5} className="h-52 text-center">
                       <Loader2
-                        className="mx-auto h-5 w-5 animate-spin text-sky-700"
+                        className="mx-auto h-5 w-5 animate-spin text-fd-accent"
                         aria-label="A carregar utilizadores"
                       />
                     </td>
@@ -326,7 +326,7 @@ export default function UsersPage() {
                       <tr key={member.id} className="hover:bg-slate-50/70">
                         <td className="px-5 py-4">
                           <div className="flex items-center gap-3">
-                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sky-50 text-xs font-semibold text-sky-800">
+                            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-fd-accent-soft text-xs font-semibold text-fd-primary">
                               {member.name.slice(0, 2).toUpperCase()}
                             </span>
                             <div className="min-w-0">
@@ -369,7 +369,7 @@ export default function UsersPage() {
                             type="button"
                             disabled={!canManage}
                             onClick={() => setSelected(member)}
-                            className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] px-3 py-2 text-xs font-semibold text-[var(--fd-text-primary)] hover:border-sky-300 hover:text-sky-800 focus:outline-none focus:ring-4 focus:ring-sky-100 disabled:cursor-not-allowed disabled:opacity-45"
+                            className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] px-3 py-2 text-xs font-semibold text-[var(--fd-text-primary)] hover:border-fd-accent hover:text-fd-primary focus:outline-none focus:ring-4 focus:ring-fd-focus disabled:cursor-not-allowed disabled:opacity-45"
                           >
                             <UserCog className="h-3.5 w-3.5" />
                             Gerir
@@ -425,7 +425,7 @@ export default function UsersPage() {
           </div>
         </section>
 
-        <aside className="mt-4 rounded-xl border border-sky-200 bg-sky-50 px-4 py-3 text-xs leading-5 text-sky-900">
+        <aside className="mt-4 rounded-xl border border-fd-accent-soft bg-fd-accent-soft px-4 py-3 text-xs leading-5 text-fd-primary">
           A criação de novos acessos será disponibilizada com um fluxo de
           convite verificável e com expiração. Esta página não gera
           palavras-passe nem simula convites.
@@ -510,7 +510,7 @@ function AccessModal({
       >
         <div className="flex items-start justify-between border-b border-[var(--fd-border)] p-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-fd-accent">
               Controlo de acesso
             </p>
             <h2
@@ -537,7 +537,7 @@ function AccessModal({
               onChange={(event) =>
                 setRole(event.target.value as TenantUserRole)
               }
-              className="mt-2 h-11 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+              className="mt-2 h-11 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
             >
               {assignableRoles.map((value) => (
                 <option key={value} value={value}>
@@ -570,7 +570,7 @@ function AccessModal({
               maxLength={500}
               rows={3}
               placeholder="Registe a razão para auditoria"
-              className="mt-2 w-full resize-none rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+              className="mt-2 w-full resize-none rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
             />
           </label>
           {error && (
@@ -592,7 +592,7 @@ function AccessModal({
             <button
               type="submit"
               disabled={saving || !hasChanges}
-              className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:cursor-not-allowed disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-4 py-2.5 text-xs font-semibold text-white hover:bg-fd-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}Guardar
               alterações

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -282,7 +282,7 @@ export default function PurchaseInvoicesPage() {
             <div className="grid gap-3 sm:flex sm:flex-wrap">
               <Link
                 href="/purchase-invoices/import"
-                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#d9ddec] sm:w-auto bg-white px-5 py-3 text-sm font-semibold text-[#273558] shadow-sm transition hover:border-[#5146e5]"
+                className="flex w-full items-center justify-center gap-2 rounded-xl border border-[#d9ddec] sm:w-auto bg-white px-5 py-3 text-sm font-semibold text-[#273558] shadow-sm transition hover:border-fd-primary"
               >
                 <FileText size={18} />
                 Importar documento
@@ -290,7 +290,7 @@ export default function PurchaseInvoicesPage() {
               <button
                 onClick={openCreateModal}
                 disabled={isLoading || Boolean(loadError)}
-                className="flex w-full items-center justify-center gap-2 rounded-xl bg-[#5146e5] sm:w-auto px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-[#453bd1]"
+                className="flex w-full items-center justify-center gap-2 rounded-xl bg-fd-primary sm:w-auto px-5 py-3 font-semibold text-white shadow-sm transition hover:bg-fd-primary-hover"
               >
                 <Plus size={19} />
                 Nova factura recebida
@@ -366,7 +366,7 @@ export default function PurchaseInvoicesPage() {
                   setSearch(e.target.value)
                 }
                 placeholder="Pesquisar por factura, fornecedor ou NIF..."
-                className="w-full rounded-xl border border-[#e1e5ee] bg-[#fbfcfe] py-3 pl-11 pr-4 text-sm outline-none focus:border-[#5146e5]"
+                className="w-full rounded-xl border border-[#e1e5ee] bg-[#fbfcfe] py-3 pl-11 pr-4 text-sm outline-none focus:border-fd-primary"
               />
             </div>
 
@@ -433,7 +433,7 @@ export default function PurchaseInvoicesPage() {
             </div>
           ) : filteredInvoices.length === 0 ? (
             <div className="px-6 py-20 text-center">
-              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f0efff] text-[#5146e5]">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f0efff] text-fd-accent">
                 <FileText size={26} />
               </div>
 
@@ -449,7 +449,7 @@ export default function PurchaseInvoicesPage() {
               {canWrite && (
                 <button
                   onClick={openCreateModal}
-                  className="mt-5 rounded-xl bg-[#5146e5] px-5 py-3 text-sm font-semibold text-white"
+                  className="mt-5 rounded-xl bg-fd-primary px-5 py-3 text-sm font-semibold text-white"
                 >
                   Registar primeira factura
                 </button>
@@ -491,7 +491,7 @@ export default function PurchaseInvoicesPage() {
                         className="border-b border-[#f0f2f6] last:border-0"
                       >
                         <td className="px-6 py-5">
-                          <Link href={`/purchase-invoices/${invoice.id}`} className="font-semibold text-[#0f1b3d] hover:text-[#5146e5]">
+                          <Link href={`/purchase-invoices/${invoice.id}`} className="font-semibold text-[#0f1b3d] hover:text-fd-accent">
                             {invoice.invoiceNumber}
                           </Link>
 
@@ -610,7 +610,7 @@ export default function PurchaseInvoicesPage() {
                         )
                       }
                       placeholder="FT 2026/001"
-                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
+                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-fd-primary"
                     />
                   </div>
 
@@ -625,7 +625,7 @@ export default function PurchaseInvoicesPage() {
                       onChange={(e) =>
                         setIssuedAt(e.target.value)
                       }
-                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
+                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-fd-primary"
                     />
                   </div>
 
@@ -638,7 +638,7 @@ export default function PurchaseInvoicesPage() {
                       <select
                         value={supplierId}
                         onChange={(e) => setSupplierId(e.target.value)}
-                        className="w-full rounded-xl border border-[#dfe4ee] bg-white px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
+                        className="w-full rounded-xl border border-[#dfe4ee] bg-white px-4 py-3 text-sm outline-none focus:border-fd-primary"
                       >
                         <option value="">Seleccione um fornecedor</option>
                         {suppliers.map((entry) => (
@@ -675,7 +675,7 @@ export default function PurchaseInvoicesPage() {
                       value={ivaAmount}
                       onChange={(e) => setIvaAmount(e.target.value)}
                       placeholder="0"
-                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
+                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-fd-primary"
                     />
                   </div>
 
@@ -696,7 +696,7 @@ export default function PurchaseInvoicesPage() {
                         )
                       }
                       placeholder="0"
-                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
+                      className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-fd-primary"
                     />
                   </div>
 
@@ -723,7 +723,7 @@ export default function PurchaseInvoicesPage() {
                   <button
                     type="button"
                     onClick={addItem}
-                    className="flex items-center gap-2 rounded-xl border border-[#5146e5] px-4 py-2.5 text-sm font-semibold text-[#5146e5]"
+                    className="flex items-center gap-2 rounded-xl border border-fd-primary px-4 py-2.5 text-sm font-semibold text-fd-accent"
                   >
                     <Plus size={17} />
                     Adicionar item
@@ -766,7 +766,7 @@ export default function PurchaseInvoicesPage() {
                                   )
                                 }
                                 placeholder="Ex.: Computador"
-                                className="w-full rounded-lg border border-[#dfe4ee] px-3 py-2.5 text-sm outline-none focus:border-[#5146e5]"
+                                className="w-full rounded-lg border border-[#dfe4ee] px-3 py-2.5 text-sm outline-none focus:border-fd-primary"
                               />
                             </td>
 
@@ -846,7 +846,7 @@ export default function PurchaseInvoicesPage() {
                   }
                   placeholder="Observações sobre a factura..."
                   rows={3}
-                  className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-[#5146e5]"
+                  className="w-full rounded-xl border border-[#dfe4ee] px-4 py-3 text-sm outline-none focus:border-fd-primary"
                 />
               </div>
             </div>
@@ -866,7 +866,7 @@ export default function PurchaseInvoicesPage() {
               <button
                 onClick={saveInvoice}
                 disabled={isSaving || suppliers.length === 0}
-                className="flex items-center gap-2 rounded-xl bg-[#5146e5] px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                className="flex items-center gap-2 rounded-xl bg-fd-primary px-5 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Save size={17} />
                 {isSaving ? "A registar…" : "Registar factura"}

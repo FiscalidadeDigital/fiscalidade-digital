@@ -61,8 +61,8 @@ export default function QuickActions() {
             items-center
             justify-center
             rounded-xl
-            bg-[#f0edff]
-            text-[#5146e5]
+            bg-fd-accent-soft
+            text-fd-accent
           "
         >
           <ArrowUpRight
@@ -115,7 +115,7 @@ export default function QuickActions() {
               justify-center
               rounded-xl
               bg-[#eeebff]
-              text-[#5146e5]
+              text-fd-accent
               transition-transform
               duration-200
               group-hover:scale-105

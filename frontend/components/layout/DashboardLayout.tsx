@@ -880,7 +880,7 @@ export default function DashboardLayout({
               items-center
               justify-center
               rounded-md
-              bg-[#0b6f93]
+              bg-fd-primary
               text-[11px]
               font-bold
               text-white
@@ -1124,7 +1124,7 @@ export default function DashboardLayout({
         >
           <ShieldAlert
             size={16}
-            className="mt-0.5 shrink-0 text-[#0b6f93]"
+            className="mt-0.5 shrink-0 text-fd-accent"
           />
           <div>
             <div className="text-[12px] font-semibold">
@@ -1477,7 +1477,7 @@ export default function DashboardLayout({
                     items-center
                     justify-center
                     rounded-md
-                    bg-[#0b6f93]
+                    bg-fd-primary
                     text-[11px]
                     font-bold
                     text-white

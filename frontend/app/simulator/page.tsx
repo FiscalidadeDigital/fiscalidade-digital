@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   useEffect,
@@ -494,10 +494,10 @@ export default function SimulatorPage() {
 
           <div className="flex flex-col items-center gap-4">
 
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-fd-accent-soft flex items-center justify-center">
               <Loader2
                 size={22}
-                className="animate-spin text-indigo-600"
+                className="animate-spin text-fd-accent"
               />
             </div>
 
@@ -540,9 +540,9 @@ export default function SimulatorPage() {
 
           <div className="absolute top-0 right-0 w-[420px] h-full pointer-events-none overflow-hidden">
 
-            <div className="absolute -top-32 -right-20 w-80 h-80 rounded-full bg-indigo-100/70 blur-3xl" />
+            <div className="absolute -top-32 -right-20 w-80 h-80 rounded-full bg-fd-accent-soft blur-3xl" />
 
-            <div className="absolute top-28 right-28 w-48 h-48 rounded-full bg-violet-100/50 blur-3xl" />
+            <div className="absolute top-28 right-28 w-48 h-48 rounded-full bg-fd-accent-soft blur-3xl" />
 
           </div>
 
@@ -554,18 +554,18 @@ export default function SimulatorPage() {
 
               <div className="flex items-start gap-5">
 
-                <div className="hidden sm:flex w-16 h-16 rounded-2xl bg-indigo-50 border border-indigo-100 items-center justify-center shrink-0">
+                <div className="hidden sm:flex w-16 h-16 rounded-2xl bg-fd-accent-soft border border-fd-accent-soft items-center justify-center shrink-0">
 
                   <Calculator
                     size={30}
-                    className="text-indigo-600"
+                    className="text-fd-accent"
                   />
 
                 </div>
 
                 <div className="max-w-3xl">
 
-                  <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-indigo-600 mb-3">
+                  <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.14em] text-fd-accent mb-3">
 
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
 
@@ -595,7 +595,7 @@ export default function SimulatorPage() {
                 <button
                   type="button"
                   onClick={loadCompany}
-                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-indigo-600 text-white font-bold text-sm hover:bg-indigo-700 transition shadow-lg shadow-indigo-100"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl bg-fd-primary text-white font-bold text-sm hover:bg-fd-primary-hover transition shadow-lg shadow-fd"
                 >
                   <RefreshCw size={17} />
 
@@ -606,7 +606,7 @@ export default function SimulatorPage() {
 
                   <Zap
                     size={14}
-                    className="text-indigo-500"
+                    className="text-fd-accent"
                   />
 
                   Cálculo em tempo real
@@ -669,11 +669,11 @@ export default function SimulatorPage() {
 
             <div className="flex items-center gap-4">
 
-              <div className="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center shrink-0">
+              <div className="w-14 h-14 rounded-2xl bg-fd-accent-soft flex items-center justify-center shrink-0">
 
                 <Factory
                   size={26}
-                  className="text-indigo-600"
+                  className="text-fd-accent"
                 />
 
               </div>
@@ -739,13 +739,13 @@ export default function SimulatorPage() {
 
           </div>
 
-          <div className="mt-5 flex items-start gap-3 rounded-2xl bg-indigo-50/70 border border-indigo-100 p-4">
+          <div className="mt-5 flex items-start gap-3 rounded-2xl bg-fd-accent-soft border border-fd-accent-soft p-4">
 
             <div className="w-8 h-8 rounded-lg bg-white flex items-center justify-center shrink-0">
 
               <CheckCircle2
                 size={17}
-                className="text-indigo-600"
+                className="text-fd-accent"
               />
 
             </div>
@@ -781,7 +781,7 @@ export default function SimulatorPage() {
             title="IVA"
             description="Operações de compra, venda, serviços, importação e exportação."
             rate="14%"
-            iconClass="bg-indigo-50 text-indigo-600"
+            iconClass="bg-fd-accent-soft text-fd-accent"
           />
 
           <ModuleSummary
@@ -814,7 +814,7 @@ export default function SimulatorPage() {
 
           <div>
 
-            <p className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-600 mb-1">
+            <p className="text-xs font-bold uppercase tracking-[0.14em] text-fd-accent mb-1">
               Ferramentas fiscais
             </p>
 
@@ -851,8 +851,8 @@ export default function SimulatorPage() {
             icon={
               <Percent size={23} />
             }
-            iconClass="bg-indigo-50 text-indigo-600"
-            borderClass="border-indigo-100"
+            iconClass="bg-fd-accent-soft text-fd-accent"
+            borderClass="border-fd-accent-soft"
             rate="14%"
           >
 
@@ -991,7 +991,7 @@ export default function SimulatorPage() {
               onClick={handleIVA}
               label="Calcular IVA"
               loadingLabel="A calcular IVA..."
-              className="bg-indigo-600 hover:bg-indigo-700 shadow-indigo-100"
+              className="bg-fd-primary hover:bg-fd-primary-hover shadow-fd"
             />
 
             {ivaResult && (
@@ -1090,7 +1090,7 @@ export default function SimulatorPage() {
                           ),
                         )} AOA`
                   }
-                  className="bg-indigo-50 border-indigo-100 text-indigo-600"
+                  className="bg-fd-accent-soft border-fd-accent-soft text-fd-accent"
                 />
 
                 <ClearButton
@@ -1400,7 +1400,7 @@ function HeroStat({
   return (
     <div className="flex items-center gap-2.5">
 
-      <div className="w-8 h-8 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center">
+      <div className="w-8 h-8 rounded-lg bg-fd-accent-soft text-fd-accent flex items-center justify-center">
         {icon}
       </div>
 
@@ -1511,7 +1511,7 @@ function SimulatorCard({
     >
 
       <div className="h-1 bg-slate-100">
-        <div className="h-full w-1/3 bg-indigo-500 opacity-20" />
+        <div className="h-full w-1/3 bg-fd-primary opacity-20" />
       </div>
 
       <div className="p-6 md:p-7">
@@ -1595,7 +1595,7 @@ function Field({
             suffix
               ? 'pr-16'
               : ''
-          } py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition`}
+          } py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-fd-accent focus:ring-4 focus:ring-fd-focus transition`}
         />
 
         {suffix && (
@@ -1651,7 +1651,7 @@ function TextareaField({
         }
         placeholder={placeholder}
         rows={3}
-        className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-indigo-400 focus:ring-4 focus:ring-indigo-50 transition"
+        className="w-full resize-none rounded-xl border border-slate-200 bg-slate-50 px-4 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:bg-white focus:border-fd-accent focus:ring-4 focus:ring-fd-focus transition"
       />
 
     </div>
@@ -1686,7 +1686,7 @@ function OperationButton({
         transition-all duration-200
         ${
           active
-            ? 'border-indigo-500 bg-indigo-50 text-indigo-700 shadow-sm'
+            ? 'border-fd-primary bg-fd-accent-soft text-fd-accent shadow-sm'
             : 'border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:border-slate-300'
         }
       `}

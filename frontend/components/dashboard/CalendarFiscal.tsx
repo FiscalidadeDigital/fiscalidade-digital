@@ -283,7 +283,7 @@ export default function CalendarFiscal({
     switch (status) {
 
       case 'today':
-        return 'bg-[#5146e5]';
+        return 'bg-fd-primary';
 
       case 'warning':
         return 'bg-[#f59e0b]';
@@ -428,8 +428,8 @@ export default function CalendarFiscal({
               items-center
               justify-center
               rounded-xl
-              bg-[#f0edff]
-              text-[#5146e5]
+              bg-fd-accent-soft
+              text-fd-accent
             "
           >
             <CalendarDays
@@ -500,7 +500,7 @@ export default function CalendarFiscal({
               text-[#64708a]
               transition
               hover:bg-[#f8f7ff]
-              hover:text-[#5146e5]
+              hover:text-fd-accent
             "
           >
             Hoje
@@ -520,7 +520,7 @@ export default function CalendarFiscal({
               px-3
               text-[10px]
               font-semibold
-              text-[#5146e5]
+              text-fd-accent
               transition
               hover:bg-[#f8f7ff]
             "
@@ -778,7 +778,7 @@ export default function CalendarFiscal({
                           ${
                             isToday
                               ? `
-                                bg-[#5146e5]
+                                bg-fd-primary
                                 font-extrabold
                                 text-white
                                 shadow-sm
@@ -834,7 +834,7 @@ export default function CalendarFiscal({
             >
 
               <LegendItem
-                color="bg-[#5146e5]"
+                color="bg-fd-primary"
                 label="Hoje"
               />
 
@@ -908,12 +908,12 @@ export default function CalendarFiscal({
                   className="
                     shrink-0
                     rounded-full
-                    bg-[#f0edff]
+                    bg-fd-accent-soft
                     px-2.5
                     py-1
                     text-[9px]
                     font-bold
-                    text-[#5146e5]
+                    text-fd-accent
                   "
                 >
                   {deadlines.length}
@@ -951,8 +951,8 @@ export default function CalendarFiscal({
                     items-center
                     justify-center
                     rounded-xl
-                    bg-[#f0edff]
-                    text-[#5146e5]
+                    bg-fd-accent-soft
+                    text-fd-accent
                   "
                 >
                   <CalendarDays
@@ -1071,7 +1071,7 @@ export default function CalendarFiscal({
                             items-center
                             justify-center
                             rounded-xl
-                            bg-[#f0edff]
+                            bg-fd-accent-soft
                           "
                         >
 
@@ -1080,7 +1080,7 @@ export default function CalendarFiscal({
                               text-[15px]
                               font-extrabold
                               leading-none
-                              text-[#5146e5]
+                              text-fd-accent
                             "
                           >
                             {day}

@@ -726,7 +726,7 @@ export default function ReportsPage() {
       <div className="min-h-screen bg-slate-50 flex items-center justify-center">
         <div className="text-center">
           <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm border border-slate-200">
-            <RefreshCw size={30} className="animate-spin text-indigo-600" />
+            <RefreshCw size={30} className="animate-spin text-fd-accent" />
           </div>
 
           <h2 className="text-lg font-bold text-slate-900">
@@ -763,7 +763,7 @@ export default function ReportsPage() {
 
           <button
             onClick={handleRefresh}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-indigo-700"
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-fd-primary px-5 py-3 text-sm font-semibold text-white transition hover:bg-fd-primary-hover"
           >
             <RefreshCw size={17} />
             Tentar novamente
@@ -787,7 +787,7 @@ export default function ReportsPage() {
         <section className="fd-page-header print:border-slate-200">
           <div className="relative flex flex-col gap-7 xl:flex-row xl:items-center xl:justify-between">
             <div className="max-w-3xl">
-              <div className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.12em] text-[#0b6f93]">
+              <div className="mb-4 inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[.12em] text-fd-accent">
                 <BarChart3 size={15} />
                 Relatório fiscal
               </div>
@@ -795,7 +795,7 @@ export default function ReportsPage() {
               <h1>Relatório financeiro e fiscal</h1>
 
               <div className="mt-1 flex items-center gap-2">
-                <span className="text-3xl font-semibold text-[#102447] md:text-4xl">
+                <span className="text-3xl font-semibold text-fd-text md:text-4xl">
                   {selectedYear}
                 </span>
 
@@ -813,7 +813,7 @@ export default function ReportsPage() {
 
               <div className="mt-5 flex flex-wrap items-center gap-3 text-sm text-slate-600">
                 <div className="inline-flex items-center gap-2 border-r border-slate-200 pr-3">
-                  <CalendarDays size={16} className="text-[#0b6f93]" />
+                  <CalendarDays size={16} className="text-fd-accent" />
                   Exercício fiscal
                   <strong className="text-slate-900">{selectedYear}</strong>
                 </div>
@@ -831,10 +831,10 @@ export default function ReportsPage() {
                   <div className="mb-3 h-2 w-20 rounded bg-slate-100" />
 
                   <div className="flex items-end gap-2">
-                    <div className="h-10 w-7 rounded-t bg-indigo-200" />
-                    <div className="h-16 w-7 rounded-t bg-indigo-400" />
+                    <div className="h-10 w-7 rounded-t bg-fd-accent-soft" />
+                    <div className="h-16 w-7 rounded-t bg-fd-accent" />
                     <div className="h-12 w-7 rounded-t bg-cyan-400" />
-                    <div className="h-20 w-7 rounded-t bg-indigo-600" />
+                    <div className="h-20 w-7 rounded-t bg-fd-primary" />
                   </div>
                 </div>
 
@@ -853,7 +853,7 @@ export default function ReportsPage() {
                         <Area
                           type="monotone"
                           dataKey="value"
-                          stroke="#4f46e5"
+                          stroke="var(--fd-primary)"
                           fill="#e0e7ff"
                           strokeWidth={3}
                         />
@@ -885,7 +885,7 @@ export default function ReportsPage() {
             <select
               value={selectedYear}
               onChange={(event) => setSelectedYear(Number(event.target.value))}
-              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-indigo-300 focus:ring-4 focus:ring-indigo-50"
+              className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 outline-none transition focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
             >
               {[
                 selectedYear - 2,
@@ -921,7 +921,7 @@ export default function ReportsPage() {
 
             <button
               onClick={handlePrint}
-              className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-indigo-700"
+              className="inline-flex items-center gap-2 rounded-xl bg-fd-primary px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-fd-primary-hover"
             >
               <Printer size={16} />
               Imprimir
@@ -952,16 +952,16 @@ export default function ReportsPage() {
         <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {/* FACTURAÇÃO */}
 
-          <div className="group relative overflow-hidden rounded-2xl border border-indigo-100 bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
-            <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-indigo-50 transition group-hover:scale-150" />
+          <div className="group relative overflow-hidden rounded-2xl border border-fd-accent-soft bg-white p-5 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-xl">
+            <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-fd-accent-soft transition group-hover:scale-150" />
 
             <div className="relative">
               <div className="flex items-start justify-between">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-fd-accent-soft text-fd-accent">
                   <FileText size={21} />
                 </div>
 
-                <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-indigo-600">
+                <span className="rounded-full bg-fd-accent-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-fd-accent">
                   Receita
                 </span>
               </div>
@@ -1110,7 +1110,7 @@ export default function ReportsPage() {
             <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-fd-accent-soft text-fd-accent">
                     <TrendingUp size={18} />
                   </div>
 
@@ -1173,13 +1173,13 @@ export default function ReportsPage() {
                         >
                           <stop
                             offset="0%"
-                            stopColor="#4f46e5"
+                            stopColor="var(--fd-primary)"
                             stopOpacity={0.3}
                           />
 
                           <stop
                             offset="100%"
-                            stopColor="#4f46e5"
+                            stopColor="var(--fd-primary)"
                             stopOpacity={0.02}
                           />
                         </linearGradient>
@@ -1220,12 +1220,12 @@ export default function ReportsPage() {
                         type="monotone"
                         dataKey="value"
                         name="Facturação"
-                        stroke="#4f46e5"
+                        stroke="var(--fd-primary)"
                         strokeWidth={3}
                         fill="url(#revenueGradient)"
                         dot={{
                           r: 3,
-                          fill: '#4f46e5',
+                          fill: 'var(--fd-primary)',
                           strokeWidth: 0,
                         }}
                         activeDot={{
@@ -1244,7 +1244,7 @@ export default function ReportsPage() {
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-6 py-5">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-50 text-violet-600">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-fd-accent-soft text-fd-accent">
                   <BarChart3 size={18} />
                 </div>
 
@@ -1487,7 +1487,7 @@ export default function ReportsPage() {
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-6 py-5">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-cyan-50 text-cyan-600">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-fd-accent-soft text-fd-accent">
                   <CreditCard size={18} />
                 </div>
 
@@ -1601,7 +1601,7 @@ export default function ReportsPage() {
           <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
             <div className="border-b border-slate-100 px-6 py-5">
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-fd-accent-soft text-fd-accent">
                   <WalletCards size={18} />
                 </div>
 
@@ -1618,7 +1618,7 @@ export default function ReportsPage() {
             <div className="space-y-3 p-5">
               <div className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-white text-fd-accent shadow-sm">
                     <FileText size={18} />
                   </div>
 
@@ -1711,7 +1711,7 @@ export default function ReportsPage() {
           <div className="flex flex-col gap-3 border-b border-slate-100 px-6 py-5 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="flex items-center gap-2">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-fd-accent-soft text-fd-accent">
                   <FileText size={18} />
                 </div>
 
@@ -1775,11 +1775,11 @@ export default function ReportsPage() {
                   {reportData.yearInvoices.slice(0, 10).map((invoice) => (
                     <tr
                       key={invoice.id}
-                      className="border-t border-slate-100 transition hover:bg-indigo-50/30"
+                      className="border-t border-slate-100 transition hover:bg-fd-accent-soft"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600">
+                          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-fd-accent-soft text-fd-accent">
                             <FileText size={16} />
                           </div>
 
@@ -2065,10 +2065,10 @@ export default function ReportsPage() {
             RODAPÉ DO RELATÓRIO
         ================================================= */}
 
-        <section className="relative overflow-hidden rounded-3xl border border-indigo-100 bg-gradient-to-r from-indigo-50 via-white to-cyan-50 px-6 py-5 print:border-slate-200">
+        <section className="relative overflow-hidden rounded-3xl border border-fd-accent-soft bg-gradient-to-r from-indigo-50 via-white to-cyan-50 px-6 py-5 print:border-slate-200">
           <div className="relative flex flex-col gap-5 md:flex-row md:items-center md:justify-between">
             <div className="flex items-start gap-4">
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm">
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white text-fd-accent shadow-sm">
                 <FileSpreadsheet size={21} />
               </div>
 
@@ -2099,7 +2099,7 @@ export default function ReportsPage() {
 
               <button
                 onClick={handlePrint}
-                className="inline-flex items-center gap-2 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-indigo-700"
+                className="inline-flex items-center gap-2 rounded-xl bg-fd-primary px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-fd-primary-hover"
               >
                 <Printer size={15} />
                 Imprimir relatório

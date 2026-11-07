@@ -219,7 +219,7 @@ export default function Sidebar() {
                 w-10
                 h-10
                 rounded-full
-                bg-indigo-600
+                bg-fd-primary
                 flex
                 items-center
                 justify-center

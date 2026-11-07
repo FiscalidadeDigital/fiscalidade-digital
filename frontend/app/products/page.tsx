@@ -182,7 +182,7 @@ export default function ProductsPage() {
                   resetPage();
                 }}
                 placeholder="Nome, código ou descrição"
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               />
             </label>
             <label>
@@ -193,7 +193,7 @@ export default function ProductsPage() {
                   setStatus(event.target.value as 'ACTIVE' | 'INACTIVE' | '');
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="">Todos os estados</option>
                 <option value="ACTIVE">Activos</option>
@@ -208,7 +208,7 @@ export default function ProductsPage() {
                   setSort(event.target.value);
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="name:asc">Nome A–Z</option>
                 <option value="name:desc">Nome Z–A</option>
@@ -253,7 +253,7 @@ export default function ProductsPage() {
                   <tr>
                     <td colSpan={6} className="h-52 text-center">
                       <Loader2
-                        className="mx-auto h-5 w-5 animate-spin text-sky-700"
+                        className="mx-auto h-5 w-5 animate-spin text-fd-accent"
                         aria-label="A carregar produtos"
                       />
                     </td>
@@ -263,7 +263,7 @@ export default function ProductsPage() {
                     <tr key={product.id} className="hover:bg-slate-50/70">
                       <td className="px-5 py-4">
                         <div className="flex items-start gap-3">
-                          <span className="rounded-lg bg-sky-50 p-2 text-sky-700">
+                          <span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent">
                             <Package className="h-4 w-4" />
                           </span>
                           <div className="min-w-0">
@@ -308,7 +308,7 @@ export default function ProductsPage() {
                             <button
                               type="button"
                               onClick={() => setEditing(product)}
-                              className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800"
+                              className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-fd-accent hover:text-fd-primary"
                               aria-label={`Editar ${product.name}`}
                             >
                               <Pencil className="h-4 w-4" />
@@ -493,7 +493,7 @@ function ProductModal({
       >
         <div className="flex items-start justify-between border-b border-[var(--fd-border)] p-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-fd-accent">
               Catálogo
             </p>
             <h2
@@ -637,7 +637,7 @@ function ProductModal({
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-4 py-2.5 text-xs font-semibold text-white hover:bg-fd-primary-hover disabled:opacity-50"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}Guardar
             </button>
@@ -661,7 +661,7 @@ function Field({
     <label className="block text-xs font-semibold text-[var(--fd-text-primary)]">
       {label}
       {required && <span className="text-rose-600"> *</span>}
-      <span className="mt-2 block [&_.fd-field]:h-11 [&_.fd-field]:w-full [&_.fd-field]:rounded-lg [&_.fd-field]:border [&_.fd-field]:border-[var(--fd-border)] [&_.fd-field]:bg-[var(--fd-input)] [&_.fd-field]:px-3 [&_.fd-field]:py-2 [&_.fd-field]:text-sm [&_.fd-field]:outline-none focus-within:[&_.fd-field]:border-sky-600 focus-within:[&_.fd-field]:ring-4 focus-within:[&_.fd-field]:ring-sky-100">
+      <span className="mt-2 block [&_.fd-field]:h-11 [&_.fd-field]:w-full [&_.fd-field]:rounded-lg [&_.fd-field]:border [&_.fd-field]:border-[var(--fd-border)] [&_.fd-field]:bg-[var(--fd-input)] [&_.fd-field]:px-3 [&_.fd-field]:py-2 [&_.fd-field]:text-sm [&_.fd-field]:outline-none focus-within:[&_.fd-field]:border-fd-accent focus-within:[&_.fd-field]:ring-4 focus-within:[&_.fd-field]:ring-fd-focus">
         {children}
       </span>
     </label>

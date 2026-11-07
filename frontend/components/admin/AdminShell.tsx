@@ -62,7 +62,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   if (!admin && !error) {
     return (
       <main className="fd-theme-scope flex min-h-screen items-center justify-center bg-[var(--fd-background)] text-[var(--fd-text-primary)]">
-        <Loader2 className="h-6 w-6 animate-spin text-sky-700" aria-label="A validar sessão administrativa" />
+        <Loader2 className="h-6 w-6 animate-spin text-fd-accent" aria-label="A validar sessão administrativa" />
       </main>
     );
   }
@@ -77,7 +77,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={logout}
-            className="mt-6 w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-4 focus:ring-sky-200"
+            className="mt-6 w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-4 focus:ring-fd-focus"
           >
             Voltar ao acesso administrativo
           </button>
@@ -93,7 +93,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           <Link
             href="/admin/dashboard"
             aria-label="Fiscalidade Digital — administração SaaS"
-            className="inline-flex rounded-lg bg-white px-2 py-1.5 shadow-sm focus:outline-none focus:ring-4 focus:ring-sky-300/40"
+            className="inline-flex rounded-lg bg-white px-2 py-1.5 shadow-sm focus:outline-none focus:ring-4 focus:ring-fd-focus"
           >
             <Image
               src="/logofiscalidade.png"
@@ -124,7 +124,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 aria-current={selected ? 'page' : undefined}
                 className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   selected
-                    ? 'bg-sky-500/15 text-sky-200'
+                    ? 'bg-fd-sidebar-active text-fd-accent-light'
                     : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >

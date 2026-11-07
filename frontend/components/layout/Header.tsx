@@ -161,7 +161,7 @@ export default function Header() {
               w-11
               h-11
               rounded-full
-              bg-indigo-600
+              bg-fd-primary
               text-white
               font-bold
               flex

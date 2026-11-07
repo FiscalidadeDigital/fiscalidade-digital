@@ -883,7 +883,7 @@ export default function CalendarPage() {
                   loadCalendar(true)
                 }
                 disabled={refreshing}
-                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-[#0ea5e9] px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0284c7] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-fd-primary px-4 text-sm font-semibold text-white shadow-sm transition hover:bg-fd-primary-hover disabled:cursor-not-allowed disabled:opacity-60"
               >
                 <RefreshCw
                   size={16}
@@ -982,7 +982,7 @@ export default function CalendarPage() {
                   </p>
                 </div>
 
-                <div className="rounded-xl bg-violet-50 p-3 text-violet-500">
+                <div className="rounded-xl bg-fd-accent-soft p-3 text-fd-accent">
                   <CalendarDays
                     size={21}
                   />
@@ -1803,8 +1803,8 @@ export default function CalendarPage() {
                 </div>
 
                 {selectedItem.deadlineOverride && (
-                  <div className="rounded-xl bg-sky-50 p-4 sm:col-span-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-sky-700">
+                  <div className="rounded-xl bg-fd-accent-soft p-4 sm:col-span-2">
+                    <p className="text-[10px] font-semibold uppercase tracking-wide text-fd-accent">
                       Prazo legal original
                     </p>
 
@@ -2043,7 +2043,7 @@ export default function CalendarPage() {
                 onClick={() =>
                   setSelectedItem(null)
                 }
-                className="inline-flex h-10 items-center justify-center rounded-lg bg-[#0ea5e9] px-5 text-sm font-semibold text-white transition hover:bg-[#0284c7]"
+                className="inline-flex h-10 items-center justify-center rounded-lg bg-fd-primary px-5 text-sm font-semibold text-white transition hover:bg-fd-primary-hover"
               >
                 Fechar
               </button>

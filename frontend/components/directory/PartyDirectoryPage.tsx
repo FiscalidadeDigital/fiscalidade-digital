@@ -234,7 +234,7 @@ export default function PartyDirectoryPage({ kind }: { kind: DirectoryKind }) {
                   setNotice('');
                 }}
                 placeholder="Nome, NIF, email ou telefone"
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               />
             </label>
             <label>
@@ -245,7 +245,7 @@ export default function PartyDirectoryPage({ kind }: { kind: DirectoryKind }) {
                   setSort(event.target.value);
                   setPage(1);
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="name:asc">Nome A–Z</option>
                 <option value="name:desc">Nome Z–A</option>
@@ -293,7 +293,7 @@ export default function PartyDirectoryPage({ kind }: { kind: DirectoryKind }) {
                     >
                       <td className="px-5 py-4">
                         <div className="flex gap-3">
-                          <span className="rounded-lg bg-sky-50 p-2 text-sky-700">
+                          <span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent">
                             <copy.Icon className="h-4 w-4" />
                           </span>
                           <div>
@@ -340,7 +340,7 @@ export default function PartyDirectoryPage({ kind }: { kind: DirectoryKind }) {
           <div className="divide-y divide-[var(--fd-border)] md:hidden">
             {loading ? (
               <div className="flex h-48 items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-sky-700" />
+                <Loader2 className="h-5 w-5 animate-spin text-fd-accent" />
               </div>
             ) : result?.data.length ? (
               result.data.map((entry) => (
@@ -470,7 +470,7 @@ function DirectoryActions({
         <button
           type="button"
           onClick={() => onEdit(entry)}
-          className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800"
+          className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-fd-accent hover:text-fd-primary"
           aria-label={`Editar ${entry.name}`}
         >
           <Pencil className="h-4 w-4" />
@@ -495,7 +495,7 @@ function LoadingRow({ columns }: { columns: number }) {
     <tr>
       <td colSpan={columns} className="h-52 text-center">
         <Loader2
-          className="mx-auto h-5 w-5 animate-spin text-sky-700"
+          className="mx-auto h-5 w-5 animate-spin text-fd-accent"
           aria-label="A carregar"
         />
       </td>
@@ -591,7 +591,7 @@ function DirectoryModal({
       >
         <div className="flex items-start justify-between border-b border-[var(--fd-border)] p-5">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-fd-accent">
               Directório
             </p>
             <h2
@@ -660,7 +660,7 @@ function DirectoryModal({
               onChange={(event) => set('notes', event.target.value)}
               maxLength={2000}
               rows={3}
-              className="mt-2 w-full resize-none rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+              className="mt-2 w-full resize-none rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
             />
           </label>
           {error && (
@@ -682,7 +682,7 @@ function DirectoryModal({
             <button
               type="submit"
               disabled={saving}
-              className="inline-flex items-center gap-2 rounded-lg bg-sky-700 px-4 py-2.5 text-xs font-semibold text-white hover:bg-sky-800 disabled:opacity-50"
+              className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-4 py-2.5 text-xs font-semibold text-white hover:bg-fd-primary-hover disabled:opacity-50"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin" />}Guardar
             </button>
@@ -718,7 +718,7 @@ function Input({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         maxLength={maxLength}
-        className="mt-2 h-11 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+        className="mt-2 h-11 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
       />
     </label>
   );

@@ -205,7 +205,7 @@ export default function FiscalSituationPage() {
           >
             <Link
               href="/obligations"
-              className="rounded-xl bg-[#102447] px-4 py-2 text-sm font-bold text-white hover:bg-[#18345f]"
+              className="rounded-xl bg-fd-primary px-4 py-2 text-sm font-bold text-white hover:bg-fd-primary-hover"
             >
               Ver obrigações
             </Link>
@@ -416,7 +416,7 @@ export default function FiscalSituationPage() {
                   </button>
                   <button
                     disabled={confirmBusy}
-                    className="rounded-xl bg-[#102447] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
+                    className="rounded-xl bg-fd-primary px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
                   >
                     {confirmBusy ? 'A guardar…' : 'Confirmar'}
                   </button>
@@ -445,7 +445,7 @@ function Metric({
     green: 'border-emerald-100 bg-emerald-50 text-emerald-700',
     slate: 'border-slate-200 bg-slate-50 text-slate-600',
     amber: 'border-amber-100 bg-amber-50 text-amber-700',
-    blue: 'border-sky-100 bg-sky-50 text-sky-700',
+    blue: 'border-fd-accent-soft bg-fd-accent-soft text-fd-accent',
     red: 'border-red-100 bg-red-50 text-red-700',
   };
   return (

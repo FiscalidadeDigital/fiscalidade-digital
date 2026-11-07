@@ -33,7 +33,7 @@ const icons = [
 ];
 
 const chartColors = [
-  '#4f46e5',
+  'var(--fd-primary)',
   '#3b82f6',
   '#f59e0b',
   '#10b981',
@@ -195,11 +195,11 @@ export default function PieChartFiscal({
                       items-center
                       justify-center
                       rounded-lg
-                      bg-indigo-50
+                      bg-fd-accent-soft
                     ">
                       <Icon
                         size={17}
-                        className="text-indigo-600"
+                        className="text-fd-accent"
                       />
                     </div>
 

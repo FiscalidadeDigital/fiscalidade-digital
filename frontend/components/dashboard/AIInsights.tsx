@@ -19,7 +19,7 @@ export default function AIInsights({
     <div className="
       rounded-2xl
       border
-      border-indigo-100
+      border-fd-accent-soft
       bg-gradient-to-br
       from-indigo-50
       to-white
@@ -36,7 +36,7 @@ export default function AIInsights({
           items-center
           justify-center
           rounded-xl
-          bg-indigo-600
+          bg-fd-primary
           text-white
         ">
           <Bot size={22} />
@@ -108,7 +108,7 @@ export default function AIInsights({
         items-center
         gap-2
         text-[11px]
-        text-indigo-500
+        text-fd-accent
       ">
         <Sparkles size={13} />
         Dados baseados na actividade fiscal da empresa

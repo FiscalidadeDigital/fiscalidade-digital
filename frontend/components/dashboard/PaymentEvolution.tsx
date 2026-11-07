@@ -205,8 +205,8 @@ export default function PaymentEvolution({
                   items-center
                   justify-center
                   rounded-xl
-                  bg-[#f0edff]
-                  text-[#5146e5]
+                  bg-fd-accent-soft
+                  text-fd-accent
                 "
               >
                 <TrendingUp
@@ -292,17 +292,17 @@ export default function PaymentEvolution({
               <Line
                 type="monotone"
                 dataKey="value"
-                stroke="#5146e5"
+                stroke="var(--fd-primary)"
                 strokeWidth={3}
                 dot={{
                   r: 3.5,
-                  fill: '#5146e5',
+                  fill: 'var(--fd-primary)',
                   strokeWidth: 2,
                   stroke: '#ffffff',
                 }}
                 activeDot={{
                   r: 6,
-                  fill: '#5146e5',
+                  fill: 'var(--fd-primary)',
                   stroke: '#ffffff',
                   strokeWidth: 3,
                 }}

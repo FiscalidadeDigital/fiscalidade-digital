@@ -72,14 +72,14 @@ export default function RegisterPage() {
         <PasswordInput id="register-confirm-password" label="Confirmar palavra-passe" value={form.confirmPassword} onChange={(value) => updateField('confirmPassword', value)} autoComplete="new-password" error={fieldErrors.confirmPassword} disabled={loading} />
         <fieldset aria-describedby={fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy ? 'registration-consent-errors' : undefined} className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
           <legend className="px-1 text-sm font-semibold text-slate-800">Consentimentos obrigatórios</legend>
-          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptTerms} disabled={loading} onChange={(event) => updateField('acceptTerms', event.target.checked)} className="mt-1" /><span>Li e aceito os <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#0b6f93] underline underline-offset-2">Termos de Utilização</Link>.</span></label>
-          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptPrivacyPolicy} disabled={loading} onChange={(event) => updateField('acceptPrivacyPolicy', event.target.checked)} className="mt-1" /><span>Li e aceito a <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-[#0b6f93] underline underline-offset-2">Política de Privacidade</Link>.</span></label>
+          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptTerms} disabled={loading} onChange={(event) => updateField('acceptTerms', event.target.checked)} className="mt-1" /><span>Li e aceito os <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Termos de Utilização</Link>.</span></label>
+          <label className="flex items-start gap-3 text-sm leading-6 text-slate-700"><input required type="checkbox" checked={form.acceptPrivacyPolicy} disabled={loading} onChange={(event) => updateField('acceptPrivacyPolicy', event.target.checked)} className="mt-1" /><span>Li e aceito a <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Política de Privacidade</Link>.</span></label>
           {(fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy) && <p id="registration-consent-errors" role="alert" className="text-sm text-red-700">{fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy}</p>}
         </fieldset>
         {formError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
         <button disabled={loading} aria-busy={loading} className="fd-button-primary w-full">{loading ? 'A criar conta…' : 'Criar conta'}</button>
       </form>
-      <p className="mt-6 text-center text-sm text-[#66758d]">Já tem conta? <Link className="font-semibold text-[#0b6f93] underline-offset-2 hover:underline" href="/login">Entrar</Link></p>
+      <p className="mt-6 text-center text-sm text-[#66758d]">Já tem conta? <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/login">Entrar</Link></p>
     </AuthFrame>
   );
 }

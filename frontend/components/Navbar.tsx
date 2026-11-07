@@ -109,7 +109,7 @@ export default function Navbar() {
               text-sm
               font-medium
               text-slate-600
-              hover:text-indigo-600
+              hover:text-fd-accent
               transition-colors
             "
           >
@@ -122,7 +122,7 @@ export default function Navbar() {
               text-sm
               font-medium
               text-slate-600
-              hover:text-indigo-600
+              hover:text-fd-accent
               transition-colors
             "
           >
@@ -135,7 +135,7 @@ export default function Navbar() {
               text-sm
               font-medium
               text-slate-600
-              hover:text-indigo-600
+              hover:text-fd-accent
               transition-colors
             "
           >
@@ -148,7 +148,7 @@ export default function Navbar() {
               text-sm
               font-medium
               text-slate-600
-              hover:text-indigo-600
+              hover:text-fd-accent
               transition-colors
             "
           >
@@ -182,7 +182,7 @@ export default function Navbar() {
               text-sm
               font-semibold
               text-slate-700
-              hover:text-indigo-600
+              hover:text-fd-accent
               hover:bg-slate-50
               transition-all
             "
@@ -199,13 +199,13 @@ export default function Navbar() {
               px-5
               py-2.5
               rounded-xl
-              bg-indigo-600
+              bg-fd-primary
               text-white
               text-sm
               font-semibold
               shadow-lg
               shadow-indigo-600/20
-              hover:bg-indigo-700
+              hover:bg-fd-primary-hover
               hover:-translate-y-0.5
               transition-all
             "

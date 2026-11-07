@@ -20,21 +20,75 @@
 
 :root {
   color-scheme: light;
+
+  /* Brand, semantic and layout tokens. Keep this as the only FD source. */
+  --fd-background: #f3f5f7;
+  --fd-page: var(--fd-background);
+  --fd-surface: #ffffff;
+  --fd-surface-raised: #ffffff;
+  --fd-surface-muted: #f7f9fb;
+  --fd-surface-subtle: #eef2f5;
+  --fd-border: #d9e0e7;
+  --fd-border-strong: #bcc8d4;
+  --fd-text-primary: #13233c;
+  --fd-text: var(--fd-text-primary);
+  --fd-text-secondary: #526176;
+  --fd-text-muted: #66758a;
+  --fd-muted: var(--fd-text-muted);
+  --fd-primary: #102447;
+  --fd-primary-hover: #18345f;
+  --fd-accent: #0e7490;
+  --fd-accent-light: #a5f3fc;
+  --fd-accent-soft: #e8f4f7;
+  --fd-sidebar-active: rgba(14, 116, 144, 0.22);
+  --fd-success: #08745b;
+  --fd-success-soft: #eaf6f1;
+  --fd-warning: #9a6508;
+  --fd-warning-soft: #fff7e3;
+  --fd-danger: #b42318;
+  --fd-danger-soft: #fff0ef;
+  --fd-info: #2563a7;
+  --fd-info-soft: #eef5fb;
+  --fd-focus: rgba(14, 116, 144, 0.24);
+  --fd-disabled: #e5e9ee;
+  --fd-input: #ffffff;
+  --fd-table-header: var(--fd-surface-muted);
+  --fd-overlay: rgba(6, 20, 45, 0.55);
+  --fd-radius-sm: 0.5rem;
+  --fd-radius: 0.75rem;
+  --fd-radius-lg: 0.875rem;
+  --fd-radius-xl: 1rem;
+  --fd-shadow: 0 1px 2px rgba(15, 35, 61, 0.06);
+
+  /* Legacy aliases kept only while active components migrate to --fd-*. */
+  --navy: var(--fd-primary);
+  --navy-deep: var(--fd-primary-hover);
+  --purple: var(--fd-accent);
+  --purple-dark: var(--fd-accent);
+  --purple-light: var(--fd-accent-soft);
+  --blue: var(--fd-accent);
+  --blue-light: var(--fd-accent-soft);
+  --peach: var(--fd-surface-subtle);
+  --text: var(--fd-text-primary);
+  --muted: var(--fd-text-secondary);
+  --light-text: var(--fd-text-muted);
+  --border: var(--fd-border);
+  --soft: var(--fd-surface-muted);
 }
 
 body {
-  background: #f4f6f8;
-  color: #172642;
+  background: var(--fd-background);
+  color: var(--fd-text-primary);
 }
 
 :where(button, a, input, select, textarea):focus-visible {
-  outline: 2px solid #0787ad;
+  outline: 2px solid var(--fd-accent);
   outline-offset: 2px;
 }
 
 .fd-label {
   display: block;
-  color: #334155;
+  color: var(--fd-text-secondary);
   font-size: 0.875rem;
   font-weight: 600;
 }
@@ -42,20 +96,20 @@ body {
 .fd-field {
   min-height: 44px;
   width: 100%;
-  border: 1px solid #cbd5e1;
-  border-radius: 0.625rem;
-  background: #fff;
+  border: 1px solid var(--fd-border);
+  border-radius: var(--fd-radius-lg);
+  background: var(--fd-input);
   padding: 0.65rem 0.8rem;
-  color: #0f172a;
+  color: var(--fd-text-primary);
   font-size: 0.925rem;
 }
 
 .fd-field::placeholder {
-  color: #64748b;
+  color: var(--fd-text-muted);
 }
 .fd-field:focus {
-  border-color: #0787ad;
-  box-shadow: 0 0 0 3px rgba(7, 135, 173, 0.12);
+  border-color: var(--fd-accent);
+  box-shadow: 0 0 0 3px var(--fd-focus);
   outline: none;
 }
 
@@ -66,7 +120,7 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  border-radius: 0.625rem;
+  border-radius: var(--fd-radius-lg);
   padding: 0.7rem 1rem;
   font-size: 0.875rem;
   font-weight: 700;
@@ -77,20 +131,20 @@ body {
 }
 
 .fd-button-primary {
-  background: #102447;
-  color: #fff;
+  background: var(--fd-primary);
+  color: var(--fd-surface);
 }
 .fd-button-primary:hover {
-  background: #17335f;
+  background: var(--fd-primary-hover);
 }
 .fd-button-secondary {
-  border: 1px solid #cbd5e1;
-  background: #fff;
-  color: #334155;
+  border: 1px solid var(--fd-border);
+  background: var(--fd-surface);
+  color: var(--fd-text-secondary);
 }
 .fd-button-secondary:hover {
-  border-color: #94a3b8;
-  background: #f8fafc;
+  border-color: var(--fd-border-strong);
+  background: var(--fd-surface-muted);
 }
 .fd-button-primary:disabled,
 .fd-button-secondary:disabled {
@@ -99,7 +153,7 @@ body {
 }
 
 .fd-workspace-page {
-  color: #172642;
+  color: var(--fd-text-primary);
 }
 
 .fd-sidebar {
@@ -117,7 +171,7 @@ body {
   background: rgba(255, 255, 255, 0.06) !important;
 }
 
-.fd-sidebar-company [class*='bg-[#0b6f93]'] {
+.fd-sidebar-company [class*='bg-fd-primary'] {
   background: #0891b2 !important;
 }
 
@@ -206,7 +260,7 @@ html {
 }
 
 body {
-  background: #f4f6f8;
+  background: var(--fd-background);
 
   font-family: 'DM Sans', Arial, Helvetica, sans-serif;
 
@@ -259,68 +313,6 @@ button {
   }
 }
 
-:root {
-  --fd-background: #f3f5f7;
-
-  --fd-surface: #ffffff;
-
-  --fd-surface-raised: #ffffff;
-
-  --fd-surface-muted: #f7f9fb;
-
-  --fd-border: #dce3ea;
-
-  --fd-text-primary: #172642;
-
-  --fd-text-secondary: #5f6f84;
-
-  --fd-muted: #8491a3;
-
-  --fd-primary: #0b6f93;
-
-  --fd-primary-hover: #085b79;
-
-  --fd-success: #047857;
-
-  --fd-warning: #a16207;
-
-  --fd-danger: #b42318;
-
-  --fd-focus: rgba(11, 111, 147, 0.2);
-
-  --fd-input: #ffffff;
-
-  --fd-table-header: #f7f9fb;
-
-  --fd-overlay: rgba(6, 20, 45, 0.55);
-
-  --navy: #17294d;
-
-  --navy-deep: #10203f;
-
-  --purple: #079dcc;
-
-  --purple-dark: #006bb5;
-
-  --purple-light: #e5f7fc;
-
-  --blue: #18b7d6;
-
-  --blue-light: #e8f8fb;
-
-  --peach: #effcff;
-
-  --text: #17294d;
-
-  --muted: #697792;
-
-  --light-text: #8994a8;
-
-  --border: #e8e9ef;
-
-  --soft: #f5fbfd;
-}
-
 .fd-app-shell,
 .fd-main,
 .fd-auth-page {
@@ -346,7 +338,7 @@ html {
 body {
   margin: 0;
 
-  background: #ffffff;
+  background: var(--fd-surface);
 
   color: var(--text);
 
@@ -370,7 +362,7 @@ button {
 
   overflow: hidden;
 
-  background: #ffffff;
+  background: var(--fd-surface);
 }
 
 .container {
@@ -4438,33 +4430,6 @@ button {
 ========================================================= */
 
 .fd-theme-scope {
-  --fd-background: #f3f5f7;
-  --fd-surface: #ffffff;
-  --fd-surface-muted: #f7f8fa;
-  --fd-surface-subtle: #eef2f5;
-  --fd-border: #d9e0e7;
-  --fd-border-strong: #bcc8d4;
-  --fd-text-primary: #13233c;
-  --fd-text-secondary: #526176;
-  --fd-text-muted: #778497;
-  --fd-primary: #102447;
-  --fd-primary-hover: #18345f;
-  --fd-accent: #087da2;
-  --fd-accent-soft: #e8f4f7;
-  --fd-success: #08745b;
-  --fd-success-soft: #eaf6f1;
-  --fd-warning: #9a6508;
-  --fd-warning-soft: #fff7e3;
-  --fd-danger: #b42318;
-  --fd-danger-soft: #fff0ef;
-  --fd-info: #2563a7;
-  --fd-info-soft: #eef5fb;
-  --fd-focus: rgba(8, 125, 162, 0.2);
-  --fd-disabled: #e5e9ee;
-  --fd-radius-sm: 6px;
-  --fd-radius: 8px;
-  --fd-radius-lg: 12px;
-  --fd-shadow: 0 1px 2px rgba(15, 35, 61, 0.04);
   background: var(--fd-background);
   color: var(--fd-text-primary);
   font-size: 0.9375rem;

@@ -22,7 +22,7 @@ interface FiscalSummaryProps {
 }
 
 const COLORS = [
-  '#5146e5',
+  'var(--fd-primary)',
   '#3b82f6',
   '#f59e0b',
   '#10b981',
@@ -96,8 +96,8 @@ export default function FiscalSummary({
             items-center
             justify-center
             rounded-xl
-            bg-[#f0edff]
-            text-[#5146e5]
+            bg-fd-accent-soft
+            text-fd-accent
           "
         >
           <ReceiptText
@@ -146,8 +146,8 @@ export default function FiscalSummary({
                 items-center
                 justify-center
                 rounded-xl
-                bg-[#f0edff]
-                text-[#5146e5]
+                bg-fd-accent-soft
+                text-fd-accent
               "
             >
               <ReceiptText

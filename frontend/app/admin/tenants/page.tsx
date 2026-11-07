@@ -115,7 +115,7 @@ export default function AdminTenantsPage() {
     <AdminShell>
       <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
         <header className="border-b border-[var(--fd-border)] pb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Plataforma</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fd-accent">Plataforma</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Empresas e tenants</h1>
           <p className="mt-2 max-w-3xl text-sm text-[var(--fd-text-secondary)]">
             Gestão operacional da conta empresarial, sem acesso a salários, documentos ou informação fiscal interna.
@@ -134,7 +134,7 @@ export default function AdminTenantsPage() {
                   resetPage();
                 }}
                 placeholder="Nome, NIF ou email"
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               />
             </label>
             <label>
@@ -145,7 +145,7 @@ export default function AdminTenantsPage() {
                   setStatus(event.target.value as AdminTenantStatus | '');
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="">Todos os estados</option>
                 <option value="ACTIVE">Activas</option>
@@ -161,7 +161,7 @@ export default function AdminTenantsPage() {
                   setPlanType(event.target.value as AdminPlanType | '');
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="">Todos os planos</option>
                 <option value="FREE">Free</option>
@@ -178,7 +178,7 @@ export default function AdminTenantsPage() {
                   setSort(event.target.value);
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="createdAt:desc">Mais recentes</option>
                 <option value="createdAt:asc">Mais antigas</option>
@@ -206,7 +206,7 @@ export default function AdminTenantsPage() {
               </thead>
               <tbody className="divide-y divide-[var(--fd-border)]">
                 {loading ? (
-                  <tr><td colSpan={6} className="h-52 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-sky-700" aria-label="A carregar empresas" /></td></tr>
+                  <tr><td colSpan={6} className="h-52 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-fd-accent" aria-label="A carregar empresas" /></td></tr>
                 ) : result?.data.length ? (
                   result.data.map((tenant) => {
                     const percentage = storagePercentage(tenant.usage.storageUsedBytes, tenant.usage.storageQuotaBytes);
@@ -244,7 +244,7 @@ export default function AdminTenantsPage() {
                           </p>
                           {tenant.usage.storageQuotaBytes ? (
                             <>
-                              <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-sky-600" style={{ width: `${percentage ?? 0}%` }} /></div>
+                              <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-fd-primary" style={{ width: `${percentage ?? 0}%` }} /></div>
                               <p className="mt-1.5 text-[11px] text-[var(--fd-muted)]">de {formatStorage(tenant.usage.storageQuotaBytes)}</p>
                             </>
                           ) : (
@@ -348,7 +348,7 @@ function StatusDialog({ tenant, onClose, onChanged }: { tenant: AdminTenant; onC
         <form onSubmit={submit} className="p-5">
           <p className="text-sm leading-6 text-[var(--fd-text-secondary)]">Esta acção altera o acesso operacional do tenant e será registada na auditoria administrativa.</p>
           <label className="mt-5 block text-xs font-semibold" htmlFor="status-reason">Motivo da alteração</label>
-          <textarea id="status-reason" value={reason} onChange={(event) => setReason(event.target.value)} rows={4} maxLength={500} className="mt-2 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] p-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" placeholder="Descreva a razão operacional..." />
+          <textarea id="status-reason" value={reason} onChange={(event) => setReason(event.target.value)} rows={4} maxLength={500} className="mt-2 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] p-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus" placeholder="Descreva a razão operacional..." />
           {error && <p className="mt-3 text-xs font-medium text-rose-700">{error}</p>}
           <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={onClose} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-sm font-semibold">Cancelar</button><button type="submit" disabled={saving} className={`rounded-lg px-4 py-2.5 text-sm font-semibold text-white disabled:opacity-60 ${targetStatus === 'ACTIVE' ? 'bg-emerald-700' : 'bg-rose-700'}`}>{saving ? 'A guardar…' : `Confirmar e ${action}`}</button></div>
         </form>
