@@ -73,7 +73,7 @@ const members = [
     image: '/team-desiderio.webp',
     position: 'object-[center_20%]',
     link: 'https://www.linkedin.com/in/desiderio-pereira-4b1a492a7',
-    email: 'desiderio@fiscalidadedigital.com',
+    email: 'desideriopereira@fiscalidadedigital.com',
     summary: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação.',
     bio: 'Jovem angolano e finalista de Contabilidade e Finanças no Instituto Superior de Administração e Finanças — ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação. É co-fundador da Respirando Contabilidade e idealizador da Fiscalidade Digital, procurando combinar tecnologia, contabilidade e fiscalidade para desenvolver soluções mais acessíveis para empresas angolanas.',
     education: [
@@ -657,7 +657,7 @@ function Team({ locale }: { locale: LandingLocale }) {
                 <p className="text-lg font-extrabold text-fd-text">{member.name}</p>
                 <p className="mt-2 text-xs font-semibold leading-5 text-fd-primary">{member.area}</p>
                 <p className="mt-4 text-sm leading-6 text-slate-600">{member.summary}</p>
-                <a href={`mailto:${member.email}`} className="mt-4 inline-flex min-h-11 max-w-full items-center gap-2 break-all rounded-lg text-sm font-bold text-fd-primary transition hover:text-fd-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Mail size={16} className="shrink-0" aria-hidden="true" />{member.email}</a>
+                <a href={`mailto:${member.email}`} className="mt-4 flex min-h-10 w-full items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2 text-fd-primary transition hover:bg-fd-accent-soft hover:text-fd-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Mail size={16} className="shrink-0" aria-hidden="true" /><span className="min-w-0 whitespace-nowrap text-[11px] font-bold tracking-[-0.01em] sm:text-xs">{member.email}</span></a>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <button
                     type="button"
