@@ -347,14 +347,14 @@ export default function FloatingAI() {
         ref={launcherRef}
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Abrir Assistente Fiscal"
+        aria-label="Assistente Fiscal"
         aria-expanded={open}
         aria-controls="fiscal-assistant-dialog"
         aria-haspopup="dialog"
         title="Assistente Fiscal"
-        className="fixed bottom-4 right-4 z-[999] grid h-11 w-11 place-items-center rounded-lg border border-[#183a59] bg-fd-primary text-cyan-100 shadow-md transition hover:bg-fd-primary-hover focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:bottom-5 sm:right-5"
+        className="fixed bottom-4 right-4 z-[999] grid h-12 w-12 place-items-center rounded-full border border-[#183a59] bg-fd-primary text-cyan-100 shadow-md transition-[background-color,transform] duration-150 hover:bg-fd-primary-hover hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 sm:bottom-5 sm:right-5"
       >
-        <Bot size={24} />
+        <Bot aria-hidden="true" size={22} />
       </button>
       {open && (
         <>
