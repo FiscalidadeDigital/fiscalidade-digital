@@ -13,6 +13,7 @@ type PasswordInputProps = {
   helperText?: string;
   minLength?: number;
   disabled?: boolean;
+  onBlur?: () => void;
 };
 
 export default function PasswordInput({
@@ -25,6 +26,7 @@ export default function PasswordInput({
   helperText,
   minLength = 12,
   disabled = false,
+  onBlur,
 }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
   const helperId = `${id}-helper`;
@@ -44,6 +46,7 @@ export default function PasswordInput({
             value={value}
             disabled={disabled}
             onChange={(event) => onChange(event.target.value)}
+            onBlur={onBlur}
             aria-invalid={Boolean(error)}
             aria-describedby={[helperText ? helperId : null, error ? errorId : null].filter(Boolean).join(' ') || undefined}
             className="fd-field pr-12"
