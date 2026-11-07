@@ -21,7 +21,7 @@ import MissionVisionValues from '@/components/landing/MissionVisionValues';
 import WhyChooseSection from '@/components/landing/WhyChooseSection';
 
 const whatsappUrl = 'https://wa.me/244924462591';
-const contactEmail = 'fiscalidadedigital@empresa.ao';
+const contactEmail = 'empresa@fiscalidadedigital.com';
 const landingLocaleStorageKey = 'fd:landing-locale';
 
 type LandingLocale = 'pt-AO' | 'en';
@@ -73,6 +73,7 @@ const members = [
     image: '/team-desiderio.webp',
     position: 'object-[center_20%]',
     link: 'https://www.linkedin.com/in/desiderio-pereira-4b1a492a7',
+    email: 'desiderio@fiscalidadedigital.com',
     summary: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação.',
     bio: 'Jovem angolano e finalista de Contabilidade e Finanças no Instituto Superior de Administração e Finanças — ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação. É co-fundador da Respirando Contabilidade e idealizador da Fiscalidade Digital, procurando combinar tecnologia, contabilidade e fiscalidade para desenvolver soluções mais acessíveis para empresas angolanas.',
     education: [
@@ -93,6 +94,7 @@ const members = [
     image: '/team-edgar.webp',
     position: 'object-[center_18%]',
     link: 'https://www.linkedin.com/in/edgar-ant%C3%B3nio-3a1048289',
+    email: 'edgar@fiscalidadedigital.com',
     summary: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade e Análise Financeira.',
     bio: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade, Análise Financeira, Contabilidade de Custos, Contabilidade Gerencial, IFRS e Contabilidade Forense. O seu percurso combina formação académica, conhecimento técnico, liderança e inovação.',
     education: [
@@ -113,6 +115,7 @@ const members = [
     image: '/team-francisco.webp',
     position: 'object-[center_18%]',
     link: 'https://www.linkedin.com/in/francisco-ant%C3%B3nio-891555281',
+    email: 'francisco@fiscalidadedigital.com',
     summary: 'Finalista de Contabilidade e Finanças no ISAF, com experiência de formação, investigação e empreendedorismo.',
     bio: 'Finalista de Contabilidade e Finanças no ISAF, Francisco contribui para a componente contabilística e fiscal da Fiscalidade Digital, com experiência de formação, investigação e empreendedorismo.',
     education: [
@@ -134,6 +137,7 @@ const members = [
     image: '/team-anildo.webp',
     position: 'object-[center_15%]',
     link: 'https://www.linkedin.com/in/anildo-jo%C3%A3o-85643330b',
+    email: 'anildomanuel@fiscalidadedigital.com',
     summary: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação e desenvolvedor Full Stack.',
     bio: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação, desenvolvedor Full Stack e técnico com formação nas áreas de Automação Industrial, Instrumentação e Controlo. O seu percurso está na intersecção entre software, sistemas, infraestrutura tecnológica e tecnologia industrial.',
     education: [
@@ -577,6 +581,7 @@ type TeamMember = {
   image: string;
   position: string;
   link: string;
+  email: string;
   summary: string;
   bio: string;
   education: readonly string[];
@@ -652,6 +657,7 @@ function Team({ locale }: { locale: LandingLocale }) {
                 <p className="text-lg font-extrabold text-fd-text">{member.name}</p>
                 <p className="mt-2 text-xs font-semibold leading-5 text-fd-primary">{member.area}</p>
                 <p className="mt-4 text-sm leading-6 text-slate-600">{member.summary}</p>
+                <a href={`mailto:${member.email}`} className="mt-4 inline-flex min-h-11 max-w-full items-center gap-2 break-all rounded-lg text-sm font-bold text-fd-primary transition hover:text-fd-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Mail size={16} className="shrink-0" aria-hidden="true" />{member.email}</a>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <button
                     type="button"
@@ -697,7 +703,10 @@ function Team({ locale }: { locale: LandingLocale }) {
                     <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.highlights.map((item) => <li key={item} className="flex gap-2"><Check size={16} className="mt-1 shrink-0 text-fd-accent" />{item}</li>)}</ul>
                   </section>
                 </div>
-                <a href={selectedMember.link} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-fd-accent-soft px-4 py-2 text-sm font-bold text-fd-primary transition hover:bg-fd-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={17} />{tr(locale, 'Ver LinkedIn', 'View LinkedIn')}</a>
+                <div className="mt-7 flex flex-wrap gap-3">
+                  <a href={`mailto:${selectedMember.email}`} className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-fd-accent-soft px-4 py-2 text-sm font-bold text-fd-primary transition hover:bg-fd-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Mail size={17} />{selectedMember.email}</a>
+                  <a href={selectedMember.link} target="_blank" rel="noopener noreferrer" className="inline-flex min-h-[44px] items-center gap-2 rounded-lg border border-fd-accent-soft px-4 py-2 text-sm font-bold text-fd-primary transition hover:bg-fd-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={17} />{tr(locale, 'Ver LinkedIn', 'View LinkedIn')}</a>
+                </div>
               </div>
             </div>
           </div>

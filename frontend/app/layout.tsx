@@ -92,7 +92,7 @@ export const metadata: Metadata = {
     images: ['/og.png'],
   },
   other: {
-    'contact:email': 'fiscalidadedigital@empresa.ao',
+    'contact:email': 'empresa@fiscalidadedigital.com',
   },
 };
 
