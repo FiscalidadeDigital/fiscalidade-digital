@@ -11,6 +11,10 @@ const nextConfigSource = fs.readFileSync(
   path.join(__dirname, '..', 'next.config.mjs'),
   'utf8',
 );
+const dashboardLayoutSource = fs.readFileSync(
+  path.join(__dirname, '..', 'components', 'layout', 'DashboardLayout.tsx'),
+  'utf8',
+);
 
 test('a ação rápida de documentos usa a biblioteca autenticada', () => {
   assert.match(quickActionsSource, /href="\/library"/);
@@ -21,4 +25,9 @@ test('a ação rápida de documentos usa a biblioteca autenticada', () => {
 test('o endereço legado de documentos redireciona para a área autenticada', () => {
   assert.match(nextConfigSource, /source: '\/documents'/);
   assert.match(nextConfigSource, /destination: '\/library'/);
+});
+
+test('a navegação principal não expõe a aba de legislação fiscal', () => {
+  assert.doesNotMatch(dashboardLayoutSource, /label: 'Legislação fiscal'/);
+  assert.doesNotMatch(dashboardLayoutSource, /href: '\/legislation'/);
 });

@@ -236,12 +236,6 @@ const navigationSections = [
       },
 
       {
-        label: 'Legislação fiscal',
-        href: '/legislation',
-        icon: Landmark,
-      },
-
-      {
         label: 'Educação Fiscal',
         href: '/assistant',
         icon: Landmark,
