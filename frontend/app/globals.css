@@ -4585,14 +4585,14 @@ button {
   max-width: 720px;
   margin-top: 7px;
   color: var(--fd-text-secondary);
-  font-size: 0.8125rem;
+  font-size: var(--fd-font-size-body);
   line-height: 1.55;
 }
 
 .fd-panel {
   overflow: hidden;
   border: 1px solid var(--fd-border);
-  border-radius: var(--fd-radius-lg);
+  border-radius: var(--fd-radius-xl);
   background: var(--fd-surface);
   box-shadow: var(--fd-shadow);
 }
@@ -4616,7 +4616,7 @@ button {
   min-height: 112px;
   padding: 18px;
   border: 1px solid var(--fd-border);
-  border-radius: var(--fd-radius);
+  border-radius: var(--fd-radius-xl);
   background: var(--fd-surface);
   box-shadow: var(--fd-shadow);
 }
@@ -4642,13 +4642,13 @@ button {
 .fd-button-danger,
 .fd-button-ghost {
   display: inline-flex;
-  min-height: 40px;
+  min-height: 44px;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  border-radius: var(--fd-radius-sm) !important;
-  padding: 9px 14px;
-  font-size: 0.8125rem;
+  border-radius: var(--fd-radius-lg) !important;
+  padding: 10px 14px;
+  font-size: var(--fd-font-size-body);
   line-height: 1;
   font-weight: 650;
   transition:
@@ -4700,6 +4700,7 @@ button {
 
 .fd-status {
   display: inline-flex;
+  min-height: 28px;
   align-items: center;
   gap: 6px;
   border: 1px solid currentColor;
@@ -4726,7 +4727,7 @@ button {
   max-height: calc(100dvh - 32px);
   overflow: auto;
   border: 1px solid var(--fd-border);
-  border-radius: var(--fd-radius-lg);
+  border-radius: var(--fd-radius-2xl);
   background: var(--fd-surface);
   box-shadow: 0 20px 55px rgba(6, 20, 45, 0.2);
 }
@@ -4738,6 +4739,41 @@ button {
   padding: 32px 20px;
   color: var(--fd-text-secondary);
   text-align: center;
+}
+
+.fd-icon-button {
+  display: inline-flex;
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--fd-border);
+  border-radius: 999px;
+  background: var(--fd-surface);
+  color: var(--fd-text-secondary);
+  transition:
+    border-color 0.15s ease,
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.fd-icon-button:hover {
+  border-color: var(--fd-border-strong);
+  background: var(--fd-surface-muted);
+  color: var(--fd-text-primary);
+}
+
+.fd-skeleton {
+  border-radius: var(--fd-radius-sm);
+  background: var(--fd-surface-subtle);
+  animation: fd-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes fd-skeleton-pulse {
+  50% {
+    opacity: 0.56;
+  }
 }
 
 @keyframes fdInvoiceManagementEnter {

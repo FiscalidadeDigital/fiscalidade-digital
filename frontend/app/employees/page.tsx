@@ -43,6 +43,7 @@ import {
 } from '@/services/employee';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { ConfirmDialog } from '@/components/ui/enterprise';
 
 // =====================================================
 // FORMATAÇÃO
@@ -153,6 +154,13 @@ export default function EmployeesPage() {
     deletingId,
     setDeletingId,
   ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    pendingEmployeeDeletion,
+    setPendingEmployeeDeletion,
+  ] = useState<Employee | null>(
     null,
   );
 
@@ -792,15 +800,6 @@ export default function EmployeesPage() {
   async function handleDelete(
     employee: Employee,
   ) {
-    const confirmed =
-      window.confirm(
-        `Tem a certeza de que deseja remover ${employee.name}?`,
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setDeletingId(
         employee.id,
@@ -3874,7 +3873,7 @@ export default function EmployeesPage() {
                                     employee.id
                                   }
                                   onClick={() =>
-                                    handleDelete(
+                                    setPendingEmployeeDeletion(
                                       employee,
                                     )
                                   }
@@ -3908,6 +3907,32 @@ export default function EmployeesPage() {
 
         </div>
       </DashboardLayout>
+
+      <ConfirmDialog
+        confirmLabel="Remover funcionário"
+        description={
+          pendingEmployeeDeletion
+            ? `Tem a certeza de que deseja remover ${pendingEmployeeDeletion.name}?`
+            : undefined
+        }
+        destructive
+        loading={Boolean(
+          pendingEmployeeDeletion &&
+            deletingId === pendingEmployeeDeletion.id,
+        )}
+        onClose={() => setPendingEmployeeDeletion(null)}
+        onConfirm={async () => {
+          if (!pendingEmployeeDeletion) {
+            return;
+          }
+
+          const employee = pendingEmployeeDeletion;
+          await handleDelete(employee);
+          setPendingEmployeeDeletion(null);
+        }}
+        open={Boolean(pendingEmployeeDeletion)}
+        title="Remover funcionário"
+      />
 
       {/* MODAL NOVO FUNCIONÁRIO */}
 

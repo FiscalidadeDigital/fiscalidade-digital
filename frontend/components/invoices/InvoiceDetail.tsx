@@ -7,6 +7,7 @@ import { useEffect, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import ElectronicInvoicePanel from '@/components/invoices/ElectronicInvoicePanel';
+import { ConfirmDialog } from '@/components/ui/enterprise';
 import { useAuth } from '@/context/AuthContext';
 import {
   convertProForma,
@@ -102,7 +103,21 @@ export default function InvoiceDetail({ proForma = false }: { proForma?: boolean
           <aside className="h-fit rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent"><FileText className="h-4 w-4" /></span><div><p className="font-semibold text-[var(--fd-text-primary)]">Resumo</p><p className="text-xs text-[var(--fd-muted)]">AOA</p></div></div><dl className="mt-5 space-y-3 text-sm"><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Tipo de documento</dt><dd className="font-medium">{proForma ? 'Pro Forma' : 'FT — Factura'}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Estado de pagamento</dt><dd className="font-medium">{{ PENDING: 'Pendente', PAID: 'Paga', CANCELLED: 'Cancelada' }[document.status]}</dd></div><div className="flex justify-between gap-4 border-t border-[var(--fd-border)] pt-3"><dt className="text-[var(--fd-text-secondary)]">Subtotal</dt><dd className="tabular-nums">{money.format(Number(document.subtotalAmount ?? document.subtotal))}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">{proForma ? 'IVA fiscal final' : 'IVA'}</dt><dd className="tabular-nums">{money.format(Number(document.ivaAmount ?? document.iva))}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Retenção fiscal final</dt><dd className="tabular-nums">{money.format(Number(document.withholdingTaxAmount ?? document.withholdingTax))}</dd></div><div className="flex justify-between gap-4 border-t border-[var(--fd-border)] pt-3 text-base font-semibold"><dt>{proForma ? 'Total estimado' : 'Total'}</dt><dd className="tabular-nums">{money.format(Number(document.totalAmount ?? document.total))}</dd></div></dl>{document.notes && <p className="mt-5 border-t border-[var(--fd-border)] pt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">{document.notes}</p>}</aside></section>
         {!proForma && <ElectronicInvoicePanel invoiceId={document.id} />}
       </main>
-      {confirming && <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--fd-overlay)] p-4"><section role="alertdialog" aria-modal="true" aria-labelledby="convert-title" className="w-full max-w-md rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-2xl"><p className="text-xs font-semibold uppercase tracking-[.12em] text-fd-accent">Conversão</p><h2 id="convert-title" className="mt-2 text-lg font-semibold text-[var(--fd-text-primary)]">Converter em factura?</h2><p className="mt-3 text-sm leading-6 text-[var(--fd-text-secondary)]">Será criada uma factura normal com nova numeração FT. O backend recalculará IVA e retenção com as regras aplicáveis no momento da conversão.</p><div className="mt-5 flex justify-end gap-3"><button type="button" disabled={converting} onClick={() => setConfirming(false)} className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold">Voltar</button><button type="button" disabled={converting} onClick={() => void convert()} className="inline-flex items-center gap-2 rounded-lg bg-fd-primary px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50">{converting && <Loader2 className="h-4 w-4 animate-spin" />}Confirmar conversão</button></div></section></div>}
+      <ConfirmDialog
+        open={confirming}
+        onClose={() => {
+          if (!converting) setConfirming(false);
+        }}
+        onConfirm={convert}
+        title="Converter em factura?"
+        description="Será criada uma factura normal com nova numeração FT. O backend recalculará IVA e retenção com as regras aplicáveis no momento da conversão."
+        confirmLabel="Confirmar conversão"
+        cancelLabel="Voltar"
+        loading={converting}
+        closeOnBackdrop={!converting}
+        closeOnEscape={!converting}
+        className="max-w-md"
+      />
     </DashboardLayout>
   );
 }

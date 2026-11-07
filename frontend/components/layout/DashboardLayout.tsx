@@ -51,6 +51,7 @@ import {
 import FloatingAI from '@/components/ai/FloatingAI';
 import { useAuth } from '@/context/AuthContext';
 import { isInvoiceManagementPath } from '@/lib/invoice-management';
+import { ConfirmDialog } from '@/components/ui/enterprise';
 
 /* =========================================================
    TIPOS
@@ -267,6 +268,9 @@ export default function DashboardLayout({
     useState(false);
 
   const [isLoggingOut, setIsLoggingOut] =
+    useState(false);
+
+  const [logoutConfirmOpen, setLogoutConfirmOpen] =
     useState(false);
 
   const mobileMenuRef =
@@ -566,16 +570,12 @@ export default function DashboardLayout({
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        'Tem a certeza de que deseja terminar a sessão?',
-      );
+    setLogoutConfirmOpen(true);
+  };
 
-    if (!confirmed) {
-      return;
-    }
-
+  const confirmLogout = () => {
     setIsLoggingOut(true);
+    setLogoutConfirmOpen(false);
     logout();
   };
 
@@ -1518,6 +1518,17 @@ export default function DashboardLayout({
       </div>
 
       <FloatingAI />
+
+      <ConfirmDialog
+        confirmLabel="Terminar sessão"
+        destructive
+        description="Tem a certeza de que deseja terminar a sessão?"
+        loading={isLoggingOut}
+        onClose={() => setLogoutConfirmOpen(false)}
+        onConfirm={confirmLogout}
+        open={logoutConfirmOpen}
+        title="Terminar sessão"
+      />
 
       <style jsx global>{`
         @keyframes dashboard-page-enter {

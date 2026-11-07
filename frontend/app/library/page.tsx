@@ -39,6 +39,7 @@ import {
   getDocuments,
   uploadDocument,
 } from '../../services/document';
+import { ConfirmDialog, useToast } from '@/components/ui/enterprise';
 
 const categories: {
   value: DocumentCategory;
@@ -176,6 +177,7 @@ function getExtension(
 }
 
 export default function DocumentsPage() {
+  const { show: showToast } = useToast();
   const inputRef =
     useRef<HTMLInputElement | null>(
       null,
@@ -244,6 +246,11 @@ export default function DocumentsPage() {
     deletingId,
     setDeletingId,
   ] = useState<string | null>(null);
+
+  const [
+    pendingDocumentDeletion,
+    setPendingDocumentDeletion,
+  ] = useState<FiscalDocument | null>(null);
 
   const [
     openMenu,
@@ -446,6 +453,12 @@ export default function DocumentsPage() {
         'Documento enviado com sucesso.',
       );
 
+      showToast({
+        title: 'Documento enviado',
+        description: 'O documento ficou disponível na biblioteca.',
+        tone: 'success',
+      });
+
       setShowUpload(false);
 
       resetUpload();
@@ -461,11 +474,17 @@ export default function DocumentsPage() {
         err,
       );
 
-      setError(
+      const message =
         err?.response?.data
           ?.message ||
-          'Não foi possível enviar o documento.',
-      );
+        'Não foi possível enviar o documento.';
+
+      setError(message);
+      showToast({
+        title: 'Não foi possível enviar o documento',
+        description: message,
+        tone: 'danger',
+      });
     } finally {
       setUploading(false);
     }
@@ -474,15 +493,6 @@ export default function DocumentsPage() {
   const handleDelete = async (
     document: FiscalDocument,
   ) => {
-    const confirmed =
-      window.confirm(
-        `Tem a certeza que deseja eliminar "${document.name}"?`,
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setDeletingId(
         document.id,
@@ -514,6 +524,12 @@ export default function DocumentsPage() {
         'Documento eliminado com sucesso.',
       );
 
+      showToast({
+        title: 'Documento eliminado',
+        description: 'O documento foi removido da biblioteca.',
+        tone: 'success',
+      });
+
       setOpenMenu(null);
 
       window.setTimeout(() => {
@@ -525,11 +541,17 @@ export default function DocumentsPage() {
         err,
       );
 
-      setError(
+      const message =
         err?.response?.data
           ?.message ||
-          'Não foi possível eliminar o documento.',
-      );
+        'Não foi possível eliminar o documento.';
+
+      setError(message);
+      showToast({
+        title: 'Não foi possível eliminar o documento',
+        description: message,
+        tone: 'danger',
+      });
     } finally {
       setDeletingId(null);
     }
@@ -1028,7 +1050,7 @@ export default function DocumentsPage() {
                                 document.id
                               }
                               onClick={() =>
-                                handleDelete(
+                                setPendingDocumentDeletion(
                                   document,
                                 )
                               }
@@ -1390,6 +1412,32 @@ export default function DocumentsPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        confirmLabel="Eliminar documento"
+        description={
+          pendingDocumentDeletion
+            ? `Tem a certeza que deseja eliminar "${pendingDocumentDeletion.name}"?`
+            : undefined
+        }
+        destructive
+        loading={Boolean(
+          pendingDocumentDeletion &&
+            deletingId === pendingDocumentDeletion.id,
+        )}
+        onClose={() => setPendingDocumentDeletion(null)}
+        onConfirm={async () => {
+          if (!pendingDocumentDeletion) {
+            return;
+          }
+
+          const document = pendingDocumentDeletion;
+          await handleDelete(document);
+          setPendingDocumentDeletion(null);
+        }}
+        open={Boolean(pendingDocumentDeletion)}
+        title="Eliminar documento"
+      />
 
       <style jsx global>{`
         * {

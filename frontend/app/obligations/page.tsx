@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { ConfirmDialog, useToast } from '@/components/ui/enterprise';
 
 import {
   Obligation,
@@ -415,6 +416,7 @@ const EMPTY_COMPANY: Company = {
 ===================================================== */
 
 export default function ObligationsPage() {
+  const { show: showToast } = useToast();
   const [
     obligations,
     setObligations,
@@ -445,6 +447,13 @@ export default function ObligationsPage() {
   const [
     payingId,
     setPayingId,
+  ] = useState<string | null>(
+    null,
+  );
+
+  const [
+    pendingPaymentId,
+    setPendingPaymentId,
   ] = useState<string | null>(
     null,
   );
@@ -627,15 +636,6 @@ export default function ObligationsPage() {
     async (
       id: string,
     ) => {
-      const confirmed =
-        window.confirm(
-          'Tem a certeza de que deseja marcar esta obrigação como paga?',
-        );
-
-      if (!confirmed) {
-        return;
-      }
-
       try {
         setPayingId(id);
         setError('');
@@ -643,6 +643,12 @@ export default function ObligationsPage() {
         await payObligation(
           id,
         );
+
+        showToast({
+          title: 'Obrigação marcada como paga',
+          description: 'O pagamento foi registado com sucesso.',
+          tone: 'success',
+        });
 
         await loadObligations();
       } catch (
@@ -653,10 +659,16 @@ export default function ObligationsPage() {
           err,
         );
 
-        setError(
+        const message =
           err?.response?.data?.message ||
-            'Não foi possível actualizar o pagamento.',
-        );
+          'Não foi possível actualizar o pagamento.';
+
+        setError(message);
+        showToast({
+          title: 'Não foi possível actualizar o pagamento',
+          description: message,
+          tone: 'danger',
+        });
       } finally {
         setPayingId(null);
       }
@@ -2460,7 +2472,7 @@ export default function ObligationsPage() {
                             <button
                               type="button"
                               onClick={() =>
-                                handlePay(
+                                setPendingPaymentId(
                                   obligation.id,
                                 )
                               }
@@ -2633,6 +2645,23 @@ export default function ObligationsPage() {
             )}
         </section>
       </div>
+      <ConfirmDialog
+        confirmLabel="Marcar como paga"
+        description="Tem a certeza de que deseja marcar esta obrigação como paga?"
+        loading={Boolean(pendingPaymentId && payingId === pendingPaymentId)}
+        onClose={() => setPendingPaymentId(null)}
+        onConfirm={async () => {
+          if (!pendingPaymentId) {
+            return;
+          }
+
+          const obligationId = pendingPaymentId;
+          await handlePay(obligationId);
+          setPendingPaymentId(null);
+        }}
+        open={Boolean(pendingPaymentId)}
+        title="Marcar obrigação como paga"
+      />
     </DashboardLayout>
   );
 }

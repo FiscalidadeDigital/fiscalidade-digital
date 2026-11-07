@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   ShieldAlert,
-  X,
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -19,7 +18,12 @@ import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import InvoiceManagementNav from '@/components/invoices/InvoiceManagementNav';
-import { EmptyState, PageHeader, StatCard } from '@/components/ui/enterprise';
+import {
+  ConfirmDialog,
+  EmptyState,
+  PageHeader,
+  StatCard,
+} from '@/components/ui/enterprise';
 import { useAuth } from '@/context/AuthContext';
 import {
   cancelInvoice,
@@ -468,61 +472,27 @@ function ActionDialog({
   onConfirm: () => void;
 }) {
   const paying = pending.action === 'pay';
+
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--fd-overlay)] p-4">
-      <section
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="invoice-action-title"
-        className="w-full max-w-md rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-2xl"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-fd-accent">
-              Alteração de estado
-            </p>
-            <h2
-              id="invoice-action-title"
-              className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]"
-            >
-              {paying ? 'Registar pagamento' : 'Cancelar factura'}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-lg p-2 text-[var(--fd-muted)]"
-            aria-label="Fechar"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="mt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">
-          {paying
-            ? `Confirma que ${pending.invoice.invoiceNumber} foi efectivamente paga? Esta acção influencia os valores recebidos e as obrigações.`
-            : `Confirma o cancelamento de ${pending.invoice.invoiceNumber}? Facturas pagas exigem um fluxo de correcção e não podem ser canceladas directamente.`}
-        </p>
-        <div className="mt-5 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold"
-          >
-            Voltar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={busy}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50 ${paying ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-rose-700 hover:bg-rose-800'}`}
-          >
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-            {paying ? 'Confirmar pagamento' : 'Confirmar cancelamento'}
-          </button>
-        </div>
-      </section>
-    </div>
+    <ConfirmDialog
+      open
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+      onConfirm={onConfirm}
+      title={paying ? 'Registar pagamento' : 'Cancelar factura'}
+      description={
+        paying
+          ? `Confirma que ${pending.invoice.invoiceNumber} foi efectivamente paga? Esta acção influencia os valores recebidos e as obrigações.`
+          : `Confirma o cancelamento de ${pending.invoice.invoiceNumber}? Facturas pagas exigem um fluxo de correcção e não podem ser canceladas directamente.`
+      }
+      confirmLabel={paying ? 'Confirmar pagamento' : 'Confirmar cancelamento'}
+      cancelLabel="Voltar"
+      destructive={!paying}
+      loading={busy}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
+      className="max-w-md"
+    />
   );
 }
