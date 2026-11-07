@@ -174,20 +174,20 @@ export default function FiscalSituationPage() {
         <div className="mx-auto max-w-7xl">
           <header className="fd-page-header mb-6">
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#0787ad]">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-fd-accent">
                 Central Fiscal
               </p>
               <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-[#111b3b]">
                 Situação Fiscal
               </h1>
-              <p className="mt-1 max-w-2xl text-sm text-[#687896]">
+              <p className="mt-1 max-w-2xl text-sm text-[var(--fd-text-muted)]">
                 Visão consolidada de enquadramentos, obrigações e pontos que
                 exigem atenção.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <label className="flex items-center gap-3 rounded-xl border border-[#dce6f0] bg-[#fbfdff] px-3 py-2 text-sm font-semibold text-[#405275]">
-                <CalendarDays size={17} className="text-[#0787ad]" />
+                <CalendarDays size={17} className="text-fd-accent" />
                 <span className="sr-only">Período de referência</span>
                 <input
                   type="month"
@@ -211,13 +211,13 @@ export default function FiscalSituationPage() {
             </Link>
             <Link
               href="/calendar"
-              className="rounded-xl border border-[#dce6f0] bg-white px-4 py-2 text-sm font-bold text-[#075f86] hover:bg-[#f2f7fb]"
+              className="rounded-xl border border-[#dce6f0] bg-white px-4 py-2 text-sm font-bold text-fd-accent hover:bg-[#f2f7fb]"
             >
               Ver calendário
             </Link>
             <Link
               href="/notifications"
-              className="rounded-xl border border-[#dce6f0] bg-white px-4 py-2 text-sm font-bold text-[#075f86] hover:bg-[#f2f7fb]"
+              className="rounded-xl border border-[#dce6f0] bg-white px-4 py-2 text-sm font-bold text-fd-accent hover:bg-[#f2f7fb]"
             >
               Ver alertas
             </Link>
@@ -285,7 +285,7 @@ export default function FiscalSituationPage() {
                   <h2 className="text-base font-extrabold text-[#152343]">
                     Situação Fiscal da Empresa
                   </h2>
-                  <p className="mt-1 text-sm text-[#7180a2]">
+                  <p className="mt-1 text-sm text-[var(--fd-text-muted)]">
                     Consulte os impostos, obrigações e requisitos fiscais
                     aplicáveis à sua empresa.
                   </p>
@@ -309,7 +309,7 @@ export default function FiscalSituationPage() {
                   <h2 className="text-base font-extrabold text-[#152343]">
                     Próximas obrigações
                   </h2>
-                  <p className="mt-1 text-sm text-[#7180a2]">
+                  <p className="mt-1 text-sm text-[var(--fd-text-muted)]">
                     Apenas obrigações pendentes ou em atraso associadas à
                     situação atual.
                   </p>
@@ -329,14 +329,14 @@ export default function FiscalSituationPage() {
                               {obligation.title ||
                                 `${taxLabel} — obrigação fiscal`}
                             </p>
-                            <p className="mt-1 text-xs text-[#7180a2]">
+                            <p className="mt-1 text-xs text-[var(--fd-text-muted)]">
                               {taxLabel}
                               {obligation.period
                                 ? ` · Período ${obligation.period}`
                                 : ''}
                             </p>
                           </div>
-                          <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-[#f2f7fb] px-3 py-2 text-xs font-bold text-[#075f86]">
+                          <span className="inline-flex w-fit items-center gap-2 rounded-lg bg-[#f2f7fb] px-3 py-2 text-xs font-bold text-fd-accent">
                             <CalendarDays size={14} />
                             {obligation.dueDate
                               ? formatDate(obligation.dueDate)
@@ -349,13 +349,13 @@ export default function FiscalSituationPage() {
                 ) : (
                   <div className="px-5 py-10 text-center sm:px-6">
                     <CalendarClock
-                      className="mx-auto text-[#9aa8bd]"
+                      className="mx-auto text-[var(--fd-text-muted)]"
                       size={26}
                     />
                     <p className="mt-3 text-sm font-bold text-[#405275]">
                       Sem obrigações pendentes neste período
                     </p>
-                    <p className="mt-1 text-sm text-[#7d8ba5]">
+                    <p className="mt-1 text-sm text-[var(--fd-text-muted)]">
                       Não são apresentadas datas estimadas quando o calendário
                       oficial ainda não está disponível.
                     </p>
@@ -452,7 +452,7 @@ function Metric({
     <div className="rounded-2xl border border-[#e5ebf3] bg-white p-4 shadow-sm">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wide text-[#7180a2]">
+          <p className="text-xs font-semibold uppercase tracking-wide text-[var(--fd-text-muted)]">
             {title}
           </p>
           <p className="mt-2 text-2xl font-extrabold tabular-nums text-[#152343]">
@@ -496,18 +496,18 @@ function TaxCard({
     <article className="p-5 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 items-start gap-3">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf4f8] text-[#075f86]">
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#eaf4f8] text-fd-accent">
             <Icon size={20} />
           </span>
           <div>
             <h3 className="font-extrabold text-[#152343]">{item.label}</h3>
-            <p className="mt-0.5 text-xs leading-5 text-[#7180a2]">
+            <p className="mt-0.5 text-xs leading-5 text-[var(--fd-text-muted)]">
               {item.description}
             </p>
           </div>
         </div>
         <span
-          className={`shrink-0 rounded-full px-2.5 py-1 text-[11px] font-bold ring-1 ring-inset ${status.classes}`}
+          className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-bold ring-1 ring-inset ${status.classes}`}
         >
           {status.label}
         </span>
@@ -574,13 +574,13 @@ function TaxCard({
           <button
             type="button"
             onClick={() => onConfirm(tax)}
-            className="mt-3 rounded-xl border border-[#b9dbe8] bg-white px-3 py-2 text-xs font-bold text-[#075f86] hover:bg-[#f2f7fb]"
+            className="mt-3 rounded-xl border border-[#b9dbe8] bg-white px-3 py-2 text-xs font-bold text-fd-accent hover:bg-[#f2f7fb]"
           >
             Confirmar situação fiscal
           </button>
         )}
       {!tax.automationReady && !needsAttention && (
-        <p className="mt-3 text-xs text-[#7180a2]">
+        <p className="mt-3 text-xs text-[var(--fd-text-muted)]">
           Automação indisponível até confirmação dos dados ou regras aplicáveis.
         </p>
       )}
@@ -591,7 +591,7 @@ function TaxCard({
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 sm:flex-row sm:gap-2">
-      <span className="shrink-0 text-xs font-semibold text-[#7180a2]">
+      <span className="shrink-0 text-xs font-semibold text-[var(--fd-text-muted)]">
         {label}
       </span>
       <span className="text-xs font-medium leading-5 text-[#405275]">
@@ -603,11 +603,11 @@ function Detail({ label, value }: { label: string; value: string }) {
 function LoadingState() {
   return (
     <section className="flex min-h-[360px] flex-col items-center justify-center rounded-2xl border border-[#e5ebf3] bg-white text-center shadow-sm">
-      <Loader2 className="animate-spin text-[#0787ad]" size={32} />
+      <Loader2 className="animate-spin text-fd-accent" size={32} />
       <h2 className="mt-4 text-base font-bold text-[#152343]">
         A carregar a situação fiscal
       </h2>
-      <p className="mt-1 text-sm text-[#7180a2]">
+      <p className="mt-1 text-sm text-[var(--fd-text-muted)]">
         A consultar os dados do período seleccionado.
       </p>
     </section>
@@ -616,11 +616,11 @@ function LoadingState() {
 function EmptyState() {
   return (
     <section className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-[#e5ebf3] bg-white px-6 text-center shadow-sm">
-      <ShieldAlert className="text-[#9aa8bd]" size={30} />
+      <ShieldAlert className="text-[var(--fd-text-muted)]" size={30} />
       <h2 className="mt-4 text-base font-extrabold text-[#152343]">
         Sem informação fiscal para este período
       </h2>
-      <p className="mt-1 max-w-md text-sm leading-6 text-[#7180a2]">
+      <p className="mt-1 max-w-md text-sm leading-6 text-[var(--fd-text-muted)]">
         Não foram encontrados enquadramentos ou obrigações para apresentar. A
         página não cria dados nem estima prazos.
       </p>

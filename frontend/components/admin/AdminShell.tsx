@@ -137,7 +137,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
 
         <div className="hidden border-t border-white/10 px-6 py-5 lg:absolute lg:bottom-0 lg:left-0 lg:right-0 lg:block">
           <p className="truncate text-xs font-medium text-slate-200">{admin?.name}</p>
-          <p className="mt-1 truncate text-[11px] text-slate-500">Super Admin</p>
+          <p className="mt-1 truncate text-xs text-slate-500">Super Admin</p>
           <button
             type="button"
             onClick={logout}

@@ -295,7 +295,7 @@ export default function UsersPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[860px] border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+              <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Utilizador</th>
                   <th className="px-4 py-3 font-semibold">Função</th>
@@ -342,7 +342,7 @@ export default function UsersPage() {
                         </td>
                         <td className="px-4 py-4">
                           <span
-                            className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${roleStyles[member.role]}`}
+                            className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${roleStyles[member.role]}`}
                           >
                             {roleLabels[member.role]}
                           </span>
@@ -356,7 +356,7 @@ export default function UsersPage() {
                             />
                             {member.isActive ? 'Activo' : 'Inactivo'}
                           </span>
-                          <p className="mt-1.5 text-[11px] text-[var(--fd-muted)]">
+                          <p className="mt-1.5 text-xs text-[var(--fd-muted)]">
                             2FA{' '}
                             {member.twoFactorEnabled ? 'activo' : 'inactivo'}
                           </p>

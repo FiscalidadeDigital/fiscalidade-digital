@@ -485,7 +485,7 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold text-[#111b3b]">
               Facturas recebidas
             </p>
-            <p className="mt-1 text-xs text-[#7180a2]">
+            <p className="mt-1 text-xs text-[var(--fd-text-muted)]">
               {purchaseInvoices} registadas · compras no valor de{' '}
               {formatCurrency(purchaseInvoiceTotal)}
               {pendingPurchaseImports > 0
@@ -495,7 +495,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/purchase-invoices"
-            className="inline-flex items-center gap-2 self-start text-sm font-semibold text-[#087fb3] hover:underline"
+            className="inline-flex items-center gap-2 self-start text-sm font-semibold text-fd-accent hover:underline"
           >
             Abrir facturas recebidas <ArrowRight size={15} />
           </Link>
@@ -540,7 +540,7 @@ export default function DashboardPage() {
                 <p
                   className="
                     mt-1
-                    text-[11px]
+                    text-xs
                     text-red-600
                   "
                 >
@@ -638,7 +638,7 @@ export default function DashboardPage() {
                   gap-2
                 "
               >
-                <CalendarDays size={18} className="text-[#0ea5e9]" />
+                <CalendarDays size={18} className="text-fd-accent" />
 
                 <h2
                   className="
@@ -654,8 +654,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-1
-                  text-[10px]
-                  text-[#7b87a1]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Prazos fiscais configurados por imposto e período
@@ -688,7 +688,7 @@ export default function DashboardPage() {
 
               <span
                 className="
-                  text-[10px]
+                  text-xs
                   font-semibold
                   text-[#526080]
                 "
@@ -728,8 +728,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-1
-                  text-[10px]
-                  text-[#7b87a1]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Obrigações que requerem atenção
@@ -819,8 +819,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-0.5
-                  text-[10px]
-                  text-[#7b87a1]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Dados registados no sistema para esta empresa
@@ -901,7 +901,7 @@ export default function DashboardPage() {
             <div>
               <p
                 className="
-                  text-[11px]
+                  text-xs
                   font-semibold
                   text-[#344361]
                 "
@@ -912,8 +912,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-0.5
-                  text-[10px]
-                  text-[#8a96b0]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Dados apresentados com base nos registos fiscais da empresa.
@@ -927,11 +927,11 @@ export default function DashboardPage() {
               flex
               items-center
               gap-2
-              text-[10px]
+              text-xs
               font-bold
-              text-[#0ea5e9]
+              text-fd-accent
               transition
-              hover:text-[#0284c7]
+              hover:text-fd-accent
             "
           >
             Consultar obrigações
@@ -966,25 +966,25 @@ function DashboardStat({
     blue: {
       border: 'border-[#d5e8f7]',
       bg: 'bg-[#eff8ff]',
-      text: 'text-[#0284c7]',
+      text: 'text-fd-accent',
     },
 
     orange: {
       border: 'border-[#f7dfc4]',
       bg: 'bg-[#fff7ed]',
-      text: 'text-[#ea580c]',
+      text: 'text-fd-warning',
     },
 
     green: {
       border: 'border-[#cfeee0]',
       bg: 'bg-[#ecfdf5]',
-      text: 'text-[#059669]',
+      text: 'text-fd-success',
     },
 
     red: {
       border: 'border-[#f4d3d3]',
       bg: 'bg-[#fff1f2]',
-      text: 'text-[#dc2626]',
+      text: 'text-fd-danger',
     },
   };
 
@@ -1023,11 +1023,11 @@ function DashboardStat({
       >
         <p
           className="
-            text-[10px]
+            text-xs
             font-semibold
             uppercase
             tracking-wide
-            text-[#8a96b0]
+            text-[var(--fd-text-muted)]
           "
         >
           {title}
@@ -1049,7 +1049,7 @@ function DashboardStat({
         <p
           className={`
             mt-2
-            text-[10px]
+            text-xs
             font-semibold
             ${style.text}
           `}
@@ -1095,9 +1095,9 @@ function InfoValue({ label, value }: { label: string; value: string }) {
     >
       <p
         className="
-          text-[10px]
+          text-xs
           font-medium
-          text-[#8a96b0]
+          text-[var(--fd-text-muted)]
         "
       >
         {label}

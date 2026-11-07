@@ -269,7 +269,7 @@ export default function InvoicesPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+              <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Factura</th>
                   <th className="px-4 py-3 font-semibold">Cliente</th>
@@ -307,7 +307,7 @@ export default function InvoicesPage() {
                             >
                               {invoice.invoiceNumber}
                             </Link>
-                            <p className="mt-1 text-[11px] text-[var(--fd-muted)]">
+                            <p className="mt-1 text-xs text-[var(--fd-muted)]">
                               {new Date(invoice.issuedAt).toLocaleDateString(
                                 'pt-AO',
                               )}
@@ -319,7 +319,7 @@ export default function InvoicesPage() {
                         <p className="text-sm font-medium text-[var(--fd-text-primary)]">
                           {invoice.client.name}
                         </p>
-                        <p className="mt-1 text-[11px] text-[var(--fd-muted)]">
+                        <p className="mt-1 text-xs text-[var(--fd-muted)]">
                           NIF {invoice.client.nif || 'não indicado'}
                         </p>
                       </td>
@@ -338,7 +338,7 @@ export default function InvoicesPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${statusStyles[invoice.status]}`}
+                          className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${statusStyles[invoice.status]}`}
                         >
                           {statusLabels[invoice.status]}
                         </span>

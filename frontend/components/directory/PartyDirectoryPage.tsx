@@ -273,7 +273,7 @@ export default function PartyDirectoryPage({ kind }: { kind: DirectoryKind }) {
 
           <div className="hidden overflow-x-auto md:block">
             <table className="w-full min-w-[900px] border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+              <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Identificação</th>
                   <th className="px-4 py-3 font-semibold">Contacto</th>
@@ -300,7 +300,7 @@ export default function PartyDirectoryPage({ kind }: { kind: DirectoryKind }) {
                             <p className="text-sm font-semibold text-[var(--fd-text-primary)]">
                               {entry.name}
                             </p>
-                            <p className="mt-1 text-[11px] text-[var(--fd-muted)]">
+                            <p className="mt-1 text-xs text-[var(--fd-muted)]">
                               NIF {entry.nif || 'não indicado'}
                             </p>
                           </div>

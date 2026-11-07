@@ -238,7 +238,7 @@ export default function ProductsPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[900px] border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+              <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Item</th>
                   <th className="px-4 py-3 font-semibold">Preço</th>
@@ -270,7 +270,7 @@ export default function ProductsPage() {
                             <p className="truncate text-sm font-semibold text-[var(--fd-text-primary)]">
                               {product.name}
                             </p>
-                            <p className="mt-0.5 text-[11px] text-[var(--fd-muted)]">
+                            <p className="mt-0.5 text-xs text-[var(--fd-muted)]">
                               {product.code || 'Sem código'}
                             </p>
                             {product.description && (
@@ -291,13 +291,13 @@ export default function ProductsPage() {
                         {product.stock === null
                           ? 'Não controlado'
                           : `${product.stock} ${product.unit}`}
-                        <p className="mt-1 text-[11px] text-[var(--fd-muted)]">
+                        <p className="mt-1 text-xs text-[var(--fd-muted)]">
                           {unitLabels[product.unit]}
                         </p>
                       </td>
                       <td className="px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${product.isActive ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-700'}`}
+                          className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${product.isActive ? 'border-emerald-200 bg-emerald-50 text-emerald-800' : 'border-slate-200 bg-slate-50 text-slate-700'}`}
                         >
                           {product.isActive ? 'Activo' : 'Inactivo'}
                         </span>

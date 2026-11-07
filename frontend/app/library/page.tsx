@@ -1599,7 +1599,7 @@ export default function DocumentsPage() {
         .stat-card small {
           color: var(--fd-muted);
           margin-top: 6px;
-          font-size: 11px;
+          font-size: 12px;
         }
 
         .documents-card {
@@ -1694,7 +1694,7 @@ export default function DocumentsPage() {
           color: var(--fd-text-secondary);
           background: var(--fd-table-header);
           border-bottom: 1px solid var(--fd-border);
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.06em;
@@ -1756,7 +1756,7 @@ export default function DocumentsPage() {
           gap: 7px;
           margin-top: 6px;
           color: var(--fd-muted);
-          font-size: 10px;
+          font-size: 12px;
           font-weight: 700;
         }
 
@@ -1775,7 +1775,7 @@ export default function DocumentsPage() {
           border-radius: 8px;
           color: #656d7c;
           background: #f5f6f8;
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 700;
         }
 
@@ -1905,7 +1905,7 @@ export default function DocumentsPage() {
 
         .section-heading span {
           color: #8d95a4;
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.08em;
@@ -1969,7 +1969,7 @@ export default function DocumentsPage() {
         .category-card span {
           margin-top: 5px;
           color: var(--fd-text-secondary);
-          font-size: 10px;
+          font-size: 12px;
           font-weight: 650;
         }
 
@@ -2041,7 +2041,7 @@ export default function DocumentsPage() {
         .modal-header p {
           margin: 4px 0 0;
           color: #9299a7;
-          font-size: 11px;
+          font-size: 12px;
         }
 
         .modal-header > button {
@@ -2120,7 +2120,7 @@ export default function DocumentsPage() {
         .drop-zone small {
           margin-top: 13px;
           color: #a9afba;
-          font-size: 10px;
+          font-size: 12px;
         }
 
         .change-file {
@@ -2128,7 +2128,7 @@ export default function DocumentsPage() {
           border: 0;
           background: transparent;
           color: var(--fd-primary);
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 800;
           cursor: pointer;
         }
@@ -2152,7 +2152,7 @@ export default function DocumentsPage() {
           display: block;
           margin-bottom: 6px;
           color: var(--fd-text-secondary);
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 750;
         }
 

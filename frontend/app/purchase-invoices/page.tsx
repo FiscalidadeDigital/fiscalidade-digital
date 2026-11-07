@@ -262,7 +262,7 @@ export default function PurchaseInvoicesPage() {
         {/* HEADER */}
         <div className="mb-8 flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
-            <div className="mb-2 flex items-center gap-2 text-sm text-[#7180a0]">
+            <div className="mb-2 flex items-center gap-2 text-sm text-[var(--fd-text-muted)]">
               <FileText size={16} />
               Fiscalidade / Facturas Recebidas
             </div>
@@ -271,7 +271,7 @@ export default function PurchaseInvoicesPage() {
               Facturas Recebidas
             </h1>
 
-            <p className="mt-2 text-sm text-[#7180a0]">
+            <p className="mt-2 text-sm text-[var(--fd-text-muted)]">
               Registe as facturas recebidas dos seus
               fornecedores e mantenha os dados fiscais
               organizados.
@@ -304,7 +304,7 @@ export default function PurchaseInvoicesPage() {
         {/* RESUMO */}
         <div className="mb-6 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
           <div className="rounded-2xl border border-[#e7eaf2] bg-white p-5">
-            <p className="text-sm text-[#7a86a0]">
+            <p className="text-sm text-[var(--fd-text-muted)]">
               Facturas registadas
             </p>
 
@@ -314,12 +314,12 @@ export default function PurchaseInvoicesPage() {
           </div>
 
           <div className="rounded-2xl border border-[#e7eaf2] bg-white p-5">
-            <p className="text-sm text-[#7a86a0]">Por pagar</p>
+            <p className="text-sm text-[var(--fd-text-muted)]">Por pagar</p>
             <p className="mt-2 text-2xl font-bold text-[#0f1b3d]">{isLoading || loadError ? "—" : formatCurrency(invoices.filter(invoice => !["REJECTED", "CANCELLED"].includes(invoice.documentStatus)).reduce((sum, invoice) => sum + Number(invoice.balance), 0))}</p>
           </div>
 
           <div className="rounded-2xl border border-[#e7eaf2] bg-white p-5">
-            <p className="text-sm text-[#7a86a0]">
+            <p className="text-sm text-[var(--fd-text-muted)]">
               Total das facturas
             </p>
 
@@ -335,7 +335,7 @@ export default function PurchaseInvoicesPage() {
           </div>
 
           <div className="rounded-2xl border border-[#e7eaf2] bg-white p-5">
-            <p className="text-sm text-[#7a86a0]">
+            <p className="text-sm text-[var(--fd-text-muted)]">
               IVA suportado
             </p>
 
@@ -357,7 +357,7 @@ export default function PurchaseInvoicesPage() {
             <div className="relative flex-1">
               <Search
                 size={18}
-                className="absolute left-4 top-1/2 -translate-y-1/2 text-[#8792aa]"
+                className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--fd-text-muted)]"
               />
 
               <input
@@ -399,7 +399,7 @@ export default function PurchaseInvoicesPage() {
 
               <ChevronDown
                 size={16}
-                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[#7180a0]"
+                className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[var(--fd-text-muted)]"
               />
             </div>
           </div>
@@ -412,13 +412,13 @@ export default function PurchaseInvoicesPage() {
               Registo de facturas
             </h2>
 
-            <p className="mt-1 text-sm text-[#7a86a0]">
+            <p className="mt-1 text-sm text-[var(--fd-text-muted)]">
               Facturas recebidas pela empresa.
             </p>
           </div>
 
           {isLoading ? (
-            <div className="px-6 py-16 text-center text-sm text-[#7180a0]">
+            <div className="px-6 py-16 text-center text-sm text-[var(--fd-text-muted)]">
               A carregar facturas recebidas…
             </div>
           ) : loadError ? (
@@ -441,7 +441,7 @@ export default function PurchaseInvoicesPage() {
                 Nenhuma factura encontrada
               </h3>
 
-              <p className="mx-auto mt-2 max-w-md text-sm text-[#7a86a0]">
+              <p className="mx-auto mt-2 max-w-md text-sm text-[var(--fd-text-muted)]">
                 Comece por registar uma factura recebida
                 de um fornecedor.
               </p>
@@ -459,7 +459,7 @@ export default function PurchaseInvoicesPage() {
             <div className="max-w-full overflow-x-auto">
               <table className="w-full min-w-[1100px]">
                 <thead>
-                  <tr className="border-b border-[#eef0f5] bg-[#fafbfe] text-left text-xs uppercase tracking-wide text-[#7a86a0]">
+                  <tr className="border-b border-[#eef0f5] bg-[#fafbfe] text-left text-xs uppercase tracking-wide text-[var(--fd-text-muted)]">
                     <th className="px-6 py-4">
                       Factura
                     </th>
@@ -495,7 +495,7 @@ export default function PurchaseInvoicesPage() {
                             {invoice.invoiceNumber}
                           </Link>
 
-                          <div className="text-xs text-[#8792aa]">
+                          <div className="text-xs text-[var(--fd-text-muted)]">
                             Documento recebido
                           </div>
                         </td>
@@ -505,7 +505,7 @@ export default function PurchaseInvoicesPage() {
                             {suppliersById.get(invoice.supplierId)?.name ?? "Fornecedor indisponível"}
                           </div>
 
-                          <div className="text-xs text-[#8792aa]">
+                          <div className="text-xs text-[var(--fd-text-muted)]">
                             {suppliersById.get(invoice.supplierId)?.nif ||
                               "NIF não informado"}
                           </div>
@@ -534,7 +534,7 @@ export default function PurchaseInvoicesPage() {
                         <td className="px-6 py-5">
                           <span className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
                             invoice.documentStatus === "VALIDATED" ? "bg-[#eafaf3] text-[#0b7f61]" :
-                            ["REJECTED", "CANCELLED"].includes(invoice.documentStatus) ? "bg-[#fff0f0] text-[#c33]" : "bg-[#fff6e5] text-[#986500]"
+                            ["REJECTED", "CANCELLED"].includes(invoice.documentStatus) ? "bg-[#fff0f0] text-fd-danger" : "bg-[#fff6e5] text-fd-warning"
                           }`}>
                             {{ PENDING: "Pendente", REVIEW_REQUIRED: "Em revisão", VALIDATED: "Validada", REJECTED: "Rejeitada", CANCELLED: "Cancelada" }[invoice.documentStatus]}
                           </span>
@@ -562,7 +562,7 @@ export default function PurchaseInvoicesPage() {
                   Nova factura recebida
                 </h2>
 
-                <p className="mt-1 text-sm text-[#7a86a0]">
+                <p className="mt-1 text-sm text-[var(--fd-text-muted)]">
                   Registe os dados exactamente como
                   constam na factura do fornecedor.
                 </p>
@@ -570,7 +570,7 @@ export default function PurchaseInvoicesPage() {
 
               <button
                 onClick={() => setShowModal(false)}
-                className="rounded-lg p-2 text-[#7180a0] hover:bg-[#f4f5f8]"
+                className="rounded-lg p-2 text-[var(--fd-text-muted)] hover:bg-[#f4f5f8]"
               >
                 <X size={20} />
               </button>
@@ -700,7 +700,7 @@ export default function PurchaseInvoicesPage() {
                     />
                   </div>
 
-                  <p className="text-xs text-[#7180a0] md:col-span-2">
+                  <p className="text-xs text-[var(--fd-text-muted)] md:col-span-2">
                     Os valores de IVA e retenção são registados conforme o documento de origem; esta página não calcula nem valida taxas fiscais.
                   </p>
                 </div>
@@ -714,7 +714,7 @@ export default function PurchaseInvoicesPage() {
                       Itens da factura
                     </h3>
 
-                    <p className="mt-1 text-sm text-[#7a86a0]">
+                    <p className="mt-1 text-sm text-[var(--fd-text-muted)]">
                       Adicione todos os produtos ou
                       serviços constantes no documento.
                     </p>
@@ -733,7 +733,7 @@ export default function PurchaseInvoicesPage() {
                 <div className="overflow-x-auto rounded-xl border border-[#e6e9f0]">
                   <table className="w-full min-w-[700px]">
                     <thead className="bg-[#fafbfe]">
-                      <tr className="text-left text-xs uppercase text-[#7a86a0]">
+                      <tr className="text-left text-xs uppercase text-[var(--fd-text-muted)]">
                         <th className="px-4 py-3">
                           Produto / Serviço
                         </th>
@@ -817,7 +817,7 @@ export default function PurchaseInvoicesPage() {
                                     item.id,
                                   )
                                 }
-                                className="rounded-lg p-2 text-[#e65d5d] hover:bg-[#fff0f0]"
+                                className="rounded-lg p-2 text-fd-danger hover:bg-[#fff0f0]"
                               >
                                 <Trash2 size={17} />
                               </button>

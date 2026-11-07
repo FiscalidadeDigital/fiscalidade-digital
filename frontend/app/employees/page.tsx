@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   FormEvent,
@@ -2141,7 +2141,7 @@ export default function EmployeesPage() {
               gap: 8px;
               margin-bottom: 8px;
               color: #2563eb;
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 800;
               text-transform: uppercase;
               letter-spacing: .12em;
@@ -2293,7 +2293,7 @@ export default function EmployeesPage() {
 
             .employees-metric-label {
               color: #64748b;
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 800;
               text-transform: uppercase;
               letter-spacing: .06em;
@@ -2321,7 +2321,7 @@ export default function EmployeesPage() {
             .employees-metric-detail {
               margin-top: 6px;
               color: var(--fd-muted);
-              font-size: 10px;
+              font-size: 12px;
             }
 
             /* =====================================================
@@ -2385,7 +2385,7 @@ export default function EmployeesPage() {
 
             .employees-filter-label {
               color: #94a3b8;
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 750;
               text-transform: uppercase;
             }
@@ -2398,7 +2398,7 @@ export default function EmployeesPage() {
               border-radius: 6px;
               background: var(--fd-input);
               color: var(--fd-text-primary);
-              font-size: 11px;
+              font-size: 12px;
               font-weight: 650;
               outline: none;
             }
@@ -2412,7 +2412,7 @@ export default function EmployeesPage() {
                 1px solid var(--fd-border);
               background: var(--fd-table-header);
               color: var(--fd-text-secondary);
-              font-size: 10px;
+              font-size: 12px;
             }
 
             .employees-results strong {
@@ -2435,7 +2435,7 @@ export default function EmployeesPage() {
                 1px solid var(--fd-border);
               background: var(--fd-table-header);
               color: var(--fd-text-secondary);
-              font-size: 9px;
+              font-size: 12px;
               font-weight: 800;
               text-align: left;
               text-transform: uppercase;
@@ -2447,7 +2447,7 @@ export default function EmployeesPage() {
               border-bottom:
                 1px solid var(--fd-border);
               color: var(--fd-text-secondary);
-              font-size: 11px;
+              font-size: 12px;
               vertical-align: middle;
             }
 
@@ -2475,20 +2475,20 @@ export default function EmployeesPage() {
               border-radius: 6px;
               background: var(--fd-surface-muted);
               color: var(--fd-primary);
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 850;
             }
 
             .employees-person-name {
               color: var(--fd-text-primary);
-              font-size: 11px;
+              font-size: 12px;
               font-weight: 800;
             }
 
             .employees-person-number {
               margin-top: 3px;
               color: #94a3b8;
-              font-size: 9px;
+              font-size: 12px;
             }
 
             .employees-salary {
@@ -2508,7 +2508,7 @@ export default function EmployeesPage() {
               padding: 5px 8px;
               border: 1px solid;
               border-radius: 5px;
-              font-size: 9px;
+              font-size: 12px;
               font-weight: 800;
             }
 
@@ -2565,7 +2565,7 @@ export default function EmployeesPage() {
               border-radius: 8px;
               background: #fff;
               color: #64748b;
-              font-size: 9px;
+              font-size: 12px;
               font-weight: 750;
               cursor: pointer;
             }
@@ -2613,7 +2613,7 @@ export default function EmployeesPage() {
               max-width: 430px;
               margin: 6px auto 0;
               color: #94a3b8;
-              font-size: 11px;
+              font-size: 12px;
               line-height: 1.6;
             }
 
@@ -2766,7 +2766,7 @@ export default function EmployeesPage() {
             .employees-modal-subtitle {
               margin: 4px 0 0 !important;
               color: var(--fd-muted) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
             }
 
             .employees-modal-close {
@@ -2843,7 +2843,7 @@ export default function EmployeesPage() {
 
               color: var(--fd-text-primary) !important;
 
-              font-size: 10px !important;
+              font-size: 12px !important;
               font-weight: 850 !important;
 
               text-transform: uppercase !important;
@@ -2880,7 +2880,7 @@ export default function EmployeesPage() {
 
             .employees-field label {
               color: var(--fd-text-secondary) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
               font-weight: 750 !important;
             }
 
@@ -2905,7 +2905,7 @@ export default function EmployeesPage() {
               font-family:
                 inherit !important;
 
-              font-size: 11px !important;
+              font-size: 12px !important;
             }
 
             .employees-field input {
@@ -2975,14 +2975,14 @@ export default function EmployeesPage() {
             .employees-auto-number strong {
               display: block !important;
               color: var(--fd-text-primary) !important;
-              font-size: 11px !important;
+              font-size: 12px !important;
               font-weight: 800 !important;
             }
 
             .employees-auto-number p {
               margin: 3px 0 0 !important;
               color: var(--fd-text-secondary) !important;
-              font-size: 9px !important;
+              font-size: 12px !important;
               line-height: 1.5 !important;
             }
 
@@ -3027,7 +3027,7 @@ export default function EmployeesPage() {
               background: var(--fd-surface-muted) !important;
               color: var(--fd-primary) !important;
 
-              font-size: 11px !important;
+              font-size: 12px !important;
               font-weight: 850 !important;
             }
 
@@ -3054,7 +3054,7 @@ export default function EmployeesPage() {
 
               color: var(--fd-primary) !important;
 
-              font-size: 9px !important;
+              font-size: 12px !important;
               font-weight: 850 !important;
 
               text-transform: uppercase !important;
@@ -3069,7 +3069,7 @@ export default function EmployeesPage() {
 
             .employees-profile-role {
               color: var(--fd-text-secondary) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
             }
 
             .employees-info-field {
@@ -3090,14 +3090,14 @@ export default function EmployeesPage() {
 
             .employees-info-field label {
               color: #94a3b8 !important;
-              font-size: 9px !important;
+              font-size: 12px !important;
               font-weight: 750 !important;
               text-transform: uppercase !important;
             }
 
             .employees-info-field strong {
               color: #334155 !important;
-              font-size: 11px !important;
+              font-size: 12px !important;
               font-weight: 650 !important;
               overflow-wrap: anywhere !important;
             }
@@ -3144,13 +3144,13 @@ export default function EmployeesPage() {
             .employees-salary-empty {
               margin: 3px 0 0 !important;
               color: var(--fd-text-secondary) !important;
-              font-size: 11px !important;
+              font-size: 12px !important;
             }
 
             .employees-salary-state {
               flex: none !important;
               color: var(--fd-text-secondary) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
               font-weight: 700 !important;
             }
 
@@ -3798,7 +3798,7 @@ export default function EmployeesPage() {
                                     color:
                                       '#94a3b8',
                                     fontSize:
-                                      9,
+                                      12,
                                   }}
                                 >
                                   {

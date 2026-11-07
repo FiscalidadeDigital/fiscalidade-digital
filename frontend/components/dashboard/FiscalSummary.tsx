@@ -111,7 +111,7 @@ export default function FiscalSummary({
             Impostos registados
           </h3>
 
-          <p className="mt-0.5 text-[11px] text-[#7180a2]">
+          <p className="mt-0.5 text-xs text-[var(--fd-text-muted)]">
             Valores fiscais registados no sistema
           </p>
         </div>
@@ -160,7 +160,7 @@ export default function FiscalSummary({
               Ainda não existem valores fiscais
             </p>
 
-            <p className="mt-1 text-[10px] leading-5 text-[#8a96b0]">
+            <p className="mt-1 text-xs leading-5 text-[var(--fd-text-muted)]">
               Os valores serão apresentados quando
               existirem registos fiscais da empresa.
             </p>
@@ -219,7 +219,7 @@ export default function FiscalSummary({
                           '1px solid #e8ebf3',
                         boxShadow:
                           '0 8px 25px rgba(15, 27, 61, 0.08)',
-                        fontSize: '11px',
+                        fontSize: '12px',
                       }}
                       formatter={(value) =>
                         `AOA ${formatCurrency(
@@ -243,7 +243,7 @@ export default function FiscalSummary({
                     justify-center
                   "
                 >
-                  <span className="text-[9px] font-medium text-[#8a96b0]">
+                  <span className="text-xs font-medium text-[var(--fd-text-muted)]">
                     Total
                   </span>
 
@@ -309,7 +309,7 @@ export default function FiscalSummary({
                           className="
                             block
                             truncate
-                            text-[11px]
+                            text-xs
                             font-semibold
                             text-[#344361]
                           "
@@ -319,11 +319,11 @@ export default function FiscalSummary({
                       </div>
 
                       <div className="shrink-0 text-right">
-                        <span className="block text-[11px] font-bold text-[#25365f]">
+                        <span className="block text-xs font-bold text-[#25365f]">
                           {percentage}%
                         </span>
 
-                        <span className="mt-0.5 block text-[9px] text-[#8a96b0]">
+                        <span className="mt-0.5 block text-xs text-[var(--fd-text-muted)]">
                           AOA{' '}
                           {formatCurrency(
                             tax.value
@@ -350,11 +350,11 @@ export default function FiscalSummary({
               pt-4
             "
           >
-            <span className="text-[10px] text-[#8a96b0]">
+            <span className="text-xs text-[var(--fd-text-muted)]">
               Impostos com valores registados
             </span>
 
-            <span className="text-[11px] font-bold text-[#25365f]">
+            <span className="text-xs font-bold text-[#25365f]">
               {safeTaxes.length}
             </span>
           </div>

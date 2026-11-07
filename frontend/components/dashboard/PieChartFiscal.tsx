@@ -208,7 +208,7 @@ export default function PieChartFiscal({
                         {item.name}
                       </p>
 
-                      <p className="text-[11px] text-slate-500">
+                      <p className="text-xs text-slate-500">
                         {item.percentage}%
                       </p>
                     </div>

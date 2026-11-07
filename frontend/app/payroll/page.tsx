@@ -634,7 +634,7 @@ export default function PayrollPage() {
               <div>
                 <label
                   htmlFor="payroll-month"
-                  className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400"
+                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400"
                 >
                   Mês
                 </label>
@@ -687,7 +687,7 @@ export default function PayrollPage() {
               <div>
                 <label
                   htmlFor="payroll-year"
-                  className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400"
+                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400"
                 >
                   Ano
                 </label>
@@ -1839,7 +1839,7 @@ function TableHeader({
       className={`
         px-5
         py-3
-        text-[11px]
+        text-xs
         font-semibold
         uppercase
         tracking-wider

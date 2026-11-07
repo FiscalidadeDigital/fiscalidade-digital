@@ -230,13 +230,13 @@ function Mockup({ locale }: { locale: LandingLocale }) {
       <aside aria-hidden="true" className="hero-floating-card hero-floating-card--obligations hidden min-[1280px]:block">
         <div className="hero-floating-card__float w-36 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)]">
           <p className="text-xs font-bold text-fd-text">{tr(locale, 'Obrigações', 'Obligations')}</p>
-          <p className="mt-1 text-[11px] text-slate-500">{tr(locale, 'Prazos organizados', 'Organised deadlines')}</p>
+          <p className="mt-1 text-xs text-slate-500">{tr(locale, 'Prazos organizados', 'Organised deadlines')}</p>
         </div>
       </aside>
       <aside aria-hidden="true" className="hero-floating-card hero-floating-card--taxes hidden min-[1280px]:block">
         <div className="hero-floating-card__float w-36 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)]">
           <p className="text-xs font-bold text-fd-text">{tr(locale, 'Impostos', 'Taxes')}</p>
-          <p className="mt-1 text-[11px] text-slate-500">{tr(locale, 'Fiscalidade num só lugar', 'Tax management in one place')}</p>
+          <p className="mt-1 text-xs text-slate-500">{tr(locale, 'Fiscalidade num só lugar', 'Tax management in one place')}</p>
         </div>
       </aside>
       <div className="hero-main-card relative z-10 mx-auto max-w-[400px] rounded-[28px] border border-white bg-white p-5 shadow-[0_30px_70px_rgba(15,41,79,.16)]">
@@ -246,14 +246,14 @@ function Mockup({ locale }: { locale: LandingLocale }) {
           <i className="h-2 w-2 rounded-full bg-slate-200" />
         </div>
         <div className="mt-12 rounded-2xl bg-[#f2f9fb] p-5">
-          <p className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-fd-accent">
+          <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-fd-accent">
             <FileText size={13} /> {tr(locale, 'Gestão fiscal', 'Tax management')}
           </p>
           <p className="mt-4 text-3xl font-extrabold leading-[1.05] tracking-tight text-fd-text">
             {locale === 'en' ? <>Simplify your<br />company’s tax<br />management.</> : <>Simplifique<br />a gestão da<br />sua empresa.</>}
           </p>
         </div>
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-bold">
           <span className="rounded-xl bg-fd-accent-soft px-2 py-3 text-fd-primary">{tr(locale, 'Facturação', 'Invoicing')}</span>
           <span className="rounded-xl bg-slate-50 px-2 py-3 text-fd-text">{tr(locale, 'Obrigações', 'Obligations')}</span>
           <span className="rounded-xl bg-slate-50 px-2 py-3 text-fd-text">{tr(locale, 'Folha salarial', 'Payroll')}</span>

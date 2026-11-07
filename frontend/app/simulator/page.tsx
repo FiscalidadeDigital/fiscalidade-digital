@@ -682,7 +682,7 @@ export default function SimulatorPage() {
 
                 <div className="flex items-center gap-2 mb-1">
 
-                  <p className="text-[11px] font-bold text-slate-400 uppercase tracking-[0.14em]">
+                  <p className="text-xs font-bold text-slate-400 uppercase tracking-[0.14em]">
                     Empresa activa
                   </p>
 
@@ -1406,7 +1406,7 @@ function HeroStat({
 
       <div>
 
-        <p className="text-[11px] text-slate-400 font-medium">
+        <p className="text-xs text-slate-400 font-medium">
           {label}
         </p>
 
@@ -1776,7 +1776,7 @@ function ResultTitle({
 
       </div>
 
-      <span className="text-[11px] font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
+      <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
         {badge}
       </span>
 

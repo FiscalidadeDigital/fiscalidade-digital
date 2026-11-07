@@ -915,7 +915,7 @@ export default function ObligationsPage() {
               rounded-md
               bg-fd-primary
               px-5
-              text-[11px]
+              text-xs
               font-semibold
               text-white
               transition-colors
@@ -1010,11 +1010,11 @@ export default function ObligationsPage() {
                 >
                   <p
                     className="
-                      text-[9px]
+                      text-xs
                       font-bold
                       uppercase
                       tracking-wider
-                      text-[#8a96b0]
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     Empresa ativa
@@ -1038,8 +1038,8 @@ export default function ObligationsPage() {
                   <p
                     className="
                       mt-1
-                      text-[10px]
-                      text-[#7180a2]
+                      text-xs
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     NIF:{' '}
@@ -1090,11 +1090,11 @@ export default function ObligationsPage() {
                 <div>
                   <p
                     className="
-                      text-[8px]
+                      text-xs
                       font-bold
                       uppercase
                       tracking-wider
-                      text-[#8a96b0]
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     Regime fiscal
@@ -1103,7 +1103,7 @@ export default function ObligationsPage() {
                   <p
                     className={`
                       mt-0.5
-                      text-[11px]
+                      text-xs
                       font-extrabold
                       ${currentRegimeStyles.text}
                     `}
@@ -1144,11 +1144,11 @@ export default function ObligationsPage() {
               >
                 <p
                   className="
-                    text-[8px]
+                    text-xs
                     font-bold
                     uppercase
                     tracking-wider
-                    text-[#8a96b0]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Regime utilizado pelo sistema
@@ -1157,7 +1157,7 @@ export default function ObligationsPage() {
                 <p
                   className="
                     mt-1
-                    text-[11px]
+                    text-xs
                     font-bold
                     text-[#526080]
                   "
@@ -1178,11 +1178,11 @@ export default function ObligationsPage() {
               >
                 <p
                   className="
-                    text-[8px]
+                    text-xs
                     font-bold
                     uppercase
                     tracking-wider
-                    text-[#8a96b0]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Sector
@@ -1191,7 +1191,7 @@ export default function ObligationsPage() {
                 <p
                   className="
                     mt-1
-                    text-[11px]
+                    text-xs
                     font-bold
                     text-[#526080]
                   "
@@ -1242,11 +1242,11 @@ export default function ObligationsPage() {
               <div>
                 <p
                   className="
-                    text-[9px]
+                    text-xs
                     font-bold
                     uppercase
                     tracking-wider
-                    text-[#8a96b0]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Calendário fiscal
@@ -1255,7 +1255,7 @@ export default function ObligationsPage() {
                 <p
                   className="
                     mt-1
-                    text-[11px]
+                    text-xs
                     font-bold
                     text-[#111b3b]
                   "
@@ -1268,9 +1268,9 @@ export default function ObligationsPage() {
             <p
               className="
                 mt-4
-                text-[10px]
+                text-xs
                 leading-5
-                text-[#7180a2]
+                text-[var(--fd-text-muted)]
               "
             >
               As regras fiscais são
@@ -1302,7 +1302,7 @@ export default function ObligationsPage() {
 
               <span
                 className="
-                  text-[9px]
+                  text-xs
                   font-bold
                   text-[#526080]
                 "
@@ -1352,7 +1352,7 @@ export default function ObligationsPage() {
               <p
                 className="
                   mt-1
-                  text-[11px]
+                  text-xs
                   leading-5
                 "
               >
@@ -1477,11 +1477,11 @@ export default function ObligationsPage() {
               <div>
                 <p
                   className="
-                    text-[10px]
+                    text-xs
                     font-bold
                     uppercase
                     tracking-wider
-                    text-[#8a96b0]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Valor total fiscal
@@ -1504,8 +1504,8 @@ export default function ObligationsPage() {
                 <p
                   className="
                     mt-1
-                    text-[11px]
-                    text-[#7180a2]
+                    text-xs
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Soma dos valores reais
@@ -1565,9 +1565,9 @@ export default function ObligationsPage() {
             >
               <span
                 className="
-                  text-[10px]
+                  text-xs
                   font-medium
-                  text-[#7180a2]
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Taxa de conclusão
@@ -1575,7 +1575,7 @@ export default function ObligationsPage() {
 
               <span
                 className="
-                  text-[11px]
+                  text-xs
                   font-bold
                   text-fd-accent
                 "
@@ -1611,7 +1611,7 @@ export default function ObligationsPage() {
                   justify-center
                   rounded-xl
                   bg-[#fff1df]
-                  text-[#ea580c]
+                  text-fd-warning
                 "
               >
                 <CalendarDays
@@ -1622,11 +1622,11 @@ export default function ObligationsPage() {
               <div>
                 <p
                   className="
-                    text-[10px]
+                    text-xs
                     font-bold
                     uppercase
                     tracking-wider
-                    text-[#8a96b0]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Calendário fiscal
@@ -1648,9 +1648,9 @@ export default function ObligationsPage() {
             <p
               className="
                 mt-5
-                text-[11px]
+                text-xs
                 leading-5
-                text-[#7180a2]
+                text-[var(--fd-text-muted)]
               "
             >
               As obrigações apresentadas
@@ -1680,7 +1680,7 @@ export default function ObligationsPage() {
 
               <span
                 className={`
-                  text-[10px]
+                  text-xs
                   font-bold
                   ${currentRegimeStyles.text}
                 `}
@@ -1706,7 +1706,7 @@ export default function ObligationsPage() {
                 bg-[#fafbfe]
                 px-4
                 py-2.5
-                text-[10px]
+                text-xs
                 font-bold
                 text-fd-accent
                 transition
@@ -1779,9 +1779,9 @@ export default function ObligationsPage() {
                 <p
                   className="
                     mt-1
-                    text-[10px]
-                    text-[#7180a2]
-                    sm:text-[11px]
+                    text-xs
+                    text-[var(--fd-text-muted)]
+                    sm:text-xs
                   "
                 >
                   Valores, prazos e estado
@@ -1819,7 +1819,7 @@ export default function ObligationsPage() {
                 >
                   <Search
                     size={15}
-                    className="text-[#8a96b0]"
+                    className="text-[var(--fd-text-muted)]"
                   />
 
                   <input
@@ -1837,10 +1837,10 @@ export default function ObligationsPage() {
                     className="
                       w-full
                       bg-transparent
-                      text-[11px]
+                      text-xs
                       text-[#111b3b]
                       outline-none
-                      placeholder:text-[#9aa4b8]
+                      placeholder:text-[var(--fd-text-muted)]
                     "
                   />
                 </div>
@@ -1862,7 +1862,7 @@ export default function ObligationsPage() {
                 >
                   <Filter
                     size={14}
-                    className="text-[#8a96b0]"
+                    className="text-[var(--fd-text-muted)]"
                   />
 
                   <select
@@ -1879,7 +1879,7 @@ export default function ObligationsPage() {
                     }
                     className="
                       bg-transparent
-                      text-[11px]
+                      text-xs
                       font-semibold
                       text-[#526080]
                       outline-none
@@ -1949,8 +1949,8 @@ export default function ObligationsPage() {
 
               <p
                 className="
-                  text-[10px]
-                  text-[#8a96b0]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 A obter dados da empresa.
@@ -2003,9 +2003,9 @@ export default function ObligationsPage() {
                 className="
                   mt-2
                   max-w-[420px]
-                  text-[11px]
+                  text-xs
                   leading-5
-                  text-[#7180a2]
+                  text-[var(--fd-text-muted)]
                 "
               >
                 {search
@@ -2031,7 +2031,7 @@ export default function ObligationsPage() {
                     bg-fd-primary
                     px-4
                     py-2.5
-                    text-[10px]
+                    text-xs
                     font-bold
                     text-white
                     transition
@@ -2197,9 +2197,9 @@ export default function ObligationsPage() {
                                   bg-[#f4f6f9]
                                   px-2
                                   py-1
-                                  text-[9px]
+                                  text-xs
                                   font-bold
-                                  text-[#65718a]
+                                  text-[var(--fd-text-muted)]
                                 "
                               >
                                 {typeLabel(
@@ -2208,7 +2208,7 @@ export default function ObligationsPage() {
                               </span>
 
                               <span
-                                className={`rounded-md px-2 py-1 text-[9px] font-bold ${quality.className}`}
+                                className={`rounded-md px-2 py-1 text-xs font-bold ${quality.className}`}
                               >
                                 {quality.label}
                               </span>
@@ -2231,8 +2231,8 @@ export default function ObligationsPage() {
                                   inline-flex
                                   items-center
                                   gap-1.5
-                                  text-[10px]
-                                  text-[#7180a2]
+                                  text-xs
+                                  text-[var(--fd-text-muted)]
                                 "
                               >
                                 <CalendarDays
@@ -2256,8 +2256,8 @@ export default function ObligationsPage() {
                               {obligation.period && (
                                 <span
                                   className="
-                                    text-[10px]
-                                    text-[#7180a2]
+                                    text-xs
+                                    text-[var(--fd-text-muted)]
                                   "
                                 >
                                   Período:{' '}
@@ -2296,7 +2296,7 @@ export default function ObligationsPage() {
                                   border
                                   px-2
                                   py-1
-                                  text-[9px]
+                                  text-xs
                                   font-bold
                                   ${currentRegimeStyles.wrapper}
                                   ${currentRegimeStyles.text}
@@ -2312,8 +2312,8 @@ export default function ObligationsPage() {
                               {company.sector && (
                                 <span
                                   className="
-                                    text-[9px]
-                                    text-[#8792a8]
+                                    text-xs
+                                    text-[var(--fd-text-muted)]
                                   "
                                 >
                                   Sector:{' '}
@@ -2321,7 +2321,7 @@ export default function ObligationsPage() {
                                   <strong
                                     className="
                                       font-semibold
-                                      text-[#65718a]
+                                      text-[var(--fd-text-muted)]
                                     "
                                   >
                                     {
@@ -2339,9 +2339,9 @@ export default function ObligationsPage() {
                                 className="
                                   mt-2
                                   max-w-[650px]
-                                  text-[10px]
+                                  text-xs
                                   leading-5
-                                  text-[#8792a8]
+                                  text-[var(--fd-text-muted)]
                                 "
                               >
                                 {description}
@@ -2349,7 +2349,7 @@ export default function ObligationsPage() {
                             )}
 
                             {obligation.calculation && (
-                              <details className="mt-3 max-w-[650px] rounded-lg border border-[#eef0f5] bg-[#fafbfe] px-3 py-2 text-[10px] text-[#65718a]">
+                              <details className="mt-3 max-w-[650px] rounded-lg border border-[#eef0f5] bg-[#fafbfe] px-3 py-2 text-xs text-[var(--fd-text-muted)]">
                                 <summary className="cursor-pointer font-semibold text-[#526080]">
                                   Como este valor foi calculado
                                 </summary>
@@ -2407,11 +2407,11 @@ export default function ObligationsPage() {
                           >
                             <p
                               className="
-                                text-[9px]
+                                text-xs
                                 font-semibold
                                 uppercase
                                 tracking-wider
-                                text-[#8a96b0]
+                                text-[var(--fd-text-muted)]
                               "
                             >
                               Valor da obrigação
@@ -2437,7 +2437,7 @@ export default function ObligationsPage() {
                                 rounded-lg
                                 px-2.5
                                 py-1
-                                text-[9px]
+                                text-xs
                                 font-bold
                                 ${
                                   isPaid
@@ -2479,7 +2479,7 @@ export default function ObligationsPage() {
                                 border-[#ddd9ff]
                                 bg-white
                                 px-4
-                                text-[10px]
+                                text-xs
                                 font-bold
                                 text-fd-accent
                                 transition
@@ -2517,7 +2517,7 @@ export default function ObligationsPage() {
                                 rounded-xl
                                 bg-emerald-50
                                 px-4
-                                text-[10px]
+                                text-xs
                                 font-bold
                                 text-emerald-700
                               "
@@ -2534,7 +2534,7 @@ export default function ObligationsPage() {
                             size={17}
                             className="
                               hidden
-                              text-[#c1c7d4]
+                              text-[var(--fd-text-muted)]
                               transition
                               group-hover:text-fd-accent
                               xl:block
@@ -2574,8 +2574,8 @@ export default function ObligationsPage() {
               >
                 <p
                   className="
-                    text-[10px]
-                    text-[#8a96b0]
+                    text-xs
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   A mostrar{' '}
@@ -2612,9 +2612,9 @@ export default function ObligationsPage() {
                     flex
                     items-center
                     gap-2
-                    text-[10px]
+                    text-xs
                     font-semibold
-                    text-[#7180a2]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   <ShieldCheck
@@ -2670,21 +2670,21 @@ function SummaryCard({
       border:
         'border-[#fedfbe]',
       icon:
-        'bg-[#fff1df] text-[#ea580c]',
+        'bg-[#fff1df] text-fd-warning',
     },
 
     green: {
       border:
         'border-[#c9f2df]',
       icon:
-        'bg-[#ecfdf5] text-[#059669]',
+        'bg-[#ecfdf5] text-fd-success',
     },
 
     red: {
       border:
         'border-[#ffd7d7]',
       icon:
-        'bg-[#fff1f1] text-[#dc2626]',
+        'bg-[#fff1f1] text-fd-danger',
     },
   };
 
@@ -2714,7 +2714,7 @@ function SummaryCard({
         <div>
           <p
             className="
-              text-[10px]
+              text-xs
               font-medium
               uppercase
               tracking-wider
@@ -2740,7 +2740,7 @@ function SummaryCard({
           <p
             className="
               mt-1
-              text-[10px]
+              text-xs
               font-medium
               text-slate-600
             "

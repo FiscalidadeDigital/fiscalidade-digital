@@ -373,7 +373,7 @@ export default function FloatingAI() {
               </span>
               <div>
                 <h2 className="text-sm font-bold">Assistente Fiscal</h2>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-xs text-slate-500">
                   Consulta assistida e fundamentada
                 </p>
               </div>
@@ -410,7 +410,7 @@ export default function FloatingAI() {
                       onClick={() => void sendMessage(item.message)}
                       className="block w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-fd-accent hover:border-slate-300 hover:bg-slate-50"
                     >
-                      <span className="mr-2 text-[10px] uppercase tracking-wide text-slate-400">
+                      <span className="mr-2 text-xs uppercase tracking-wide text-slate-400">
                         {item.kind}
                       </span>
                       {item.label}
@@ -482,7 +482,7 @@ export default function FloatingAI() {
                 <Send size={17} />
               </button>
             </div>
-            <p className="mt-2 text-[10px] text-slate-500">
+            <p className="mt-2 text-xs text-slate-500">
               As respostas não substituem validação profissional. Não partilhe
               credenciais ou informação que não seja necessária.
             </p>

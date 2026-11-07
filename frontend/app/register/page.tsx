@@ -79,7 +79,7 @@ export default function RegisterPage() {
         {formError && <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
         <button disabled={loading} aria-busy={loading} className="fd-button-primary w-full">{loading ? 'A criar conta…' : 'Criar conta'}</button>
       </form>
-      <p className="mt-6 text-center text-sm text-[#66758d]">Já tem conta? <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/login">Entrar</Link></p>
+      <p className="mt-6 text-center text-sm text-[var(--fd-text-muted)]">Já tem conta? <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/login">Entrar</Link></p>
     </AuthFrame>
   );
 }

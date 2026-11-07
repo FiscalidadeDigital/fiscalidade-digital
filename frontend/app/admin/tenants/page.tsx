@@ -194,7 +194,7 @@ export default function AdminTenantsPage() {
 
           <div className="overflow-x-auto">
             <table className="min-w-[920px] w-full border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+              <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Empresa</th>
                   <th className="px-4 py-3 font-semibold">Estado e plano</th>
@@ -217,13 +217,13 @@ export default function AdminTenantsPage() {
                             <span className="mt-0.5 rounded-lg bg-slate-100 p-2 text-slate-600"><Building2 className="h-4 w-4" /></span>
                             <div>
                               <p className="max-w-[250px] truncate text-sm font-semibold">{tenant.name}</p>
-                              <p className="mt-1 text-[11px] text-[var(--fd-muted)]">NIF {tenant.nifMasked}</p>
-                              <p className="mt-0.5 text-[11px] text-[var(--fd-muted)]">{tenant.emailMasked}</p>
+                              <p className="mt-1 text-xs text-[var(--fd-muted)]">NIF {tenant.nifMasked}</p>
+                              <p className="mt-0.5 text-xs text-[var(--fd-muted)]">{tenant.emailMasked}</p>
                             </div>
                           </div>
                         </td>
                         <td className="px-4 py-4">
-                          <span className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${statusClasses[tenant.status]}`}>{statusLabels[tenant.status]}</span>
+                          <span className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${statusClasses[tenant.status]}`}>{statusLabels[tenant.status]}</span>
                           <p className="mt-2 text-xs font-medium">{tenant.planType}</p>
                         </td>
                         <td className="px-4 py-4 text-xs text-[var(--fd-text-secondary)]">
@@ -234,7 +234,7 @@ export default function AdminTenantsPage() {
                         <td className="px-4 py-4">
                           <p className="text-xs font-semibold tabular-nums">{formatStorage(tenant.usage.storageUsedBytes)}</p>
                           <p
-                            className="mt-1 text-[11px] text-[var(--fd-muted)]"
+                            className="mt-1 text-xs text-[var(--fd-muted)]"
                             title="Soma dos bytes registados nos documentos catalogados; não resulta de uma leitura física do object storage."
                           >
                             {storageMeasurementDetail(
@@ -245,10 +245,10 @@ export default function AdminTenantsPage() {
                           {tenant.usage.storageQuotaBytes ? (
                             <>
                               <div className="mt-2 h-1.5 w-32 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full bg-fd-primary" style={{ width: `${percentage ?? 0}%` }} /></div>
-                              <p className="mt-1.5 text-[11px] text-[var(--fd-muted)]">de {formatStorage(tenant.usage.storageQuotaBytes)}</p>
+                              <p className="mt-1.5 text-xs text-[var(--fd-muted)]">de {formatStorage(tenant.usage.storageQuotaBytes)}</p>
                             </>
                           ) : (
-                            <p className="mt-1.5 text-[11px] text-[var(--fd-muted)]">Quota comercial não definida</p>
+                            <p className="mt-1.5 text-xs text-[var(--fd-muted)]">Quota comercial não definida</p>
                           )}
                         </td>
                         <td className="px-4 py-4 text-xs text-[var(--fd-text-secondary)]">
@@ -265,7 +265,7 @@ export default function AdminTenantsPage() {
                           ) : (
                             <span className="text-[var(--fd-muted)]">Sem período configurado</span>
                           )}
-                          <p className="mt-2 text-[11px] text-[var(--fd-muted)]">Criada em {new Date(tenant.createdAt).toLocaleDateString('pt-AO')}</p>
+                          <p className="mt-2 text-xs text-[var(--fd-muted)]">Criada em {new Date(tenant.createdAt).toLocaleDateString('pt-AO')}</p>
                         </td>
                         <td className="px-5 py-4 text-right">
                           <button

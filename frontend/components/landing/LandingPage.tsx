@@ -69,12 +69,12 @@ function DashboardPreview({ active }: { active: string }) {
 
   return (
     <div className="landing-panel overflow-hidden border border-slate-200 bg-white p-3 shadow-[0_28px_80px_rgba(15,23,42,.16)] sm:p-4">
-      <div className="flex items-center justify-between border-b border-slate-200 px-2 pb-3 text-[10px] font-bold uppercase tracking-[.16em] text-slate-500">
+      <div className="flex items-center justify-between border-b border-slate-200 px-2 pb-3 text-xs font-bold uppercase tracking-[.16em] text-slate-500">
         <span>Fiscalidade Digital</span><span className="text-fd-accent">Empresa activa</span>
       </div>
       <div className="grid gap-3 pt-3 sm:grid-cols-[1.35fr_.75fr]">
         <div className="border border-slate-200 p-5">
-          <p className="text-[10px] font-bold uppercase tracking-[.15em] text-fd-primary">{content.eyebrow}</p>
+          <p className="text-xs font-bold uppercase tracking-[.15em] text-fd-primary">{content.eyebrow}</p>
           <h3 className="mt-3 max-w-sm text-xl font-semibold tracking-[-.035em] text-slate-950">{content.title}</h3>
           <div className="mt-6 space-y-3">
             {content.lines.map((line, index) => (
@@ -87,7 +87,7 @@ function DashboardPreview({ active }: { active: string }) {
           </div>
         </div>
         <div className="bg-fd-primary p-5 text-white">
-          <p className="text-[10px] font-bold uppercase tracking-[.15em] text-cyan-300">Estado operacional</p>
+          <p className="text-xs font-bold uppercase tracking-[.15em] text-cyan-300">Estado operacional</p>
           <p className="mt-4 text-base font-semibold leading-6">{content.side}</p>
           <div className="mt-8 border-t border-white/20 pt-4 text-xs leading-5 text-slate-300">Informação organizada para apoiar a revisão da equipa.</div>
         </div>
@@ -160,7 +160,7 @@ export default function LandingPage() {
       </section>
 
       <section className="border-b border-slate-200 bg-white py-8" aria-label="Ecossistema">
-        <div className="mx-auto max-w-7xl px-5 lg:px-8"><p className="mb-5 text-center text-[10px] font-bold uppercase tracking-[.17em] text-slate-500">Programas e comunidades do ecossistema empreendedor</p></div>
+        <div className="mx-auto max-w-7xl px-5 lg:px-8"><p className="mb-5 text-center text-xs font-bold uppercase tracking-[.17em] text-slate-500">Programas e comunidades do ecossistema empreendedor</p></div>
         <div className="relative overflow-hidden"><div className="landing-marquee flex w-max hover:[animation-play-state:paused]">{[...ecosystem, ...ecosystem].map((partner, index) => <div key={`${partner.name}-${index}`} className="mx-3 flex h-14 w-32 items-center justify-center border border-slate-200 bg-[#f8fafc] px-3 sm:w-40"><Image src={partner.image} alt={partner.name} width={120} height={40} className="max-h-8 w-auto max-w-[105px] object-contain grayscale" /></div>)}</div></div>
       </section>
 

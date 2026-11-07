@@ -633,12 +633,12 @@ export default function DashboardLayout({
               ? `
                 bg-[#eaf4f8]
                 font-semibold
-                text-[#075f86]
+                text-fd-accent
               `
               : `
                 text-[#405275]
                 hover:bg-[#f5f9fd]
-                hover:text-[#0877e8]
+                hover:text-fd-accent
               `
           }
 
@@ -673,8 +673,8 @@ export default function DashboardLayout({
 
             ${
               active
-                ? 'text-[#075f86]'
-                : 'group-hover:text-[#075f86]'
+                ? 'text-fd-accent'
+                : 'group-hover:text-fd-accent'
             }
 
             transition-[background-color,box-shadow]
@@ -714,7 +714,7 @@ export default function DashboardLayout({
               size={13}
               className="
                 animate-spin
-                text-[#079fe5]
+                text-fd-accent
               "
             />
           )}
@@ -793,7 +793,7 @@ export default function DashboardLayout({
               "
             >
               Fiscalidade
-              <span className="text-[#079fe5]">
+              <span className="text-fd-accent">
                 {' '}Digital
               </span>
             </div>
@@ -802,11 +802,11 @@ export default function DashboardLayout({
               className="
                 mt-0.5
                 whitespace-nowrap
-                text-[9px]
+                text-xs
                 font-medium
                 uppercase
                 tracking-[0.08em]
-                text-[#7c8cae]
+                text-[var(--fd-text-muted)]
               "
             >
               Gestão Fiscal Inteligente
@@ -835,7 +835,7 @@ export default function DashboardLayout({
               transition-colors
               duration-150
               hover:bg-[#f3f7fb]
-              hover:text-[#0877e8]
+              hover:text-fd-accent
             "
             aria-label="Fechar menu"
           >
@@ -881,7 +881,7 @@ export default function DashboardLayout({
               justify-center
               rounded-md
               bg-fd-primary
-              text-[11px]
+              text-xs
               font-bold
               text-white
             "
@@ -911,8 +911,8 @@ export default function DashboardLayout({
               className="
                 mt-0.5
                 truncate
-                text-[10px]
-                text-[#8795af]
+                text-xs
+                text-[var(--fd-text-muted)]
               "
               title={companyNif}
             >
@@ -954,11 +954,11 @@ export default function DashboardLayout({
                   fd-sidebar-section-title
                   mb-1.5
                   px-3
-                  text-[9px]
+                  text-xs
                   font-bold
                   uppercase
                   tracking-[0.14em]
-                  text-[#93a1ba]
+                  text-[var(--fd-text-muted)]
                 "
               >
                 {section.title}
@@ -991,11 +991,11 @@ export default function DashboardLayout({
               fd-sidebar-section-title
               mb-1.5
               px-3
-              text-[9px]
+              text-xs
               font-bold
               uppercase
               tracking-[0.14em]
-              text-[#93a1ba]
+              text-[var(--fd-text-muted)]
             "
           >
             Administração
@@ -1039,7 +1039,7 @@ export default function DashboardLayout({
                 gap-2.5
                 rounded-xl
                 px-3
-                text-[#6f7d96]
+                text-[var(--fd-text-muted)]
                 transition-[background-color,color]
                 duration-150
                 hover:bg-[#fff5f5]
@@ -1130,7 +1130,7 @@ export default function DashboardLayout({
             <div className="text-[12px] font-semibold">
               Obrigações fiscais
             </div>
-            <p className="mt-0.5 text-[10px] leading-4 text-[#718099]">
+            <p className="mt-0.5 text-xs leading-4 text-[var(--fd-text-muted)]">
               Consulte prazos e estados de cumprimento.
             </p>
           </div>
@@ -1331,7 +1331,7 @@ export default function DashboardLayout({
                 transition-colors
                 duration-150
                 hover:border-[#b9e6f7]
-                hover:text-[#0877e8]
+                hover:text-fd-accent
                 lg:hidden
               "
               aria-label="Abrir menu"
@@ -1350,7 +1350,7 @@ export default function DashboardLayout({
               "
             >
               <div className="min-w-0">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#78879d]">
+                <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--fd-text-muted)]">
                   {currentNavigation?.section ?? 'Fiscalidade Digital'}
                 </p>
                 <p className="truncate text-[13px] font-semibold text-[#172642]">
@@ -1391,7 +1391,7 @@ export default function DashboardLayout({
                   transition-colors
                   duration-150
                   hover:bg-[#f3f8fc]
-                  hover:text-[#0877e8]
+                  hover:text-fd-accent
                 "
                 aria-label="Notificações"
                 title="Notificações"
@@ -1460,8 +1460,8 @@ export default function DashboardLayout({
                   <div
                     className="
                       truncate
-                      text-[10px]
-                      text-[#8290aa]
+                      text-xs
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     {companyNif}
@@ -1478,7 +1478,7 @@ export default function DashboardLayout({
                     justify-center
                     rounded-md
                     bg-fd-primary
-                    text-[11px]
+                    text-xs
                     font-bold
                     text-white
                   "

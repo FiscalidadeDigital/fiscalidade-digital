@@ -335,7 +335,7 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
                 {activeGroup.id === 'compliance' ? <FiscalAlertPreview locale={locale} /> : <div className="border border-[#d4e8ed] bg-white p-4 shadow-[0_12px_28px_rgba(15,41,79,.08)] sm:p-5">
                   <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[.15em] text-fd-accent">{activeGroup.previewLabel}</p>
+                      <p className="text-xs font-bold uppercase tracking-[.15em] text-fd-accent">{activeGroup.previewLabel}</p>
                       <p className="mt-1 text-sm font-extrabold text-fd-text">{activeGroup.previewTitle}</p>
                     </div>
                     <BarChart3 size={19} className="text-fd-accent" aria-hidden="true" />
@@ -371,7 +371,7 @@ function FiscalAlertPreview({ locale }: { locale: LandingLocale }) {
     <div className="border border-[#d4e8ed] bg-white p-4 shadow-[0_12px_28px_rgba(15,41,79,.08)] sm:p-5">
       <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[.15em] text-fd-accent">{copy(locale, 'Demonstração de alerta', 'Alert demonstration')}</p>
+          <p className="text-xs font-bold uppercase tracking-[.15em] text-fd-accent">{copy(locale, 'Demonstração de alerta', 'Alert demonstration')}</p>
           <p className="mt-1 text-sm font-extrabold text-fd-text">{copy(locale, 'Agenda fiscal', 'Tax agenda')}</p>
         </div>
         <BellRing size={19} className="text-emerald-600" aria-hidden="true" />

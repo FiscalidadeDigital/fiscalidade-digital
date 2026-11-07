@@ -47,6 +47,18 @@ module.exports = {
       borderRadius: {
         'fd-field': 'var(--fd-radius-lg)',
         'fd-card': 'var(--fd-radius-xl)',
+        'fd-card-large': 'var(--fd-radius-2xl)',
+      },
+      fontSize: {
+        'fd-eyebrow': [
+          'var(--fd-font-size-eyebrow)',
+          { lineHeight: '1rem', letterSpacing: '0.12em' },
+        ],
+        'fd-caption': ['var(--fd-font-size-caption)', { lineHeight: '1rem' }],
+        'fd-body': ['var(--fd-font-size-body)', { lineHeight: 'var(--fd-line-height-body)' }],
+        'fd-h3': ['var(--fd-font-size-h3)', { lineHeight: '1.3' }],
+        'fd-h2': ['var(--fd-font-size-h2)', { lineHeight: 'var(--fd-line-height-tight)' }],
+        'fd-h1': ['var(--fd-font-size-h1)', { lineHeight: 'var(--fd-line-height-tight)' }],
       },
       boxShadow: {
         fd: 'var(--fd-shadow)',

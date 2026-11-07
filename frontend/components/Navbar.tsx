@@ -78,7 +78,7 @@ export default function Navbar() {
 
             <p
               className="
-                text-[11px]
+                text-xs
                 text-slate-500
                 mt-0.5
               "

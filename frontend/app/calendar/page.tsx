@@ -826,7 +826,7 @@ export default function CalendarPage() {
 
           <div className="mb-6 flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
             <div>
-              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-[#0ea5e9]">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium text-fd-accent">
                 <CalendarDays
                   size={17}
                 />
@@ -1240,7 +1240,7 @@ export default function CalendarPage() {
                       (day) => (
                         <div
                           key={day}
-                          className="py-3 text-center text-[10px] font-bold tracking-wider text-slate-400"
+                          className="py-3 text-center text-xs font-bold tracking-wider text-slate-400"
                         >
                           {day}
                         </div>
@@ -1295,7 +1295,7 @@ export default function CalendarPage() {
                               {cell.items
                                 .length >
                                 0 && (
-                                <span className="text-[9px] font-semibold text-blue-500">
+                                <span className="text-xs font-semibold text-blue-500">
                                   {
                                     cell
                                       .items
@@ -1325,7 +1325,7 @@ export default function CalendarPage() {
                                           item,
                                         )
                                       }
-                                      className="block w-full truncate rounded-md bg-blue-50 px-2 py-1 text-left text-[10px] font-semibold text-blue-700 transition hover:bg-blue-100"
+                                      className="block w-full truncate rounded-md bg-blue-50 px-2 py-1 text-left text-xs font-semibold text-blue-700 transition hover:bg-blue-100"
                                       title={
                                         item.title
                                       }
@@ -1346,7 +1346,7 @@ export default function CalendarPage() {
                                         .items[2],
                                     )
                                   }
-                                  className="text-[9px] font-semibold text-slate-400 hover:text-blue-500"
+                                  className="text-xs font-semibold text-slate-400 hover:text-blue-500"
                                 >
                                   +
                                   {cell
@@ -1463,7 +1463,7 @@ export default function CalendarPage() {
                                   }
                                 </span>
 
-                                <span className="text-[8px] font-bold uppercase">
+                                <span className="text-xs font-bold uppercase">
                                   {
                                     MONTHS[
                                       parseDate(
@@ -1496,7 +1496,7 @@ export default function CalendarPage() {
                                 </p>
 
                                 <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  <span className="text-[10px] font-medium text-slate-400">
+                                  <span className="text-xs font-medium text-slate-400">
                                     {shortDate(
                                       effectiveDueDate(item),
                                     )}
@@ -1504,7 +1504,7 @@ export default function CalendarPage() {
 
                                   {days ===
                                     0 && (
-                                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[9px] font-bold text-amber-600">
+                                    <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-bold text-amber-600">
                                       Hoje
                                     </span>
                                   )}
@@ -1513,7 +1513,7 @@ export default function CalendarPage() {
                                     0 &&
                                     days <=
                                       7 && (
-                                      <span className="rounded-full bg-orange-50 px-2 py-0.5 text-[9px] font-bold text-orange-600">
+                                      <span className="rounded-full bg-orange-50 px-2 py-0.5 text-xs font-bold text-orange-600">
                                         Em{' '}
                                         {days}{' '}
                                         dias
@@ -1522,7 +1522,7 @@ export default function CalendarPage() {
 
                                   {days >
                                     7 && (
-                                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[9px] font-semibold text-slate-500">
+                                    <span className="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-semibold text-slate-500">
                                       Próximo
                                     </span>
                                   )}
@@ -1614,7 +1614,7 @@ export default function CalendarPage() {
                             }
                           </span>
 
-                          <span className="text-[8px] font-bold uppercase">
+                          <span className="text-xs font-bold uppercase">
                             {
                               MONTHS[
                                 selectedMonth
@@ -1633,7 +1633,7 @@ export default function CalendarPage() {
                             </h3>
 
                             {item.taxType && (
-                              <span className="rounded-full bg-blue-50 px-2 py-1 text-[9px] font-bold text-blue-600">
+                              <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-600">
                                 {getTaxLabel(
                                   item.taxType,
                                 )}
@@ -1641,7 +1641,7 @@ export default function CalendarPage() {
                             )}
 
                             {item.obligationType && (
-                              <span className="rounded-full bg-slate-100 px-2 py-1 text-[9px] font-semibold text-slate-500">
+                              <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-500">
                                 {getObligationLabel(
                                   item.obligationType,
                                 )}
@@ -1657,7 +1657,7 @@ export default function CalendarPage() {
                             </p>
                           )}
 
-                          <div className="mt-2 flex flex-wrap items-center gap-3 text-[10px] text-slate-400">
+                          <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-slate-400">
                             <span>
                               Prazo:{' '}
                               {formatDate(
@@ -1791,7 +1791,7 @@ export default function CalendarPage() {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Data limite
                   </p>
 
@@ -1804,7 +1804,7 @@ export default function CalendarPage() {
 
                 {selectedItem.deadlineOverride && (
                   <div className="rounded-xl bg-fd-accent-soft p-4 sm:col-span-2">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-fd-accent">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-fd-accent">
                       Prazo legal original
                     </p>
 
@@ -1819,7 +1819,7 @@ export default function CalendarPage() {
                 )}
 
                 <div className="rounded-xl bg-slate-50 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Ano de referência
                   </p>
 
@@ -1832,7 +1832,7 @@ export default function CalendarPage() {
 
                 {selectedItem.taxType && (
                   <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Imposto
                     </p>
 
@@ -1846,7 +1846,7 @@ export default function CalendarPage() {
 
                 {selectedItem.obligationType && (
                   <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Tipo
                     </p>
 
@@ -1860,7 +1860,7 @@ export default function CalendarPage() {
 
                 {selectedItem.period && (
                   <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Período
                     </p>
 
@@ -1874,7 +1874,7 @@ export default function CalendarPage() {
 
                 {selectedItem.code && (
                   <div className="rounded-xl bg-slate-50 p-4">
-                    <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                       Código
                     </p>
 
@@ -1938,7 +1938,7 @@ export default function CalendarPage() {
                         Obrigações relacionadas
                       </p>
 
-                      <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-600">
+                      <span className="rounded-full bg-emerald-50 px-2 py-1 text-xs font-bold text-emerald-600">
                         {
                           selectedItem
                             .obligations
@@ -1966,7 +1966,7 @@ export default function CalendarPage() {
                                   }
                                 </p>
 
-                                <p className="mt-1 text-[10px] text-slate-400">
+                                <p className="mt-1 text-xs text-slate-400">
                                   {shortDate(
                                     obligation.dueDate,
                                   )}
@@ -1976,7 +1976,7 @@ export default function CalendarPage() {
                               {obligation.status && (
                                 <span
                                   className={[
-                                    'rounded-full px-2 py-1 text-[9px] font-bold',
+                                    'rounded-full px-2 py-1 text-xs font-bold',
                                     obligation.status ===
                                       'PAID'
                                       ? 'bg-emerald-50 text-emerald-600'
@@ -2007,7 +2007,7 @@ export default function CalendarPage() {
 
               {selectedItem.officialReference && (
                 <div className="mt-5 rounded-xl border border-slate-100 bg-slate-50 p-4">
-                  <p className="text-[10px] font-semibold uppercase tracking-wide text-slate-400">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Referência oficial
                   </p>
 

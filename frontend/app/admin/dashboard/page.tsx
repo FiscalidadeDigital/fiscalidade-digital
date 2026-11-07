@@ -284,10 +284,10 @@ export default function AdminDashboardPage() {
                           <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-fd-accent" />
                           <div className="min-w-0">
                             <p className="truncate text-xs font-medium">{auditLabels[event.action] ?? event.action}</p>
-                            <p className="mt-1 text-[11px] text-[var(--fd-muted)]">{event.admin?.name ?? 'Sistema'}</p>
+                            <p className="mt-1 text-xs text-[var(--fd-muted)]">{event.admin?.name ?? 'Sistema'}</p>
                           </div>
                         </div>
-                        <time className="shrink-0 text-[11px] text-[var(--fd-muted)]">{new Date(event.createdAt).toLocaleString('pt-AO')}</time>
+                        <time className="shrink-0 text-xs text-[var(--fd-muted)]">{new Date(event.createdAt).toLocaleString('pt-AO')}</time>
                       </div>
                     ))}
                   </div>

@@ -840,7 +840,7 @@ export default function ReportsPage() {
 
                 <div className="absolute bottom-0 left-2 h-32 w-44 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xl">
                   <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase text-slate-400">
+                    <span className="text-xs font-bold uppercase text-slate-400">
                       Facturação
                     </span>
 
@@ -961,7 +961,7 @@ export default function ReportsPage() {
                   <FileText size={21} />
                 </div>
 
-                <span className="rounded-full bg-fd-accent-soft px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-fd-accent">
+                <span className="rounded-full bg-fd-accent-soft px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-fd-accent">
                   Receita
                 </span>
               </div>
@@ -998,7 +998,7 @@ export default function ReportsPage() {
                   <CreditCard size={21} />
                 </div>
 
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-emerald-600">
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-emerald-600">
                   Entradas
                 </span>
               </div>
@@ -1035,7 +1035,7 @@ export default function ReportsPage() {
                   <Receipt size={21} />
                 </div>
 
-                <span className="rounded-full bg-orange-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-orange-600">
+                <span className="rounded-full bg-orange-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-orange-600">
                   Fiscal
                 </span>
               </div>
@@ -1072,7 +1072,7 @@ export default function ReportsPage() {
                   <Users size={21} />
                 </div>
 
-                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-blue-600">
+                <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-bold uppercase tracking-wider text-blue-600">
                   Equipa
                 </span>
               </div>
@@ -1125,7 +1125,7 @@ export default function ReportsPage() {
               </div>
 
               <div className="rounded-xl bg-slate-50 px-3 py-2 text-right">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   Total anual
                 </p>
 
@@ -1196,7 +1196,7 @@ export default function ReportsPage() {
                         axisLine={false}
                         tickLine={false}
                         tick={{
-                          fill: '#94a3b8',
+                          fill: 'var(--fd-text-muted)',
                           fontSize: 12,
                         }}
                       />
@@ -1206,8 +1206,8 @@ export default function ReportsPage() {
                         tickLine={false}
                         width={70}
                         tick={{
-                          fill: '#94a3b8',
-                          fontSize: 11,
+                          fill: 'var(--fd-text-muted)',
+                          fontSize: 12,
                         }}
                         tickFormatter={(value) =>
                           formatCompactAOA(Number(value))
@@ -1384,7 +1384,7 @@ export default function ReportsPage() {
             </div>
 
             <div className="rounded-xl bg-slate-50 px-4 py-2 text-right">
-              <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
+              <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                 Total
               </p>
 
@@ -1749,23 +1749,23 @@ export default function ReportsPage() {
               <table className="w-full min-w-[760px]">
                 <thead>
                   <tr className="bg-slate-50/80">
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Factura
                     </th>
 
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Cliente
                     </th>
 
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Data
                     </th>
 
-                    <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-400">
                       Total
                     </th>
 
-                    <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">
                       Estado
                     </th>
                   </tr>
@@ -1876,23 +1876,23 @@ export default function ReportsPage() {
               <table className="w-full min-w-[850px]">
                 <thead>
                   <tr className="bg-slate-50/80">
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Obrigação
                     </th>
 
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Tipo
                     </th>
 
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Vencimento
                     </th>
 
-                    <th className="px-6 py-4 text-right text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-right text-xs font-bold uppercase tracking-wider text-slate-400">
                       Valor
                     </th>
 
-                    <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">
                       Estado
                     </th>
                   </tr>
@@ -1987,23 +1987,23 @@ export default function ReportsPage() {
               <table className="w-full min-w-[700px]">
                 <thead>
                   <tr className="bg-slate-50/80">
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Funcionário
                     </th>
 
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Nº Funcionário
                     </th>
 
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Cargo
                     </th>
 
-                    <th className="px-6 py-4 text-left text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
                       Departamento
                     </th>
 
-                    <th className="px-6 py-4 text-center text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    <th className="px-6 py-4 text-center text-xs font-bold uppercase tracking-wider text-slate-400">
                       Estado
                     </th>
                   </tr>
@@ -2082,7 +2082,7 @@ export default function ReportsPage() {
                   directamente dos registos da empresa autenticada.
                 </p>
 
-                <p className="mt-2 text-[11px] text-slate-400">
+                <p className="mt-2 text-xs text-slate-400">
                   Exercício fiscal: {selectedYear}
                 </p>
               </div>

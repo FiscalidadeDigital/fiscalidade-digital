@@ -107,7 +107,7 @@ export default function AIInsights({
         flex
         items-center
         gap-2
-        text-[11px]
+        text-xs
         text-fd-accent
       ">
         <Sparkles size={13} />

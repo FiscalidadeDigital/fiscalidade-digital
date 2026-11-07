@@ -94,7 +94,7 @@ export default function PaymentEvolution({
               justify-center
               rounded-xl
               bg-[#ecfdf5]
-              text-[#10b981]
+              text-fd-success
             "
           >
             <TrendingUp
@@ -108,7 +108,7 @@ export default function PaymentEvolution({
               Pagamentos fiscais
             </h3>
 
-            <p className="mt-0.5 text-[11px] text-[#7180a2]">
+            <p className="mt-0.5 text-xs text-[var(--fd-text-muted)]">
               Valores pagos pela empresa
             </p>
           </div>
@@ -122,7 +122,7 @@ export default function PaymentEvolution({
             bg-white
             px-3
             py-2
-            text-[10px]
+            text-xs
             font-semibold
             text-[#526080]
           "
@@ -149,7 +149,7 @@ export default function PaymentEvolution({
           "
         >
           <div>
-            <span className="block text-[9px] font-medium text-[#8a96b0]">
+            <span className="block text-xs font-medium text-[var(--fd-text-muted)]">
               Total pago
             </span>
 
@@ -167,7 +167,7 @@ export default function PaymentEvolution({
               justify-center
               rounded-lg
               bg-[#ecfdf5]
-              text-[#10b981]
+              text-fd-success
             "
           >
             <ArrowUpRight size={15} />
@@ -219,7 +219,7 @@ export default function PaymentEvolution({
                 Não há pagamentos registados
               </p>
 
-              <p className="mt-1 text-[10px] text-[#8a96b0]">
+              <p className="mt-1 text-xs text-[var(--fd-text-muted)]">
                 Os pagamentos efetuados aparecerão neste histórico.
               </p>
             </div>
@@ -249,8 +249,8 @@ export default function PaymentEvolution({
                 axisLine={false}
                 tickLine={false}
                 tick={{
-                  fontSize: 10,
-                  fill: '#8a96b0',
+                  fontSize: 12,
+                  fill: 'var(--fd-text-muted)',
                 }}
                 dy={8}
               />
@@ -259,8 +259,8 @@ export default function PaymentEvolution({
                 axisLine={false}
                 tickLine={false}
                 tick={{
-                  fontSize: 9,
-                  fill: '#8a96b0',
+                  fontSize: 12,
+                  fill: 'var(--fd-text-muted)',
                 }}
                 tickFormatter={formatAxisValue}
               />
@@ -275,7 +275,7 @@ export default function PaymentEvolution({
                   border: '1px solid #e8ebf3',
                   boxShadow:
                     '0 8px 25px rgba(15, 27, 61, 0.08)',
-                  fontSize: '11px',
+                  fontSize: '12px',
                 }}
                 formatter={(value) =>
                   `AOA ${formatCurrency(

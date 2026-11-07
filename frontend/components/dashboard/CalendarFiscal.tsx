@@ -457,8 +457,8 @@ export default function CalendarFiscal({
             <p
               className="
                 mt-0.5
-                text-[11px]
-                text-[#7180a2]
+                text-xs
+                text-[var(--fd-text-muted)]
               "
             >
               Acompanhe os seus próximos prazos
@@ -495,9 +495,9 @@ export default function CalendarFiscal({
               border-[#e4e7ef]
               bg-white
               px-3
-              text-[10px]
+              text-xs
               font-semibold
-              text-[#64708a]
+              text-[var(--fd-text-muted)]
               transition
               hover:bg-[#f8f7ff]
               hover:text-fd-accent
@@ -518,7 +518,7 @@ export default function CalendarFiscal({
               border-[#e4e7ef]
               bg-white
               px-3
-              text-[10px]
+              text-xs
               font-semibold
               text-fd-accent
               transition
@@ -638,9 +638,9 @@ export default function CalendarFiscal({
                 <p
                   className="
                     mt-0.5
-                    text-[9px]
+                    text-xs
                     font-medium
-                    text-[#9aa4b8]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   {currentYear}
@@ -707,10 +707,10 @@ export default function CalendarFiscal({
                       items-center
                       justify-center
                       text-center
-                      text-[8px]
+                      text-xs
                       font-extrabold
                       tracking-wide
-                      text-[#929caf]
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     {day}
@@ -767,7 +767,7 @@ export default function CalendarFiscal({
                           items-center
                           justify-center
                           rounded-full
-                          text-[11px]
+                          text-xs
                           font-medium
                           transition
                           ${
@@ -893,8 +893,8 @@ export default function CalendarFiscal({
                 <p
                   className="
                     mt-1
-                    text-[10px]
-                    text-[#8a96b0]
+                    text-xs
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Obrigações que exigem atenção
@@ -911,7 +911,7 @@ export default function CalendarFiscal({
                     bg-fd-accent-soft
                     px-2.5
                     py-1
-                    text-[9px]
+                    text-xs
                     font-bold
                     text-fd-accent
                   "
@@ -974,8 +974,8 @@ export default function CalendarFiscal({
                 <p
                   className="
                     mt-1
-                    text-[10px]
-                    text-[#9aa4b8]
+                    text-xs
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   O calendário fiscal da sua empresa aparecerá aqui.
@@ -1089,7 +1089,7 @@ export default function CalendarFiscal({
                           <span
                             className="
                               mt-1
-                              text-[8px]
+                              text-xs
                               font-bold
                               uppercase
                               tracking-wide
@@ -1112,7 +1112,7 @@ export default function CalendarFiscal({
                           <h5
                             className="
                               line-clamp-2
-                              text-[11px]
+                              text-xs
                               font-bold
                               leading-4
                               text-[#25365f]
@@ -1128,9 +1128,9 @@ export default function CalendarFiscal({
                             className="
                               mt-1
                               truncate
-                              text-[9px]
+                              text-xs
                               leading-4
-                              text-[#8994a9]
+                              text-[var(--fd-text-muted)]
                             "
                             title={
                               deadline.description ||
@@ -1162,7 +1162,7 @@ export default function CalendarFiscal({
                                 rounded-lg
                                 px-2
                                 py-1.5
-                                text-[8px]
+                                text-xs
                                 font-extrabold
                                 whitespace-nowrap
                                 ${
@@ -1228,8 +1228,8 @@ export default function CalendarFiscal({
 
         <p
           className="
-            text-[9px]
-            text-[#98a2b5]
+            text-xs
+            text-[var(--fd-text-muted)]
           "
         >
           Os prazos apresentados são aplicáveis ao regime fiscal da empresa.
@@ -1255,7 +1255,7 @@ export default function CalendarFiscal({
 
           <span
             className="
-              text-[9px]
+              text-xs
               font-semibold
               text-emerald-700
             "
@@ -1303,9 +1303,9 @@ function LegendItem({
 
       <span
         className="
-          text-[9px]
+          text-xs
           font-medium
-          text-[#7a86a0]
+          text-[var(--fd-text-muted)]
         "
       >
         {label}
