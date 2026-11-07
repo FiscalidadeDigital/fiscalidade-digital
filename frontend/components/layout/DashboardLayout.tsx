@@ -819,36 +819,6 @@ export default function DashboardLayout({
             />
           </div>
 
-          <div className="min-w-0 lg:hidden">
-            <div
-              className="
-                truncate
-                text-[17px]
-                font-extrabold
-                tracking-[-0.035em]
-                text-[#101b3d]
-              "
-            >
-              Fiscalidade
-              <span className="text-fd-accent">
-                {' '}Digital
-              </span>
-            </div>
-
-            <div
-              className="
-                mt-0.5
-                whitespace-nowrap
-                text-xs
-                font-medium
-                uppercase
-                tracking-[0.08em]
-                text-[var(--fd-text-muted)]
-              "
-            >
-              Gestão Fiscal Inteligente
-            </div>
-          </div>
         </Link>
 
         {mobile && (

@@ -17,6 +17,7 @@ import {
   UserPlus,
   X,
 } from 'lucide-react';
+import MissionVisionValues from '@/components/landing/MissionVisionValues';
 import WhyChooseSection from '@/components/landing/WhyChooseSection';
 
 const whatsappUrl = 'https://wa.me/244924462591';
@@ -28,7 +29,7 @@ type LandingLocale = 'pt-AO' | 'en';
 const nav = [
   ['Início', '#inicio'],
   ['Funcionalidades', '#funcionalidades'],
-  ['Sobre nós', '#equipa'],
+  ['Sobre nós', '#missao-visao-valores'],
   ['Contacto', '#contacto'],
 ] as const;
 
@@ -37,7 +38,7 @@ const navByLocale = {
   en: [
     ['Home', '#inicio'],
     ['Features', '#funcionalidades'],
-    ['About us', '#equipa'],
+    ['About us', '#missao-visao-valores'],
     ['Contact', '#contacto'],
   ],
 } as const;
@@ -420,16 +421,7 @@ export default function HomePage() {
               <p className="border-l-2 border-cyan-500 pl-4 font-bold text-fd-text">{tr(locale, 'Menos informação espalhada. Mais contexto para acompanhar a empresa.', 'Less scattered information. More context to follow your company.')}</p>
             </div>
           </div>
-          <div data-reveal className="landing-reveal landing-reveal--d2 mt-12 grid gap-x-12 gap-y-8 border-t border-slate-200 pt-8 md:grid-cols-2">
-            <article>
-              <p className="text-xs font-bold uppercase tracking-[.16em] text-fd-accent">{tr(locale, 'Missão', 'Mission')}</p>
-              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-fd-text">{tr(locale, 'Simplificar a gestão fiscal e empresarial em Angola, reunindo informação, ferramentas e apoio num único lugar para ajudar as empresas a trabalhar com mais organização e confiança.', 'To simplify tax and business management in Angola, bringing together information, tools and support in one place so companies can work with more organisation and confidence.')}</p>
-            </article>
-            <article className="md:border-l md:border-slate-200 md:pl-12">
-              <p className="text-xs font-bold uppercase tracking-[.16em] text-fd-accent">{tr(locale, 'Visão', 'Vision')}</p>
-              <p className="mt-3 max-w-md text-lg font-extrabold leading-7 tracking-[-.025em] text-fd-text">{tr(locale, 'Ser uma referência em soluções digitais de gestão em Angola, aproximando as empresas da tecnologia e contribuindo para negócios mais organizados e preparados para crescer.', 'To be a reference for digital management solutions in Angola, bringing companies closer to technology and helping build more organised businesses ready to grow.')}</p>
-            </article>
-          </div>
+          <MissionVisionValues locale={locale} />
         </div>
       </section>
 

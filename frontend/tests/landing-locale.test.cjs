@@ -11,6 +11,10 @@ const whyChooseSource = fs.readFileSync(
   path.join(__dirname, '..', 'components', 'landing', 'WhyChooseSection.tsx'),
   'utf8',
 );
+const missionVisionValuesSource = fs.readFileSync(
+  path.join(__dirname, '..', 'components', 'landing', 'MissionVisionValues.tsx'),
+  'utf8',
+);
 
 test('a preferência de idioma da landing é persistida separadamente da sessão', () => {
   assert.match(source, /const landingLocaleStorageKey = 'fd:landing-locale';/);
@@ -45,4 +49,13 @@ test('a landing mantém a experiência de soluções sem restaurar o Ecossistema
   assert.match(whyChooseSource, /role="tablist"/);
   assert.match(whyChooseSource, /overflow-x-auto/);
   assert.match(whyChooseSource, /useReducedMotion/);
+});
+
+test('a secção animada de missão, visão e valores mantém o compromisso institucional', () => {
+  assert.match(source, /<MissionVisionValues locale=\{locale\} \/>/);
+  assert.match(source, /\['Sobre nós', '#missao-visao-valores'\]/);
+  assert.match(missionVisionValuesSource, /Promover a literacia fiscal e a conformidade tributária em Angola/);
+  assert.match(missionVisionValuesSource, /Ser a principal referência em soluções digitais fiscais em Angola/);
+  assert.match(missionVisionValuesSource, /Transparência', 'Educação', 'Inovação', 'Compromisso', 'Simplicidade/);
+  assert.match(missionVisionValuesSource, /useReducedMotion/);
 });
