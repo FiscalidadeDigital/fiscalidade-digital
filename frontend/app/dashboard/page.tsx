@@ -485,7 +485,7 @@ export default function DashboardPage() {
             <p className="text-sm font-semibold text-[#111b3b]">
               Facturas recebidas
             </p>
-            <p className="mt-1 text-xs text-[#7180a2]">
+            <p className="mt-1 text-xs text-[var(--fd-text-muted)]">
               {purchaseInvoices} registadas · compras no valor de{' '}
               {formatCurrency(purchaseInvoiceTotal)}
               {pendingPurchaseImports > 0
@@ -495,7 +495,7 @@ export default function DashboardPage() {
           </div>
           <Link
             href="/purchase-invoices"
-            className="inline-flex items-center gap-2 self-start text-sm font-semibold text-[#087fb3] hover:underline"
+            className="inline-flex items-center gap-2 self-start text-sm font-semibold text-fd-accent hover:underline"
           >
             Abrir facturas recebidas <ArrowRight size={15} />
           </Link>
@@ -540,7 +540,7 @@ export default function DashboardPage() {
                 <p
                   className="
                     mt-1
-                    text-[11px]
+                    text-xs
                     text-red-600
                   "
                 >
@@ -568,6 +568,11 @@ export default function DashboardPage() {
           <DashboardStat
             title="Obrigações pendentes"
             value={dashboard.pendingObligations}
+            status={
+              pendingAmount > 0
+                ? 'Atenção necessária'
+                : 'Em dia'
+            }
             description={
               pendingAmount > 0
                 ? `Valor pendente: ${formatCurrency(pendingAmount)}`
@@ -575,11 +580,17 @@ export default function DashboardPage() {
             }
             type="blue"
             icon="clipboard"
+            href="/obligations"
           />
 
           <DashboardStat
             title="Próximos prazos"
             value={dashboard.upcomingDeadlines}
+            status={
+              dashboard.upcomingDeadlines > 0
+                ? 'A acompanhar'
+                : 'Sem prazos próximos'
+            }
             description={
               dashboard.upcomingDeadlines > 0
                 ? 'Obrigações a vencer'
@@ -587,11 +598,17 @@ export default function DashboardPage() {
             }
             type="orange"
             icon="calendar"
+            href="/calendar"
           />
 
           <DashboardStat
             title="Obrigações vencidas"
             value={overdueCount}
+            status={
+              overdueCount > 0
+                ? 'Regularizar'
+                : 'Em dia'
+            }
             description={
               overdueCount > 0
                 ? 'Necessitam de regularização'
@@ -599,11 +616,17 @@ export default function DashboardPage() {
             }
             type={overdueCount > 0 ? 'red' : 'green'}
             icon="warning"
+            href="/obligations"
           />
 
           <DashboardStat
             title="Pagamentos fiscais"
             value={formatCurrency(totalPayments)}
+            status={
+              totalPayments > 0
+                ? 'Com actividade'
+                : 'Sem registos'
+            }
             description={
               totalPayments > 0
                 ? 'Pagamentos registados'
@@ -611,6 +634,7 @@ export default function DashboardPage() {
             }
             type="green"
             icon="payment"
+            href="/payments"
           />
         </div>
 
@@ -638,7 +662,7 @@ export default function DashboardPage() {
                   gap-2
                 "
               >
-                <CalendarDays size={18} className="text-[#0ea5e9]" />
+                <CalendarDays size={18} className="text-fd-accent" />
 
                 <h2
                   className="
@@ -654,8 +678,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-1
-                  text-[10px]
-                  text-[#7b87a1]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Prazos fiscais configurados por imposto e período
@@ -688,7 +712,7 @@ export default function DashboardPage() {
 
               <span
                 className="
-                  text-[10px]
+                  text-xs
                   font-semibold
                   text-[#526080]
                 "
@@ -728,8 +752,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-1
-                  text-[10px]
-                  text-[#7b87a1]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Obrigações que requerem atenção
@@ -819,8 +843,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-0.5
-                  text-[10px]
-                  text-[#7b87a1]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Dados registados no sistema para esta empresa
@@ -901,7 +925,7 @@ export default function DashboardPage() {
             <div>
               <p
                 className="
-                  text-[11px]
+                  text-xs
                   font-semibold
                   text-[#344361]
                 "
@@ -912,8 +936,8 @@ export default function DashboardPage() {
               <p
                 className="
                   mt-0.5
-                  text-[10px]
-                  text-[#8a96b0]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Dados apresentados com base nos registos fiscais da empresa.
@@ -927,11 +951,11 @@ export default function DashboardPage() {
               flex
               items-center
               gap-2
-              text-[10px]
+              text-xs
               font-bold
-              text-[#0ea5e9]
+              text-fd-accent
               transition
-              hover:text-[#0284c7]
+              hover:text-fd-accent
             "
           >
             Consultar obrigações
@@ -950,41 +974,45 @@ export default function DashboardPage() {
 function DashboardStat({
   title,
   value,
+  status,
   description,
   type,
   icon,
+  href,
 }: {
   title: string;
   value: string | number;
+  status: string;
   description: string;
 
   type: 'blue' | 'orange' | 'green' | 'red';
 
   icon: 'clipboard' | 'calendar' | 'warning' | 'payment';
+  href: string;
 }) {
   const styles = {
     blue: {
       border: 'border-[#d5e8f7]',
       bg: 'bg-[#eff8ff]',
-      text: 'text-[#0284c7]',
+      text: 'text-fd-accent',
     },
 
     orange: {
       border: 'border-[#f7dfc4]',
       bg: 'bg-[#fff7ed]',
-      text: 'text-[#ea580c]',
+      text: 'text-fd-warning',
     },
 
     green: {
       border: 'border-[#cfeee0]',
       bg: 'bg-[#ecfdf5]',
-      text: 'text-[#059669]',
+      text: 'text-fd-success',
     },
 
     red: {
       border: 'border-[#f4d3d3]',
       bg: 'bg-[#fff1f2]',
-      text: 'text-[#dc2626]',
+      text: 'text-fd-danger',
     },
   };
 
@@ -1000,7 +1028,9 @@ function DashboardStat({
           : TrendingUp;
 
   return (
-    <div
+    <Link
+      href={href}
+      aria-label={`${title}: ${value}. Ver detalhe.`}
       className={`
         flex
         min-h-[126px]
@@ -1011,8 +1041,14 @@ function DashboardStat({
         bg-white
         p-5
         shadow-sm
-        transition
+        transition-[border-color,box-shadow,transform]
+        duration-150
+        hover:-translate-y-0.5
         hover:shadow-md
+        focus:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-fd-focus
+        focus-visible:ring-offset-2
         ${style.border}
       `}
     >
@@ -1023,17 +1059,17 @@ function DashboardStat({
       >
         <p
           className="
-            text-[10px]
+            text-xs
             font-semibold
             uppercase
             tracking-wide
-            text-[#8a96b0]
+            text-[var(--fd-text-muted)]
           "
         >
           {title}
         </p>
 
-        <h2
+        <p
           className="
             mt-2
             truncate
@@ -1044,18 +1080,31 @@ function DashboardStat({
           "
         >
           {value}
-        </h2>
+        </p>
 
-        <p
+        <span
           className={`
-            mt-2
-            text-[10px]
+            mt-2.5
+            inline-flex
+            items-center
+            gap-1.5
+            text-[12px]
             font-semibold
             ${style.text}
           `}
         >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+          {status}
+        </span>
+
+        <p className="mt-1 text-xs leading-5 text-[var(--fd-text-secondary)]">
           {description}
         </p>
+
+        <span className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-fd-accent">
+          Ver detalhe
+          <ArrowRight size={14} aria-hidden="true" />
+        </span>
       </div>
 
       <div
@@ -1073,7 +1122,7 @@ function DashboardStat({
       >
         <Icon size={20} strokeWidth={1.9} />
       </div>
-    </div>
+    </Link>
   );
 }
 
@@ -1095,9 +1144,9 @@ function InfoValue({ label, value }: { label: string; value: string }) {
     >
       <p
         className="
-          text-[10px]
+          text-xs
           font-medium
-          text-[#8a96b0]
+          text-[var(--fd-text-muted)]
         "
       >
         {label}

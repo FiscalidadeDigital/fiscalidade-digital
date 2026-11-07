@@ -57,7 +57,7 @@ export default function Hero() {
             w-[600px]
             h-[600px]
             rounded-full
-            bg-indigo-100/40
+            bg-fd-accent-soft
             blur-3xl
           "
         />

@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { CheckCircle2 } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
@@ -16,6 +16,19 @@ function ResetPasswordContent() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusFirstErrorRef = useRef(false);
+
+  useEffect(() => {
+    if (!focusFirstErrorRef.current) {
+      return;
+    }
+
+    formRef.current
+      ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+      ?.focus();
+    focusFirstErrorRef.current = false;
+  }, [fieldErrors]);
 
   function updateField<Key extends keyof ResetPasswordForm>(key: Key, value: ResetPasswordForm[Key]) {
     setForm((current) => ({ ...current, [key]: value }));
@@ -29,6 +42,7 @@ function ResetPasswordContent() {
 
     const nextErrors = validateResetPasswordForm(form);
 
+    focusFirstErrorRef.current = Object.keys(nextErrors).length > 0;
     setFieldErrors(nextErrors);
     setError('');
     if (Object.keys(nextErrors).length) return;
@@ -54,7 +68,7 @@ function ResetPasswordContent() {
           <Link href="/login" className="fd-button-primary mt-5 w-full">Ir para iniciar sessão</Link>
         </div>
       ) : (
-        <form onSubmit={submit} noValidate className="space-y-4">
+        <form ref={formRef} onSubmit={submit} noValidate className="space-y-4">
           <label htmlFor="reset-password-email" className="fd-label">Email
             <input id="reset-password-email" required type="email" autoComplete="email" value={form.email} disabled={loading} onChange={(event) => updateField('email', event.target.value)} aria-invalid={Boolean(fieldErrors.email)} aria-describedby={fieldErrors.email ? 'reset-password-email-error' : undefined} className="fd-field mt-1.5" />
             {fieldErrors.email && <span id="reset-password-email-error" role="alert" className="mt-1.5 block text-sm font-normal text-red-700">{fieldErrors.email}</span>}

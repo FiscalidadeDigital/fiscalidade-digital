@@ -23,9 +23,9 @@ export default function AuthFrame({
   wide = false,
 }: AuthFrameProps) {
   return (
-    <main className="fd-auth-page min-h-screen bg-slate-100 px-4 py-4 text-slate-950 sm:px-6 sm:py-8">
-      <div className={`mx-auto grid min-h-[calc(100vh-2rem)] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_24px_70px_rgba(15,35,68,.10)] xl:grid-cols-[minmax(260px,.62fr)_1.38fr] ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
-        <aside className="hidden bg-[#102447] p-9 text-white xl:flex xl:flex-col xl:justify-between">
+    <main className="fd-auth-page min-h-[100dvh] bg-[var(--fd-page)] px-4 py-4 text-[var(--fd-text-primary)] sm:px-6 sm:py-8">
+      <div className={`mx-auto grid min-h-[calc(100dvh-2rem)] overflow-hidden rounded-2xl border border-[var(--fd-border)] bg-white shadow-[0_24px_70px_rgba(15,35,68,.10)] xl:grid-cols-[minmax(260px,.62fr)_1.38fr] ${wide ? 'max-w-6xl' : 'max-w-5xl'}`}>
+        <aside aria-label="Sobre a Fiscalidade Digital" className="hidden bg-fd-primary p-9 text-white xl:flex xl:flex-col xl:justify-between">
           <div>
             <Link href="/" className="inline-flex rounded-lg bg-white p-2" aria-label="Fiscalidade Digital — início">
               <Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={162} height={48} className="h-10 w-auto object-contain" priority />
@@ -41,13 +41,13 @@ export default function AuthFrame({
         </aside>
         <section className="flex items-center p-5 sm:p-9 xl:p-12">
           <div className="mx-auto w-full max-w-lg">
-            <Link href="/" className="mb-7 inline-flex rounded-lg bg-white p-1.5 shadow-sm xl:hidden" aria-label="Fiscalidade Digital — início">
+            <Link href="/" className="mb-7 inline-flex min-h-11 items-center rounded-lg bg-white p-2 shadow-sm xl:hidden" aria-label="Fiscalidade Digital — início">
               <Image src="/logofiscalidade.png" alt="Fiscalidade Digital" width={162} height={48} className="h-8 w-auto object-contain" priority />
             </Link>
-            <Link href={backHref} className="mb-7 inline-flex min-h-[32px] items-center gap-2 text-sm font-semibold text-slate-600 underline-offset-4 hover:text-[#0b6f93] hover:underline"><ArrowLeft size={16} />{backLabel}</Link>
-            <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#0b6f93]">{eyebrow}</p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[#102447]">{title}</h1>
-            <p className="mt-3 text-sm leading-6 text-slate-600">{description}</p>
+            <Link href={backHref} className="mb-7 inline-flex min-h-11 items-center gap-2 text-sm font-semibold text-[var(--fd-text-secondary)] underline-offset-4 hover:text-fd-accent hover:underline"><ArrowLeft size={16} />{backLabel}</Link>
+            <p className="text-xs font-semibold uppercase tracking-[.12em] text-fd-accent">{eyebrow}</p>
+            <h1 className="mt-3 text-3xl font-semibold tracking-tight text-[var(--fd-text-primary)]">{title}</h1>
+            <p className="mt-3 text-sm leading-6 text-[var(--fd-text-secondary)]">{description}</p>
             <div className="mt-7">{children}</div>
           </div>
         </section>

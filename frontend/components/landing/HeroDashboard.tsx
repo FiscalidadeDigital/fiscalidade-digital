@@ -67,7 +67,7 @@ export default function HeroDashboard() {
                 Dashboard
               </div>
 
-              <div className="text-[10px] text-slate-400">
+              <div className="text-xs text-slate-400">
                 Visão geral
               </div>
             </div>
@@ -256,7 +256,7 @@ export default function HeroDashboard() {
               mt-3
               flex
               justify-between
-              text-[10px]
+              text-xs
               text-slate-400
             ">
               <span>Jan</span>

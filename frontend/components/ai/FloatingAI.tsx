@@ -109,7 +109,7 @@ function AnswerTokens({
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={`Abrir fonte ${token.id}: ${source?.title}`}
-                className="mx-0.5 inline-flex items-center gap-0.5 rounded font-semibold text-[#0b6f93] underline decoration-cyan-300 underline-offset-2 hover:text-[#075875] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                className="mx-0.5 inline-flex items-center gap-0.5 rounded font-semibold text-fd-accent underline decoration-cyan-300 underline-offset-2 hover:text-fd-primary focus:outline-none focus:ring-2 focus:ring-fd-focus"
               >
                 {label} <ExternalLink aria-hidden="true" size={11} />
               </a>
@@ -122,7 +122,7 @@ function AnswerTokens({
                 key={index}
                 href={`#${sourceAnchorPrefix}-${encodeURIComponent(source.id)}`}
                 aria-label={`Ver referência ${token.id}: ${source.title}`}
-                className="mx-0.5 rounded font-semibold text-[#0b6f93] underline decoration-cyan-300 underline-offset-2 hover:text-[#075875] focus:outline-none focus:ring-2 focus:ring-cyan-400"
+                className="mx-0.5 rounded font-semibold text-fd-accent underline decoration-cyan-300 underline-offset-2 hover:text-fd-primary focus:outline-none focus:ring-2 focus:ring-fd-focus"
               >
                 {label}
               </a>
@@ -202,7 +202,7 @@ function AssistantAnswer({
           className="mt-3 border-t border-slate-200 pt-2 text-xs"
           aria-label="Fontes e referências da resposta"
         >
-          <h3 className="font-semibold text-[#0b6f93]">Fontes e referências</h3>
+          <h3 className="font-semibold text-fd-accent">Fontes e referências</h3>
           <ul className="mt-2 space-y-2">
             {answerSources.map((source) => {
               const sourceUrl = safeExternalUrl(source.sourceUrl);
@@ -235,7 +235,7 @@ function AssistantAnswer({
                       href={sourceUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="mt-1 inline-flex items-center gap-1 font-semibold text-[#0b6f93] hover:underline"
+                      className="mt-1 inline-flex items-center gap-1 font-semibold text-fd-accent hover:underline"
                     >
                       Abrir fonte <ExternalLink aria-hidden="true" size={12} />
                     </a>
@@ -348,8 +348,11 @@ export default function FloatingAI() {
         type="button"
         onClick={() => setOpen(true)}
         aria-label="Abrir Assistente Fiscal"
+        aria-expanded={open}
+        aria-controls="fiscal-assistant-dialog"
+        aria-haspopup="dialog"
         title="Assistente Fiscal"
-        className="fixed bottom-4 right-4 z-[999] grid h-11 w-11 place-items-center rounded-lg border border-[#183a59] bg-[#071a2f] text-cyan-100 shadow-md transition hover:bg-[#102f4d] focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:bottom-5 sm:right-5"
+        className="fixed bottom-4 right-4 z-[999] grid h-11 w-11 place-items-center rounded-lg border border-[#183a59] bg-fd-primary text-cyan-100 shadow-md transition hover:bg-fd-primary-hover focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:bottom-5 sm:right-5"
       >
         <Bot size={24} />
       </button>
@@ -361,6 +364,7 @@ export default function FloatingAI() {
           />
           <section
             ref={dialogRef}
+            id="fiscal-assistant-dialog"
             role="dialog"
             aria-modal="true"
             aria-label="Assistente Fiscal"
@@ -373,7 +377,7 @@ export default function FloatingAI() {
               </span>
               <div>
                 <h2 className="text-sm font-bold">Assistente Fiscal</h2>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-xs text-slate-500">
                   Consulta assistida e fundamentada
                 </p>
               </div>
@@ -382,7 +386,7 @@ export default function FloatingAI() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Fechar Assistente Fiscal"
-              className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className="grid h-11 w-11 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
             >
               <X size={18} />
             </button>
@@ -408,9 +412,9 @@ export default function FloatingAI() {
                       key={item.message}
                       type="button"
                       onClick={() => void sendMessage(item.message)}
-                      className="block w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-[#0b6f93] hover:border-slate-300 hover:bg-slate-50"
+                      className="block min-h-11 w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-fd-accent hover:border-slate-300 hover:bg-slate-50"
                     >
-                      <span className="mr-2 text-[10px] uppercase tracking-wide text-slate-400">
+                      <span className="mr-2 text-xs uppercase tracking-wide text-slate-400">
                         {item.kind}
                       </span>
                       {item.label}
@@ -424,7 +428,7 @@ export default function FloatingAI() {
                 key={`${item.role}-${index}`}
                 className={
                   item.role === 'user'
-                    ? 'ml-10 rounded-lg bg-[#102447] px-3 py-2.5 text-sm text-white'
+                    ? 'ml-10 rounded-lg bg-fd-primary px-3 py-2.5 text-sm text-white'
                     : 'mr-3 border-l-2 border-slate-300 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-700'
                 }
               >
@@ -471,18 +475,18 @@ export default function FloatingAI() {
                 }}
                 rows={2}
                 placeholder="Pergunte sobre fiscalidade ou sobre a sua empresa…"
-                className="min-h-10 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
+                className="min-h-11 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-fd-accent focus:ring-2 focus:ring-fd-focus"
               />
               <button
                 type="submit"
                 disabled={loading || !message.trim()}
                 aria-label="Enviar mensagem"
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#102447] text-white hover:bg-[#18345f] disabled:opacity-40"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-fd-primary text-white hover:bg-fd-primary-hover disabled:opacity-40"
               >
                 <Send size={17} />
               </button>
             </div>
-            <p className="mt-2 text-[10px] text-slate-500">
+            <p className="mt-2 text-xs text-slate-500">
               As respostas não substituem validação profissional. Não partilhe
               credenciais ou informação que não seja necessária.
             </p>

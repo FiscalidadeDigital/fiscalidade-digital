@@ -37,7 +37,7 @@ export default function ActivityTimeline({
         return (
           <Receipt
             size={18}
-            className="text-indigo-600"
+            className="text-fd-accent"
           />
         );
 
@@ -186,14 +186,14 @@ export default function ActivityTimeline({
                           {new Date(
                             activity.date,
                           ).toLocaleDateString(
-                            'pt-PT',
+                            'pt-AO',
                           )}
                         </p>
                       </div>
 
                       {typeof activity.amount ===
                         'number' && (
-                        <span className="whitespace-nowrap text-sm font-bold text-indigo-600">
+                        <span className="whitespace-nowrap text-sm font-bold text-fd-accent">
                           {formatAOA(
                             activity.amount,
                           )}

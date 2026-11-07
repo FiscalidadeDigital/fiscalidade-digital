@@ -253,10 +253,10 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div data-reveal className="landing-reveal grid gap-7 border-b border-slate-200 pb-9 lg:grid-cols-[minmax(0,.82fr)_minmax(20rem,.58fr)] lg:items-end">
           <div>
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-fd-accent">
               {copy(locale, 'Soluções com contexto', 'Solutions with context')}
             </p>
-            <h2 id="why-choose-title" className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">
+            <h2 id="why-choose-title" className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-fd-text sm:text-4xl">
               {copy(locale, 'Porquê escolher a Fiscalidade Digital?', 'Why choose Fiscalidade Digital?')}
             </h2>
             <p className="mt-4 max-w-2xl text-base font-semibold leading-6 text-slate-700 sm:text-lg sm:leading-7">
@@ -284,9 +284,9 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
                 tabIndex={active ? 0 : -1}
                 onClick={() => setActiveId(group.id)}
                 onKeyDown={handleTabKeyDown}
-                className={`group relative min-h-[92px] min-w-[13.5rem] shrink-0 snap-start overflow-hidden border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 motion-safe:hover:-translate-y-0.5 sm:min-h-[132px] sm:min-w-0 ${active ? 'border-[#102447] bg-[#102447] text-white shadow-[0_14px_28px_rgba(16,36,71,.14)]' : 'border-slate-200 bg-white text-[#102447] hover:border-cyan-300 hover:shadow-[0_10px_22px_rgba(15,41,79,.07)]'}`}
+                className={`group relative min-h-[92px] min-w-[13.5rem] shrink-0 snap-start overflow-hidden border p-4 text-left transition-[border-color,background-color,box-shadow,transform] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 motion-safe:hover:-translate-y-0.5 sm:min-h-[132px] sm:min-w-0 ${active ? 'border-[#102447] bg-fd-primary text-white shadow-[0_14px_28px_rgba(16,36,71,.14)]' : 'border-slate-200 bg-white text-fd-text hover:border-fd-accent hover:shadow-[0_10px_22px_rgba(15,41,79,.07)]'}`}
               >
-                <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-white/12 text-cyan-200' : 'bg-cyan-50 text-cyan-800'}`}>
+                <span className={`flex h-9 w-9 items-center justify-center rounded-lg ${active ? 'bg-white/12 text-cyan-200' : 'bg-fd-accent-soft text-fd-primary'}`}>
                   <Icon size={18} strokeWidth={1.9} aria-hidden="true" />
                 </span>
                 <span className="mt-3 block text-sm font-extrabold leading-5 sm:mt-5">{group.label}</span>
@@ -309,10 +309,10 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
               <div className="p-6 sm:p-8 lg:p-10">
                 <div className="flex items-start justify-between gap-5">
                   <div>
-                    <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">{activeGroup.eyebrow}</p>
-                    <h3 className="mt-4 max-w-2xl text-2xl font-extrabold leading-tight tracking-[-.04em] text-[#102447] sm:text-3xl">{activeGroup.title}</h3>
+                    <p className="text-xs font-bold uppercase tracking-[.16em] text-fd-accent">{activeGroup.eyebrow}</p>
+                    <h3 className="mt-4 max-w-2xl text-2xl font-extrabold leading-tight tracking-[-.04em] text-fd-text sm:text-3xl">{activeGroup.title}</h3>
                   </div>
-                  <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-cyan-50 text-cyan-800 sm:flex">
+                  <span className="hidden h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-fd-accent-soft text-fd-primary sm:flex">
                     <ActiveIcon size={21} strokeWidth={1.8} aria-hidden="true" />
                   </span>
                 </div>
@@ -320,12 +320,12 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
                 <ul className="mt-7 grid gap-3 sm:grid-cols-3">
                   {activeGroup.benefits.map((benefit) => (
                     <li key={benefit} className="border-t border-slate-200 pt-3 text-sm font-semibold leading-5 text-slate-700">
-                      <Check size={16} className="mb-2 text-cyan-700" aria-hidden="true" />
+                      <Check size={16} className="mb-2 text-fd-accent" aria-hidden="true" />
                       {benefit}
                     </li>
                   ))}
                 </ul>
-                <Link href={activeGroup.ctaHref} className="mt-8 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-[#102447] px-4 py-2.5 text-sm font-extrabold text-white transition-[background-color,transform] duration-200 hover:bg-[#17365f] motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">
+                <Link href={activeGroup.ctaHref} className="mt-8 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-fd-primary px-4 py-2.5 text-sm font-extrabold text-white transition-[background-color,transform] duration-200 hover:bg-fd-primary-hover motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">
                   {activeGroup.cta}
                   <ArrowRight size={17} aria-hidden="true" />
                 </Link>
@@ -335,15 +335,15 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
                 {activeGroup.id === 'compliance' ? <FiscalAlertPreview locale={locale} /> : <div className="border border-[#d4e8ed] bg-white p-4 shadow-[0_12px_28px_rgba(15,41,79,.08)] sm:p-5">
                   <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
-                      <p className="text-[10px] font-bold uppercase tracking-[.15em] text-cyan-700">{activeGroup.previewLabel}</p>
-                      <p className="mt-1 text-sm font-extrabold text-[#102447]">{activeGroup.previewTitle}</p>
+                      <p className="text-xs font-bold uppercase tracking-[.15em] text-fd-accent">{activeGroup.previewLabel}</p>
+                      <p className="mt-1 text-sm font-extrabold text-fd-text">{activeGroup.previewTitle}</p>
                     </div>
-                    <BarChart3 size={19} className="text-cyan-700" aria-hidden="true" />
+                    <BarChart3 size={19} className="text-fd-accent" aria-hidden="true" />
                   </div>
                   <div className="mt-5 space-y-3">
                     {activeGroup.previewItems.map((item, index) => (
                       <div key={item} className="flex items-center gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0">
-                        <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-cyan-500' : 'bg-slate-300'}`} aria-hidden="true" />
+                        <span className={`h-2 w-2 rounded-full ${index === 0 ? 'bg-fd-primary' : 'bg-slate-300'}`} aria-hidden="true" />
                         <span className="text-xs font-bold text-slate-700">{item}</span>
                         <span className={`ml-auto h-1.5 rounded-full ${index === 0 ? 'w-16 bg-cyan-200' : index === 1 ? 'w-11 bg-slate-200' : 'w-8 bg-slate-100'}`} aria-hidden="true" />
                       </div>
@@ -371,14 +371,14 @@ function FiscalAlertPreview({ locale }: { locale: LandingLocale }) {
     <div className="border border-[#d4e8ed] bg-white p-4 shadow-[0_12px_28px_rgba(15,41,79,.08)] sm:p-5">
       <div className="flex items-center justify-between gap-4 border-b border-slate-100 pb-4">
         <div>
-          <p className="text-[10px] font-bold uppercase tracking-[.15em] text-cyan-700">{copy(locale, 'Demonstração de alerta', 'Alert demonstration')}</p>
-          <p className="mt-1 text-sm font-extrabold text-[#102447]">{copy(locale, 'Agenda fiscal', 'Tax agenda')}</p>
+          <p className="text-xs font-bold uppercase tracking-[.15em] text-fd-accent">{copy(locale, 'Demonstração de alerta', 'Alert demonstration')}</p>
+          <p className="mt-1 text-sm font-extrabold text-fd-text">{copy(locale, 'Agenda fiscal', 'Tax agenda')}</p>
         </div>
         <BellRing size={19} className="text-emerald-600" aria-hidden="true" />
       </div>
-      <h4 className="mt-5 text-base font-extrabold text-[#102447]">{copy(locale, 'Obrigação fiscal', 'Tax obligation')}</h4>
-      <dl className="mt-4 space-y-3 text-xs"><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Prazo', 'Due date')}</dt><dd className="text-right font-bold text-[#102447]">{copy(locale, 'Consulte o calendário', 'Check the calendar')}<small className="mt-0.5 block font-normal text-slate-500">{copy(locale, 'Exemplo ilustrativo', 'Illustrative example')}</small></dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Estado', 'Status')}</dt><dd className="font-bold text-amber-700">{copy(locale, 'A acompanhar', 'To follow')}</dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Valor', 'Amount')}</dt><dd className="font-bold text-[#102447]">{copy(locale, 'A determinar', 'To be determined')}</dd></div></dl>
-      <div className="mt-5 rounded-xl bg-[#102447] p-4 text-white"><p className="text-xs font-extrabold text-cyan-200">Fiscalidade Digital</p><p className="mt-2 text-xs font-semibold leading-5">{copy(locale, 'Há uma obrigação fiscal a acompanhar.', 'There is a tax obligation to follow.')}</p><p className="mt-2 text-xs leading-5 text-slate-300">{copy(locale, 'Consulte o calendário fiscal para verificar a informação aplicável.', 'Check the tax calendar to review the applicable information.')}</p></div>
+      <h4 className="mt-5 text-base font-extrabold text-fd-text">{copy(locale, 'Obrigação fiscal', 'Tax obligation')}</h4>
+      <dl className="mt-4 space-y-3 text-xs"><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Prazo', 'Due date')}</dt><dd className="text-right font-bold text-fd-text">{copy(locale, 'Consulte o calendário', 'Check the calendar')}<small className="mt-0.5 block font-normal text-slate-500">{copy(locale, 'Exemplo ilustrativo', 'Illustrative example')}</small></dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Estado', 'Status')}</dt><dd className="font-bold text-amber-700">{copy(locale, 'A acompanhar', 'To follow')}</dd></div><div className="flex justify-between gap-4 border-t border-slate-100 pt-3"><dt className="text-slate-500">{copy(locale, 'Valor', 'Amount')}</dt><dd className="font-bold text-fd-text">{copy(locale, 'A determinar', 'To be determined')}</dd></div></dl>
+      <div className="mt-5 rounded-xl bg-fd-primary p-4 text-white"><p className="text-xs font-extrabold text-cyan-200">Fiscalidade Digital</p><p className="mt-2 text-xs font-semibold leading-5">{copy(locale, 'Há uma obrigação fiscal a acompanhar.', 'There is a tax obligation to follow.')}</p><p className="mt-2 text-xs leading-5 text-slate-300">{copy(locale, 'Consulte o calendário fiscal para verificar a informação aplicável.', 'Check the tax calendar to review the applicable information.')}</p></div>
       <p className="mt-5 text-xs leading-5 text-slate-500">{copy(locale, 'Demonstração fictícia. Os alertas são apresentados na plataforma.', 'Fictional demonstration. Alerts are shown in the platform.')}</p>
     </div>
   );

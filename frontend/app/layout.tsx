@@ -8,6 +8,10 @@ import {
   AuthProvider,
 } from '@/context/AuthContext';
 import TenantRouteGate from '@/components/auth/TenantRouteGate';
+import {
+  ResponsiveTableLabels,
+  ToastProvider,
+} from '@/components/ui/enterprise';
 
 const siteUrl = 'https://fiscalidadedigital.ao';
 const siteTitle = 'Fiscalidade Digital | Gestão fiscal para empresas em Angola';
@@ -125,9 +129,12 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          <TenantRouteGate>
-            {children}
-          </TenantRouteGate>
+          <ToastProvider>
+            <ResponsiveTableLabels />
+            <TenantRouteGate>
+              {children}
+            </TenantRouteGate>
+          </ToastProvider>
         </AuthProvider>
       </body>
     </html>

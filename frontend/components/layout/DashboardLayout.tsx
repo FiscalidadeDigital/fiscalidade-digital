@@ -5,6 +5,7 @@ import {
   Building2,
   CalendarDays,
   Calculator,
+  ChevronDown,
   CreditCard,
   FileSpreadsheet,
   FileText,
@@ -51,6 +52,7 @@ import {
 import FloatingAI from '@/components/ai/FloatingAI';
 import { useAuth } from '@/context/AuthContext';
 import { isInvoiceManagementPath } from '@/lib/invoice-management';
+import { ConfirmDialog } from '@/components/ui/enterprise';
 
 /* =========================================================
    TIPOS
@@ -76,15 +78,10 @@ type DashboardLayoutProps = {
 
 const navigationSections = [
   {
+    id: 'principal',
     title: 'Principal',
 
     items: [
-      {
-        label: 'Empresa',
-        href: '/company',
-        icon: Building2,
-      },
-
       {
         label: 'Dashboard',
         href: '/dashboard',
@@ -92,27 +89,34 @@ const navigationSections = [
       },
 
       {
-        label: 'Calendário Fiscal',
-        href: '/calendar',
-        icon: CalendarDays,
+        label: 'Empresa',
+        href: '/company',
+        icon: Building2,
+      },
+
+      {
+        label: 'Notificações',
+        href: '/notifications',
+        icon: Bell,
       },
     ],
   },
 
   {
-    title: 'Gestão',
+    id: 'vendas',
+    title: 'Vendas',
 
     items: [
       {
-        label: 'Funcionários',
-        href: '/employees',
-        icon: Users,
+        label: 'Facturas',
+        href: '/invoices',
+        icon: ReceiptText,
       },
 
       {
-        label: 'Folha Salarial',
-        href: '/payroll',
-        icon: WalletCards,
+        label: 'Pró-formas',
+        href: '/pro-formas',
+        icon: FileText,
       },
 
       {
@@ -126,6 +130,19 @@ const navigationSections = [
         href: '/products',
         icon: Package,
       },
+    ],
+  },
+
+  {
+    id: 'compras',
+    title: 'Compras',
+
+    items: [
+      {
+        label: 'Facturas recebidas',
+        href: '/purchase-invoices',
+        icon: ReceiptText,
+      },
 
       {
         label: 'Fornecedores',
@@ -136,13 +153,31 @@ const navigationSections = [
   },
 
   {
-    title: 'Fiscalidade',
-
+    id: 'pessoas',
+    title: 'Pessoas',
     items: [
       {
-        label: 'Simulador de Impostos',
-        href: '/simulator',
-        icon: Calculator,
+        label: 'Funcionários',
+        href: '/employees',
+        icon: Users,
+      },
+
+      {
+        label: 'Folha Salarial',
+        href: '/payroll',
+        icon: WalletCards,
+      },
+    ],
+  },
+
+  {
+    id: 'fiscal',
+    title: 'Fiscal',
+    items: [
+      {
+        label: 'Calendário Fiscal',
+        href: '/calendar',
+        icon: CalendarDays,
       },
 
       {
@@ -156,6 +191,7 @@ const navigationSections = [
         href: '/fiscal-situation',
         icon: ShieldAlert,
       },
+
       {
         label: 'Pagamentos',
         href: '/payments',
@@ -163,9 +199,9 @@ const navigationSections = [
       },
 
       {
-        label: 'Gestão de facturas',
-        href: '/invoices',
-        icon: ReceiptText,
+        label: 'Simulador de Impostos',
+        href: '/simulator',
+        icon: Calculator,
       },
 
       {
@@ -173,13 +209,13 @@ const navigationSections = [
         href: '/accounting/saft',
         icon: FileSpreadsheet,
       },
-    ],
-  },
 
-  {
-    title: 'Análise',
+      {
+        label: 'Facturação electrónica',
+        href: '/electronic-invoicing',
+        icon: FileSpreadsheet,
+      },
 
-    items: [
       {
         label: 'Relatórios',
         href: '/reports',
@@ -189,6 +225,7 @@ const navigationSections = [
   },
 
   {
+    id: 'conhecimento',
     title: 'Conhecimento',
 
     items: [
@@ -199,6 +236,12 @@ const navigationSections = [
       },
 
       {
+        label: 'Legislação fiscal',
+        href: '/legislation',
+        icon: Landmark,
+      },
+
+      {
         label: 'Educação Fiscal',
         href: '/assistant',
         icon: Landmark,
@@ -206,17 +249,6 @@ const navigationSections = [
     ],
   },
 
-  {
-    title: 'Comunicação',
-
-    items: [
-      {
-        label: 'Notificações',
-        href: '/notifications',
-        icon: Bell,
-      },
-    ],
-  },
 ];
 
 /* =========================================================
@@ -257,6 +289,17 @@ export default function DashboardLayout({
   const [mobileOpen, setMobileOpen] =
     useState(false);
 
+  const [expandedSections, setExpandedSections] =
+    useState<Record<string, boolean>>({
+      principal: true,
+      vendas: true,
+      compras: true,
+      pessoas: true,
+      fiscal: true,
+      conhecimento: true,
+      administracao: true,
+    });
+
   const [loadedCompany, setLoadedCompany] =
     useState<Company | null>(null);
 
@@ -267,6 +310,9 @@ export default function DashboardLayout({
     useState(false);
 
   const [isLoggingOut, setIsLoggingOut] =
+    useState(false);
+
+  const [logoutConfirmOpen, setLogoutConfirmOpen] =
     useState(false);
 
   const mobileMenuRef =
@@ -467,20 +513,6 @@ export default function DashboardLayout({
     );
   };
 
-  const currentNavigation = [
-    ...navigationSections.flatMap(
-      (section) =>
-        section.items.map((item) => ({
-          ...item,
-          section: section.title,
-        })),
-    ),
-    ...companyNavigation.map((item) => ({
-      ...item,
-      section: 'Administração',
-    })),
-  ].find((item) => matchesNavigationPath(item.href));
-
   /* =======================================================
      INICIAIS
   ======================================================= */
@@ -557,6 +589,15 @@ export default function DashboardLayout({
     setMobileOpen(false);
   };
 
+  const toggleNavigationSection = (
+    sectionId: string,
+  ) => {
+    setExpandedSections((sections) => ({
+      ...sections,
+      [sectionId]: !sections[sectionId],
+    }));
+  };
+
   /* =======================================================
      LOGOUT
   ======================================================= */
@@ -566,16 +607,12 @@ export default function DashboardLayout({
       return;
     }
 
-    const confirmed =
-      window.confirm(
-        'Tem a certeza de que deseja terminar a sessão?',
-      );
+    setLogoutConfirmOpen(true);
+  };
 
-    if (!confirmed) {
-      return;
-    }
-
+  const confirmLogout = () => {
     setIsLoggingOut(true);
+    setLogoutConfirmOpen(false);
     logout();
   };
 
@@ -620,7 +657,7 @@ export default function DashboardLayout({
           relative
           fd-sidebar-logo
           flex
-          h-10
+          min-h-11
           w-full
           select-none
           items-center
@@ -633,12 +670,12 @@ export default function DashboardLayout({
               ? `
                 bg-[#eaf4f8]
                 font-semibold
-                text-[#075f86]
+                text-fd-accent
               `
               : `
                 text-[#405275]
                 hover:bg-[#f5f9fd]
-                hover:text-[#0877e8]
+                hover:text-fd-accent
               `
           }
 
@@ -673,8 +710,8 @@ export default function DashboardLayout({
 
             ${
               active
-                ? 'text-[#075f86]'
-                : 'group-hover:text-[#075f86]'
+                ? 'text-fd-accent'
+                : 'group-hover:text-fd-accent'
             }
 
             transition-[background-color,box-shadow]
@@ -714,7 +751,7 @@ export default function DashboardLayout({
               size={13}
               className="
                 animate-spin
-                text-[#079fe5]
+                text-fd-accent
               "
             />
           )}
@@ -793,7 +830,7 @@ export default function DashboardLayout({
               "
             >
               Fiscalidade
-              <span className="text-[#079fe5]">
+              <span className="text-fd-accent">
                 {' '}Digital
               </span>
             </div>
@@ -802,11 +839,11 @@ export default function DashboardLayout({
               className="
                 mt-0.5
                 whitespace-nowrap
-                text-[9px]
+                text-xs
                 font-medium
                 uppercase
                 tracking-[0.08em]
-                text-[#7c8cae]
+                text-[var(--fd-text-muted)]
               "
             >
               Gestão Fiscal Inteligente
@@ -825,8 +862,8 @@ export default function DashboardLayout({
               fd-sidebar-close
               ml-auto
               flex
-              h-9
-              w-9
+              h-11
+              w-11
               shrink-0
               items-center
               justify-center
@@ -835,7 +872,7 @@ export default function DashboardLayout({
               transition-colors
               duration-150
               hover:bg-[#f3f7fb]
-              hover:text-[#0877e8]
+              hover:text-fd-accent
             "
             aria-label="Fechar menu"
           >
@@ -880,8 +917,8 @@ export default function DashboardLayout({
               items-center
               justify-center
               rounded-md
-              bg-[#0b6f93]
-              text-[11px]
+              bg-fd-primary
+              text-xs
               font-bold
               text-white
             "
@@ -911,8 +948,8 @@ export default function DashboardLayout({
               className="
                 mt-0.5
                 truncate
-                text-[10px]
-                text-[#8795af]
+                text-xs
+                text-[var(--fd-text-muted)]
               "
               title={companyNif}
             >
@@ -941,75 +978,129 @@ export default function DashboardLayout({
           scrollbar-track-transparent
         "
       >
-        {navigationSections.map(
-          (section) => (
-            <div
-              key={
-                section.title
-              }
-              className="mb-4"
+        {navigationSections.map((section) => {
+          const expanded = expandedSections[section.id];
+          const containsActiveItem = section.items.some((item) =>
+            isActive(item.href),
+          );
+          const controlsId = `${mobile ? 'mobile' : 'desktop'}-navigation-${section.id}`;
+
+          return (
+            <section
+              key={section.id}
+              className="mb-3"
             >
-              <div
-                className="
+              <button
+                type="button"
+                onClick={() => toggleNavigationSection(section.id)}
+                aria-expanded={expanded}
+                aria-controls={controlsId}
+                className={`
                   fd-sidebar-section-title
-                  mb-1.5
+                  flex
+                  min-h-11
+                  w-full
+                  items-center
+                  justify-between
+                  gap-2
+                  rounded-md
                   px-3
-                  text-[9px]
+                  text-left
+                  text-xs
                   font-bold
                   uppercase
                   tracking-[0.14em]
-                  text-[#93a1ba]
-                "
+                  transition-[background-color,color]
+                  duration-150
+                  hover:bg-[#f5f9fd]
+                  hover:text-fd-accent
+                  ${
+                    containsActiveItem
+                      ? 'text-fd-accent'
+                      : 'text-[var(--fd-text-muted)]'
+                  }
+                `}
               >
-                {section.title}
-              </div>
+                <span>{section.title}</span>
+                <ChevronDown
+                  size={16}
+                  aria-hidden="true"
+                  className={`shrink-0 transition-transform duration-150 ${
+                    expanded ? 'rotate-0' : '-rotate-90'
+                  }`}
+                />
+              </button>
 
-              <nav
-                className="
-                  space-y-1
-                "
+              <div
+                id={controlsId}
+                hidden={!expanded}
+                className="pt-1"
               >
-                {section.items.map(
-                  (item) =>
-                    renderNavigationItem(
-                      item,
-                      mobile,
-                    ),
-                )}
-              </nav>
-            </div>
-          ),
-        )}
+                <nav className="space-y-1">
+                  {section.items.map((item) =>
+                    renderNavigationItem(item, mobile),
+                  )}
+                </nav>
+              </div>
+            </section>
+          );
+        })}
 
         {/* =================================================
             EMPRESA
         ================================================= */}
 
-        <div className="pb-4">
-          <div
+        <section className="pb-4">
+          <button
+            type="button"
+            onClick={() => toggleNavigationSection('administracao')}
+            aria-expanded={expandedSections.administracao}
+            aria-controls={`${mobile ? 'mobile' : 'desktop'}-navigation-administracao`}
             className="
               fd-sidebar-section-title
-              mb-1.5
+              flex
+              min-h-11
+              w-full
+              items-center
+              justify-between
+              gap-2
+              rounded-md
               px-3
-              text-[9px]
+              text-left
+              text-xs
               font-bold
               uppercase
               tracking-[0.14em]
-              text-[#93a1ba]
+              text-[var(--fd-text-muted)]
+              transition-[background-color,color]
+              duration-150
+              hover:bg-[#f5f9fd]
+              hover:text-fd-accent
             "
           >
-            Administração
-          </div>
+            <span>Administração</span>
+            <ChevronDown
+              size={16}
+              aria-hidden="true"
+              className={`shrink-0 transition-transform duration-150 ${
+                expandedSections.administracao
+                  ? 'rotate-0'
+                  : '-rotate-90'
+              }`}
+            />
+          </button>
 
-          <nav className="space-y-1">
-            {companyNavigation.map(
-              (item) =>
-                renderNavigationItem(
-                  item,
-                  mobile,
-                ),
-            )}
-          </nav>
+          <div
+            id={`${mobile ? 'mobile' : 'desktop'}-navigation-administracao`}
+            hidden={!expandedSections.administracao}
+            className="pt-1"
+          >
+            <nav className="space-y-1">
+              {companyNavigation.map((item) =>
+                renderNavigationItem(item, mobile),
+              )}
+            </nav>
+          </div>
 
           {/* =================================================
               LOGOUT
@@ -1033,13 +1124,13 @@ export default function DashboardLayout({
               className="
                 group
                 flex
-                h-10
+                min-h-11
                 w-full
                 items-center
                 gap-2.5
                 rounded-xl
                 px-3
-                text-[#6f7d96]
+                text-[var(--fd-text-muted)]
                 transition-[background-color,color]
                 duration-150
                 hover:bg-[#fff5f5]
@@ -1087,15 +1178,17 @@ export default function DashboardLayout({
               </span>
             </button>
           </div>
-        </div>
+        </section>
       </div>
 
       <div
         className="
           shrink-0
+          border-t
+          border-[#edf1f6]
           px-3.5
           pb-3.5
-          pt-2
+          pt-2.5
         "
       >
         <Link
@@ -1109,13 +1202,15 @@ export default function DashboardLayout({
           }
           className="
             flex
-            items-start
+            min-h-11
+            items-center
             gap-2.5
             rounded-md
             border
             border-[#dbe5ed]
             bg-[#f7fafc]
-            p-2.5
+            px-3
+            py-2
             text-[#203451]
             transition-colors
             hover:border-[#b7d3df]
@@ -1124,16 +1219,11 @@ export default function DashboardLayout({
         >
           <ShieldAlert
             size={16}
-            className="mt-0.5 shrink-0 text-[#0b6f93]"
+            className="shrink-0 text-fd-accent"
           />
-          <div>
-            <div className="text-[12px] font-semibold">
-              Obrigações fiscais
-            </div>
-            <p className="mt-0.5 text-[10px] leading-4 text-[#718099]">
-              Consulte prazos e estados de cumprimento.
-            </p>
-          </div>
+          <span className="min-w-0 truncate text-[12px] font-semibold">
+            Obrigações fiscais
+          </span>
         </Link>
       </div>
     </div>
@@ -1318,8 +1408,8 @@ export default function DashboardLayout({
               }
               className="
                 flex
-                h-10
-                w-10
+                h-11
+                w-11
                 shrink-0
                 items-center
                 justify-center
@@ -1331,7 +1421,7 @@ export default function DashboardLayout({
                 transition-colors
                 duration-150
                 hover:border-[#b9e6f7]
-                hover:text-[#0877e8]
+                hover:text-fd-accent
                 lg:hidden
               "
               aria-label="Abrir menu"
@@ -1339,24 +1429,20 @@ export default function DashboardLayout({
               <Menu size={20} />
             </button>
 
-            {/* CONTEXTO DA PÁGINA */}
+            {/* CONTEXTO DA ÁREA */}
 
             <div
               className="
+                hidden
                 min-w-0
                 flex-1
                 items-center
-                md:flex
+                sm:flex
               "
             >
-              <div className="min-w-0">
-                <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-[#78879d]">
-                  {currentNavigation?.section ?? 'Fiscalidade Digital'}
-                </p>
-                <p className="truncate text-[13px] font-semibold text-[#172642]">
-                  {currentNavigation?.label ?? 'Área empresarial'}
-                </p>
-              </div>
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--fd-text-muted)]">
+                Área empresarial
+              </p>
             </div>
 
             {/* DIREITA */}
@@ -1382,8 +1468,8 @@ export default function DashboardLayout({
                 className="
                   relative
                   flex
-                  h-10
-                  w-10
+                  h-11
+                  w-11
                   items-center
                   justify-center
                   rounded-xl
@@ -1391,7 +1477,7 @@ export default function DashboardLayout({
                   transition-colors
                   duration-150
                   hover:bg-[#f3f8fc]
-                  hover:text-[#0877e8]
+                  hover:text-fd-accent
                 "
                 aria-label="Notificações"
                 title="Notificações"
@@ -1460,8 +1546,8 @@ export default function DashboardLayout({
                   <div
                     className="
                       truncate
-                      text-[10px]
-                      text-[#8290aa]
+                      text-xs
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     {companyNif}
@@ -1477,8 +1563,8 @@ export default function DashboardLayout({
                     items-center
                     justify-center
                     rounded-md
-                    bg-[#0b6f93]
-                    text-[11px]
+                    bg-fd-primary
+                    text-xs
                     font-bold
                     text-white
                   "
@@ -1501,9 +1587,12 @@ export default function DashboardLayout({
             min-h-[calc(100vh-68px)]
             px-4
             py-5
+            pb-24
             sm:px-6
+            sm:pb-28
             lg:px-7
             lg:py-6
+            lg:pb-28
           "
         >
           <div
@@ -1518,6 +1607,17 @@ export default function DashboardLayout({
       </div>
 
       <FloatingAI />
+
+      <ConfirmDialog
+        confirmLabel="Terminar sessão"
+        destructive
+        description="Tem a certeza de que deseja terminar a sessão?"
+        loading={isLoggingOut}
+        onClose={() => setLogoutConfirmOpen(false)}
+        onConfirm={confirmLogout}
+        open={logoutConfirmOpen}
+        title="Terminar sessão"
+      />
 
       <style jsx global>{`
         @keyframes dashboard-page-enter {

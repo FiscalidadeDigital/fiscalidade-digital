@@ -45,8 +45,8 @@ export default function QuickActions() {
           <p
             className="
               mt-1
-              text-[11px]
-              text-[#7b87a1]
+              text-xs
+              text-[var(--fd-text-muted)]
             "
           >
             Aceda rapidamente às principais funções
@@ -61,8 +61,8 @@ export default function QuickActions() {
             items-center
             justify-center
             rounded-xl
-            bg-[#f0edff]
-            text-[#5146e5]
+            bg-fd-accent-soft
+            text-fd-accent
           "
         >
           <ArrowUpRight
@@ -115,7 +115,7 @@ export default function QuickActions() {
               justify-center
               rounded-xl
               bg-[#eeebff]
-              text-[#5146e5]
+              text-fd-accent
               transition-transform
               duration-200
               group-hover:scale-105
@@ -130,7 +130,7 @@ export default function QuickActions() {
           <div className="mt-3 flex items-end justify-between gap-2">
             <span
               className="
-                text-[11px]
+                text-xs
                 font-bold
                 text-[#17213f]
               "
@@ -141,7 +141,7 @@ export default function QuickActions() {
             <ArrowUpRight
               size={14}
               className="
-                text-[#8b82ed]
+                text-fd-accent
                 transition-transform
                 group-hover:translate-x-0.5
                 group-hover:-translate-y-0.5
@@ -184,7 +184,7 @@ export default function QuickActions() {
               justify-center
               rounded-xl
               bg-[#e9faf2]
-              text-[#059669]
+              text-fd-success
               transition-transform
               duration-200
               group-hover:scale-105
@@ -199,7 +199,7 @@ export default function QuickActions() {
           <div className="mt-3 flex items-end justify-between gap-2">
             <span
               className="
-                text-[11px]
+                text-xs
                 font-bold
                 text-[#17213f]
               "
@@ -210,7 +210,7 @@ export default function QuickActions() {
             <ArrowUpRight
               size={14}
               className="
-                text-[#34a978]
+                text-fd-success
                 transition-transform
                 group-hover:translate-x-0.5
                 group-hover:-translate-y-0.5
@@ -253,7 +253,7 @@ export default function QuickActions() {
               justify-center
               rounded-xl
               bg-[#fff0df]
-              text-[#ea580c]
+              text-fd-warning
               transition-transform
               duration-200
               group-hover:scale-105
@@ -268,7 +268,7 @@ export default function QuickActions() {
           <div className="mt-3 flex items-end justify-between gap-2">
             <span
               className="
-                text-[11px]
+                text-xs
                 font-bold
                 text-[#17213f]
               "
@@ -279,7 +279,7 @@ export default function QuickActions() {
             <ArrowUpRight
               size={14}
               className="
-                text-[#f28a4b]
+                text-fd-warning
                 transition-transform
                 group-hover:translate-x-0.5
                 group-hover:-translate-y-0.5
@@ -337,7 +337,7 @@ export default function QuickActions() {
           <div className="mt-3 flex items-end justify-between gap-2">
             <span
               className="
-                text-[11px]
+                text-xs
                 font-bold
                 text-[#17213f]
               "
@@ -348,7 +348,7 @@ export default function QuickActions() {
             <ArrowUpRight
               size={14}
               className="
-                text-[#4d82e8]
+                text-fd-accent
                 transition-transform
                 group-hover:translate-x-0.5
                 group-hover:-translate-y-0.5

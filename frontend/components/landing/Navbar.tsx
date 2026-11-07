@@ -59,7 +59,7 @@ export default function Navbar() {
                 Fiscalidade Digital
               </div>
 
-              <div className="text-[11px] text-slate-500 mt-0.5">
+              <div className="text-xs text-slate-500 mt-0.5">
                 Gestão fiscal empresarial
               </div>
             </div>

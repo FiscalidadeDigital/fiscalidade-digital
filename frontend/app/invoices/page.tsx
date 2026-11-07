@@ -11,7 +11,6 @@ import {
   Plus,
   Search,
   ShieldAlert,
-  X,
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -19,7 +18,12 @@ import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import InvoiceManagementNav from '@/components/invoices/InvoiceManagementNav';
-import { EmptyState, PageHeader, StatCard } from '@/components/ui/enterprise';
+import {
+  ConfirmDialog,
+  EmptyState,
+  PageHeader,
+  StatCard,
+} from '@/components/ui/enterprise';
 import { useAuth } from '@/context/AuthContext';
 import {
   cancelInvoice,
@@ -213,7 +217,7 @@ export default function InvoicesPage() {
                   resetPage();
                 }}
                 placeholder="Número, cliente ou NIF"
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               />
             </label>
             <label>
@@ -224,7 +228,7 @@ export default function InvoicesPage() {
                   setStatus(event.target.value as InvoiceStatus | '');
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="">Todos os estados</option>
                 <option value="PENDING">Pendentes</option>
@@ -240,7 +244,7 @@ export default function InvoicesPage() {
                   setSort(event.target.value);
                   resetPage();
                 }}
-                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100"
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
               >
                 <option value="issuedAt:desc">Mais recentes</option>
                 <option value="issuedAt:asc">Mais antigas</option>
@@ -269,7 +273,7 @@ export default function InvoicesPage() {
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+              <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
                   <th className="px-5 py-3 font-semibold">Factura</th>
                   <th className="px-4 py-3 font-semibold">Cliente</th>
@@ -287,7 +291,7 @@ export default function InvoicesPage() {
                   <tr>
                     <td colSpan={7} className="h-52 text-center">
                       <Loader2
-                        className="mx-auto h-5 w-5 animate-spin text-sky-700"
+                        className="mx-auto h-5 w-5 animate-spin text-fd-accent"
                         aria-label="A carregar facturas"
                       />
                     </td>
@@ -297,17 +301,17 @@ export default function InvoicesPage() {
                     <tr key={invoice.id} className="hover:bg-slate-50/70">
                       <td className="px-5 py-4">
                         <div className="flex items-start gap-3">
-                          <span className="rounded-lg bg-sky-50 p-2 text-sky-700">
+                          <span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent">
                             <FileText className="h-4 w-4" />
                           </span>
                           <div>
                             <Link
                               href={`/invoices/${invoice.id}`}
-                              className="text-sm font-semibold text-sky-800 underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-sky-600 focus:ring-offset-2"
+                              className="text-sm font-semibold text-fd-primary underline-offset-4 hover:underline focus:outline-none focus:ring-2 focus:ring-fd-focus focus:ring-offset-2"
                             >
                               {invoice.invoiceNumber}
                             </Link>
-                            <p className="mt-1 text-[11px] text-[var(--fd-muted)]">
+                            <p className="mt-1 text-xs text-[var(--fd-muted)]">
                               {new Date(invoice.issuedAt).toLocaleDateString(
                                 'pt-AO',
                               )}
@@ -319,7 +323,7 @@ export default function InvoicesPage() {
                         <p className="text-sm font-medium text-[var(--fd-text-primary)]">
                           {invoice.client.name}
                         </p>
-                        <p className="mt-1 text-[11px] text-[var(--fd-muted)]">
+                        <p className="mt-1 text-xs text-[var(--fd-muted)]">
                           NIF {invoice.client.nif || 'não indicado'}
                         </p>
                       </td>
@@ -338,7 +342,7 @@ export default function InvoicesPage() {
                       </td>
                       <td className="px-4 py-4">
                         <span
-                          className={`inline-flex rounded-full border px-2 py-1 text-[11px] font-semibold ${statusStyles[invoice.status]}`}
+                          className={`inline-flex rounded-full border px-2 py-1 text-xs font-semibold ${statusStyles[invoice.status]}`}
                         >
                           {statusLabels[invoice.status]}
                         </span>
@@ -348,7 +352,7 @@ export default function InvoicesPage() {
                           <Link
                             href={`/invoices/${invoice.id}`}
                             title="Ver detalhes"
-                            className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800 focus:outline-none focus:ring-2 focus:ring-sky-600"
+                            className="inline-flex items-center gap-2 rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-fd-accent hover:text-fd-primary focus:outline-none focus:ring-2 focus:ring-fd-focus"
                             aria-label={`Ver detalhes de ${invoice.invoiceNumber}`}
                           >
                             <Eye className="h-4 w-4" />
@@ -361,7 +365,7 @@ export default function InvoicesPage() {
                             title="Abrir PDF"
                             disabled={pdfBusy === invoice.id}
                             onClick={() => void downloadPdf(invoice)}
-                            className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-sky-300 hover:text-sky-800 disabled:opacity-50"
+                            className="rounded-lg border border-[var(--fd-border)] p-2 text-[var(--fd-text-secondary)] hover:border-fd-accent hover:text-fd-primary disabled:opacity-50"
                             aria-label={`Abrir PDF de ${invoice.invoiceNumber}`}
                           >
                             {pdfBusy === invoice.id ? (
@@ -468,61 +472,27 @@ function ActionDialog({
   onConfirm: () => void;
 }) {
   const paying = pending.action === 'pay';
+
   return (
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-[var(--fd-overlay)] p-4">
-      <section
-        role="alertdialog"
-        aria-modal="true"
-        aria-labelledby="invoice-action-title"
-        className="w-full max-w-md rounded-2xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-2xl"
-      >
-        <div className="flex items-start justify-between">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-sky-700">
-              Alteração de estado
-            </p>
-            <h2
-              id="invoice-action-title"
-              className="mt-1 text-lg font-semibold text-[var(--fd-text-primary)]"
-            >
-              {paying ? 'Registar pagamento' : 'Cancelar factura'}
-            </h2>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-lg p-2 text-[var(--fd-muted)]"
-            aria-label="Fechar"
-          >
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        <p className="mt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">
-          {paying
-            ? `Confirma que ${pending.invoice.invoiceNumber} foi efectivamente paga? Esta acção influencia os valores recebidos e as obrigações.`
-            : `Confirma o cancelamento de ${pending.invoice.invoiceNumber}? Facturas pagas exigem um fluxo de correcção e não podem ser canceladas directamente.`}
-        </p>
-        <div className="mt-5 flex justify-end gap-3">
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            className="rounded-lg border border-[var(--fd-border)] px-4 py-2.5 text-xs font-semibold"
-          >
-            Voltar
-          </button>
-          <button
-            type="button"
-            onClick={onConfirm}
-            disabled={busy}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold text-white disabled:opacity-50 ${paying ? 'bg-emerald-700 hover:bg-emerald-800' : 'bg-rose-700 hover:bg-rose-800'}`}
-          >
-            {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-            {paying ? 'Confirmar pagamento' : 'Confirmar cancelamento'}
-          </button>
-        </div>
-      </section>
-    </div>
+    <ConfirmDialog
+      open
+      onClose={() => {
+        if (!busy) onClose();
+      }}
+      onConfirm={onConfirm}
+      title={paying ? 'Registar pagamento' : 'Cancelar factura'}
+      description={
+        paying
+          ? `Confirma que ${pending.invoice.invoiceNumber} foi efectivamente paga? Esta acção influencia os valores recebidos e as obrigações.`
+          : `Confirma o cancelamento de ${pending.invoice.invoiceNumber}? Facturas pagas exigem um fluxo de correcção e não podem ser canceladas directamente.`
+      }
+      confirmLabel={paying ? 'Confirmar pagamento' : 'Confirmar cancelamento'}
+      cancelLabel="Voltar"
+      destructive={!paying}
+      loading={busy}
+      closeOnBackdrop={!busy}
+      closeOnEscape={!busy}
+      className="max-w-md"
+    />
   );
 }

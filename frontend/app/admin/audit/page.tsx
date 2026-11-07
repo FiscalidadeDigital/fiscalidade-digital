@@ -58,7 +58,7 @@ export default function AdminAuditPage() {
     <AdminShell>
       <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
         <header className="border-b border-[var(--fd-border)] pb-6">
-          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Segurança</p>
+          <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fd-accent">Segurança</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Auditoria administrativa</h1>
           <p className="mt-2 max-w-3xl text-sm text-[var(--fd-text-secondary)]">
             Registo cronológico das acções da administração da plataforma. Metadados técnicos e conteúdo tenant permanecem fora desta vista.
@@ -70,34 +70,34 @@ export default function AdminAuditPage() {
             <label className="relative block">
               <span className="sr-only">Pesquisar acção</span>
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fd-muted)]" />
-              <input value={action} onChange={(event) => { setAction(event.target.value); resetPage(); }} placeholder="Pesquisar acção" className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" />
+              <input value={action} onChange={(event) => { setAction(event.target.value); resetPage(); }} placeholder="Pesquisar acção" className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] pl-9 pr-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus" />
             </label>
             <label>
               <span className="sr-only">Tipo de alvo</span>
-              <select value={targetType} onChange={(event) => { setTargetType(event.target.value); resetPage(); }} className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100">
+              <select value={targetType} onChange={(event) => { setTargetType(event.target.value); resetPage(); }} className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus">
                 <option value="">Todos os alvos</option>
                 <option value="Tenant">Empresas</option>
               </select>
             </label>
-            <label className="text-[11px] text-[var(--fd-muted)]">Desde<input type="date" value={from} onChange={(event) => { setFrom(event.target.value); resetPage(); }} className="mt-1 h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm text-[var(--fd-text-primary)] outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>
-            <label className="text-[11px] text-[var(--fd-muted)]">Até<input type="date" value={to} onChange={(event) => { setTo(event.target.value); resetPage(); }} className="mt-1 h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm text-[var(--fd-text-primary)] outline-none focus:border-sky-600 focus:ring-4 focus:ring-sky-100" /></label>
+            <label className="text-xs text-[var(--fd-muted)]">Desde<input type="date" value={from} onChange={(event) => { setFrom(event.target.value); resetPage(); }} className="mt-1 h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm text-[var(--fd-text-primary)] outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus" /></label>
+            <label className="text-xs text-[var(--fd-muted)]">Até<input type="date" value={to} onChange={(event) => { setTo(event.target.value); resetPage(); }} className="mt-1 h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm text-[var(--fd-text-primary)] outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus" /></label>
           </div>
 
           {error && <div className="border-b border-rose-200 bg-rose-50 px-5 py-3 text-xs font-medium text-rose-700">{error}</div>}
 
           <div className="overflow-x-auto">
             <table className="min-w-[850px] w-full border-collapse text-left">
-              <thead className="bg-[var(--fd-table-header)] text-[11px] uppercase tracking-[0.08em] text-[var(--fd-muted)]">
+              <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr><th className="px-5 py-3 font-semibold">Evento</th><th className="px-4 py-3 font-semibold">Alvo</th><th className="px-4 py-3 font-semibold">Administrador</th><th className="px-5 py-3 text-right font-semibold">Data</th></tr>
               </thead>
               <tbody className="divide-y divide-[var(--fd-border)]">
                 {loading ? (
-                  <tr><td colSpan={4} className="h-52 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-sky-700" aria-label="A carregar auditoria" /></td></tr>
+                  <tr><td colSpan={4} className="h-52 text-center"><Loader2 className="mx-auto h-5 w-5 animate-spin text-fd-accent" aria-label="A carregar auditoria" /></td></tr>
                 ) : result?.data.length ? (
                   result.data.map((event) => (
                     <tr key={event.id} className="hover:bg-slate-50/70">
-                      <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="rounded-lg bg-sky-50 p-2 text-sky-700"><ListChecks className="h-4 w-4" /></span><div><p className="text-sm font-semibold">{actionLabels[event.action] ?? event.action}</p><p className="mt-1 font-mono text-[10px] text-[var(--fd-muted)]">{event.action}</p></div></div></td>
-                      <td className="px-4 py-4 text-xs text-[var(--fd-text-secondary)]">{event.targetType ? <><p className="font-medium text-[var(--fd-text-primary)]">{event.targetType}</p><p className="mt-1 font-mono text-[10px]">{event.targetId?.slice(0, 12) ?? '—'}…</p></> : 'Plataforma'}</td>
+                      <td className="px-5 py-4"><div className="flex items-center gap-3"><span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent"><ListChecks className="h-4 w-4" /></span><div><p className="text-sm font-semibold">{actionLabels[event.action] ?? event.action}</p><p className="mt-1 font-mono text-xs text-[var(--fd-muted)]">{event.action}</p></div></div></td>
+                      <td className="px-4 py-4 text-xs text-[var(--fd-text-secondary)]">{event.targetType ? <><p className="font-medium text-[var(--fd-text-primary)]">{event.targetType}</p><p className="mt-1 font-mono text-xs">{event.targetId?.slice(0, 12) ?? '—'}…</p></> : 'Plataforma'}</td>
                       <td className="px-4 py-4 text-xs"><p className="font-medium">{event.admin?.name ?? 'Sistema'}</p></td>
                       <td className="px-5 py-4 text-right text-xs tabular-nums text-[var(--fd-text-secondary)]">{new Date(event.createdAt).toLocaleString('pt-AO')}</td>
                     </tr>

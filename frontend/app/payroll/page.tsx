@@ -107,7 +107,7 @@ function statusClasses(status: string): string {
       return 'border-blue-200 bg-blue-50 text-blue-700';
 
     case 'CALCULATED':
-      return 'border-violet-200 bg-violet-50 text-violet-700';
+      return 'border-fd-accent-soft bg-fd-accent-soft text-fd-accent';
 
     case 'CLOSED':
       return 'border-slate-200 bg-slate-100 text-slate-700';
@@ -581,7 +581,7 @@ export default function PayrollPage() {
                     setCreateYear(year);
                     setShowCreate(true);
                   }}
-                  className="inline-flex h-11 items-center gap-2 rounded-md bg-[#0b6f93] px-5 text-sm font-semibold text-white transition-colors hover:bg-[#085b79]"
+                  className="inline-flex h-11 items-center gap-2 rounded-md bg-fd-primary px-5 text-sm font-semibold text-white transition-colors hover:bg-fd-primary-hover"
                 >
                   <Plus size={18} />
                   Processar folha
@@ -634,7 +634,7 @@ export default function PayrollPage() {
               <div>
                 <label
                   htmlFor="payroll-month"
-                  className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400"
+                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400"
                 >
                   Mês
                 </label>
@@ -666,9 +666,9 @@ export default function PayrollPage() {
                     text-sm
                     font-medium
                     outline-none
-                    focus:border-[#0b6f93]
+                    focus:border-[var(--fd-primary)]
                     focus:ring-2
-                    focus:ring-[#0b6f93]/10
+                    focus:ring-[var(--fd-primary)]/10
                   "
                 >
                   {MONTHS.map(
@@ -687,7 +687,7 @@ export default function PayrollPage() {
               <div>
                 <label
                   htmlFor="payroll-year"
-                  className="mb-1 block text-[11px] font-bold uppercase tracking-wider text-slate-400"
+                  className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400"
                 >
                   Ano
                 </label>
@@ -719,9 +719,9 @@ export default function PayrollPage() {
                     text-sm
                     font-medium
                     outline-none
-                    focus:border-[#0b6f93]
+                    focus:border-[var(--fd-primary)]
                     focus:ring-2
-                    focus:ring-[#0b6f93]/10
+                    focus:ring-[var(--fd-primary)]/10
                   "
                 >
                   {Array.from(
@@ -753,7 +753,7 @@ export default function PayrollPage() {
             <div className="text-center">
               <Loader2
                 size={32}
-                className="mx-auto animate-spin text-[#0b6f93]"
+                className="mx-auto animate-spin text-fd-accent"
               />
 
               <p className="mt-3 text-sm font-semibold text-slate-500">
@@ -795,13 +795,13 @@ export default function PayrollPage() {
                 items-center
                 gap-2
                 rounded-md
-                bg-[#0b6f93]
+                bg-fd-primary
                 px-5
                 text-sm
                 font-semibold
                 text-white
                 transition-colors
-                hover:bg-[#085b79]
+                hover:bg-fd-primary-hover
               "
             >
               <Plus size={18} />
@@ -1047,10 +1047,10 @@ export default function PayrollPage() {
                       text-sm
                       outline-none
                       transition
-                      focus:border-[#0b6f93]
+                      focus:border-[var(--fd-primary)]
                       focus:bg-white
                       focus:ring-2
-                      focus:ring-[#0b6f93]/10
+                      focus:ring-[var(--fd-primary)]/10
                     "
                   />
                 </div>
@@ -1460,7 +1460,7 @@ export default function PayrollPage() {
                 type="button"
                 onClick={() => void confirmPendingAction()}
                 disabled={working}
-                className="inline-flex h-10 items-center gap-2 rounded-md bg-[#0b6f93] px-4 text-sm font-semibold text-white hover:bg-[#085b79] disabled:opacity-50"
+                className="inline-flex h-10 items-center gap-2 rounded-md bg-fd-primary px-4 text-sm font-semibold text-white hover:bg-fd-primary-hover disabled:opacity-50"
               >
                 {working && <Loader2 size={16} className="animate-spin" />}
                 Confirmar
@@ -1807,9 +1807,9 @@ function ActionButton({
         ${
           primary
             ? `
-              bg-[#0b6f93]
+              bg-fd-primary
               text-white
-              hover:bg-[#085b79]
+              hover:bg-fd-primary-hover
             `
             : `
               border
@@ -1839,7 +1839,7 @@ function TableHeader({
       className={`
         px-5
         py-3
-        text-[11px]
+        text-xs
         font-semibold
         uppercase
         tracking-wider
@@ -1921,7 +1921,7 @@ function ProcessStep({
               done
                 ? 'bg-emerald-100 text-emerald-700'
                 : active
-                  ? 'bg-[#0b6f93] text-white'
+                  ? 'bg-fd-primary text-white'
                   : 'bg-slate-100 text-slate-500'
             }
           `}

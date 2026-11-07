@@ -39,6 +39,7 @@ import {
   getDocuments,
   uploadDocument,
 } from '../../services/document';
+import { ConfirmDialog, useToast } from '@/components/ui/enterprise';
 
 const categories: {
   value: DocumentCategory;
@@ -148,7 +149,7 @@ function formatDate(
 ) {
   try {
     return new Intl.DateTimeFormat(
-      'pt-PT',
+      'pt-AO',
       {
         day: '2-digit',
         month: 'short',
@@ -176,6 +177,7 @@ function getExtension(
 }
 
 export default function DocumentsPage() {
+  const { show: showToast } = useToast();
   const inputRef =
     useRef<HTMLInputElement | null>(
       null,
@@ -244,6 +246,11 @@ export default function DocumentsPage() {
     deletingId,
     setDeletingId,
   ] = useState<string | null>(null);
+
+  const [
+    pendingDocumentDeletion,
+    setPendingDocumentDeletion,
+  ] = useState<FiscalDocument | null>(null);
 
   const [
     openMenu,
@@ -446,6 +453,12 @@ export default function DocumentsPage() {
         'Documento enviado com sucesso.',
       );
 
+      showToast({
+        title: 'Documento enviado',
+        description: 'O documento ficou disponível na biblioteca.',
+        tone: 'success',
+      });
+
       setShowUpload(false);
 
       resetUpload();
@@ -461,11 +474,17 @@ export default function DocumentsPage() {
         err,
       );
 
-      setError(
+      const message =
         err?.response?.data
           ?.message ||
-          'Não foi possível enviar o documento.',
-      );
+        'Não foi possível enviar o documento.';
+
+      setError(message);
+      showToast({
+        title: 'Não foi possível enviar o documento',
+        description: message,
+        tone: 'danger',
+      });
     } finally {
       setUploading(false);
     }
@@ -474,15 +493,6 @@ export default function DocumentsPage() {
   const handleDelete = async (
     document: FiscalDocument,
   ) => {
-    const confirmed =
-      window.confirm(
-        `Tem a certeza que deseja eliminar "${document.name}"?`,
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setDeletingId(
         document.id,
@@ -514,6 +524,12 @@ export default function DocumentsPage() {
         'Documento eliminado com sucesso.',
       );
 
+      showToast({
+        title: 'Documento eliminado',
+        description: 'O documento foi removido da biblioteca.',
+        tone: 'success',
+      });
+
       setOpenMenu(null);
 
       window.setTimeout(() => {
@@ -525,11 +541,17 @@ export default function DocumentsPage() {
         err,
       );
 
-      setError(
+      const message =
         err?.response?.data
           ?.message ||
-          'Não foi possível eliminar o documento.',
-      );
+        'Não foi possível eliminar o documento.';
+
+      setError(message);
+      showToast({
+        title: 'Não foi possível eliminar o documento',
+        description: message,
+        tone: 'danger',
+      });
     } finally {
       setDeletingId(null);
     }
@@ -1028,7 +1050,7 @@ export default function DocumentsPage() {
                                 document.id
                               }
                               onClick={() =>
-                                handleDelete(
+                                setPendingDocumentDeletion(
                                   document,
                                 )
                               }
@@ -1391,6 +1413,32 @@ export default function DocumentsPage() {
         </div>
       )}
 
+      <ConfirmDialog
+        confirmLabel="Eliminar documento"
+        description={
+          pendingDocumentDeletion
+            ? `Tem a certeza que deseja eliminar "${pendingDocumentDeletion.name}"?`
+            : undefined
+        }
+        destructive
+        loading={Boolean(
+          pendingDocumentDeletion &&
+            deletingId === pendingDocumentDeletion.id,
+        )}
+        onClose={() => setPendingDocumentDeletion(null)}
+        onConfirm={async () => {
+          if (!pendingDocumentDeletion) {
+            return;
+          }
+
+          const document = pendingDocumentDeletion;
+          await handleDelete(document);
+          setPendingDocumentDeletion(null);
+        }}
+        open={Boolean(pendingDocumentDeletion)}
+        title="Eliminar documento"
+      />
+
       <style jsx global>{`
         * {
           box-sizing: border-box;
@@ -1599,7 +1647,7 @@ export default function DocumentsPage() {
         .stat-card small {
           color: var(--fd-muted);
           margin-top: 6px;
-          font-size: 11px;
+          font-size: 12px;
         }
 
         .documents-card {
@@ -1694,7 +1742,7 @@ export default function DocumentsPage() {
           color: var(--fd-text-secondary);
           background: var(--fd-table-header);
           border-bottom: 1px solid var(--fd-border);
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.06em;
@@ -1756,7 +1804,7 @@ export default function DocumentsPage() {
           gap: 7px;
           margin-top: 6px;
           color: var(--fd-muted);
-          font-size: 10px;
+          font-size: 12px;
           font-weight: 700;
         }
 
@@ -1775,7 +1823,7 @@ export default function DocumentsPage() {
           border-radius: 8px;
           color: #656d7c;
           background: #f5f6f8;
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 700;
         }
 
@@ -1905,7 +1953,7 @@ export default function DocumentsPage() {
 
         .section-heading span {
           color: #8d95a4;
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 800;
           text-transform: uppercase;
           letter-spacing: 0.08em;
@@ -1969,7 +2017,7 @@ export default function DocumentsPage() {
         .category-card span {
           margin-top: 5px;
           color: var(--fd-text-secondary);
-          font-size: 10px;
+          font-size: 12px;
           font-weight: 650;
         }
 
@@ -2041,7 +2089,7 @@ export default function DocumentsPage() {
         .modal-header p {
           margin: 4px 0 0;
           color: #9299a7;
-          font-size: 11px;
+          font-size: 12px;
         }
 
         .modal-header > button {
@@ -2120,7 +2168,7 @@ export default function DocumentsPage() {
         .drop-zone small {
           margin-top: 13px;
           color: #a9afba;
-          font-size: 10px;
+          font-size: 12px;
         }
 
         .change-file {
@@ -2128,7 +2176,7 @@ export default function DocumentsPage() {
           border: 0;
           background: transparent;
           color: var(--fd-primary);
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 800;
           cursor: pointer;
         }
@@ -2152,7 +2200,7 @@ export default function DocumentsPage() {
           display: block;
           margin-bottom: 6px;
           color: var(--fd-text-secondary);
-          font-size: 11px;
+          font-size: 12px;
           font-weight: 750;
         }
 

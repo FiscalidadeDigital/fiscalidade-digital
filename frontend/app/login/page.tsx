@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
@@ -43,6 +43,12 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<{
+    email?: string;
+    password?: string;
+  }>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusFirstErrorRef = useRef(false);
   const [sessionNotice] = useState(() => (
     typeof window !== 'undefined' &&
     new URLSearchParams(window.location.search).get('reason') === 'session-expired'
@@ -50,28 +56,43 @@ export default function LoginPage() {
       : ''
   ));
 
+  useEffect(() => {
+    if (!focusFirstErrorRef.current) {
+      return;
+    }
+
+    formRef.current
+      ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+      ?.focus();
+    focusFirstErrorRef.current = false;
+  }, [fieldErrors]);
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
 
     const normalizedEmail = email.trim().toLowerCase();
-    if (!normalizedEmail) {
-      setError('Introduza o seu email.');
-      return;
-    }
+    const nextFieldErrors: {
+      email?: string;
+      password?: string;
+    } = {};
 
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
-      setError('Introduza um email válido.');
-      return;
+    if (!normalizedEmail) {
+      nextFieldErrors.email = 'Introduza o seu email.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail)) {
+      nextFieldErrors.email = 'Introduza um email válido.';
     }
 
     if (!password) {
-      setError('Introduza a sua palavra-passe.');
-      return;
+      nextFieldErrors.password = 'Introduza a sua palavra-passe.';
+    } else if (password.length < 6) {
+      nextFieldErrors.password = 'A palavra-passe deve ter pelo menos 6 caracteres.';
     }
 
-    if (password.length < 6) {
-      setError('A palavra-passe deve ter pelo menos 6 caracteres.');
+    focusFirstErrorRef.current = Object.keys(nextFieldErrors).length > 0;
+    setFieldErrors(nextFieldErrors);
+
+    if (Object.keys(nextFieldErrors).length) {
       return;
     }
 
@@ -99,9 +120,9 @@ export default function LoginPage() {
       backHref="/"
       backLabel="Voltar ao site"
     >
-      <form onSubmit={handleLogin} noValidate className="space-y-4">
+      <form ref={formRef} onSubmit={handleLogin} noValidate className="space-y-4">
         {sessionNotice && (
-          <p role="status" className="rounded-lg border border-sky-200 bg-sky-50 p-3 text-sm leading-6 text-sky-900">
+          <p role="status" className="rounded-lg border border-fd-accent-soft bg-fd-accent-soft p-3 text-sm leading-6 text-fd-primary">
             {sessionNotice}
           </p>
         )}
@@ -123,15 +144,23 @@ export default function LoginPage() {
             disabled={loading}
             onChange={(event) => {
               setEmail(event.target.value);
+              setFieldErrors((current) => ({ ...current, email: undefined }));
               setError('');
             }}
+            aria-invalid={Boolean(fieldErrors.email)}
+            aria-describedby={fieldErrors.email ? 'login-email-error' : undefined}
             className="fd-field mt-1.5"
             placeholder="nome@empresa.ao"
           />
+          {fieldErrors.email && (
+            <span id="login-email-error" role="alert" className="mt-1.5 block text-sm font-normal text-red-700">
+              {fieldErrors.email}
+            </span>
+          )}
         </label>
 
         <div className="relative pt-7">
-          <Link href="/forgot-password" className="absolute right-0 top-0 z-10 text-sm font-semibold text-[#0b6f93] underline-offset-2 hover:underline">
+          <Link href="/forgot-password" className="absolute right-0 top-0 z-10 inline-flex min-h-11 items-center text-sm font-semibold text-fd-accent underline-offset-2 hover:underline">
             Esqueceu-se da palavra-passe?
           </Link>
           <PasswordInput
@@ -140,11 +169,13 @@ export default function LoginPage() {
             value={password}
             onChange={(value) => {
               setPassword(value);
+              setFieldErrors((current) => ({ ...current, password: undefined }));
               setError('');
             }}
             autoComplete="current-password"
             minLength={6}
             disabled={loading}
+            error={fieldErrors.password}
           />
         </div>
 
@@ -153,9 +184,9 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-[#66758d]">
+      <p className="mt-6 text-center text-sm text-[var(--fd-text-muted)]">
         Ainda não tem conta?{' '}
-        <Link className="font-semibold text-[#0b6f93] underline-offset-2 hover:underline" href="/register">
+        <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/register">
           Criar conta
         </Link>
       </p>

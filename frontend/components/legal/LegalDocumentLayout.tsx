@@ -19,8 +19,8 @@ type LegalDocumentLayoutProps = {
 function DocumentLinks({ activeDocument }: Pick<LegalDocumentLayoutProps, 'activeDocument'>) {
   return (
     <nav aria-label="Documentos legais" className="flex items-center gap-4 text-sm font-semibold">
-      <Link href="/terms" aria-current={activeDocument === 'terms' ? 'page' : undefined} className={`transition hover:text-cyan-800 ${activeDocument === 'terms' ? 'text-[#102447] underline decoration-cyan-500 decoration-2 underline-offset-4' : 'text-slate-600'}`}>Termos</Link>
-      <Link href="/privacy" aria-current={activeDocument === 'privacy' ? 'page' : undefined} className={`transition hover:text-cyan-800 ${activeDocument === 'privacy' ? 'text-[#102447] underline decoration-cyan-500 decoration-2 underline-offset-4' : 'text-slate-600'}`}>Privacidade</Link>
+      <Link href="/terms" aria-current={activeDocument === 'terms' ? 'page' : undefined} className={`transition hover:text-fd-primary ${activeDocument === 'terms' ? 'text-fd-text underline decoration-cyan-500 decoration-2 underline-offset-4' : 'text-slate-600'}`}>Termos</Link>
+      <Link href="/privacy" aria-current={activeDocument === 'privacy' ? 'page' : undefined} className={`transition hover:text-fd-primary ${activeDocument === 'privacy' ? 'text-fd-text underline decoration-cyan-500 decoration-2 underline-offset-4' : 'text-slate-600'}`}>Privacidade</Link>
     </nav>
   );
 }
@@ -30,7 +30,7 @@ function Contents({ sections, className = '' }: { sections: readonly LegalSectio
     <nav aria-label="Índice do documento" className={className}>
       <p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">Neste documento</p>
       <ol className="mt-4 space-y-2 text-sm leading-5">
-        {sections.map((section) => <li key={section.id}><a href={`#${section.id}`} className="block rounded-md px-2 py-1.5 text-slate-600 transition hover:bg-cyan-50 hover:text-cyan-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">{section.title}</a></li>)}
+        {sections.map((section) => <li key={section.id}><a href={`#${section.id}`} className="block rounded-md px-2 py-1.5 text-slate-600 transition hover:bg-fd-accent-soft hover:text-fd-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">{section.title}</a></li>)}
       </ol>
     </nav>
   );
@@ -47,22 +47,22 @@ export default function LegalDocumentLayout({ activeDocument, title, description
           <div className="flex items-center gap-4 sm:gap-6">
             <DocumentLinks activeDocument={activeDocument} />
             <div className="hidden h-5 w-px bg-slate-200 sm:block" />
-            <Link href="/" className="hidden text-sm font-semibold text-slate-600 transition hover:text-cyan-800 sm:inline">Voltar ao site</Link>
-            <Link href="/register" className="rounded-lg bg-[#102447] px-3 py-2 text-sm font-bold text-white transition hover:bg-[#17365f]">Criar conta</Link>
+            <Link href="/" className="hidden text-sm font-semibold text-slate-600 transition hover:text-fd-primary sm:inline">Voltar ao site</Link>
+            <Link href="/register" className="rounded-lg bg-fd-primary px-3 py-2 text-sm font-bold text-white transition hover:bg-fd-primary-hover">Criar conta</Link>
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-7xl px-5 py-10 sm:py-14 lg:px-8">
         <div className="max-w-3xl">
-          <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-800">Fiscalidade Digital</p>
-          <h1 className="mt-3 text-3xl font-extrabold tracking-[-.035em] text-[#102447] sm:text-4xl">{title}</h1>
+          <p className="text-xs font-bold uppercase tracking-[.16em] text-fd-primary">Fiscalidade Digital</p>
+          <h1 className="mt-3 text-3xl font-extrabold tracking-[-.035em] text-fd-text sm:text-4xl">{title}</h1>
           <p className="mt-4 max-w-2xl text-base leading-7 text-slate-600">{description}</p>
           <p className="mt-5 text-sm text-slate-500">Última actualização: {updatedAt}</p>
         </div>
 
         <details className="mt-8 rounded-xl border border-slate-200 bg-white p-4 lg:hidden">
-          <summary className="cursor-pointer text-sm font-bold text-[#102447]">Ver índice do documento</summary>
+          <summary className="cursor-pointer text-sm font-bold text-fd-text">Ver índice do documento</summary>
           <Contents sections={sections} className="mt-4" />
         </details>
 
@@ -74,9 +74,9 @@ export default function LegalDocumentLayout({ activeDocument, title, description
         </div>
 
         <footer className="mt-10 flex flex-wrap items-center gap-x-5 gap-y-3 border-t border-slate-200 pt-6 text-sm font-semibold">
-          <Link href="/" className="text-[#0b6f93] underline-offset-4 hover:underline">Voltar ao site</Link>
-          <Link href="/register" className="text-[#0b6f93] underline-offset-4 hover:underline">Criar conta</Link>
-          <Link href={activeDocument === 'terms' ? '/privacy' : '/terms'} className="text-[#0b6f93] underline-offset-4 hover:underline">{activeDocument === 'terms' ? 'Política de Privacidade' : 'Termos de Utilização'}</Link>
+          <Link href="/" className="text-fd-accent underline-offset-4 hover:underline">Voltar ao site</Link>
+          <Link href="/register" className="text-fd-accent underline-offset-4 hover:underline">Criar conta</Link>
+          <Link href={activeDocument === 'terms' ? '/privacy' : '/terms'} className="text-fd-accent underline-offset-4 hover:underline">{activeDocument === 'terms' ? 'Política de Privacidade' : 'Termos de Utilização'}</Link>
         </footer>
       </div>
     </main>

@@ -59,14 +59,14 @@ export default function EducationFiscalPage() {
       <main className="fd-workspace-page mx-auto w-full max-w-6xl space-y-7">
         <header className="rounded-2xl border border-slate-200 bg-white px-5 py-6 sm:px-7">
           <div className="flex items-start gap-4">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[#e8f6fa] text-[#0b6f93]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-fd-accent-soft text-fd-accent">
               <BookOpen size={22} />
             </span>
             <div>
-              <p className="text-xs font-semibold uppercase tracking-[.12em] text-[#0b6f93]">
+              <p className="text-xs font-semibold uppercase tracking-[.12em] text-fd-accent">
                 Conhecimento
               </p>
-              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-[#102447] sm:text-3xl">
+              <h1 className="mt-2 text-2xl font-semibold tracking-tight text-fd-text sm:text-3xl">
                 Educação Fiscal
               </h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
@@ -77,7 +77,7 @@ export default function EducationFiscalPage() {
           </div>
         </header>
 
-        <section className="rounded-2xl bg-[#102447] px-5 py-6 text-white sm:px-7">
+        <section className="rounded-2xl bg-fd-primary px-5 py-6 text-white sm:px-7">
           <p className="text-xs font-semibold uppercase tracking-[.12em] text-cyan-200">
             Assistente Fiscal
           </p>
@@ -101,7 +101,7 @@ export default function EducationFiscalPage() {
           <div className="mb-4">
             <h2
               id="education-topics"
-              className="text-xl font-semibold text-[#102447]"
+              className="text-xl font-semibold text-fd-text"
             >
               Percursos de aprendizagem
             </h2>
@@ -119,10 +119,10 @@ export default function EducationFiscalPage() {
                   key={topic.title}
                   className="flex min-h-52 flex-col rounded-2xl border border-slate-200 bg-white p-5"
                 >
-                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 text-[#0b6f93]">
+                  <span className="grid h-10 w-10 place-items-center rounded-lg bg-slate-100 text-fd-accent">
                     <Icon size={20} />
                   </span>
-                  <h3 className="mt-5 font-semibold text-[#102447]">
+                  <h3 className="mt-5 font-semibold text-fd-text">
                     {topic.title}
                   </h3>
                   <p className="mt-2 flex-1 text-sm leading-6 text-slate-600">
@@ -131,12 +131,12 @@ export default function EducationFiscalPage() {
                   {topic.href ? (
                     <Link
                       href={topic.href}
-                      className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-[#0b6f93] hover:underline"
+                      className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-fd-accent hover:underline"
                     >
                       Consultar no sistema <ArrowRight size={15} />
                     </Link>
                   ) : (
-                    <p className="mt-5 text-sm font-semibold text-[#0b6f93]">
+                    <p className="mt-5 text-sm font-semibold text-fd-accent">
                       Pergunte ao Assistente Fiscal
                     </p>
                   )}

@@ -240,11 +240,11 @@ export default function NotificationsPage() {
 
           <div className="flex flex-col items-center gap-4">
 
-            <div className="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center">
+            <div className="w-12 h-12 rounded-2xl bg-fd-accent-soft flex items-center justify-center">
 
               <Loader2
                 size={23}
-                className="animate-spin text-indigo-600"
+                className="animate-spin text-fd-accent"
               />
 
             </div>
@@ -302,16 +302,16 @@ export default function NotificationsPage() {
 
             <div className="flex items-center gap-2 mb-3">
 
-              <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center">
+              <div className="w-10 h-10 rounded-xl bg-fd-accent-soft flex items-center justify-center">
 
                 <Bell
                   size={20}
-                  className="text-indigo-600"
+                  className="text-fd-accent"
                 />
 
               </div>
 
-              <span className="text-xs font-bold uppercase tracking-[0.14em] text-indigo-600">
+              <span className="text-xs font-bold uppercase tracking-[0.14em] text-fd-accent">
                 Centro de alertas
               </span>
 
@@ -360,7 +360,7 @@ export default function NotificationsPage() {
                   handleMarkAll
                 }
                 disabled={markingAll}
-                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-indigo-600 text-white text-sm font-bold hover:bg-indigo-700 transition disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-fd-primary text-white text-sm font-bold hover:bg-fd-primary-hover transition disabled:opacity-60"
               >
 
                 {markingAll ? (
@@ -397,7 +397,7 @@ export default function NotificationsPage() {
             value={
               notifications.length
             }
-            className="bg-indigo-50 text-indigo-600"
+            className="bg-fd-accent-soft text-fd-accent"
           />
 
           <SummaryCard
@@ -512,7 +512,7 @@ export default function NotificationsPage() {
 
               <Loader2
                 size={27}
-                className="animate-spin text-indigo-600 mb-3"
+                className="animate-spin text-fd-accent mb-3"
               />
 
               <p className="text-sm font-semibold text-slate-600">
@@ -565,7 +565,7 @@ export default function NotificationsPage() {
                     className={`p-5 md:p-6 transition ${
                       notification.isRead
                         ? 'bg-white hover:bg-slate-50/70'
-                        : 'bg-indigo-50/40 hover:bg-indigo-50/60'
+                        : 'bg-fd-accent-soft hover:bg-fd-accent-soft'
                     }`}
                   >
 
@@ -577,7 +577,7 @@ export default function NotificationsPage() {
                         className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 ${
                           notification.isRead
                             ? 'bg-slate-100 text-slate-400'
-                            : 'bg-indigo-100 text-indigo-600'
+                            : 'bg-fd-accent-soft text-fd-accent'
                         }`}
                       >
 
@@ -600,7 +600,7 @@ export default function NotificationsPage() {
                             </h3>
 
                             {!notification.isRead && (
-                              <span className="w-2 h-2 rounded-full bg-indigo-600 shrink-0" />
+                              <span className="w-2 h-2 rounded-full bg-fd-primary shrink-0" />
                             )}
 
                           </div>
@@ -637,7 +637,7 @@ export default function NotificationsPage() {
                               markingId ===
                               notification.id
                             }
-                            className="inline-flex items-center gap-2 mt-4 text-xs font-bold text-indigo-600 hover:text-indigo-800 transition disabled:opacity-60"
+                            className="inline-flex items-center gap-2 mt-4 text-xs font-bold text-fd-accent hover:text-fd-primary transition disabled:opacity-60"
                           >
 
                             {markingId ===
@@ -690,11 +690,11 @@ export default function NotificationsPage() {
 
           <div className="flex items-start gap-3">
 
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center shrink-0">
+            <div className="w-10 h-10 rounded-xl bg-fd-accent-soft flex items-center justify-center shrink-0">
 
               <Mail
                 size={18}
-                className="text-indigo-600"
+                className="text-fd-accent"
               />
 
             </div>
