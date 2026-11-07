@@ -115,7 +115,7 @@ export default function LoginPage() {
   return (
     <AuthFrame
       eyebrow="INICIAR SESSÃO"
-      title="Iniciar sessão"
+      title="Entrar na plataforma"
       description="Aceda à informação fiscal e empresarial da sua empresa."
       backHref="/"
       backLabel="Voltar ao site"

@@ -5281,6 +5281,28 @@ button {
   }
 }
 
+@keyframes fd-auth-demo-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0);
+  }
+
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.fd-auth-demo-card {
+  animation: fd-auth-demo-enter 420ms 120ms both ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fd-auth-demo-card {
+    animation: none;
+  }
+}
+
 /* Movimento e composição exclusivos da landing pública. */
 @keyframes fd-hero-card-enter-left {
   from {

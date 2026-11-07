@@ -3,6 +3,7 @@
 import axios from 'axios';
 import {
   ArrowRight,
+  CalendarClock,
   KeyRound,
   Loader2,
   LockKeyhole,
@@ -186,8 +187,8 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="fd-theme-scope min-h-screen bg-[var(--fd-page)] text-[var(--fd-text)] lg:grid lg:grid-cols-[minmax(320px,0.72fr)_1.28fr]">
-      <section className="flex min-h-[290px] flex-col justify-between bg-slate-950 px-7 py-8 text-white sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
+    <main className="fd-theme-scope min-h-screen bg-[var(--fd-page)] text-[var(--fd-text)] lg:grid lg:grid-cols-[minmax(390px,.82fr)_1.18fr]">
+      <section className="hidden min-h-[290px] flex-col justify-between bg-fd-primary px-7 py-8 text-white sm:px-10 lg:flex lg:min-h-screen lg:px-14 lg:py-12">
         <div>
           <div>
             <div className="inline-flex rounded-lg bg-white px-2.5 py-1.5 shadow-sm">
@@ -200,29 +201,49 @@ export default function AdminLoginPage() {
                 className="h-10 w-auto object-contain"
               />
             </div>
-            <p className="mt-2 text-xs text-slate-400">Administração da plataforma</p>
+            <p className="mt-2 text-xs text-slate-200">Administração da plataforma</p>
           </div>
 
           <div className="mt-16 max-w-md lg:mt-28">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-300">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
               Acesso restrito
             </p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight sm:text-4xl">
-              Supervisão segura da operação SaaS.
+              Prazos fiscais sob controlo. Empresa organizada.
             </h1>
-            <p className="mt-5 text-sm leading-6 text-slate-300">
+            <p className="mt-5 text-sm leading-6 text-slate-200">
               Esta área usa autenticação separada das contas empresariais e apresenta apenas indicadores agregados da plataforma.
             </p>
+            <div className="fd-auth-demo-card mt-8 max-w-sm rounded-fd-card border border-white/15 bg-white/10 p-4 shadow-[0_16px_34px_rgba(4,17,38,.2)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-cyan-200">Exemplo fictício</p>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-fd-field bg-white/10 text-cyan-200"><CalendarClock size={19} /></span>
+                <div>
+                  <p className="text-sm font-semibold">Prazo fiscal de demonstração</p>
+                  <p className="mt-1 text-xs text-slate-200">Declaração de exemplo — 15 de abril</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <p className="mt-10 text-xs leading-5 text-slate-500">
+        <p className="mt-10 text-xs leading-5 text-slate-200">
           As operações administrativas são registadas para auditoria.
         </p>
       </section>
 
       <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-16">
         <div className="w-full max-w-md">
+          <div className="mb-8 inline-flex rounded-fd-field border border-[var(--fd-border)] bg-white px-3 py-2 shadow-sm lg:hidden">
+            <Image
+              src="/logofiscalidade.png"
+              alt="Fiscalidade Digital"
+              width={162}
+              height={48}
+              priority
+              className="h-8 w-auto object-contain"
+            />
+          </div>
           <div className="mb-8 flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--fd-border)] bg-[var(--fd-surface)]">
             {requiresPasswordChange ? (
               <KeyRound className="h-5 w-5 text-amber-600" />
@@ -232,7 +253,7 @@ export default function AdminLoginPage() {
           </div>
 
           <h2 className="text-2xl font-semibold tracking-tight">
-            {requiresPasswordChange ? 'Definir nova palavra-passe' : 'Entrar na administração'}
+            {requiresPasswordChange ? 'Definir nova palavra-passe' : 'Entrar na plataforma'}
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--fd-muted)]">
             {requiresPasswordChange
