@@ -12,6 +12,7 @@ import {
   type ReactNode,
 } from 'react';
 import { createPortal } from 'react-dom';
+import { usePathname } from 'next/navigation';
 
 type PageHeaderProps = {
   eyebrow?: string;
@@ -60,6 +61,76 @@ const toastTones: Record<ToastTone, string> = {
 
 function classNames(...values: Array<string | false | null | undefined>) {
   return values.filter(Boolean).join(' ');
+}
+
+/**
+ * Adds the header text to each data cell after a route or list update. The
+ * responsive table stylesheet can then present the same semantic table as a
+ * labelled card list on narrow screens without duplicating business data.
+ */
+export function ResponsiveTableLabels() {
+  const pathname = usePathname();
+
+  useEffect(() => {
+    let frame = 0;
+
+    const annotateTables = () => {
+      document
+        .querySelectorAll<HTMLTableElement>('.fd-theme-scope table')
+        .forEach((table) => {
+          if (!table.dataset.fdResponsiveTable) {
+            table.dataset.fdResponsiveTable = 'true';
+          }
+
+          const headers = Array.from(
+            table.querySelectorAll<HTMLTableCellElement>('thead th'),
+          ).map((header) => header.textContent?.trim() ?? '');
+
+          if (!headers.length) {
+            return;
+          }
+
+          table
+            .querySelectorAll<HTMLTableRowElement>('tbody tr')
+            .forEach((row) => {
+              const cells = Array.from(row.children).filter(
+                (cell): cell is HTMLTableCellElement =>
+                  cell instanceof HTMLTableCellElement,
+              );
+
+              cells.forEach((cell, index) => {
+                if (cell.colSpan !== 1 || !headers[index]) {
+                  return;
+                }
+
+                if (cell.dataset.label !== headers[index]) {
+                  cell.dataset.label = headers[index];
+                }
+              });
+            });
+        });
+    };
+
+    const scheduleAnnotation = () => {
+      window.cancelAnimationFrame(frame);
+      frame = window.requestAnimationFrame(annotateTables);
+    };
+
+    annotateTables();
+
+    const observer = new MutationObserver(scheduleAnnotation);
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [pathname]);
+
+  return null;
 }
 
 export function PageHeader({

@@ -149,7 +149,7 @@ function formatDate(
 ) {
   try {
     return new Intl.DateTimeFormat(
-      'pt-PT',
+      'pt-AO',
       {
         day: '2-digit',
         month: 'short',

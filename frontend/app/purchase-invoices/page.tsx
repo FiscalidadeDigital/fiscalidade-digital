@@ -515,7 +515,7 @@ export default function PurchaseInvoicesPage() {
                           {new Date(
                             invoice.issuedAt,
                           ).toLocaleDateString(
-                            "pt-PT",
+                            "pt-AO",
                           )}
                         </td>
 

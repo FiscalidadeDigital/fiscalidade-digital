@@ -79,7 +79,7 @@ const formatDate = (
   }
 
   return parsed.toLocaleDateString(
-    'pt-PT',
+    'pt-AO',
     {
       day: '2-digit',
       month: 'short',

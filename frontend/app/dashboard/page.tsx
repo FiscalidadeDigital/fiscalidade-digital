@@ -568,6 +568,11 @@ export default function DashboardPage() {
           <DashboardStat
             title="Obrigações pendentes"
             value={dashboard.pendingObligations}
+            status={
+              pendingAmount > 0
+                ? 'Atenção necessária'
+                : 'Em dia'
+            }
             description={
               pendingAmount > 0
                 ? `Valor pendente: ${formatCurrency(pendingAmount)}`
@@ -575,11 +580,17 @@ export default function DashboardPage() {
             }
             type="blue"
             icon="clipboard"
+            href="/obligations"
           />
 
           <DashboardStat
             title="Próximos prazos"
             value={dashboard.upcomingDeadlines}
+            status={
+              dashboard.upcomingDeadlines > 0
+                ? 'A acompanhar'
+                : 'Sem prazos próximos'
+            }
             description={
               dashboard.upcomingDeadlines > 0
                 ? 'Obrigações a vencer'
@@ -587,11 +598,17 @@ export default function DashboardPage() {
             }
             type="orange"
             icon="calendar"
+            href="/calendar"
           />
 
           <DashboardStat
             title="Obrigações vencidas"
             value={overdueCount}
+            status={
+              overdueCount > 0
+                ? 'Regularizar'
+                : 'Em dia'
+            }
             description={
               overdueCount > 0
                 ? 'Necessitam de regularização'
@@ -599,11 +616,17 @@ export default function DashboardPage() {
             }
             type={overdueCount > 0 ? 'red' : 'green'}
             icon="warning"
+            href="/obligations"
           />
 
           <DashboardStat
             title="Pagamentos fiscais"
             value={formatCurrency(totalPayments)}
+            status={
+              totalPayments > 0
+                ? 'Com actividade'
+                : 'Sem registos'
+            }
             description={
               totalPayments > 0
                 ? 'Pagamentos registados'
@@ -611,6 +634,7 @@ export default function DashboardPage() {
             }
             type="green"
             icon="payment"
+            href="/payments"
           />
         </div>
 
@@ -950,17 +974,21 @@ export default function DashboardPage() {
 function DashboardStat({
   title,
   value,
+  status,
   description,
   type,
   icon,
+  href,
 }: {
   title: string;
   value: string | number;
+  status: string;
   description: string;
 
   type: 'blue' | 'orange' | 'green' | 'red';
 
   icon: 'clipboard' | 'calendar' | 'warning' | 'payment';
+  href: string;
 }) {
   const styles = {
     blue: {
@@ -1000,7 +1028,9 @@ function DashboardStat({
           : TrendingUp;
 
   return (
-    <div
+    <Link
+      href={href}
+      aria-label={`${title}: ${value}. Ver detalhe.`}
       className={`
         flex
         min-h-[126px]
@@ -1011,8 +1041,14 @@ function DashboardStat({
         bg-white
         p-5
         shadow-sm
-        transition
+        transition-[border-color,box-shadow,transform]
+        duration-150
+        hover:-translate-y-0.5
         hover:shadow-md
+        focus:outline-none
+        focus-visible:ring-2
+        focus-visible:ring-fd-focus
+        focus-visible:ring-offset-2
         ${style.border}
       `}
     >
@@ -1033,7 +1069,7 @@ function DashboardStat({
           {title}
         </p>
 
-        <h2
+        <p
           className="
             mt-2
             truncate
@@ -1044,18 +1080,31 @@ function DashboardStat({
           "
         >
           {value}
-        </h2>
+        </p>
 
-        <p
+        <span
           className={`
-            mt-2
-            text-xs
+            mt-2.5
+            inline-flex
+            items-center
+            gap-1.5
+            text-[12px]
             font-semibold
             ${style.text}
           `}
         >
+          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+          {status}
+        </span>
+
+        <p className="mt-1 text-xs leading-5 text-[var(--fd-text-secondary)]">
           {description}
         </p>
+
+        <span className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-fd-accent">
+          Ver detalhe
+          <ArrowRight size={14} aria-hidden="true" />
+        </span>
       </div>
 
       <div
@@ -1073,7 +1122,7 @@ function DashboardStat({
       >
         <Icon size={20} strokeWidth={1.9} />
       </div>
-    </div>
+    </Link>
   );
 }
 

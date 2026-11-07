@@ -4542,6 +4542,14 @@ button {
   background: var(--fd-surface-muted) !important;
 }
 
+.fd-theme-scope table[data-fd-responsive-table='true'] thead th {
+  position: sticky;
+  top: 60px;
+  z-index: 5;
+  background: var(--fd-surface-muted);
+  box-shadow: 0 1px 0 var(--fd-border);
+}
+
 .fd-theme-scope th {
   color: var(--fd-text-secondary) !important;
   font-size: var(--fd-font-size-body) !important;
@@ -4561,6 +4569,90 @@ button {
 .fd-theme-scope td {
   vertical-align: middle;
   font-size: var(--fd-font-size-body) !important;
+}
+
+.fd-theme-scope .overflow-x-auto:has(> table) {
+  max-width: 100%;
+  overscroll-behavior-inline: contain;
+}
+
+@media (max-width: 767px) {
+  .fd-theme-scope table {
+    display: block;
+    min-width: 0 !important;
+    width: 100% !important;
+  }
+
+  .fd-theme-scope table thead {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0 0 0 0) !important;
+    white-space: nowrap !important;
+  }
+
+  .fd-theme-scope table tbody {
+    display: grid;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .fd-theme-scope table tbody tr {
+    display: block;
+    overflow: hidden;
+    border: 1px solid var(--fd-border) !important;
+    border-radius: var(--fd-radius-xl);
+    background: var(--fd-surface);
+    box-shadow: 0 1px 2px rgb(15 35 61 / 0.04);
+  }
+
+  .fd-theme-scope table tbody td {
+    display: grid;
+    grid-template-columns: minmax(7.25rem, 0.82fr) minmax(0, 1.18fr);
+    align-items: start;
+    gap: 0.75rem;
+    min-width: 0;
+    padding: 0.75rem 1rem !important;
+    border-bottom: 1px solid var(--fd-border) !important;
+    text-align: right;
+    overflow-wrap: anywhere;
+  }
+
+  .fd-theme-scope table tbody td::before {
+    min-width: 0;
+    color: var(--fd-text-secondary);
+    content: attr(data-label);
+    font-size: var(--fd-font-size-caption);
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    line-height: 1.35;
+    text-align: left;
+    text-transform: uppercase;
+  }
+
+  .fd-theme-scope table tbody td:last-child {
+    border-bottom: 0 !important;
+  }
+
+  .fd-theme-scope table tbody td > * {
+    min-width: 0;
+  }
+
+  .fd-theme-scope table tbody td[colspan] {
+    display: block;
+    min-height: 8rem;
+    text-align: center;
+  }
+
+  .fd-theme-scope table tbody td[colspan]::before {
+    content: none;
+  }
+
+  .fd-theme-scope table[data-fd-responsive-table='true'] thead th {
+    position: static;
+  }
 }
 
 .fd-page-header {

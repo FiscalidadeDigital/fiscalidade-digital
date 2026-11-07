@@ -186,7 +186,7 @@ export default function ActivityTimeline({
                           {new Date(
                             activity.date,
                           ).toLocaleDateString(
-                            'pt-PT',
+                            'pt-AO',
                           )}
                         </p>
                       </div>

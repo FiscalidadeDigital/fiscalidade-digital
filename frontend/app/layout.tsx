@@ -9,6 +9,7 @@ import {
 } from '@/context/AuthContext';
 import TenantRouteGate from '@/components/auth/TenantRouteGate';
 import {
+  ResponsiveTableLabels,
   ToastProvider,
 } from '@/components/ui/enterprise';
 
@@ -129,6 +130,7 @@ export default function RootLayout({
       <body>
         <AuthProvider>
           <ToastProvider>
+            <ResponsiveTableLabels />
             <TenantRouteGate>
               {children}
             </TenantRouteGate>

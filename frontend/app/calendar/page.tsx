@@ -176,7 +176,7 @@ function formatDate(
   }
 
   return date.toLocaleDateString(
-    'pt-PT',
+    'pt-AO',
     {
       day: '2-digit',
       month: 'long',
@@ -195,7 +195,7 @@ function shortDate(
   }
 
   return date.toLocaleDateString(
-    'pt-PT',
+    'pt-AO',
     {
       day: '2-digit',
       month: '2-digit',
