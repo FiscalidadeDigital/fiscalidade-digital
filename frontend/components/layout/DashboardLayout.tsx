@@ -264,6 +264,24 @@ const companyNavigation = [
 
 ];
 
+const sidebarStateKey = 'fd-dashboard-navigation';
+
+function defaultExpandedSections(pathname: string) {
+  const sections = [
+    ...navigationSections,
+    { id: 'administracao', items: companyNavigation },
+  ];
+
+  return Object.fromEntries(
+    sections.map((section) => [
+      section.id,
+      section.items.some(
+        (item) => pathname === item.href || pathname.startsWith(`${item.href}/`),
+      ),
+    ]),
+  );
+}
+
 /* =========================================================
    COMPONENTE
 ========================================================= */
@@ -284,15 +302,7 @@ export default function DashboardLayout({
     useState(false);
 
   const [expandedSections, setExpandedSections] =
-    useState<Record<string, boolean>>({
-      principal: true,
-      vendas: true,
-      compras: true,
-      pessoas: true,
-      fiscal: true,
-      conhecimento: true,
-      administracao: true,
-    });
+    useState<Record<string, boolean>>(() => defaultExpandedSections(pathname));
 
   const [loadedCompany, setLoadedCompany] =
     useState<Company | null>(null);
@@ -322,6 +332,20 @@ export default function DashboardLayout({
   useEffect(() => {
     setIsNavigating(false);
   }, [pathname]);
+
+  useEffect(() => {
+    try {
+      const savedState = window.sessionStorage.getItem(sidebarStateKey);
+      if (savedState) {
+        setExpandedSections((current) => ({
+          ...current,
+          ...JSON.parse(savedState),
+        }));
+      }
+    } catch {
+      // O menu mantém o comportamento predefinido sem armazenamento local.
+    }
+  }, []);
 
   /* =======================================================
      FOCO DO MENU MOBILE
@@ -586,10 +610,23 @@ export default function DashboardLayout({
   const toggleNavigationSection = (
     sectionId: string,
   ) => {
-    setExpandedSections((sections) => ({
-      ...sections,
-      [sectionId]: !sections[sectionId],
-    }));
+    setExpandedSections((sections) => {
+      const nextSections = {
+        ...sections,
+        [sectionId]: !sections[sectionId],
+      };
+
+      try {
+        window.sessionStorage.setItem(
+          sidebarStateKey,
+          JSON.stringify(nextSections),
+        );
+      } catch {
+        // A preferência é opcional e não pode bloquear a navegação.
+      }
+
+      return nextSections;
+    });
   };
 
   /* =======================================================
@@ -658,6 +695,11 @@ export default function DashboardLayout({
           gap-2.5
           rounded-md
           px-3
+          focus-visible:outline-none
+          focus-visible:ring-2
+          focus-visible:ring-cyan-300
+          focus-visible:ring-offset-2
+          focus-visible:ring-offset-fd-primary
 
           ${
             active
@@ -713,7 +755,7 @@ export default function DashboardLayout({
           `}
         >
           <Icon
-            size={17}
+            size={20}
             strokeWidth={
               active
                 ? 2.3
@@ -777,7 +819,7 @@ export default function DashboardLayout({
         className="
           relative
           flex
-          h-[76px]
+          h-16
           shrink-0
           items-center
           border-b
@@ -808,7 +850,7 @@ export default function DashboardLayout({
             }
           `}
         >
-          <div className="flex h-11 w-[152px] shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white px-2 shadow-sm">
+          <div className="flex h-10 w-[144px] shrink-0 items-center justify-center rounded-md border border-[#dbe5ed] bg-white px-2 shadow-sm">
             <img
               src="/logofiscalidade.png"
               alt="Fiscalidade Digital"
@@ -862,8 +904,7 @@ export default function DashboardLayout({
           fd-sidebar-company
           shrink-0
           px-4
-          pb-2
-          pt-4
+          py-2
         "
       >
         <div
@@ -871,20 +912,20 @@ export default function DashboardLayout({
             flex
             w-full
             items-center
-            gap-3
+            gap-2.5
             rounded-lg
             border
             border-[#e8eef6]
             bg-[#fbfdff]
             px-3
-            py-3
+            py-2
           "
         >
           <div
             className="
               flex
-              h-9
-              w-9
+              h-8
+              w-8
               shrink-0
               items-center
               justify-center
@@ -920,8 +961,8 @@ export default function DashboardLayout({
               className="
                 mt-0.5
                 truncate
-                text-xs
-                text-[var(--fd-text-muted)]
+                text-[11px]
+                text-slate-200
               "
               title={companyNif}
             >
@@ -939,12 +980,15 @@ export default function DashboardLayout({
       <div
         className="
           fd-sidebar-scroll
+          relative
           min-h-0
           flex-1
           overflow-y-auto
           overscroll-contain
           px-3.5
-          py-1.5
+          py-2
+          pb-6
+          shadow-[inset_0_-14px_14px_-16px_rgba(165,243,252,0.9)]
           scrollbar-thin
           scrollbar-thumb-slate-200
           scrollbar-track-transparent
@@ -970,7 +1014,7 @@ export default function DashboardLayout({
                 className={`
                   fd-sidebar-section-title
                   flex
-                  min-h-11
+                  h-9
                   w-full
                   items-center
                   justify-between
@@ -986,6 +1030,11 @@ export default function DashboardLayout({
                   duration-150
                   hover:bg-[#f5f9fd]
                   hover:text-fd-accent
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-cyan-300
+                  focus-visible:ring-offset-2
+                  focus-visible:ring-offset-fd-primary
                   ${
                     containsActiveItem
                       ? 'text-fd-accent'
@@ -1031,7 +1080,7 @@ export default function DashboardLayout({
             className="
               fd-sidebar-section-title
               flex
-              min-h-11
+              h-9
               w-full
               items-center
               justify-between
@@ -1048,6 +1097,11 @@ export default function DashboardLayout({
               duration-150
               hover:bg-[#f5f9fd]
               hover:text-fd-accent
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-cyan-300
+              focus-visible:ring-offset-2
+              focus-visible:ring-offset-fd-primary
             "
           >
             <span>Administração</span>
@@ -1074,129 +1128,35 @@ export default function DashboardLayout({
             </nav>
           </div>
 
-          {/* =================================================
-              LOGOUT
-          ================================================= */}
-
-          <div
-            className="
-              fd-sidebar-logout
-              mt-3
-              border-t
-              border-[#edf1f6]
-              pt-3
-            "
-          >
-            <button
-              type="button"
-              onClick={handleLogout}
-              disabled={
-                isLoggingOut
-              }
-              className="
-                group
-                flex
-                min-h-11
-                w-full
-                items-center
-                gap-2.5
-                rounded-xl
-                px-3
-                text-[var(--fd-text-muted)]
-                transition-[background-color,color]
-                duration-150
-                hover:bg-[#fff5f5]
-                hover:text-[#dc3545]
-                disabled:cursor-not-allowed
-                disabled:opacity-60
-              "
-            >
-              <span
-                className="
-                  flex
-                  h-7
-                  w-7
-                  shrink-0
-                  items-center
-                  justify-center
-                  rounded-lg
-                  transition-colors
-                  duration-150
-                  group-hover:bg-white
-                "
-              >
-                {isLoggingOut ? (
-                  <Loader2
-                    size={17}
-                    className="animate-spin"
-                  />
-                ) : (
-                  <LogOut
-                    size={17}
-                    strokeWidth={1.8}
-                  />
-                )}
-              </span>
-
-              <span
-                className="
-                  text-[12px]
-                  font-medium
-                "
-              >
-                {isLoggingOut
-                  ? 'A terminar sessão...'
-                  : 'Terminar sessão'}
-              </span>
-            </button>
-          </div>
         </section>
       </div>
 
       <div
         className="
+          fd-sidebar-logout
           shrink-0
           border-t
           border-[#edf1f6]
           px-3.5
           pb-3.5
-          pt-2.5
+          pt-3
         "
       >
-        <Link
-          href="/obligations"
-          prefetch
-          onClick={() =>
-            handleNavigation(
-              '/obligations',
-              mobile,
-            )
-          }
-          className="
-            flex
-            min-h-11
-            items-center
-            gap-2.5
-            rounded-md
-            border
-            border-[#dbe5ed]
-            bg-[#f7fafc]
-            px-3
-            py-2
-            text-[#203451]
-            transition-colors
-            hover:border-[#b7d3df]
-            hover:bg-[#eef6f8]
-          "
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={isLoggingOut}
+          className="group flex min-h-11 w-full items-center gap-2.5 rounded-md px-3 text-slate-200 transition-[background-color,color] duration-150 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300 focus-visible:ring-offset-2 focus-visible:ring-offset-fd-primary disabled:cursor-not-allowed disabled:opacity-60"
         >
-          <ShieldAlert
-            size={16}
-            className="shrink-0 text-fd-accent"
-          />
-          <span className="min-w-0 truncate text-[12px] font-semibold">
-            Obrigações fiscais
+          {isLoggingOut ? (
+            <Loader2 size={20} className="animate-spin" />
+          ) : (
+            <LogOut size={20} strokeWidth={1.8} />
+          )}
+          <span className="text-xs font-semibold">
+            {isLoggingOut ? 'A terminar sessão...' : 'Terminar sessão'}
           </span>
-        </Link>
+        </button>
       </div>
     </div>
   );
@@ -1559,12 +1519,12 @@ export default function DashboardLayout({
             min-h-[calc(100vh-68px)]
             px-4
             py-5
-            pb-24
+            pb-32
             sm:px-6
-            sm:pb-28
+            sm:pb-32
             lg:px-7
             lg:py-6
-            lg:pb-28
+            lg:pb-32
           "
         >
           <div
