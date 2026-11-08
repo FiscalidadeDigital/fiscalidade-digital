@@ -1,19 +1,17 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
-import {
-  ObligationStatus,
-  TaxType,
-} from '@prisma/client';
+import { ObligationStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { FiscalObligationEligibilityService } from '../fiscal-obligation-eligibility/fiscal-obligation-eligibility.service';
 
 @Injectable()
 export class DashboardService {
   constructor(
     private readonly prisma: PrismaService,
+    private readonly eligibility: FiscalObligationEligibilityService = new FiscalObligationEligibilityService(
+      prisma,
+    ),
   ) {}
 
   // ============================================================
@@ -23,36 +21,19 @@ export class DashboardService {
   async getDashboard(tenantId: string) {
     const today = new Date();
 
-    today.setHours(
-      0,
-      0,
-      0,
-      0,
-    );
+    today.setHours(0, 0, 0, 0);
 
-    const currentYear =
-      today.getFullYear();
+    const currentYear = today.getFullYear();
 
-    const currentMonth =
-      today.getMonth() + 1;
+    const currentMonth = today.getMonth() + 1;
 
     // ==========================================================
     // INTERVALO DO ANO
     // ==========================================================
 
-    const yearStart =
-      new Date(
-        currentYear,
-        0,
-        1,
-      );
+    const yearStart = new Date(currentYear, 0, 1);
 
-    const nextYearStart =
-      new Date(
-        currentYear + 1,
-        0,
-        1,
-      );
+    const nextYearStart = new Date(currentYear + 1, 0, 1);
 
     // ==========================================================
     // BUSCAR DADOS REAIS DA EMPRESA
@@ -65,7 +46,7 @@ export class DashboardService {
       clientCount,
       productCount,
       paidInvoiceRevenue,
-      obligations,
+      loadedObligations,
       declarations,
       revenues,
       payments,
@@ -262,7 +243,9 @@ export class DashboardService {
       this.prisma.purchaseInvoiceImport.count({
         where: {
           tenantId,
-          status: { in: ['UPLOADED', 'PROCESSING', 'REVIEW_REQUIRED', 'READY'] },
+          status: {
+            in: ['UPLOADED', 'PROCESSING', 'REVIEW_REQUIRED', 'READY'],
+          },
         },
       }),
     ]);
@@ -272,10 +255,18 @@ export class DashboardService {
     // ==========================================================
 
     if (!tenant) {
-      throw new NotFoundException(
-        'Empresa não encontrada.',
-      );
+      throw new NotFoundException('Empresa não encontrada.');
     }
+
+    const obligations = (
+      await this.eligibility.filterEligible(tenantId, loadedObligations)
+    ).map((obligation) => {
+      const dueDate = new Date(obligation.dueDate);
+      dueDate.setHours(0, 0, 0, 0);
+      return obligation.status === ObligationStatus.PENDING && dueDate < today
+        ? { ...obligation, status: ObligationStatus.LATE }
+        : obligation;
+    });
 
     // ==========================================================
     // ACTUALIZAR ESTADOS DAS OBRIGAÇÕES
@@ -289,132 +280,78 @@ export class DashboardService {
     // ObligationsService / processo fiscal.
     // ==========================================================
 
-    const activeObligations =
-      obligations.map(
-        (obligation) => {
-          const dueDate =
-            new Date(
-              obligation.dueDate,
-            );
+    const activeObligations = obligations.map((obligation) => {
+      const dueDate = new Date(obligation.dueDate);
 
-          dueDate.setHours(
-            0,
-            0,
-            0,
-            0,
-          );
+      dueDate.setHours(0, 0, 0, 0);
 
-          const difference =
-            dueDate.getTime() -
-            today.getTime();
+      const difference = dueDate.getTime() - today.getTime();
 
-          const daysLeft =
-            Math.ceil(
-              difference /
-                (1000 *
-                  60 *
-                  60 *
-                  24),
-            );
+      const daysLeft = Math.ceil(difference / (1000 * 60 * 60 * 24));
 
-          let displayStatus:
-            | 'today'
-            | 'warning'
-            | 'normal'
-            | 'success';
+      let displayStatus: 'today' | 'warning' | 'normal' | 'success';
 
-          if (
-            obligation.status ===
-            ObligationStatus.PAID
-          ) {
-            displayStatus = 'success';
-          } else if (
-            daysLeft < 0
-          ) {
-            displayStatus = 'normal';
-          } else if (
-            daysLeft === 0
-          ) {
-            displayStatus = 'today';
-          } else if (
-            daysLeft <= 3
-          ) {
-            displayStatus = 'warning';
-          } else {
-            displayStatus = 'success';
-          }
+      if (obligation.status === ObligationStatus.PAID) {
+        displayStatus = 'success';
+      } else if (daysLeft < 0) {
+        displayStatus = 'normal';
+      } else if (daysLeft === 0) {
+        displayStatus = 'today';
+      } else if (daysLeft <= 3) {
+        displayStatus = 'warning';
+      } else {
+        displayStatus = 'success';
+      }
 
-          return {
-            ...obligation,
+      return {
+        ...obligation,
 
-            daysLeft,
+        daysLeft,
 
-            displayStatus,
-          };
-        },
-      );
+        displayStatus,
+      };
+    });
 
     // ==========================================================
     // OBRIGAÇÕES PENDENTES
     // ==========================================================
 
-    const pendingObligations =
-      activeObligations.filter(
-        (obligation) =>
-          obligation.status !==
-          ObligationStatus.PAID,
-      );
+    const pendingObligations = activeObligations.filter(
+      (obligation) => obligation.status !== ObligationStatus.PAID,
+    );
 
     // ==========================================================
     // OBRIGAÇÕES VENCIDAS
     // ==========================================================
 
-    const overdueObligations =
-      activeObligations.filter(
-        (obligation) =>
-          obligation.status ===
-            ObligationStatus.LATE ||
-          (
-            obligation.status ===
-              ObligationStatus.PENDING &&
-            obligation.dueDate <
-              today
-          ),
-      );
+    const overdueObligations = activeObligations.filter(
+      (obligation) =>
+        obligation.status === ObligationStatus.LATE ||
+        (obligation.status === ObligationStatus.PENDING &&
+          obligation.dueDate < today),
+    );
 
     // ==========================================================
     // PRÓXIMOS PRAZOS
     // ==========================================================
 
-    const upcomingObligations =
-      activeObligations
-        .filter(
-          (obligation) =>
-            obligation.status !==
-              ObligationStatus.PAID &&
-            obligation.dueDate >=
-              today,
-        )
-        .sort(
-          (a, b) =>
-            new Date(
-              a.dueDate,
-            ).getTime() -
-            new Date(
-              b.dueDate,
-            ).getTime(),
-        );
+    const upcomingObligations = activeObligations
+      .filter(
+        (obligation) =>
+          obligation.status !== ObligationStatus.PAID &&
+          obligation.dueDate >= today,
+      )
+      .sort(
+        (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+      );
 
     // ==========================================================
     // OBRIGAÇÕES PAGAS
     // ==========================================================
 
-    const paidObligations =
-      activeObligations.filter(
-        (obligation) =>
-          obligation.status ===
-          ObligationStatus.PAID,
-      );
+    const paidObligations = activeObligations.filter(
+      (obligation) => obligation.status === ObligationStatus.PAID,
+    );
 
     // ==========================================================
     // TAXAS / IMPOSTOS DAS OBRIGAÇÕES
@@ -430,51 +367,37 @@ export class DashboardService {
       }
     > = {};
 
-    const ensureTax =
-      (taxType: string) => {
-        if (!taxMap[taxType]) {
-          taxMap[taxType] = {
-            value: 0,
-            paid: 0,
-            pending: 0,
-            declared: 0,
-          };
-        }
+    const ensureTax = (taxType: string) => {
+      if (!taxMap[taxType]) {
+        taxMap[taxType] = {
+          value: 0,
+          paid: 0,
+          pending: 0,
+          declared: 0,
+        };
+      }
 
-        return taxMap[taxType];
-      };
+      return taxMap[taxType];
+    };
 
     // ==========================================================
     // VALORES DAS OBRIGAÇÕES
     // ==========================================================
 
-    for (
-      const obligation of activeObligations
-    ) {
-      const taxType =
-        obligation.fiscalCalendar
-          ?.taxType;
+    for (const obligation of activeObligations) {
+      const taxType = obligation.fiscalCalendar?.taxType;
 
       if (!taxType) {
         continue;
       }
 
-      const value =
-        this.number(
-          obligation.amount,
-        );
+      const value = this.number(obligation.amount);
 
-      const tax =
-        ensureTax(
-          String(taxType),
-        );
+      const tax = ensureTax(String(taxType));
 
       tax.value += value;
 
-      if (
-        obligation.status ===
-        ObligationStatus.PAID
-      ) {
+      if (obligation.status === ObligationStatus.PAID) {
         tax.paid += value;
       } else {
         tax.pending += value;
@@ -485,46 +408,24 @@ export class DashboardService {
     // DECLARAÇÕES FISCAIS
     // ==========================================================
 
-    for (
-      const declaration of declarations
-    ) {
-      const taxType =
-        String(
-          declaration.taxType,
-        );
+    for (const declaration of declarations) {
+      const taxType = String(declaration.taxType);
 
-      const tax =
-        ensureTax(
-          taxType,
-        );
+      const tax = ensureTax(taxType);
 
-      tax.declared +=
-        this.number(
-          declaration.declaredAmount,
-        );
+      tax.declared += this.number(declaration.declaredAmount);
     }
 
     // ==========================================================
     // PAGAMENTOS REAIS
     // ==========================================================
 
-    for (
-      const payment of payments
-    ) {
-      const taxType =
-        String(
-          payment.taxType,
-        );
+    for (const payment of payments) {
+      const taxType = String(payment.taxType);
 
-      const tax =
-        ensureTax(
-          taxType,
-        );
+      const tax = ensureTax(taxType);
 
-      const amount =
-        this.number(
-          payment.amount,
-        );
+      const amount = this.number(payment.amount);
 
       /*
        * O pagamento já pode estar representado
@@ -538,147 +439,85 @@ export class DashboardService {
        * 3. histórico financeiro fiscal.
        */
 
-      tax.paid =
-        Math.max(
-          tax.paid,
-          amount,
-        );
+      tax.paid = Math.max(tax.paid, amount);
     }
 
     // ==========================================================
     // NOMES DOS IMPOSTOS
     // ==========================================================
 
-    const taxNames: Record<
-      string,
-      string
-    > = {
-      IVA:
-        'IVA',
+    const taxNames: Record<string, string> = {
+      IVA: 'IVA',
 
-      IRT:
-        'IRT',
+      IRT: 'IRT',
 
-      INDUSTRIAL:
-        'Imposto Industrial',
+      INDUSTRIAL: 'Imposto Industrial',
 
-      II:
-        'Imposto Industrial',
+      II: 'Imposto Industrial',
 
-      SELO:
-        'Imposto de Selo',
+      SELO: 'Imposto de Selo',
 
-      SS:
-        'Segurança Social',
+      SS: 'Segurança Social',
 
-      IAC:
-        'Imposto sobre Aplicação de Capitais',
+      IAC: 'Imposto sobre Aplicação de Capitais',
 
-      IP:
-        'Imposto Predial',
+      IP: 'Imposto Predial',
 
-      IEC:
-        'Imposto Especial de Consumo',
+      IEC: 'Imposto Especial de Consumo',
 
-      IVM:
-        'Imposto sobre Veículos Motorizados',
+      IVM: 'Imposto sobre Veículos Motorizados',
 
-      IS:
-        'Imposto do Selo',
+      IS: 'Imposto do Selo',
 
-      RETENCAO:
-        'Retenção na Fonte',
+      RETENCAO: 'Retenção na Fonte',
     };
 
     // ==========================================================
     // IMPOSTOS PARA O DASHBOARD
     // ==========================================================
 
-    const taxes = Object.entries(
-      taxMap,
-    )
-      .map(
-        ([type, tax]) => ({
-          name:
-            taxNames[type] ||
-            type,
+    const taxes = Object.entries(taxMap)
+      .map(([type, tax]) => ({
+        name: taxNames[type] || type,
 
-          value:
-            this.round(
-              tax.value,
-            ),
+        value: this.round(tax.value),
 
-          paid:
-            this.round(
-              tax.paid,
-            ),
+        paid: this.round(tax.paid),
 
-          pending:
-            this.round(
-              tax.pending,
-            ),
+        pending: this.round(tax.pending),
 
-          declared:
-            this.round(
-              tax.declared,
-            ),
-        }),
-      )
-      .filter(
-        (tax) =>
-          tax.value > 0 ||
-          tax.paid > 0 ||
-          tax.declared > 0,
-      );
+        declared: this.round(tax.declared),
+      }))
+      .filter((tax) => tax.value > 0 || tax.paid > 0 || tax.declared > 0);
 
     // ==========================================================
     // TOTAL DOS IMPOSTOS REGISTADOS
     // ==========================================================
 
-    const totalTaxes =
-      taxes.reduce(
-        (total, tax) =>
-          total +
-          this.number(
-            tax.value,
-          ),
-        0,
-      );
+    const totalTaxes = taxes.reduce(
+      (total, tax) => total + this.number(tax.value),
+      0,
+    );
 
     // ==========================================================
     // RECEITA REAL
     // ==========================================================
 
-    const totalRevenue =
-      this.number(
-        paidInvoiceRevenue
-          ._sum.total,
-      );
+    const totalRevenue = this.number(paidInvoiceRevenue._sum.total);
 
     // ==========================================================
     // RECEITAS MENSAIS
     // ==========================================================
 
-    const monthlyRevenue =
-      revenues.map(
-        (item) => ({
-          month:
-            item.month,
+    const monthlyRevenue = revenues.map((item) => ({
+      month: item.month,
 
-          year:
-            item.year,
+      year: item.year,
 
-          amount:
-            this.number(
-              item.amount,
-            ),
+      amount: this.number(item.amount),
 
-          label:
-            `${String(
-              item.month,
-            ).padStart(2, '0')}/${item.year}`,
-        }),
-      );
+      label: `${String(item.month).padStart(2, '0')}/${item.year}`,
+    }));
 
     // ==========================================================
     // GRÁFICO DE RECEITAS — ÚLTIMOS 12 MESES
@@ -691,51 +530,25 @@ export class DashboardService {
       value: number;
     }> = [];
 
-    for (
-      let index = 11;
-      index >= 0;
-      index--
-    ) {
-      const date =
-        new Date(
-          currentYear,
-          currentMonth -
-            1 -
-            index,
-          1,
-        );
+    for (let index = 11; index >= 0; index--) {
+      const date = new Date(currentYear, currentMonth - 1 - index, 1);
 
-      const year =
-        date.getFullYear();
+      const year = date.getFullYear();
 
-      const month =
-        date.getMonth() + 1;
+      const month = date.getMonth() + 1;
 
-      const found =
-        revenues.find(
-          (item) =>
-            item.year ===
-              year &&
-            item.month ===
-              month,
-        );
+      const found = revenues.find(
+        (item) => item.year === year && item.month === month,
+      );
 
       chartData.push({
         month,
 
         year,
 
-        label:
-          `${String(
-            month,
-          ).padStart(2, '0')}/${year}`,
+        label: `${String(month).padStart(2, '0')}/${year}`,
 
-        value:
-          found
-            ? this.number(
-                found.amount,
-              )
-            : 0,
+        value: found ? this.number(found.amount) : 0,
       });
     }
 
@@ -758,61 +571,32 @@ export class DashboardService {
       'Dez',
     ];
 
-    const paymentMap =
-      new Map<number, number>();
+    const paymentMap = new Map<number, number>();
 
-    for (
-      const payment of payments
-    ) {
-      const date =
-        new Date(
-          payment.paidAt,
-        );
+    for (const payment of payments) {
+      const date = new Date(payment.paidAt);
 
-      const month =
-        date.getMonth() + 1;
+      const month = date.getMonth() + 1;
 
-      const current =
-        paymentMap.get(
-          month,
-        ) || 0;
+      const current = paymentMap.get(month) || 0;
 
-      paymentMap.set(
-        month,
-        current +
-          this.number(
-            payment.amount,
-          ),
-      );
+      paymentMap.set(month, current + this.number(payment.amount));
     }
 
-    const paymentEvolution =
-      monthNames.map(
-        (month, index) => ({
-          month,
+    const paymentEvolution = monthNames.map((month, index) => ({
+      month,
 
-          value:
-            this.round(
-              paymentMap.get(
-                index + 1,
-              ) || 0,
-            ),
-        }),
-      );
+      value: this.round(paymentMap.get(index + 1) || 0),
+    }));
 
     // ==========================================================
     // PAGAMENTOS TOTAIS DO ANO
     // ==========================================================
 
-    const totalPayments =
-      payments.reduce(
-        (total, payment) =>
-          total +
-          this.number(
-            payment.amount,
-          ),
-        0,
-      );
+    const totalPayments = payments.reduce(
+      (total, payment) => total + this.number(payment.amount),
+      0,
+    );
 
     // ==========================================================
     // PAGAMENTOS EM DIA
@@ -823,75 +607,46 @@ export class DashboardService {
     // Não usamos uma percentagem fixa.
     // ==========================================================
 
-    const obligationsWithPaymentDate =
-      await this.prisma.taxPayment.findMany({
-        where: {
-          tenantId,
+    const obligationsWithPaymentDate = await this.prisma.taxPayment.findMany({
+      where: {
+        tenantId,
 
-          reference: {
-            startsWith:
-              'OBL-',
-          },
+        reference: {
+          startsWith: 'OBL-',
         },
+      },
 
-        select: {
-          reference: true,
-          paidAt: true,
-        },
-      });
+      select: {
+        reference: true,
+        paidAt: true,
+      },
+    });
 
     let paidOnTimeCount = 0;
 
-    for (
-      const payment of obligationsWithPaymentDate
-    ) {
-      const obligationId =
-        payment.reference.replace(
-          'OBL-',
-          '',
-        );
+    for (const payment of obligationsWithPaymentDate) {
+      const obligationId = payment.reference.replace('OBL-', '');
 
-      const obligation =
-        activeObligations.find(
-          (item) =>
-            item.id ===
-            obligationId,
-        );
+      const obligation = activeObligations.find(
+        (item) => item.id === obligationId,
+      );
 
-      if (
-        !obligation
-      ) {
+      if (!obligation) {
         continue;
       }
 
-      const paymentDate =
-        new Date(
-          payment.paidAt,
-        );
+      const paymentDate = new Date(payment.paidAt);
 
-      if (
-        paymentDate <=
-        new Date(
-          obligation.dueDate,
-        )
-      ) {
+      if (paymentDate <= new Date(obligation.dueDate)) {
         paidOnTimeCount++;
       }
     }
 
     const paymentsOnTime =
-      paidOnTimeCount +
-        overdueObligations.length ===
-      0
+      paidOnTimeCount + overdueObligations.length === 0
         ? 0
         : Math.round(
-            (
-              paidOnTimeCount /
-              (
-                paidOnTimeCount +
-                overdueObligations.length
-              )
-            ) *
+            (paidOnTimeCount / (paidOnTimeCount + overdueObligations.length)) *
               100,
           );
 
@@ -908,256 +663,169 @@ export class DashboardService {
     // não uma estimativa de multa.
     // ==========================================================
 
-    const timelyPaidAmount =
-      paidObligations
-        .filter(
-          (obligation) => {
-            const payment =
-              obligationsWithPaymentDate.find(
-                (item) =>
-                  item.reference ===
-                  `OBL-${obligation.id}`,
-              );
-
-            if (!payment) {
-              return false;
-            }
-
-            return (
-              new Date(
-                payment.paidAt,
-              ) <=
-              new Date(
-                obligation.dueDate,
-              )
-            );
-          },
-        )
-        .reduce(
-          (sum, obligation) =>
-            sum +
-            this.number(
-              obligation.amount,
-            ),
-          0,
+    const timelyPaidAmount = paidObligations
+      .filter((obligation) => {
+        const payment = obligationsWithPaymentDate.find(
+          (item) => item.reference === `OBL-${obligation.id}`,
         );
+
+        if (!payment) {
+          return false;
+        }
+
+        return new Date(payment.paidAt) <= new Date(obligation.dueDate);
+      })
+      .reduce((sum, obligation) => sum + this.number(obligation.amount), 0);
 
     // ==========================================================
     // PRAZOS
     // ==========================================================
 
-    const deadlines =
-      activeObligations
-        .filter(
-          (obligation) =>
-            obligation.status !==
-            ObligationStatus.PAID,
-        )
-        .map(
-          (obligation) => ({
-            id:
-              obligation.id,
+    const deadlines = activeObligations
+      .filter((obligation) => obligation.status !== ObligationStatus.PAID)
+      .map((obligation) => ({
+        id: obligation.id,
 
-            date:
-              obligation.dueDate.toISOString(),
+        date: obligation.dueDate.toISOString(),
 
-            title:
-              obligation.title,
+        title: obligation.title,
 
-            description:
-              obligation.description,
+        description: obligation.description,
 
-            amount:
-              this.number(
-                obligation.amount,
-              ),
+        amount:
+          obligation.amount === null ? null : this.number(obligation.amount),
 
-            type:
-              obligation.type,
+        type: obligation.type,
 
-            daysLeft:
-              obligation.daysLeft,
+        daysLeft: obligation.daysLeft,
 
-            status:
-              obligation.displayStatus,
+        status: obligation.displayStatus,
 
-            obligationStatus:
-              obligation.status,
-          }),
-        );
+        obligationStatus: obligation.status,
+      }));
 
     // ==========================================================
     // PRÓXIMOS PRAZOS
     // ==========================================================
 
-    const upcomingDeadlines =
-      upcomingObligations.length;
+    const upcomingDeadlines = upcomingObligations.length;
 
     // ==========================================================
     // ALERTAS
     // ==========================================================
 
-    const alerts =
-      deadlines
-        .filter(
-          (deadline) =>
-            deadline.daysLeft <= 3,
-        )
-        .map(
-          (deadline) => {
-            if (
-              deadline.daysLeft <
-              0
-            ) {
-              return {
-                id:
-                  deadline.id,
+    const alerts = deadlines
+      .filter((deadline) => deadline.daysLeft <= 3)
+      .map((deadline) => {
+        if (deadline.daysLeft < 0) {
+          return {
+            id: deadline.id,
 
-                title:
-                  'Obrigação vencida',
+            title: 'Obrigação vencida',
 
-                description:
-                  deadline.title,
+            description: deadline.title,
 
-                type:
-                  'danger',
+            type: 'danger',
 
-                date:
-                  deadline.date,
-              };
-            }
+            date: deadline.date,
+          };
+        }
 
-            if (
-              deadline.daysLeft ===
-              0
-            ) {
-              return {
-                id:
-                  deadline.id,
+        if (deadline.daysLeft === 0) {
+          return {
+            id: deadline.id,
 
-                title:
-                  'Prazo vence hoje',
+            title: 'Prazo vence hoje',
 
-                description:
-                  deadline.title,
+            description: deadline.title,
 
-                type:
-                  'danger',
+            type: 'danger',
 
-                date:
-                  deadline.date,
-              };
-            }
+            date: deadline.date,
+          };
+        }
 
-            return {
-              id:
-                deadline.id,
+        return {
+          id: deadline.id,
 
-              title:
-                `Prazo vence em ${deadline.daysLeft} dias`,
+          title: `Prazo vence em ${deadline.daysLeft} dias`,
 
-              description:
-                deadline.title,
+          description: deadline.title,
 
-              type:
-                'warning',
+          type: 'warning',
 
-              date:
-                deadline.date,
-            };
-          },
-        );
+          date: deadline.date,
+        };
+      });
 
     // ==========================================================
     // FACTURAS RECENTES
     // ==========================================================
 
-    const recentInvoices =
-      await this.prisma.invoice.findMany({
-        where: {
-          tenantId,
-        },
+    const recentInvoices = await this.prisma.invoice.findMany({
+      where: {
+        tenantId,
+      },
 
-        orderBy: {
-          createdAt:
-            'desc',
-        },
+      orderBy: {
+        createdAt: 'desc',
+      },
 
-        take: 10,
+      take: 10,
 
-        select: {
-          id: true,
-          invoiceNumber: true,
-          status: true,
-          total: true,
-          iva: true,
-          withholdingTax: true,
-          issuedAt: true,
-          createdAt: true,
-          clientId: true,
-        },
-      });
+      select: {
+        id: true,
+        invoiceNumber: true,
+        status: true,
+        total: true,
+        iva: true,
+        withholdingTax: true,
+        issuedAt: true,
+        createdAt: true,
+        clientId: true,
+      },
+    });
 
     // ==========================================================
     // OBRIGAÇÕES PENDENTES — FORMATO DO FRONTEND
     // ==========================================================
 
-    const pendingObligationsResponse =
-      pendingObligations
-        .slice(0, 10)
-        .map(
-          (obligation) => ({
-            id:
-              obligation.id,
+    const pendingObligationsResponse = pendingObligations
+      .slice(0, 10)
+      .map((obligation) => ({
+        id: obligation.id,
 
-            title:
-              obligation.title,
+        title: obligation.title,
 
-            description:
-              obligation.description,
+        description: obligation.description,
 
-            amount:
-              this.number(
-                obligation.amount,
-              ),
+        amount:
+          obligation.amount === null ? null : this.number(obligation.amount),
 
-            dueDate:
-              obligation.dueDate,
+        dueDate: obligation.dueDate,
 
-            period:
-              obligation.period,
+        period: obligation.period,
 
-            status:
-              obligation.status,
+        status: obligation.status,
 
-            type:
-              obligation.type,
+        type: obligation.type,
 
-            taxType:
-              obligation.fiscalCalendar
-                ?.taxType ??
-              null,
+        taxType: obligation.fiscalCalendar?.taxType ?? null,
 
-            daysLeft:
-              obligation.daysLeft,
-          }),
-        );
+        daysLeft: obligation.daysLeft,
+      }));
 
     // ==========================================================
     // MÉTRICAS REAIS
     // ==========================================================
 
-    const totalFiscalObligations =
-      activeObligations.length;
+    const totalFiscalObligations = activeObligations.length;
 
-    const paidFiscalObligations =
-      paidObligations.length;
+    const paidFiscalObligations = paidObligations.length;
 
-    const lateFiscalObligations =
-      overdueObligations.length;
+    const lateFiscalObligations = overdueObligations.length;
 
-    const pendingFiscalObligations =
-      pendingObligations.length;
+    const pendingFiscalObligations = pendingObligations.length;
 
     // ==========================================================
     // DASHBOARD
@@ -1169,51 +837,38 @@ export class DashboardService {
       // ========================================================
 
       company: {
-        id:
-          tenant.id,
+        id: tenant.id,
 
-        name:
-          tenant.name,
+        name: tenant.name,
 
-        nif:
-          tenant.nif,
+        nif: tenant.nif,
 
-        regime:
-          tenant.regime,
+        regime: tenant.regime,
 
-        sector:
-          tenant.sector ||
-          null,
+        sector: tenant.sector || null,
 
-        companyType:
-          tenant.companyType,
+        companyType: tenant.companyType,
 
-        status:
-          tenant.status,
+        status: tenant.status,
 
-        createdAt:
-          tenant.createdAt,
+        createdAt: tenant.createdAt,
       },
 
       // ========================================================
       // INDICADORES
       // ========================================================
 
-      pendingObligations:
-        pendingObligationsResponse,
+      pendingObligations: pendingObligationsResponse,
 
-      pendingObligationsCount:
-        pendingFiscalObligations,
+      pendingObligationsCount: pendingFiscalObligations,
 
       upcomingDeadlines,
 
-      overdueObligations:
-        lateFiscalObligations,
+      overdueObligations: lateFiscalObligations,
 
       paymentsOnTime,
 
-      finesAvoided:
-        timelyPaidAmount,
+      finesAvoided: timelyPaidAmount,
 
       // ========================================================
       // MÉTRICAS
@@ -1222,63 +877,47 @@ export class DashboardService {
       metrics: {
         totalRevenue,
 
-        pendingObligations:
-          pendingFiscalObligations,
+        pendingObligations: pendingFiscalObligations,
 
-        totalObligations:
-          totalFiscalObligations,
+        totalObligations: totalFiscalObligations,
 
-        paidObligations:
-          paidFiscalObligations,
+        paidObligations: paidFiscalObligations,
 
-        overdueObligations:
-          lateFiscalObligations,
+        overdueObligations: lateFiscalObligations,
 
-        invoices:
-          invoiceCount,
+        invoices: invoiceCount,
 
-        pendingInvoices:
-          pendingInvoiceCount,
+        pendingInvoices: pendingInvoiceCount,
 
-        clients:
-          clientCount,
+        clients: clientCount,
 
-        products:
-          productCount,
+        products: productCount,
 
-        purchaseInvoices:
-          purchaseInvoiceSummary._count.id,
+        purchaseInvoices: purchaseInvoiceSummary._count.id,
 
-        purchaseInvoiceTotal:
-          this.round(this.number(purchaseInvoiceSummary._sum.totalAmount ?? purchaseInvoiceSummary._sum.total)),
-
-        purchaseInvoiceVatSupported:
-          this.round(this.number(purchaseInvoiceSummary._sum.ivaAmount ?? purchaseInvoiceSummary._sum.iva)),
-
-        purchaseInvoiceImportsPendingReview:
-          pendingPurchaseInvoiceImports,
-
-        iva:
-          this.round(
-            taxMap.IVA?.value ||
-              0,
+        purchaseInvoiceTotal: this.round(
+          this.number(
+            purchaseInvoiceSummary._sum.totalAmount ??
+              purchaseInvoiceSummary._sum.total,
           ),
+        ),
 
-        irt:
-          this.round(
-            taxMap.IRT?.value ||
-              0,
+        purchaseInvoiceVatSupported: this.round(
+          this.number(
+            purchaseInvoiceSummary._sum.ivaAmount ??
+              purchaseInvoiceSummary._sum.iva,
           ),
+        ),
 
-        totalTaxes:
-          this.round(
-            totalTaxes,
-          ),
+        purchaseInvoiceImportsPendingReview: pendingPurchaseInvoiceImports,
 
-        totalPayments:
-          this.round(
-            totalPayments,
-          ),
+        iva: this.round(taxMap.IVA?.value || 0),
+
+        irt: this.round(taxMap.IRT?.value || 0),
+
+        totalTaxes: this.round(totalTaxes),
+
+        totalPayments: this.round(totalPayments),
 
         /*
          * Estes campos deixam de ter números fictícios.
@@ -1287,11 +926,9 @@ export class DashboardService {
          * não apresentar um "score" artificial.
          */
 
-        fiscalScore:
-          null,
+        fiscalScore: null,
 
-        healthScore:
-          null,
+        healthScore: null,
       },
 
       // ========================================================
@@ -1316,33 +953,21 @@ export class DashboardService {
       // PAGAMENTOS REAIS
       // ========================================================
 
-      payments:
-        paymentEvolution,
+      payments: paymentEvolution,
 
-      paymentHistory:
-        payments.map(
-          (payment) => ({
-            id:
-              payment.id,
+      paymentHistory: payments.map((payment) => ({
+        id: payment.id,
 
-            taxType:
-              payment.taxType,
+        taxType: payment.taxType,
 
-            amount:
-              this.number(
-                payment.amount,
-              ),
+        amount: this.number(payment.amount),
 
-            reference:
-              payment.reference,
+        reference: payment.reference,
 
-            paymentMethod:
-              payment.paymentMethod,
+        paymentMethod: payment.paymentMethod,
 
-            paidAt:
-              payment.paidAt,
-          }),
-        ),
+        paidAt: payment.paidAt,
+      })),
 
       // ========================================================
       // FATURAS
@@ -1367,25 +992,13 @@ export class DashboardService {
       // ========================================================
 
       financial: {
-        totalRevenue:
-          this.round(
-            totalRevenue,
-          ),
+        totalRevenue: this.round(totalRevenue),
 
-        totalTaxes:
-          this.round(
-            totalTaxes,
-          ),
+        totalTaxes: this.round(totalTaxes),
 
-        totalPayments:
-          this.round(
-            totalPayments,
-          ),
+        totalPayments: this.round(totalPayments),
 
-        timelyPaidAmount:
-          this.round(
-            timelyPaidAmount,
-          ),
+        timelyPaidAmount: this.round(timelyPaidAmount),
       },
 
       // ========================================================
@@ -1393,21 +1006,16 @@ export class DashboardService {
       // ========================================================
 
       source: {
-        type:
-          'database',
+        type: 'database',
 
-        companySpecific:
-          true,
+        companySpecific: true,
 
-        tenantId:
-          tenant.id,
+        tenantId: tenant.id,
 
-        generatedAt:
-          new Date(),
+        generatedAt: new Date(),
       },
 
-      synchronizedAt:
-        new Date(),
+      synchronizedAt: new Date(),
     };
   }
 
@@ -1415,34 +1023,17 @@ export class DashboardService {
   // NUMBER
   // ============================================================
 
-  private number(
-    value: unknown,
-  ): number {
-    const result =
-      Number(value);
+  private number(value: unknown): number {
+    const result = Number(value);
 
-    return Number.isFinite(
-      result,
-    )
-      ? result
-      : 0;
+    return Number.isFinite(result) ? result : 0;
   }
 
   // ============================================================
   // ROUND
   // ============================================================
 
-  private round(
-    value: number,
-  ): number {
-    return (
-      Math.round(
-        (
-          value +
-          Number.EPSILON
-        ) *
-          100,
-      ) / 100
-    );
+  private round(value: number): number {
+    return Math.round((value + Number.EPSILON) * 100) / 100;
   }
 }

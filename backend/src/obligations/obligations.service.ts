@@ -1,5 +1,6 @@
 ﻿import {
   BadRequestException,
+  ConflictException,
   Injectable,
   Logger,
   NotFoundException,
@@ -9,6 +10,7 @@ import {
   FiscalRegime,
   ObligationStatus,
   ObligationType,
+  NotificationType,
   Prisma,
   TaxRuleOperation,
   TaxType,
@@ -17,6 +19,8 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
 import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
+import { MailService } from '../mail/mail.service';
+import { FiscalObligationEligibilityService } from '../fiscal-obligation-eligibility/fiscal-obligation-eligibility.service';
 
 @Injectable()
 export class ObligationsService {
@@ -28,6 +32,10 @@ export class ObligationsService {
       prisma,
     ),
     private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(
+      prisma,
+    ),
+    private readonly mailService: MailService = new MailService(),
+    private readonly eligibility: FiscalObligationEligibilityService = new FiscalObligationEligibilityService(
       prisma,
     ),
   ) {}
@@ -122,8 +130,6 @@ export class ObligationsService {
         retentionRate: true,
         status: true,
         createdAt: true,
-        activityStartedAt: true,
-        hasPriorUnregularizedObligations: true,
       },
     });
 
@@ -135,6 +141,8 @@ export class ObligationsService {
 
     const currentYear = now.getFullYear();
 
+    const companyCreationDate = tenant.createdAt > now ? now : tenant.createdAt;
+
     const existingObligationCount = await this.prisma.fiscalObligation.count({
       where: {
         tenantId,
@@ -144,12 +152,14 @@ export class ObligationsService {
     const isFirstSynchronization = existingObligationCount === 0;
 
     /*
-     * A sincronização só pode acrescentar obrigações futuras. Nunca volta a
-     * percorrer períodos vencidos para os marcar em atraso ou reescrever o
-     * histórico já guardado. A declaração de obrigações antigas usa o estado
-     * próprio HISTORICAL_CONFIRMATION criado no onboarding.
+     * Primeira sincronização:
+     * não criar obrigações já vencidas.
+     *
+     * Sincronizações seguintes:
+     * reconciliar desde a criação da empresa.
      */
-    const minimumDueDate = this.startOfDay(now);
+
+    const minimumDueDate = isFirstSynchronization ? now : companyCreationDate;
 
     // ==========================================================
     // CALENDÁRIO FISCAL
@@ -185,18 +195,6 @@ export class ObligationsService {
         rule.referenceYear,
         rule.dueDate,
       );
-      if (
-        tenant.activityStartedAt &&
-        effectiveDate < this.startOfDay(tenant.activityStartedAt)
-      ) {
-        continue;
-      }
-      if (
-        this.isLabourObligation(rule.obligationType, rule.taxType) &&
-        !(await this.hasLabourTrigger(tenantId, effectiveDate))
-      ) {
-        continue;
-      }
       const enrollmentTaxType = this.enrollmentTaxType(rule.taxType);
       const enrollment = enrollmentTaxType
         ? await this.enrollments.resolve(
@@ -316,9 +314,62 @@ export class ObligationsService {
       // ========================================================
 
       if (existing) {
-        // Calendar synchronisation is append-only. An existing record may
-        // have been paid, reviewed, or manually corrected; its snapshot is
-        // never overwritten by a later read/sync operation.
+        /*
+         * Nunca recalcular uma obrigação já paga.
+         */
+
+        if (existing.status === ObligationStatus.PAID) {
+          await this.ensureTaxPaymentForObligation(
+            existing.id,
+            tenant.id,
+            existing.amount,
+            rule.taxType ?? this.mapObligationTypeToTaxType(existing.type),
+            existing.period || period,
+          );
+
+          continue;
+        }
+
+        const isLate = rule.dueDate < now;
+
+        const nextStatus = isLate
+          ? ObligationStatus.LATE
+          : ObligationStatus.PENDING;
+
+        await this.prisma.fiscalObligation.update({
+          where: {
+            id: existing.id,
+          },
+
+          data: {
+            fiscalCalendarId: rule.id,
+
+            title: rule.title,
+
+            description: rule.description,
+
+            type: rule.obligationType,
+
+            dueDate: rule.dueDate,
+
+            period,
+
+            amount: finalAmount,
+
+            status: nextStatus,
+
+            alertEnabled: true,
+
+            alertDaysBefore: 7,
+          },
+        });
+
+        updated++;
+
+        if (isLate) {
+          late++;
+        }
+
         continue;
       }
 
@@ -326,18 +377,21 @@ export class ObligationsService {
       // NOVA OBRIGAÇÃO
       // ========================================================
 
+      const isLate = rule.dueDate < now;
+
+      const status = isLate ? ObligationStatus.LATE : ObligationStatus.PENDING;
+
       const persisted = await this.obligationPersistence.persistCalendarDerived(
         {
           tenantId: tenant.id,
           fiscalCalendarId: rule.id,
           period,
-          referenceYear: rule.referenceYear,
           type: rule.obligationType,
           title: rule.title,
           description: rule.description,
           amount: finalAmount,
           dueDate: rule.dueDate,
-          status: ObligationStatus.PENDING,
+          status,
           alertEnabled: true,
           alertDaysBefore: 7,
           reminderSent: false,
@@ -346,7 +400,19 @@ export class ObligationsService {
       );
 
       if (persisted.outcome === 'CREATED') created++;
+
+      if (isLate) {
+        late++;
+      }
     }
+
+    // ==========================================================
+    // ACTUALIZAR ESTADOS
+    // ==========================================================
+
+    const statusResult = await this.updateStatuses(tenant.id);
+
+    late = Math.max(late, Number(statusResult.updated || 0));
 
     // ==========================================================
     // RECONCILIAR PAGAMENTOS
@@ -417,44 +483,6 @@ export class ObligationsService {
     if (taxType === TaxType.INDUSTRIAL || taxType === TaxType.II)
       return TaxType.INDUSTRIAL;
     return null;
-  }
-
-  private isLabourObligation(obligationType: ObligationType, taxType: TaxType) {
-    return (
-      obligationType === ObligationType.IRT ||
-      obligationType === ObligationType.SS ||
-      taxType === TaxType.IRT ||
-      taxType === TaxType.SS
-    );
-  }
-
-  /** IRT/INSS are generated only where there is an employee or a payroll. */
-  private async hasLabourTrigger(tenantId: string, period: Date) {
-    const [employees, payrolls] = await Promise.all([
-      this.prisma.employee.count({
-        where: {
-          tenantId,
-          status: 'ACTIVE',
-          OR: [{ hireDate: null }, { hireDate: { lte: period } }],
-          AND: [
-            {
-              OR: [
-                { terminationDate: null },
-                { terminationDate: { gte: period } },
-              ],
-            },
-          ],
-        },
-      }),
-      this.prisma.payroll.count({
-        where: {
-          tenantId,
-          year: period.getUTCFullYear(),
-          month: period.getUTCMonth() + 1,
-        },
-      }),
-    ]);
-    return employees > 0 || payrolls > 0;
   }
 
   /** Resolves an enrollment against the obligation's fiscal period, never today's date. */
@@ -1300,10 +1328,22 @@ export class ObligationsService {
   // ============================================================
 
   async findAll(tenantId: string, referenceYear?: number) {
-    // GET must be observational: no synchronization, no status mutation and
-    // no payment backfill. The urgency state is derived below from the stored
-    // snapshot and the current date.
-    const where = this.whereForReferenceYear(tenantId, referenceYear);
+    const where: Prisma.FiscalObligationWhereInput = {
+      tenantId,
+    };
+
+    if (referenceYear) {
+      where.OR = [
+        { fiscalCalendar: { is: { referenceYear } } },
+        {
+          fiscalCalendarId: null,
+          dueDate: {
+            gte: new Date(`${referenceYear}-01-01T00:00:00`),
+            lt: new Date(`${referenceYear + 1}-01-01T00:00:00`),
+          },
+        },
+      ];
+    }
 
     const obligations = await this.prisma.fiscalObligation.findMany({
       where,
@@ -1327,8 +1367,13 @@ export class ObligationsService {
       ],
     });
 
+    const eligibleObligations = await this.eligibility.filterEligible(
+      tenantId,
+      obligations,
+    );
+
     return Promise.all(
-      obligations.map((obligation) =>
+      eligibleObligations.map((obligation) =>
         this.withCalculationContext(tenantId, obligation),
       ),
     );
@@ -1339,7 +1384,7 @@ export class ObligationsService {
   // ============================================================
 
   async getDashboard(tenantId: string) {
-    const obligations = await this.prisma.fiscalObligation.findMany({
+    const loadedObligations = await this.prisma.fiscalObligation.findMany({
       where: {
         tenantId,
       },
@@ -1357,71 +1402,54 @@ export class ObligationsService {
       },
     });
 
-    const presented = obligations.map((obligation) =>
-      this.withObligationPresentation(obligation),
-    );
+    const obligations = (
+      await this.eligibility.filterEligible(tenantId, loadedObligations)
+    ).map((obligation) => this.withCalculatedStatus(obligation));
 
-    const total = presented.length;
+    const now = new Date();
 
-    const pending = presented.filter(
+    const total = obligations.length;
+
+    const pending = obligations.filter(
+      (item) => item.status === ObligationStatus.PENDING,
+    ).length;
+
+    const paid = obligations.filter(
+      (item) => item.status === ObligationStatus.PAID,
+    ).length;
+
+    const late = obligations.filter(
       (item) =>
-        item.status === ObligationStatus.FUTURE ||
-        item.status === ObligationStatus.DUE_SOON ||
-        item.status === ObligationStatus.IN_DEADLINE ||
-        item.status === ObligationStatus.TO_DETERMINE,
+        item.status === ObligationStatus.LATE ||
+        (item.status === ObligationStatus.PENDING && item.dueDate < now),
     ).length;
 
-    const paid = presented.filter(
-      (item) => item.status === ObligationStatus.FULFILLED,
-    ).length;
-
-    const late = presented.filter(
-      (item) => item.status === ObligationStatus.OVERDUE,
-    ).length;
-
-    const upcoming = presented
+    const upcoming = obligations
       .filter(
-        (item) =>
-          item.status === ObligationStatus.FUTURE ||
-          item.status === ObligationStatus.DUE_SOON ||
-          item.status === ObligationStatus.IN_DEADLINE,
+        (item) => item.status !== ObligationStatus.PAID && item.dueDate >= now,
       )
       .slice(0, 10);
 
-    const overdue = presented
-      .filter((item) => item.status === ObligationStatus.OVERDUE)
+    const overdue = obligations
+      .filter(
+        (item) =>
+          item.status === ObligationStatus.LATE ||
+          (item.status === ObligationStatus.PENDING && item.dueDate < now),
+      )
       .slice(0, 10);
 
-    const totalAmount = presented.reduce(
-      (sum, item) =>
-        sum +
-        (item.amount === null || item.amount === undefined
-          ? 0
-          : this.number(item.amount)),
+    const totalAmount = obligations.reduce(
+      (sum, item) => sum + this.number(item.amount),
       0,
     );
 
-    const pendingAmount = presented
-      .filter((item) => item.status !== ObligationStatus.FULFILLED)
-      .reduce(
-        (sum, item) =>
-          sum +
-          (item.amount === null || item.amount === undefined
-            ? 0
-            : this.number(item.amount)),
-        0,
-      );
+    const pendingAmount = obligations
+      .filter((item) => item.status !== ObligationStatus.PAID)
+      .reduce((sum, item) => sum + this.number(item.amount), 0);
 
-    const paidAmount = presented
-      .filter((item) => item.status === ObligationStatus.FULFILLED)
-      .reduce(
-        (sum, item) =>
-          sum +
-          (item.amount === null || item.amount === undefined
-            ? 0
-            : this.number(item.amount)),
-        0,
-      );
+    const paidAmount = obligations
+      .filter((item) => item.status === ObligationStatus.PAID)
+      .reduce((sum, item) => sum + this.number(item.amount), 0);
 
     return {
       total,
@@ -1437,10 +1465,6 @@ export class ObligationsService {
       pendingAmount: this.round(pendingAmount),
 
       paidAmount: this.round(paidAmount),
-
-      undeterminedAmountCount: presented.filter(
-        (item) => item.amountState === 'TO_DETERMINE',
-      ).length,
 
       upcoming,
 
@@ -1481,22 +1505,71 @@ export class ObligationsService {
       throw new NotFoundException('Obrigação fiscal não encontrada.');
     }
 
-    return this.withCalculationContext(tenantId, obligation);
+    const [eligibleObligation] = await this.eligibility.filterEligible(
+      tenantId,
+      [obligation],
+    );
+    if (!eligibleObligation) {
+      throw new NotFoundException('Obrigação fiscal não encontrada.');
+    }
+
+    return this.withCalculationContext(
+      tenantId,
+      this.withCalculatedStatus(eligibleObligation),
+    );
   }
 
   /** Read-only historical listing for reports: no synchronization or status writes. */
   async findAllReadOnly(tenantId: string, referenceYear?: number) {
-    const where = this.whereForReferenceYear(tenantId, referenceYear);
+    const where: Prisma.FiscalObligationWhereInput = { tenantId };
+    if (referenceYear) {
+      where.OR = [
+        { fiscalCalendar: { is: { referenceYear } } },
+        {
+          fiscalCalendarId: null,
+          dueDate: {
+            gte: new Date(`${referenceYear}-01-01T00:00:00`),
+            lt: new Date(`${referenceYear + 1}-01-01T00:00:00`),
+          },
+        },
+      ];
+    }
     const obligations = await this.prisma.fiscalObligation.findMany({
       where,
       include: { fiscalCalendar: { include: { regimes: true } } },
       orderBy: [{ dueDate: 'asc' }, { title: 'asc' }],
     });
+    const eligibleObligations = await this.eligibility.filterEligible(
+      tenantId,
+      obligations,
+    );
     return Promise.all(
-      obligations.map((obligation) =>
-        this.withCalculationContext(tenantId, obligation),
+      eligibleObligations.map((obligation) =>
+        this.withCalculationContext(
+          tenantId,
+          this.withCalculatedStatus(obligation),
+        ),
       ),
     );
+  }
+
+  private withCalculatedStatus<
+    T extends { status: ObligationStatus; dueDate: Date },
+  >(obligation: T): T {
+    if (
+      obligation.status === ObligationStatus.PAID ||
+      this.endOfDay(obligation.dueDate) >= new Date()
+    ) {
+      return obligation;
+    }
+
+    return { ...obligation, status: ObligationStatus.LATE };
+  }
+
+  private endOfDay(value: Date): Date {
+    const result = new Date(value);
+    result.setHours(23, 59, 59, 999);
+    return result;
   }
 
   /**
@@ -1516,14 +1589,14 @@ export class ObligationsService {
     );
 
     if (!taxType || !Number.isInteger(year)) {
-      return this.withObligationPresentation({
+      return {
         ...obligation,
         calculation: {
           quality: 'REVIEW_REQUIRED',
           message:
             'Não existe regra fiscal estruturada para explicar este valor.',
         },
-      });
+      };
     }
 
     const assessment = await this.prisma.taxAssessment.findFirst({
@@ -1555,7 +1628,7 @@ export class ObligationsService {
           ? 'REVIEW_REQUIRED'
           : 'CALCULATED';
 
-    return this.withObligationPresentation({
+    return {
       ...obligation,
       calculation: {
         quality,
@@ -1599,125 +1672,14 @@ export class ObligationsService {
         },
         message:
           taxType === TaxType.INDUSTRIAL
-            ? 'Valor por apurar: confirme a matéria colectável e a declaração aplicável junto da AGT.'
+            ? 'Revisão necessária: o sistema não dispõe de matéria colectável fiscal suficiente para um apuramento definitivo.'
             : hasPendingVat
               ? 'Há IVA suportado indicado pendente de revisão; esse valor não foi deduzido.'
               : assessment
-                ? 'Valor apurado a partir dos registos da empresa e da regra fiscal associada.'
+                ? 'Valor agregado a partir das fontes internas e da regra de calendário associada.'
                 : 'Ainda não existe uma avaliação fiscal para este período.',
       },
-    });
-  }
-
-  /**
-   * Annual views are keyed to the fiscal calendar's reference year, not the
-   * calendar year of a deadline. Historical rows pre-dating referenceYear use
-   * their linked calendar, then a conservative period/due-date fallback.
-   */
-  private whereForReferenceYear(
-    tenantId: string,
-    referenceYear?: number,
-  ): Prisma.FiscalObligationWhereInput {
-    if (referenceYear === undefined) return { tenantId };
-
-    const dueDate = {
-      gte: new Date(`${referenceYear}-01-01T00:00:00.000Z`),
-      lt: new Date(`${referenceYear + 1}-01-01T00:00:00.000Z`),
     };
-
-    return {
-      tenantId,
-      OR: [
-        { referenceYear },
-        {
-          referenceYear: null,
-          fiscalCalendar: { is: { referenceYear } },
-        },
-        {
-          referenceYear: null,
-          fiscalCalendarId: null,
-          period: { startsWith: `${referenceYear}-` },
-        },
-        {
-          referenceYear: null,
-          fiscalCalendarId: null,
-          period: null,
-          dueDate,
-        },
-      ],
-    };
-  }
-
-  /**
-   * Status is a read model. Stored PENDING/PAID/LATE remains an immutable
-   * lifecycle snapshot, while urgency follows the current day without an
-   * UPDATE during a GET request.
-   */
-  private withObligationPresentation<
-    T extends {
-      status: ObligationStatus;
-      dueDate: Date;
-      amount?: number | null;
-      amountValue?: unknown;
-      alertDaysBefore?: number | null;
-    },
-  >(obligation: T) {
-    const lifecycleStatus = obligation.status;
-    const amount =
-      obligation.amount !== null && obligation.amount !== undefined
-        ? this.number(obligation.amount)
-        : obligation.amountValue !== null &&
-            obligation.amountValue !== undefined
-          ? this.number(obligation.amountValue)
-          : null;
-
-    let status: ObligationStatus;
-    if (
-      lifecycleStatus === ObligationStatus.PAID ||
-      lifecycleStatus === ObligationStatus.FULFILLED
-    ) {
-      status = ObligationStatus.FULFILLED;
-    } else if (lifecycleStatus === ObligationStatus.HISTORICAL_CONFIRMATION) {
-      status = ObligationStatus.HISTORICAL_CONFIRMATION;
-    } else if (
-      amount === null ||
-      lifecycleStatus === ObligationStatus.TO_DETERMINE
-    ) {
-      status = ObligationStatus.TO_DETERMINE;
-    } else {
-      const today = this.startOfDay(new Date());
-      const dueDate = this.startOfDay(new Date(obligation.dueDate));
-      const daysUntilDue = Math.round(
-        (dueDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000),
-      );
-      if (daysUntilDue < 0) status = ObligationStatus.OVERDUE;
-      else if (daysUntilDue === 0) status = ObligationStatus.IN_DEADLINE;
-      else if (daysUntilDue <= Math.max(1, obligation.alertDaysBefore ?? 7)) {
-        status = ObligationStatus.DUE_SOON;
-      } else {
-        status = ObligationStatus.FUTURE;
-      }
-    }
-
-    return {
-      ...obligation,
-      lifecycleStatus,
-      status,
-      displayStatus: status,
-      amountState:
-        amount === null
-          ? 'TO_DETERMINE'
-          : amount === 0
-            ? 'CALCULATED_ZERO'
-            : 'CALCULATED',
-      amountIsCalculatedZero: amount === 0,
-    };
-  }
-
-  private startOfDay(value: Date) {
-    return new Date(
-      Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()),
-    );
   }
 
   // ============================================================
@@ -1727,10 +1689,7 @@ export class ObligationsService {
   async markAsPaid(tenantId: string, id: string) {
     const obligation = await this.findOne(tenantId, id);
 
-    if (
-      obligation.lifecycleStatus === ObligationStatus.PAID ||
-      obligation.lifecycleStatus === ObligationStatus.FULFILLED
-    ) {
+    if (obligation.status === ObligationStatus.PAID) {
       await this.ensureTaxPaymentForObligation(
         obligation.id,
         tenantId,
@@ -1755,10 +1714,16 @@ export class ObligationsService {
       obligation.fiscalCalendar?.taxType ??
       this.mapObligationTypeToTaxType(obligation.type);
 
-    await this.prisma.$transaction(async (tx) => {
-      await tx.fiscalObligation.update({
+    const paymentRegistered = await this.prisma.$transaction(async (tx) => {
+      const transition = await tx.fiscalObligation.updateMany({
         where: {
           id: obligation.id,
+
+          tenantId,
+
+          status: {
+            in: [ObligationStatus.PENDING, ObligationStatus.LATE],
+          },
         },
 
         data: {
@@ -1767,6 +1732,10 @@ export class ObligationsService {
           reminderSent: true,
         },
       });
+
+      if (transition.count === 0) {
+        return false;
+      }
 
       const reference = `OBL-${obligation.id}`;
 
@@ -1795,7 +1764,51 @@ export class ObligationsService {
           },
         });
       }
+
+      await tx.notification.create({
+        data: {
+          tenantId,
+
+          title: 'Pagamento registado',
+
+          message: `O pagamento da obriga\u00e7\u00e3o fiscal "${obligation.title}" no valor de ${this.formatPaymentAmount(amount)} foi registado com sucesso.`,
+
+          isRead: false,
+
+          notificationType: NotificationType.SUCCESS,
+        },
+      });
+
+      return true;
     });
+
+    if (!paymentRegistered) {
+      const latestObligation = await this.findOne(tenantId, id);
+
+      if (latestObligation.status !== ObligationStatus.PAID) {
+        throw new ConflictException(
+          'O estado da obrigação foi alterado. Atualize a página antes de tentar registar o pagamento novamente.',
+        );
+      }
+
+      await this.ensureTaxPaymentForObligation(
+        latestObligation.id,
+        tenantId,
+        latestObligation.amount,
+        latestObligation.fiscalCalendar?.taxType ??
+          this.mapObligationTypeToTaxType(latestObligation.type),
+        latestObligation.period ?? undefined,
+      );
+
+      return latestObligation;
+    }
+
+    await this.sendPaymentConfirmationEmail(
+      tenantId,
+      obligation.title,
+      obligation.period ?? 'Per\u00edodo n\u00e3o especificado',
+      amount,
+    );
 
     this.logger.log(
       [
@@ -1932,6 +1945,119 @@ export class ObligationsService {
   // MAPEAR OBRIGAÇÃO PARA TAX TYPE
   // ============================================================
 
+  private async sendPaymentConfirmationEmail(
+    tenantId: string,
+    obligationTitle: string,
+    period: string,
+    amount: number,
+  ): Promise<void> {
+    const subject = `Pagamento registado \u2014 ${obligationTitle}`;
+
+    try {
+      const tenant = await this.prisma.tenant.findUnique({
+        where: {
+          id: tenantId,
+        },
+
+        select: {
+          name: true,
+          email: true,
+        },
+      });
+
+      if (!tenant?.email) {
+        this.logger.warn(
+          `Pagamento registado para ${tenantId}, mas a empresa n\u00e3o tem e-mail para receber a confirma\u00e7\u00e3o.`,
+        );
+
+        return;
+      }
+
+      let status = 'SENT';
+
+      try {
+        const applicationUrl = (
+          process.env.APP_URL ||
+          process.env.FRONTEND_URL ||
+          'https://fiscalidadedigital.ao'
+        ).replace(/\/$/, '');
+
+        await this.mailService.sendObligationPaymentConfirmation(
+          tenant.email,
+          tenant.name,
+          obligationTitle,
+          this.formatPaymentAmount(amount),
+          period,
+          `${applicationUrl}/obligations`,
+        );
+      } catch (error) {
+        status = 'FAILED';
+
+        this.logger.error(
+          [
+            'Falha ao enviar a confirma\u00e7\u00e3o de pagamento por e-mail.',
+            `Empresa: ${tenantId}`,
+            error instanceof Error ? error.message : String(error),
+          ].join(' | '),
+        );
+      }
+
+      try {
+        await this.prisma.emailLog.create({
+          data: {
+            tenantId,
+
+            email: this.maskEmail(tenant.email),
+
+            subject,
+
+            body: null,
+
+            status,
+          },
+        });
+      } catch (error) {
+        this.logger.error(
+          [
+            'Falha ao registar o envio da confirma\u00e7\u00e3o de pagamento.',
+            `Empresa: ${tenantId}`,
+            error instanceof Error ? error.message : String(error),
+          ].join(' | '),
+        );
+      }
+    } catch (error) {
+      this.logger.error(
+        [
+          'Falha ao preparar a confirma\u00e7\u00e3o de pagamento por e-mail.',
+          `Empresa: ${tenantId}`,
+          error instanceof Error ? error.message : String(error),
+        ].join(' | '),
+      );
+    }
+  }
+
+  private formatPaymentAmount(amount: number): string {
+    return new Intl.NumberFormat('pt-AO', {
+      style: 'currency',
+
+      currency: 'AOA',
+
+      minimumFractionDigits: 2,
+
+      maximumFractionDigits: 2,
+    }).format(amount);
+  }
+
+  private maskEmail(email: string): string {
+    const [localPart, domain] = email.split('@');
+
+    if (!localPart || !domain) {
+      return '***';
+    }
+
+    return `${localPart.slice(0, 1)}***@${domain}`;
+  }
+
   private mapObligationTypeToTaxType(type: ObligationType): TaxType {
     const map: Record<string, TaxType> = {
       IVA: TaxType.IVA,
@@ -1985,15 +2111,34 @@ export class ObligationsService {
   // ============================================================
 
   async updateStatuses(tenantId?: string) {
-    // Kept as a compatibility endpoint for older clients. Urgency is derived
-    // when records are read, so this operation deliberately has no write side
-    // effect and cannot convert historical PENDING rows into LATE rows.
+    const now = new Date();
+
+    const where: Prisma.FiscalObligationWhereInput = {
+      status: ObligationStatus.PENDING,
+
+      dueDate: {
+        lt: now,
+      },
+    };
+
+    if (tenantId) {
+      where.tenantId = tenantId;
+    }
+
+    const result = await this.prisma.fiscalObligation.updateMany({
+      where,
+
+      data: {
+        status: ObligationStatus.LATE,
+      },
+    });
+
     return {
       success: true,
-      updated: 0,
-      tenantId: tenantId ?? null,
-      message: 'Os estados são calculados automaticamente na consulta.',
-      calculatedAt: new Date(),
+
+      updated: result.count,
+
+      updatedAt: new Date(),
     };
   }
 
@@ -2004,12 +2149,33 @@ export class ObligationsService {
   async remove(tenantId: string, id: string) {
     const obligation = await this.findOne(tenantId, id);
 
-    // Obligations are fiscal history, including unpaid and review-required
-    // records. Do not silently remove either the obligation or its alerts.
-    void obligation;
-    throw new BadRequestException(
-      'As obrigações registadas são mantidas no histórico e não podem ser removidas.',
-    );
+    if (obligation.status === ObligationStatus.PAID) {
+      throw new BadRequestException(
+        'Uma obrigação já paga não pode ser removida, pois faz parte do histórico fiscal da empresa.',
+      );
+    }
+
+    await this.prisma.fiscalAlert.deleteMany({
+      where: {
+        tenantId,
+
+        obligationId: id,
+      },
+    });
+
+    const deleted = await this.prisma.fiscalObligation.delete({
+      where: {
+        id: obligation.id,
+      },
+    });
+
+    return {
+      success: true,
+
+      message: 'Obrigação fiscal removida com sucesso.',
+
+      obligation: deleted,
+    };
   }
 
   // ============================================================

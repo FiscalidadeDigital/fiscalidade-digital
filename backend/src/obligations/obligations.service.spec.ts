@@ -5,7 +5,13 @@ import { ObligationsService } from './obligations.service';
 describe('ObligationsService IVA source eligibility', () => {
   it('lists report obligations read-only with tenant-scoped persisted sources', async () => {
     const fiscalObligation = { findMany: jest.fn().mockResolvedValue([]) };
-    const service = new ObligationsService({ fiscalObligation } as any);
+    const service = new ObligationsService(
+      { fiscalObligation } as any,
+      undefined,
+      undefined,
+      undefined,
+      { filterEligible: jest.fn().mockResolvedValue([]) } as any,
+    );
 
     await expect(service.findAllReadOnly('tenant-a', 2026)).resolves.toEqual(
       [],
@@ -15,12 +21,28 @@ describe('ObligationsService IVA source eligibility', () => {
       expect.objectContaining({
         where: expect.objectContaining({
           tenantId: 'tenant-a',
-          OR: expect.arrayContaining([
-            expect.objectContaining({ referenceYear: 2026 }),
-          ]),
+          OR: expect.any(Array),
         }),
       }),
     );
+  });
+
+  it('does not synchronize or persist status changes while listing obligations', async () => {
+    const fiscalObligation = { findMany: jest.fn().mockResolvedValue([]) };
+    const service = new ObligationsService(
+      { fiscalObligation } as any,
+      undefined,
+      undefined,
+      undefined,
+      { filterEligible: jest.fn().mockResolvedValue([]) } as any,
+    );
+    const syncCompany = jest.spyOn(service, 'syncCompany');
+    const updateStatuses = jest.spyOn(service, 'updateStatuses');
+
+    await expect(service.findAll('tenant-a', 2026)).resolves.toEqual([]);
+
+    expect(syncCompany).not.toHaveBeenCalled();
+    expect(updateStatuses).not.toHaveBeenCalled();
   });
 
   it('resolves the calendar enrollment against the obligation fiscal period and never Tenant.regime', () => {

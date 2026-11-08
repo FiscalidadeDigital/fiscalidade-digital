@@ -8,6 +8,7 @@ import {
   LogOut,
   ShieldCheck,
 } from 'lucide-react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ReactNode, useEffect, useState } from 'react';
@@ -61,7 +62,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
   if (!admin && !error) {
     return (
       <main className="fd-theme-scope flex min-h-screen items-center justify-center bg-[var(--fd-background)] text-[var(--fd-text-primary)]">
-        <Loader2 className="h-6 w-6 animate-spin text-sky-700" aria-label="A validar sessão administrativa" />
+        <Loader2 className="h-6 w-6 animate-spin text-fd-accent" aria-label="A validar sessão administrativa" />
       </main>
     );
   }
@@ -76,7 +77,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
           <button
             type="button"
             onClick={logout}
-            className="mt-6 w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-4 focus:ring-sky-200"
+            className="mt-6 w-full rounded-lg bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white focus:outline-none focus:ring-4 focus:ring-fd-focus"
           >
             Voltar ao acesso administrativo
           </button>
@@ -89,14 +90,19 @@ export default function AdminShell({ children }: { children: ReactNode }) {
     <div className="fd-theme-scope min-h-screen bg-[var(--fd-background)] text-[var(--fd-text-primary)] lg:grid lg:grid-cols-[248px_minmax(0,1fr)]">
       <aside className="border-b border-slate-800 bg-slate-950 text-white lg:sticky lg:top-0 lg:h-screen lg:border-b-0 lg:border-r">
         <div className="flex items-center justify-between px-5 py-5 lg:block lg:px-6 lg:py-7">
-          <Link href="/admin/dashboard" className="flex items-center gap-3">
-            <span className="flex h-9 w-9 items-center justify-center rounded-lg border border-white/15 bg-white/10">
-              <ShieldCheck className="h-4 w-4 text-sky-300" />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold">Fiscalidade Digital</span>
-              <span className="block text-[11px] text-slate-400">Administração SaaS</span>
-            </span>
+          <Link
+            href="/admin/dashboard"
+            aria-label="Fiscalidade Digital — administração SaaS"
+            className="inline-flex rounded-lg bg-white px-2 py-1.5 shadow-sm focus:outline-none focus:ring-4 focus:ring-fd-focus"
+          >
+            <Image
+              src="/logofiscalidade.png"
+              alt=""
+              width={164}
+              height={55}
+              priority
+              className="h-8 w-auto object-contain"
+            />
           </Link>
           <button
             type="button"
@@ -118,7 +124,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
                 aria-current={selected ? 'page' : undefined}
                 className={`flex shrink-0 items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                   selected
-                    ? 'bg-sky-500/15 text-sky-200'
+                    ? 'bg-fd-sidebar-active text-fd-accent-light'
                     : 'text-slate-400 hover:bg-white/5 hover:text-white'
                 }`}
               >
@@ -131,7 +137,7 @@ export default function AdminShell({ children }: { children: ReactNode }) {
 
         <div className="hidden border-t border-white/10 px-6 py-5 lg:absolute lg:bottom-0 lg:left-0 lg:right-0 lg:block">
           <p className="truncate text-xs font-medium text-slate-200">{admin?.name}</p>
-          <p className="mt-1 truncate text-[11px] text-slate-500">Super Admin</p>
+          <p className="mt-1 truncate text-xs text-slate-500">Super Admin</p>
           <button
             type="button"
             onClick={logout}

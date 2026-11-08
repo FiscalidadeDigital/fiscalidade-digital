@@ -36,6 +36,20 @@ export function obligationEmail(company: string, title: string, period: string, 
   return renderEmailHtml('Alerta de obrigação fiscal', `<p><strong>Empresa:</strong> ${escapeHtml(company)}</p><p><strong>Obrigação:</strong> ${escapeHtml(title)}</p><p><strong>Período:</strong> ${escapeHtml(period)}</p><p><strong>Vencimento:</strong> ${escapeHtml(dueDate)}</p><p><strong>Estado:</strong> ${escapeHtml(status)}</p>`, url ? { label: 'VER OBRIGAÇÃO', url } : undefined);
 }
 
+export function paymentConfirmationEmail(
+  company: string,
+  title: string,
+  amount: string,
+  period: string,
+  url?: string,
+) {
+  return renderEmailHtml(
+    'Pagamento registado',
+    `<p>Ol\u00e1, ${escapeHtml(company)}.</p><p>O pagamento abaixo foi registado na Fiscalidade Digital.</p><p><strong>Obriga\u00e7\u00e3o:</strong> ${escapeHtml(title)}</p><p><strong>Per\u00edodo:</strong> ${escapeHtml(period)}</p><p><strong>Valor registado:</strong> ${escapeHtml(amount)}</p><p>Esta mensagem confirma o registo no sistema. Consulte a sua obriga\u00e7\u00e3o para verificar os detalhes.</p>`,
+    url ? { label: 'VER OBRIGA\u00c7\u00d5ES', url } : undefined,
+  );
+}
+
 export function plainText(lines: string[]) {
   return lines.join('\n\n');
 }

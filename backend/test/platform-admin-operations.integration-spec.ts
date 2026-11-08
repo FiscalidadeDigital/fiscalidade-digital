@@ -114,6 +114,8 @@ describe('Platform admin operational HTTP API', () => {
           activeUsers: 1,
           storageUsedBytes: '1024',
           storageQuotaBytes: '10000',
+          storageMeasurement: 'CATALOGUED_DOCUMENT_BYTES',
+          storageIsEstimated: false,
         }),
       }),
     );

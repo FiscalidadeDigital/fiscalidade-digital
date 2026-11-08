@@ -260,8 +260,8 @@ function Section({
 }) {
   return (
     <section className="rounded-2xl border border-slate-200 bg-white p-5 sm:p-6">
-      <h2 className="mb-5 flex items-center gap-2 font-semibold text-[#102447]">
-        <span className="text-[#0b6f93]">{icon}</span>
+      <h2 className="mb-5 flex items-center gap-2 font-semibold text-fd-text">
+        <span className="text-fd-accent">{icon}</span>
         {title}
       </h2>
       {children}

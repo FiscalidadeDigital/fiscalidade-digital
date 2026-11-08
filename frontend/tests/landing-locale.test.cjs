@@ -1,0 +1,61 @@
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const path = require('node:path');
+const test = require('node:test');
+
+const source = fs.readFileSync(
+  path.join(__dirname, '..', 'app', 'page.tsx'),
+  'utf8',
+);
+const whyChooseSource = fs.readFileSync(
+  path.join(__dirname, '..', 'components', 'landing', 'WhyChooseSection.tsx'),
+  'utf8',
+);
+const missionVisionValuesSource = fs.readFileSync(
+  path.join(__dirname, '..', 'components', 'landing', 'MissionVisionValues.tsx'),
+  'utf8',
+);
+
+test('a preferência de idioma da landing é persistida separadamente da sessão', () => {
+  assert.match(source, /const landingLocaleStorageKey = 'fd:landing-locale';/);
+  assert.match(source, /window\.localStorage\.getItem\(landingLocaleStorageKey\)/);
+  assert.match(source, /window\.localStorage\.setItem\(landingLocaleStorageKey, nextLocale\)/);
+  assert.doesNotMatch(source, /document\.documentElement\.lang/);
+});
+
+test('a landing identifica o idioma apresentado e mantém os documentos legais em português', () => {
+  assert.match(source, /<main ref=\{pageRef\} lang=\{locale\}/);
+  assert.match(source, /Terms of Use \(Portuguese\)/);
+  assert.match(source, /Privacy Policy \(Portuguese\)/);
+  assert.match(source, /function LanguageSelector/);
+  assert.match(source, /function Team\(\{ locale \}: \{ locale: LandingLocale \}\)/);
+});
+
+test('a landing mantém a experiência de soluções sem restaurar o Ecossistema', () => {
+  assert.match(source, /\['Funcionalidades', '#funcionalidades'\]/);
+  assert.match(source, /<WhyChooseSection locale=\{locale\} \/>/);
+  assert.doesNotMatch(source, /<section id="ecossistema"/);
+  assert.doesNotMatch(source, /ecosystemPartners/);
+  assert.doesNotMatch(source, /image: '\/(yas\.jpg|yashhublogo\.jpg|aceleralogo\.jpg|Ignitionlogo\.png)'/);
+  assert.doesNotMatch(source, /landing-logo-marquee/);
+  assert.doesNotMatch(source, /id="assistente"/);
+  assert.doesNotMatch(source, /id="documentos"/);
+  assert.doesNotMatch(source, /id="plataforma"/);
+  assert.doesNotMatch(source, /function DocumentDemo/);
+  assert.match(whyChooseSource, /Porquê escolher a Fiscalidade Digital\?/);
+  assert.match(whyChooseSource, /Porque a sua empresa merece mais tempo para crescer/);
+  assert.match(whyChooseSource, /Serviços especializados/);
+  assert.match(whyChooseSource, /Consultoria fiscal/);
+  assert.match(whyChooseSource, /role="tablist"/);
+  assert.match(whyChooseSource, /overflow-x-auto/);
+  assert.match(whyChooseSource, /useReducedMotion/);
+});
+
+test('a secção animada de missão, visão e valores mantém o compromisso institucional', () => {
+  assert.match(source, /<MissionVisionValues locale=\{locale\} \/>/);
+  assert.match(source, /\['Sobre nós', '#missao-visao-valores'\]/);
+  assert.match(missionVisionValuesSource, /Promover a literacia fiscal e a conformidade tributária em Angola/);
+  assert.match(missionVisionValuesSource, /Ser a principal referência em soluções digitais fiscais em Angola/);
+  assert.match(missionVisionValuesSource, /Transparência', 'Educação', 'Inovação', 'Compromisso', 'Simplicidade/);
+  assert.match(missionVisionValuesSource, /useReducedMotion/);
+});

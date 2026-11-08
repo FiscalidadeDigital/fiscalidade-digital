@@ -1,26 +1,19 @@
 import { Module } from '@nestjs/common';
 
 import { PrismaModule } from '../prisma/prisma.module';
+import { FiscalObligationEligibilityModule } from '../fiscal-obligation-eligibility/fiscal-obligation-eligibility.module';
 
 import { NotificationController } from './notification.controller';
 
 import { NotificationService } from './notification.service';
 
 @Module({
-  imports: [
-    PrismaModule,
-  ],
+  imports: [PrismaModule, FiscalObligationEligibilityModule],
 
-  controllers: [
-    NotificationController,
-  ],
+  controllers: [NotificationController],
 
-  providers: [
-    NotificationService,
-  ],
+  providers: [NotificationService],
 
-  exports: [
-    NotificationService,
-  ],
+  exports: [NotificationService],
 })
 export class NotificationModule {}

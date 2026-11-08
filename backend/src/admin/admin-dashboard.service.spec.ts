@@ -15,21 +15,27 @@ describe('AdminDashboardService', () => {
         ]),
       },
       platformAuditLog: { findMany: jest.fn() },
-      $transaction: jest.fn().mockResolvedValue([
-        12,
-        3,
-        8,
-        1,
-        20,
-        18,
-        44,
-        30,
-        { _sum: { storageUsedBytes: 4096n } },
-        2,
-        5,
-        1,
-        [],
-      ]),
+      $transaction: jest
+        .fn()
+        .mockResolvedValue([
+          12,
+          3,
+          8,
+          1,
+          20,
+          18,
+          44,
+          30,
+          { _sum: { storageUsedBytes: 4096n } },
+          7,
+          0,
+          5,
+          0,
+          2,
+          5,
+          1,
+          [],
+        ]),
     } as unknown as PrismaService;
 
     const service = new AdminDashboardService(prisma);
@@ -46,6 +52,10 @@ describe('AdminDashboardService', () => {
       documents: 30,
       storageBytes: '4096',
     });
+    expect(result.storage).toEqual({
+      measurement: 'CATALOGUED_DOCUMENT_BYTES',
+      isEstimated: false,
+    });
     expect(result.growth).toEqual({
       periodDays: 30,
       tenantsCreated: 2,
@@ -54,6 +64,9 @@ describe('AdminDashboardService', () => {
     expect(result.subscriptions).toEqual({
       activeRecords: 3,
       byPaymentStatus: { PAID: 2, PENDING: 1 },
+    });
+    expect(result.plans).toEqual({
+      byPlanType: { FREE: 7, BASIC: 0, PREMIUM: 5, ENTERPRISE: 0 },
     });
     expect(result.alerts).toEqual({ expiredTrials: 1 });
     expect(result).not.toHaveProperty('tenant');

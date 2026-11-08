@@ -52,7 +52,7 @@ export default function Alerts({
               w-10
               rounded-xl
               bg-[#fff1f1]
-              text-[#ef4444]
+              text-fd-danger
               flex
               items-center
               justify-center
@@ -70,7 +70,7 @@ export default function Alerts({
               Alertas Fiscais
             </h3>
 
-            <p className="text-[11px] text-[#7180a2] mt-0.5">
+            <p className="text-xs text-[var(--fd-text-muted)] mt-0.5">
               Avisos e notificações importantes
             </p>
 
@@ -89,12 +89,12 @@ export default function Alerts({
               flex
               items-center
               justify-center
-              text-[11px]
+              text-xs
               font-bold
               ${
                 alerts.length > 0
-                  ? 'bg-[#fff1f1] text-[#ef4444]'
-                  : 'bg-[#ecfdf5] text-[#059669]'
+                  ? 'bg-[#fff1f1] text-fd-danger'
+                  : 'bg-[#ecfdf5] text-fd-success'
               }
             `}
           >
@@ -109,9 +109,9 @@ export default function Alerts({
                 sm:inline-flex
                 items-center
                 gap-1
-                text-[11px]
+                text-xs
                 font-semibold
-                text-[#5146e5]
+                text-fd-accent
                 hover:text-[#4338ca]
               "
             >
@@ -151,7 +151,7 @@ export default function Alerts({
               w-14
               rounded-2xl
               bg-[#ecfdf5]
-              text-[#10b981]
+              text-fd-success
               flex
               items-center
               justify-center
@@ -168,7 +168,7 @@ export default function Alerts({
             Tudo em ordem
           </h4>
 
-          <p className="text-[11px] text-[#7c88a1] mt-2 max-w-[240px] leading-5">
+          <p className="text-xs text-[var(--fd-text-muted)] mt-2 max-w-[240px] leading-5">
             Não existem alertas fiscais pendentes neste momento.
           </p>
 
@@ -186,6 +186,11 @@ export default function Alerts({
             const config = getAlertConfig(
               alert.type
             );
+
+            const formattedDate =
+              formatAlertDate(
+                alert.date,
+              );
 
             const Icon = config.icon;
 
@@ -230,7 +235,7 @@ export default function Alerts({
 
                   <div className="min-w-0 flex-1">
 
-                    <div className="flex items-start justify-between gap-3">
+                    <div className="flex flex-col gap-1.5 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
 
                       <h4
                         className="
@@ -243,26 +248,32 @@ export default function Alerts({
                         {alert.title}
                       </h4>
 
-                      {alert.date && (
-                        <span
+                      {formattedDate && alert.date && (
+                        <time
+                          dateTime={alert.date}
                           className="
+                            w-fit
                             shrink-0
-                            text-[9px]
-                            font-medium
-                            text-[#8b96ad]
-                            whitespace-nowrap
+                            rounded-md
+                            bg-white/70
+                            px-2
+                            py-1
+                            text-[11px]
+                            font-semibold
+                            tabular-nums
+                            text-[var(--fd-text-muted)]
                           "
                         >
-                          {alert.date}
-                        </span>
+                          {formattedDate}
+                        </time>
                       )}
 
                     </div>
 
                     <p
                       className="
-                        text-[10px]
-                        text-[#7180a2]
+                        text-xs
+                        text-[var(--fd-text-muted)]
                         mt-1
                         leading-[1.6]
                       "
@@ -301,7 +312,7 @@ function getAlertConfig(
         border: 'border-[#fecaca]',
         background: 'bg-[#fff8f8]',
         iconBackground: 'bg-[#fee2e2]',
-        iconColor: 'text-[#dc2626]',
+        iconColor: 'text-fd-danger',
       };
 
     case 'warning':
@@ -310,7 +321,7 @@ function getAlertConfig(
         border: 'border-[#fed7aa]',
         background: 'bg-[#fffaf4]',
         iconBackground: 'bg-[#ffedd5]',
-        iconColor: 'text-[#ea580c]',
+        iconColor: 'text-fd-warning',
       };
 
     case 'success':
@@ -319,7 +330,7 @@ function getAlertConfig(
         border: 'border-[#bbf7d0]',
         background: 'bg-[#f5fff9]',
         iconBackground: 'bg-[#dcfce7]',
-        iconColor: 'text-[#16a34a]',
+        iconColor: 'text-fd-success',
       };
 
     case 'info':
@@ -332,4 +343,40 @@ function getAlertConfig(
         iconColor: 'text-[#2563eb]',
       };
   }
+}
+
+function formatAlertDate(
+  value?: string,
+) {
+  if (!value) {
+    return null;
+  }
+
+  const dateOnlyMatch =
+    value.match(
+      /^(\d{4})-(\d{2})-(\d{2})/,
+    );
+
+  if (dateOnlyMatch) {
+    const [, year, month, day] =
+      dateOnlyMatch;
+
+    return `${day}/${month}/${year}`;
+  }
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) {
+    return null;
+  }
+
+  return new Intl.DateTimeFormat(
+    'pt-AO',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      timeZone: 'UTC',
+    },
+  ).format(date);
 }

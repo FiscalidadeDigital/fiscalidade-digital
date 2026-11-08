@@ -19,6 +19,10 @@ export class AdminDashboardService {
       totalEmployees,
       totalDocuments,
       storage,
+      freePlanTenants,
+      basicPlanTenants,
+      premiumPlanTenants,
+      enterprisePlanTenants,
       tenantsCreatedLast30Days,
       usersCreatedLast30Days,
       expiredTrials,
@@ -35,6 +39,10 @@ export class AdminDashboardService {
       this.prisma.tenant.aggregate({
         _sum: { storageUsedBytes: true },
       }),
+      this.prisma.tenant.count({ where: { planType: 'FREE' } }),
+      this.prisma.tenant.count({ where: { planType: 'BASIC' } }),
+      this.prisma.tenant.count({ where: { planType: 'PREMIUM' } }),
+      this.prisma.tenant.count({ where: { planType: 'ENTERPRISE' } }),
       this.prisma.tenant.count({
         where: { createdAt: { gte: thirtyDaysAgo } },
       }),
@@ -70,6 +78,12 @@ export class AdminDashboardService {
         entry._count._all,
       ]),
     );
+    const planCounts = {
+      FREE: freePlanTenants,
+      BASIC: basicPlanTenants,
+      PREMIUM: premiumPlanTenants,
+      ENTERPRISE: enterprisePlanTenants,
+    };
 
     return {
       generatedAt: now.toISOString(),
@@ -88,6 +102,10 @@ export class AdminDashboardService {
         documents: totalDocuments,
         storageBytes: (storage._sum.storageUsedBytes ?? 0n).toString(),
       },
+      storage: {
+        measurement: 'CATALOGUED_DOCUMENT_BYTES',
+        isEstimated: false,
+      },
       growth: {
         periodDays: 30,
         tenantsCreated: tenantsCreatedLast30Days,
@@ -99,6 +117,9 @@ export class AdminDashboardService {
           0,
         ),
         byPaymentStatus: subscriptionCounts,
+      },
+      plans: {
+        byPlanType: planCounts,
       },
       alerts: {
         expiredTrials,

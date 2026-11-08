@@ -17,7 +17,12 @@ import {
   clearTenantSession,
   SESSION_EXPIRED_EVENT,
 } from '@/lib/session-lifecycle';
-import { getToken, removeToken, saveToken } from '@/lib/auth';
+import {
+  getToken,
+  removeToken,
+  saveToken,
+} from '@/lib/auth';
+import { buildLoginPath } from '@/lib/route-access';
 
 /* ============================================================
    TIPOS
@@ -64,9 +69,14 @@ export type AuthContextType = {
   initialized: boolean;
   isAuthenticated: boolean;
 
-  login: (email: string, password: string) => Promise<LoginResponse>;
+  login: (
+    email: string,
+    password: string,
+  ) => Promise<LoginResponse>;
 
-  register: (data: Record<string, unknown>) => Promise<RegisterResponse>;
+  register: (
+    data: Record<string, unknown>,
+  ) => Promise<RegisterResponse>;
 
   logout: () => void;
 
@@ -77,20 +87,34 @@ export type AuthContextType = {
    CONTEXT
 ============================================================ */
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+const AuthContext =
+  createContext<AuthContextType | undefined>(
+    undefined,
+  );
 
 /* ============================================================
    PROVIDER
 ============================================================ */
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>(null);
+export function AuthProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [user, setUser] =
+    useState<User | null>(null);
 
-  const [company, setCompany] = useState<Tenant | null>(null);
+  const [company, setCompany] =
+    useState<Tenant | null>(null);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [initialized, setInitialized] = useState(false);
+  const [initialized, setInitialized] =
+    useState(false);
+
+  const [sessionVerified, setSessionVerified] =
+    useState(false);
 
   const sessionEndingRef = useRef(false);
 
@@ -99,16 +123,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ========================================================== */
 
   const saveSession = useCallback(
-    (sessionUser: User, sessionTenant: Tenant) => {
+    (
+      sessionUser: User,
+      sessionTenant: Tenant,
+    ) => {
       setUser(sessionUser);
       setCompany(sessionTenant);
+      setSessionVerified(true);
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('user', JSON.stringify(sessionUser));
+      if (
+        typeof window !== 'undefined'
+      ) {
+        localStorage.setItem(
+          'user',
+          JSON.stringify(sessionUser),
+        );
 
-        localStorage.setItem('tenant', JSON.stringify(sessionTenant));
+        localStorage.setItem(
+          'tenant',
+          JSON.stringify(sessionTenant),
+        );
 
-        localStorage.setItem('tenantId', sessionTenant.id);
+        localStorage.setItem(
+          'tenantId',
+          sessionTenant.id,
+        );
       }
     },
     [],
@@ -124,8 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setUser(null);
     setCompany(null);
+    setSessionVerified(false);
 
-    if (typeof window !== 'undefined') {
+    if (
+      typeof window !== 'undefined'
+    ) {
       localStorage.removeItem('user');
       localStorage.removeItem('tenant');
       localStorage.removeItem('tenantId');
@@ -136,98 +178,107 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      RECUPERAR SESSÃO
   ========================================================== */
 
-  const refreshSession = useCallback(async () => {
-    const token = getToken();
+  const refreshSession =
+    useCallback(async () => {
+      const token = getToken();
 
-    /*
-     * Não existe token.
-     * Portanto não existe sessão para restaurar.
-     */
-
-    if (!token) {
+      setSessionVerified(false);
       setUser(null);
       setCompany(null);
-      setLoading(false);
-      setInitialized(true);
-
-      return;
-    }
-
-    try {
-      setLoading(true);
 
       /*
-       * Consulta:
-       *
-       * GET /auth/me
+       * Não existe token.
+       * Portanto não existe sessão para restaurar.
        */
 
-      const response = await api.get('/auth/me');
+      if (!token) {
+        setLoading(false);
+        setInitialized(true);
 
-      const data = response?.data;
+        return;
+      }
 
-      /*
-       * O backend pode devolver:
-       *
-       * {
-       *   user,
-       *   tenant
-       * }
-       *
-       * ou, dependendo da implementação,
-       * o próprio user.
-       */
+      try {
+        setLoading(true);
 
-      const currentUser = data?.user ?? data;
+        /*
+         * Consulta:
+         *
+         * GET /auth/me
+         */
 
-      const currentTenant = data?.tenant ?? data?.company ?? data?.tenantData;
+        const response =
+          await api.get('/auth/me');
 
-      /*
-       * Se o backend não devolver os dois,
-       * tentamos recuperar o tenant do localStorage.
-       */
+        const data = response?.data;
 
-      let tenantFromStorage: Tenant | null = null;
+        /*
+         * O backend pode devolver:
+         *
+         * {
+         *   user,
+         *   tenant
+         * }
+         *
+         * ou, dependendo da implementação,
+         * o próprio user.
+         */
 
-      if (typeof window !== 'undefined') {
-        const storedTenant = localStorage.getItem('tenant');
+        const currentUser =
+          data?.user ?? data;
 
-        if (storedTenant) {
-          try {
-            tenantFromStorage = JSON.parse(storedTenant);
-          } catch {
-            tenantFromStorage = null;
-          }
+        const currentTenant =
+          data?.tenant ??
+          data?.company ??
+          data?.tenantData;
+
+        if (
+          !currentUser ||
+          !currentTenant
+        ) {
+          throw new Error(
+            'Sessão inválida.',
+          );
         }
+
+        saveSession(
+          currentUser,
+          currentTenant,
+        );
+      } catch (error) {
+        console.error(
+          'Erro ao restaurar sessão:',
+          error,
+        );
+
+        setUser(null);
+        setCompany(null);
+        setSessionVerified(false);
+
+        // A falha de confirmação nunca autoriza a apresentação de dados locais.
+        // Apenas um 401 também remove o token armazenado, porque outros erros podem
+        // corresponder a uma indisponibilidade temporária do serviço.
+        if (isAxiosError(error) && error.response?.status === 401) {
+          clearSession();
+        }
+      } finally {
+        setLoading(false);
+        setInitialized(true);
       }
-
-      const finalTenant = currentTenant ?? tenantFromStorage;
-
-      if (!currentUser || !finalTenant) {
-        throw new Error('Sessão inválida.');
-      }
-
-      saveSession(currentUser, finalTenant);
-    } catch (error) {
-      console.error('Erro ao restaurar sessão:', error);
-
-      // A timeout, 5xx or Render wake-up is not proof that the session ended.
-      // Only the API's explicit 401 invalidates tenant state.
-      if (isAxiosError(error) && error.response?.status === 401) {
-        clearSession();
-      }
-    } finally {
-      setLoading(false);
-      setInitialized(true);
-    }
-  }, [clearSession, saveSession]);
+    }, [
+      clearSession,
+      saveSession,
+    ]);
 
   /* ==========================================================
      LOGIN
   ========================================================== */
 
   const login = useCallback(
-    async (email: string, password: string): Promise<LoginResponse> => {
+    async (
+      email: string,
+      password: string,
+    ): Promise<LoginResponse> => {
       setLoading(true);
 
       try {
@@ -235,19 +286,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          * POST /auth/login
          */
 
-        const response = await api.post('/auth/login', {
-          email,
-          password,
-        });
+        const response =
+          await api.post(
+            '/auth/login',
+            {
+              email,
+              password,
+            },
+          );
 
-        const data = response?.data as LoginResponse;
+        const data =
+          response?.data as LoginResponse;
 
         /*
          * Verificar token.
          */
 
-        if (!data?.access_token) {
-          throw new Error('Não foi possível iniciar sessão neste momento.');
+        if (
+          !data?.access_token
+        ) {
+          throw new Error(
+            'O servidor não devolveu um token de autenticação.',
+          );
         }
 
         /*
@@ -255,7 +315,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          */
 
         if (!data?.user) {
-          throw new Error('Não foi possível confirmar os dados do utilizador.');
+          throw new Error(
+            'O servidor não devolveu os dados do utilizador.',
+          );
         }
 
         /*
@@ -263,21 +325,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          */
 
         if (!data?.tenant) {
-          throw new Error('Não foi possível confirmar os dados da empresa.');
+          throw new Error(
+            'O servidor não devolveu os dados da empresa.',
+          );
         }
 
         /*
          * Guardar TOKEN.
          */
 
-        saveToken(data.access_token);
+        saveToken(
+          data.access_token,
+        );
 
         /*
          * Guardar USER + TENANT
          * no estado React e localStorage.
          */
 
-        saveSession(data.user, data.tenant);
+        saveSession(
+          data.user,
+          data.tenant,
+        );
+
+        sessionEndingRef.current = false;
 
         /*
          * A sessão já está inicializada.
@@ -287,7 +358,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
         return data;
       } catch (error) {
-        console.error('Erro no login:', error);
+        console.error(
+          'Erro no login:',
+          error,
+        );
 
         clearSession();
 
@@ -296,7 +370,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false);
       }
     },
-    [clearSession, saveSession],
+    [
+      clearSession,
+      saveSession,
+    ],
   );
 
   /* ==========================================================
@@ -304,7 +381,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   ========================================================== */
 
   const register = useCallback(
-    async (data: Record<string, unknown>): Promise<RegisterResponse> => {
+    async (
+      data: Record<string, unknown>,
+    ): Promise<RegisterResponse> => {
       setLoading(true);
 
       try {
@@ -312,26 +391,43 @@ export function AuthProvider({ children }: { children: ReactNode }) {
          * POST /auth/register
          */
 
-        const response = await api.post('/auth/register', data);
+        const response =
+          await api.post(
+            '/auth/register',
+            data,
+          );
 
-        const result = response?.data as RegisterResponse;
+        const result =
+          response?.data as RegisterResponse;
 
         /*
          * Caso o backend faça login automático
          * depois do registo.
          */
 
-        if (result?.access_token && result?.user && result?.tenant) {
-          saveToken(result.access_token);
+        if (
+          result?.access_token &&
+          result?.user &&
+          result?.tenant
+        ) {
+          saveToken(
+            result.access_token,
+          );
 
-          saveSession(result.user, result.tenant);
+          saveSession(
+            result.user,
+            result.tenant,
+          );
         }
 
         setInitialized(true);
 
         return result;
       } catch (error) {
-        console.error('Erro no registo:', error);
+        console.error(
+          'Erro no registo:',
+          error,
+        );
 
         throw error;
       } finally {
@@ -350,8 +446,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     setInitialized(true);
 
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
+    if (
+      typeof window !== 'undefined'
+    ) {
+      window.location.href =
+        '/login';
     }
   }, [clearSession]);
 
@@ -369,12 +468,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       sessionEndingRef.current = true;
       clearSession();
       setInitialized(true);
-      window.location.replace('/login?reason=session-expired');
+      const intendedPath = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+      window.location.replace(
+        buildLoginPath(intendedPath, 'session-expired'),
+      );
     };
 
     const handleStorage = (event: StorageEvent) => {
-      if (event.key === 'token' && event.newValue === null)
-        handleExpiredSession();
+      if (event.key === 'token' && event.newValue === null) handleExpiredSession();
     };
 
     window.addEventListener(SESSION_EXPIRED_EVENT, handleExpiredSession);
@@ -389,50 +490,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
      AUTENTICAÇÃO
   ========================================================== */
 
-  const token = typeof window !== 'undefined' ? getToken() : null;
+  const token =
+    typeof window !== 'undefined'
+      ? getToken()
+      : null;
 
-  const isAuthenticated = Boolean(token) && Boolean(user) && Boolean(company);
+  const isAuthenticated =
+    Boolean(token) &&
+    sessionVerified &&
+    Boolean(user) &&
+    Boolean(company);
 
   /* ==========================================================
      VALUE
   ========================================================== */
 
-  const value = useMemo<AuthContextType>(
-    () => ({
-      user,
-      company,
+  const value =
+    useMemo<AuthContextType>(
+      () => ({
+        user,
+        company,
 
-      loading,
-      initialized,
-      isAuthenticated,
+        loading,
+        initialized,
+        isAuthenticated,
 
-      login,
-      register,
+        login,
+        register,
 
-      logout,
-      refreshSession,
-    }),
-    [
-      user,
-      company,
+        logout,
+        refreshSession,
+      }),
+      [
+        user,
+        company,
 
-      loading,
-      initialized,
-      isAuthenticated,
+        loading,
+        initialized,
+        isAuthenticated,
 
-      login,
-      register,
+        login,
+        register,
 
-      logout,
-      refreshSession,
-    ],
-  );
+        logout,
+        refreshSession,
+      ],
+    );
 
   /* ==========================================================
      PROVIDER
   ========================================================== */
 
-  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={value}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 
 /* ============================================================
@@ -440,10 +555,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 ============================================================ */
 
 export function useAuth() {
-  const context = useContext(AuthContext);
+  const context =
+    useContext(AuthContext);
 
   if (!context) {
-    throw new Error('useAuth deve ser usado dentro de um AuthProvider.');
+    throw new Error(
+      'useAuth deve ser usado dentro de um AuthProvider.',
+    );
   }
 
   return context;

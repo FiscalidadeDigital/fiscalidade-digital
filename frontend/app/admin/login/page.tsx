@@ -1,18 +1,18 @@
 'use client';
 
+import axios from 'axios';
 import {
   ArrowRight,
-  Eye,
-  EyeOff,
+  CalendarClock,
   KeyRound,
   Loader2,
   LockKeyhole,
-  ShieldCheck,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { FormEvent, useEffect, useState } from 'react';
+import { FormEvent, useEffect, useRef, useState } from 'react';
 
-import { getSafeErrorMessage } from '@/lib/safe-error';
+import PasswordInput from '@/components/auth/PasswordInput';
 import {
   changePlatformAdminPassword,
   getPlatformAdmin,
@@ -21,11 +21,20 @@ import {
   saveAdminToken,
 } from '@/services/admin-api';
 
+type AdminFieldErrors = {
+  email?: string;
+  password?: string;
+  newPassword?: string;
+  confirmPassword?: string;
+};
+
 function apiErrorMessage(error: unknown) {
-  return getSafeErrorMessage(
-    error,
-    'Não foi possível concluir o pedido. Tente novamente.',
-  );
+  if (axios.isAxiosError(error)) {
+    const message = error.response?.data?.message;
+    if (Array.isArray(message)) return message.join(' ');
+    if (typeof message === 'string') return message;
+  }
+  return 'Não foi possível concluir o pedido. Tente novamente.';
 }
 
 export default function AdminLoginPage() {
@@ -34,11 +43,13 @@ export default function AdminLoginPage() {
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
   const [requiresPasswordChange, setRequiresPasswordChange] = useState(false);
   const [loading, setLoading] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState<AdminFieldErrors>({});
+  const formRef = useRef<HTMLFormElement>(null);
+  const focusFirstErrorRef = useRef(false);
 
   useEffect(() => {
     async function checkSession() {
@@ -65,9 +76,47 @@ export default function AdminLoginPage() {
     void checkSession();
   }, [router]);
 
+  useEffect(() => {
+    if (!focusFirstErrorRef.current) {
+      return;
+    }
+
+    formRef.current
+      ?.querySelector<HTMLElement>('[aria-invalid="true"]')
+      ?.focus();
+    focusFirstErrorRef.current = false;
+  }, [fieldErrors]);
+
+  function clearFieldError(field: keyof AdminFieldErrors) {
+    setFieldErrors((current) => ({ ...current, [field]: undefined }));
+    setError('');
+  }
+
   async function handleLogin(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError('');
+
+    const nextFieldErrors: AdminFieldErrors = {};
+
+    if (!email.trim()) {
+      nextFieldErrors.email = 'Introduza o email administrativo.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      nextFieldErrors.email = 'Introduza um email válido.';
+    }
+
+    if (!password) {
+      nextFieldErrors.password = 'Introduza a palavra-passe.';
+    } else if (password.length < 12) {
+      nextFieldErrors.password = 'A palavra-passe deve ter pelo menos 12 caracteres.';
+    }
+
+    focusFirstErrorRef.current = Object.keys(nextFieldErrors).length > 0;
+    setFieldErrors(nextFieldErrors);
+
+    if (Object.keys(nextFieldErrors).length) {
+      return;
+    }
+
     setLoading(true);
 
     try {
@@ -90,8 +139,30 @@ export default function AdminLoginPage() {
     event.preventDefault();
     setError('');
 
-    if (newPassword !== confirmPassword) {
-      setError('A confirmação não corresponde à nova palavra-passe.');
+    const nextFieldErrors: AdminFieldErrors = {};
+
+    if (!password) {
+      nextFieldErrors.password = 'Introduza a palavra-passe temporária.';
+    } else if (password.length < 12) {
+      nextFieldErrors.password = 'A palavra-passe deve ter pelo menos 12 caracteres.';
+    }
+
+    if (!newPassword) {
+      nextFieldErrors.newPassword = 'Introduza a nova palavra-passe.';
+    } else if (newPassword.length < 12) {
+      nextFieldErrors.newPassword = 'A palavra-passe deve ter pelo menos 12 caracteres.';
+    }
+
+    if (!confirmPassword) {
+      nextFieldErrors.confirmPassword = 'Confirme a nova palavra-passe.';
+    } else if (newPassword !== confirmPassword) {
+      nextFieldErrors.confirmPassword = 'A confirmação não corresponde à nova palavra-passe.';
+    }
+
+    focusFirstErrorRef.current = Object.keys(nextFieldErrors).length > 0;
+    setFieldErrors(nextFieldErrors);
+
+    if (Object.keys(nextFieldErrors).length) {
       return;
     }
 
@@ -116,39 +187,63 @@ export default function AdminLoginPage() {
   }
 
   return (
-    <main className="fd-theme-scope min-h-screen bg-[var(--fd-page)] text-[var(--fd-text)] lg:grid lg:grid-cols-[minmax(320px,0.72fr)_1.28fr]">
-      <section className="flex min-h-[290px] flex-col justify-between bg-slate-950 px-7 py-8 text-white sm:px-10 lg:min-h-screen lg:px-14 lg:py-12">
+    <main className="fd-theme-scope min-h-screen bg-[var(--fd-page)] text-[var(--fd-text)] lg:grid lg:grid-cols-[minmax(390px,.82fr)_1.18fr]">
+      <section className="hidden min-h-[290px] flex-col justify-between bg-fd-primary px-7 py-8 text-white sm:px-10 lg:flex lg:min-h-screen lg:px-14 lg:py-12">
         <div>
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-white/15 bg-white/10">
-              <ShieldCheck className="h-5 w-5 text-teal-300" />
+          <div>
+            <div className="inline-flex rounded-lg bg-white px-2.5 py-1.5 shadow-sm">
+              <Image
+                src="/logofiscalidade.png"
+                alt="Fiscalidade Digital"
+                width={184}
+                height={62}
+                priority
+                className="h-10 w-auto object-contain"
+              />
             </div>
-            <div>
-              <p className="text-sm font-semibold">Fiscalidade Digital</p>
-              <p className="text-xs text-slate-400">Administração da plataforma</p>
-            </div>
+            <p className="mt-2 text-xs text-slate-200">Administração da plataforma</p>
           </div>
 
           <div className="mt-16 max-w-md lg:mt-28">
-            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-teal-300">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-200">
               Acesso restrito
             </p>
             <h1 className="mt-4 text-3xl font-semibold leading-tight sm:text-4xl">
-              Supervisão segura da operação SaaS.
+              Prazos fiscais sob controlo. Empresa organizada.
             </h1>
-            <p className="mt-5 text-sm leading-6 text-slate-300">
+            <p className="mt-5 text-sm leading-6 text-slate-200">
               Esta área usa autenticação separada das contas empresariais e apresenta apenas indicadores agregados da plataforma.
             </p>
+            <div className="fd-auth-demo-card mt-8 max-w-sm rounded-fd-card border border-white/15 bg-white/10 p-4 shadow-[0_16px_34px_rgba(4,17,38,.2)]">
+              <p className="text-[11px] font-semibold uppercase tracking-[.14em] text-cyan-200">Exemplo fictício</p>
+              <div className="mt-3 flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-fd-field bg-white/10 text-cyan-200"><CalendarClock size={19} /></span>
+                <div>
+                  <p className="text-sm font-semibold">Prazo fiscal de demonstração</p>
+                  <p className="mt-1 text-xs text-slate-200">Declaração de exemplo — 15 de abril</p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
-        <p className="mt-10 text-xs leading-5 text-slate-500">
+        <p className="mt-10 text-xs leading-5 text-slate-200">
           As operações administrativas são registadas para auditoria.
         </p>
       </section>
 
       <section className="flex items-center justify-center px-5 py-10 sm:px-10 lg:px-16">
         <div className="w-full max-w-md">
+          <div className="mb-8 inline-flex rounded-fd-field border border-[var(--fd-border)] bg-white px-3 py-2 shadow-sm lg:hidden">
+            <Image
+              src="/logofiscalidade.png"
+              alt="Fiscalidade Digital"
+              width={162}
+              height={48}
+              priority
+              className="h-8 w-auto object-contain"
+            />
+          </div>
           <div className="mb-8 flex h-11 w-11 items-center justify-center rounded-lg border border-[var(--fd-border)] bg-[var(--fd-surface)]">
             {requiresPasswordChange ? (
               <KeyRound className="h-5 w-5 text-amber-600" />
@@ -158,7 +253,7 @@ export default function AdminLoginPage() {
           </div>
 
           <h2 className="text-2xl font-semibold tracking-tight">
-            {requiresPasswordChange ? 'Definir nova palavra-passe' : 'Entrar na administração'}
+            {requiresPasswordChange ? 'Definir nova palavra-passe' : 'Entrar na plataforma'}
           </h2>
           <p className="mt-2 text-sm leading-6 text-[var(--fd-muted)]">
             {requiresPasswordChange
@@ -167,72 +262,76 @@ export default function AdminLoginPage() {
           </p>
 
           <form
+            ref={formRef}
             className="mt-8 space-y-5"
             onSubmit={requiresPasswordChange ? handlePasswordChange : handleLogin}
+            noValidate
           >
             {!requiresPasswordChange && (
-              <label className="block text-sm font-medium">
+              <label htmlFor="admin-email" className="fd-label">
                 Email administrativo
                 <input
+                  id="admin-email"
                   type="email"
                   autoComplete="username"
                   required
                   value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  className="mt-2 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-surface)] px-3.5 py-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
+                  disabled={loading}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                    clearFieldError('email');
+                  }}
+                  aria-invalid={Boolean(fieldErrors.email)}
+                  aria-describedby={fieldErrors.email ? 'admin-email-error' : undefined}
+                  className="fd-field mt-1.5"
                 />
+                {fieldErrors.email ? (
+                  <span id="admin-email-error" role="alert" className="mt-1.5 block text-sm font-normal text-red-700">
+                    {fieldErrors.email}
+                  </span>
+                ) : null}
               </label>
             )}
 
-            <label className="block text-sm font-medium">
-              {requiresPasswordChange ? 'Palavra-passe temporária' : 'Palavra-passe'}
-              <span className="relative mt-2 block">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  autoComplete={requiresPasswordChange ? 'current-password' : 'current-password'}
-                  required
-                  minLength={12}
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  className="w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-surface)] px-3.5 py-3 pr-11 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((value) => !value)}
-                  className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[var(--fd-muted)] hover:text-[var(--fd-text)]"
-                  aria-label={showPassword ? 'Ocultar palavra-passe' : 'Mostrar palavra-passe'}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </span>
-            </label>
+            <PasswordInput
+              id="admin-current-password"
+              label={requiresPasswordChange ? 'Palavra-passe temporária' : 'Palavra-passe'}
+              value={password}
+              onChange={(value) => {
+                setPassword(value);
+                clearFieldError('password');
+              }}
+              autoComplete="current-password"
+              error={fieldErrors.password}
+              disabled={loading}
+            />
 
             {requiresPasswordChange && (
               <>
-                <label className="block text-sm font-medium">
-                  Nova palavra-passe
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={12}
-                    value={newPassword}
-                    onChange={(event) => setNewPassword(event.target.value)}
-                    className="mt-2 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-surface)] px-3.5 py-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                  />
-                </label>
-                <label className="block text-sm font-medium">
-                  Confirmar nova palavra-passe
-                  <input
-                    type="password"
-                    autoComplete="new-password"
-                    required
-                    minLength={12}
-                    value={confirmPassword}
-                    onChange={(event) => setConfirmPassword(event.target.value)}
-                    className="mt-2 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-surface)] px-3.5 py-3 text-sm outline-none transition focus:border-teal-600 focus:ring-2 focus:ring-teal-600/15"
-                  />
-                </label>
+                <PasswordInput
+                  id="admin-new-password"
+                  label="Nova palavra-passe"
+                  value={newPassword}
+                  onChange={(value) => {
+                    setNewPassword(value);
+                    clearFieldError('newPassword');
+                  }}
+                  autoComplete="new-password"
+                  error={fieldErrors.newPassword}
+                  disabled={loading}
+                />
+                <PasswordInput
+                  id="admin-confirm-password"
+                  label="Confirmar nova palavra-passe"
+                  value={confirmPassword}
+                  onChange={(value) => {
+                    setConfirmPassword(value);
+                    clearFieldError('confirmPassword');
+                  }}
+                  autoComplete="new-password"
+                  error={fieldErrors.confirmPassword}
+                  disabled={loading}
+                />
                 <p className="text-xs leading-5 text-[var(--fd-muted)]">
                   Mínimo de 12 caracteres, com maiúscula, minúscula, número e símbolo.
                 </p>
@@ -248,7 +347,8 @@ export default function AdminLoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-lg bg-teal-700 px-4 py-3 text-sm font-semibold text-white transition hover:bg-teal-800 disabled:cursor-not-allowed disabled:opacity-60"
+              aria-busy={loading}
+              className="fd-button-primary w-full"
             >
               {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <ArrowRight className="h-4 w-4" />}
               {requiresPasswordChange ? 'Guardar e continuar' : 'Entrar'}

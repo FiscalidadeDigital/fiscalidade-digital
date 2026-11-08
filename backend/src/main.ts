@@ -1,14 +1,12 @@
+
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { SafeHttpExceptionFilter } from './common/filters/safe-http-exception.filter';
-import {
-  createCorsOptions,
-  resolveCorsOrigins,
-} from './common/config/cors.config';
 
 import helmet from 'helmet';
+import { createCorsConfig } from './common/config/cors.config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -43,29 +41,42 @@ async function bootstrap() {
       },
     }),
   );
-
   app.useGlobalFilters(new SafeHttpExceptionFilter());
 
   // =========================================================
   // CORS
   // =========================================================
 
-  const configuredOrigins = resolveCorsOrigins();
-  app.enableCors(createCorsOptions(configuredOrigins));
+  const { configuredOrigins, options } = createCorsConfig();
+  app.enableCors(options);
 
   // =========================================================
   // PORTA
   // =========================================================
 
-  const port = Number(process.env.PORT) || 3001;
+  const port =
+    Number(process.env.PORT) || 3001;
 
-  await app.listen(port, '0.0.0.0');
+  await app.listen(
+    port,
+    '0.0.0.0',
+  );
 
-  console.log(`Fiscalidade Digital API executando na porta ${port}.`);
+  console.log(
+    `Fiscalidade Digital API executando na porta ${port}.`,
+  );
 
-  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
+  console.log(
+    `Ambiente: ${
+      process.env.NODE_ENV || 'development'
+    }`,
+  );
 
-  console.log(`CORS autorizado: ${configuredOrigins.join(', ')}`);
+  console.log(
+    `CORS autorizado: ${
+      configuredOrigins.join(', ')
+    }`,
+  );
 }
 
 bootstrap();

@@ -1,55 +1,53 @@
-import { Controller, Get, INestApplication, Module } from '@nestjs/common';
-import { Test } from '@nestjs/testing';
-import request from 'supertest';
+import { Controller, Get, Module } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import type { INestApplication } from '@nestjs/common';
+import { createCorsConfig } from '../src/common/config/cors.config';
 
-import { createCorsOptions } from '../src/common/config/cors.config';
-
-@Controller('cors-probe')
-class CorsProbeController {
-  @Get()
-  getProbe() {
-    return { ok: true };
-  }
+@Controller()
+class ProbeController {
+  @Get('probe') probe() { return { ok: true }; }
 }
+@Module({ controllers: [ProbeController] })
+class ProbeModule {}
 
-@Module({ controllers: [CorsProbeController] })
-class CorsProbeModule {}
-
-describe('production CORS origins', () => {
+describe('CORS HTTP policy', () => {
   let app: INestApplication;
-  const officialVercelOrigin = 'https://fiscalidade-digital-o5ex.vercel.app';
-
+  let url: string;
   beforeAll(async () => {
-    const moduleRef = await Test.createTestingModule({
-      imports: [CorsProbeModule],
-    }).compile();
-
-    app = moduleRef.createNestApplication({ logger: false });
-    app.enableCors(createCorsOptions());
-    await app.init();
+    app = await NestFactory.create(ProbeModule, { logger: false });
+    app.enableCors(createCorsConfig({}).options);
+    await app.listen(0, '127.0.0.1');
+    url = await app.getUrl();
   });
-
-  afterAll(async () => {
-    await app.close();
+  afterAll(async () => { await app?.close(); });
+  it('accepts the official frontend preflight with credentials and auth headers', async () => {
+    const origin = 'https://fiscalidade-digital-o5ex.vercel.app';
+    const response = await fetch(`${url}/probe`, { method: 'OPTIONS', headers: {
+      Origin: origin, 'Access-Control-Request-Method': 'GET',
+      'Access-Control-Request-Headers': 'authorization,content-type',
+    } });
+    expect(response.status).toBe(204);
+    expect(response.headers.get('access-control-allow-origin')).toBe(origin);
+    expect(response.headers.get('access-control-allow-credentials')).toBe('true');
+    expect(response.headers.get('access-control-allow-headers')?.toLowerCase()).toContain('authorization');
   });
-
-  it('accepts the official Vercel origin on OPTIONS preflight', async () => {
-    await request(app.getHttpServer())
-      .options('/cors-probe')
-      .set('Origin', officialVercelOrigin)
-      .set('Access-Control-Request-Method', 'GET')
-      .set('Access-Control-Request-Headers', 'authorization,content-type')
-      .expect(204)
-      .expect('Access-Control-Allow-Origin', officialVercelOrigin)
-      .expect('Access-Control-Allow-Credentials', 'true');
+  it.each(['https://fiscalidadedigital.ao', 'https://www.fiscalidadedigital.ao', 'http://localhost:3000'])('preserves %s', async (origin) => {
+    const response = await fetch(`${url}/probe`, { headers: { Origin: origin } });
+    expect(response.status).toBe(200);
+    expect(response.headers.get('access-control-allow-origin')).toBe(origin);
   });
-
-  it('accepts requests from the official Vercel origin', async () => {
-    await request(app.getHttpServer())
-      .get('/cors-probe')
-      .set('Origin', officialVercelOrigin)
-      .expect(200)
-      .expect('Access-Control-Allow-Origin', officialVercelOrigin)
-      .expect({ ok: true });
+  it('withholds CORS permission from lookalike origins without a server error', async () => {
+    const response = await fetch(`${url}/probe`, { method: 'OPTIONS', headers: {
+      Origin: 'https://fiscalidade-digital-o5ex.vercel.app.attacker.example',
+      'Access-Control-Request-Method': 'GET',
+    } });
+    expect(response.status).toBeLessThan(500);
+    expect(response.headers.get('access-control-allow-origin')).toBeNull();
+  });
+  it('preserves requests without Origin', async () => {
+    expect((await fetch(`${url}/probe`)).status).toBe(200);
+  });
+  it('includes configured environment origins with exact matching', () => {
+    expect(createCorsConfig({ FRONTEND_URLS: ' https://example.test,https://example.test ' }).configuredOrigins.filter(x => x === 'https://example.test')).toHaveLength(1);
   });
 });

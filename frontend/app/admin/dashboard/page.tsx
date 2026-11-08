@@ -17,7 +17,9 @@ import type { LucideIcon } from 'lucide-react';
 
 import AdminShell from '@/components/admin/AdminShell';
 import {
+  AdminPlanType,
   AdminDashboardSummary,
+  AdminStorageMeasurement,
   getAdminDashboard,
 } from '@/services/admin-api';
 
@@ -45,9 +47,32 @@ const auditLabels: Record<string, string> = {
   ADMIN_LOGIN_SUCCEEDED: 'Sessão administrativa iniciada',
   ADMIN_LOGIN_FAILED: 'Tentativa de acesso recusada',
   ADMIN_PASSWORD_CHANGED: 'Palavra-passe administrativa alterada',
+  ADMIN_PASSWORD_RECOVERED: 'Palavra-passe administrativa recuperada',
   TENANT_SUSPENDED: 'Empresa suspensa',
   TENANT_REACTIVATED: 'Empresa reactivada',
 };
+
+const planTypes: AdminPlanType[] = ['FREE', 'BASIC', 'PREMIUM', 'ENTERPRISE'];
+
+const planLabels: Record<AdminPlanType, string> = {
+  FREE: 'FREE',
+  BASIC: 'BASIC',
+  PREMIUM: 'PREMIUM',
+  ENTERPRISE: 'ENTERPRISE',
+};
+
+const storageMeasurementLabels: Record<AdminStorageMeasurement, string> = {
+  CATALOGUED_DOCUMENT_BYTES: 'Medição registada',
+};
+
+function storageMeasurementDetail(
+  measurement: AdminStorageMeasurement,
+  isEstimated: boolean,
+) {
+  return `${storageMeasurementLabels[measurement]} — ${
+    isEstimated ? 'estimativa' : 'não é estimativa'
+  }`;
+}
 
 export default function AdminDashboardPage() {
   const [summary, setSummary] = useState<AdminDashboardSummary | null>(null);
@@ -91,7 +116,10 @@ export default function AdminDashboardPage() {
         {
           label: 'Armazenamento',
           value: formatStorage(summary.operations.storageBytes),
-          detail: 'Consumo contabilizado',
+          detail: storageMeasurementDetail(
+            summary.storage.measurement,
+            summary.storage.isEstimated,
+          ),
           icon: Database,
         },
       ]
@@ -102,7 +130,7 @@ export default function AdminDashboardPage() {
       <div className="mx-auto max-w-[1500px] px-5 py-7 sm:px-8 lg:px-10 lg:py-9">
         <header className="flex flex-col gap-4 border-b border-[var(--fd-border)] pb-6 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Visão geral</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fd-accent">Visão geral</p>
             <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Estado da plataforma</h1>
             <p className="mt-2 max-w-2xl text-sm text-[var(--fd-text-secondary)]">
               Indicadores operacionais agregados, sem acesso ao conteúdo privado das empresas.
@@ -119,7 +147,7 @@ export default function AdminDashboardPage() {
           <div className="mt-7 rounded-xl border border-rose-200 bg-rose-50 p-5 text-sm text-rose-700">{error}</div>
         ) : !summary ? (
           <div className="flex min-h-[420px] items-center justify-center">
-            <Loader2 className="h-6 w-6 animate-spin text-sky-700" aria-label="A carregar indicadores" />
+            <Loader2 className="h-6 w-6 animate-spin text-fd-accent" aria-label="A carregar indicadores" />
           </div>
         ) : (
           <>
@@ -140,13 +168,16 @@ export default function AdminDashboardPage() {
                 <article key={label} className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-sm">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-medium text-[var(--fd-text-secondary)]">{label}</p>
-                    <span className="rounded-lg bg-sky-50 p-2 text-sky-700"><Icon className="h-4 w-4" /></span>
+                    <span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent"><Icon className="h-4 w-4" /></span>
                   </div>
                   <p className="mt-5 text-2xl font-semibold tabular-nums">{value}</p>
                   <p className="mt-1 text-xs text-[var(--fd-muted)]">{detail}</p>
                 </article>
               ))}
             </section>
+            <p className="mt-3 text-xs text-[var(--fd-muted)]">
+              O armazenamento soma os bytes registados nos documentos catalogados; não resulta de uma leitura física do object storage.
+            </p>
 
             <section className="mt-6 grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
               <article className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
@@ -155,7 +186,7 @@ export default function AdminDashboardPage() {
                     <h2 className="text-sm font-semibold">Empresas por estado</h2>
                     <p className="mt-1 text-xs text-[var(--fd-muted)]">Distribuição dos tenants registados.</p>
                   </div>
-                  <Link href="/admin/tenants" className="flex items-center gap-1 text-xs font-semibold text-sky-700 hover:text-sky-900">
+                  <Link href="/admin/tenants" className="flex items-center gap-1 text-xs font-semibold text-fd-accent hover:text-fd-primary">
                     Ver empresas <ArrowUpRight className="h-3.5 w-3.5" />
                   </Link>
                 </div>
@@ -200,13 +231,28 @@ export default function AdminDashboardPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 border-t border-[var(--fd-border)] px-5 py-4 text-xs text-[var(--fd-text-secondary)]">
-                  <Activity className="h-4 w-4 text-sky-700" />
+                  <Activity className="h-4 w-4 text-fd-accent" />
                   {summary.operations.employees} trabalhadores registados em toda a plataforma
                 </div>
               </article>
             </section>
 
-            <section className="mt-6 grid gap-6 xl:grid-cols-[0.85fr_1.15fr]">
+            <section className="mt-6 grid gap-6 xl:grid-cols-[0.7fr_0.8fr_1.15fr]">
+              <article className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
+                <div className="border-b border-[var(--fd-border)] px-5 py-4">
+                  <h2 className="text-sm font-semibold">Empresas por plano</h2>
+                  <p className="mt-1 text-xs text-[var(--fd-muted)]">Plano comercial atribuído a cada empresa.</p>
+                </div>
+                <div className="divide-y divide-[var(--fd-border)] px-5">
+                  {planTypes.map((planType) => (
+                    <div key={planType} className="flex items-center justify-between py-3.5 text-xs">
+                      <span className="text-[var(--fd-text-secondary)]">{planLabels[planType]}</span>
+                      <span className="font-semibold tabular-nums">{summary.plans.byPlanType[planType] ?? 0}</span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+
               <article className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm">
                 <div className="border-b border-[var(--fd-border)] px-5 py-4">
                   <h2 className="text-sm font-semibold">Subscrições activas</h2>
@@ -228,20 +274,20 @@ export default function AdminDashboardPage() {
                     <h2 className="text-sm font-semibold">Eventos administrativos</h2>
                     <p className="mt-1 text-xs text-[var(--fd-muted)]">Acções recentes no domínio da plataforma.</p>
                   </div>
-                  <Link href="/admin/audit" className="text-xs font-semibold text-sky-700 hover:text-sky-900">Ver auditoria</Link>
+                  <Link href="/admin/audit" className="text-xs font-semibold text-fd-accent hover:text-fd-primary">Ver auditoria</Link>
                 </div>
                 {summary.recentAuditEvents.length ? (
                   <div className="divide-y divide-[var(--fd-border)] px-5">
                     {summary.recentAuditEvents.map((event) => (
                       <div key={event.id} className="flex items-start justify-between gap-4 py-3.5">
                         <div className="flex min-w-0 items-start gap-3">
-                          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-sky-700" />
+                          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-fd-accent" />
                           <div className="min-w-0">
                             <p className="truncate text-xs font-medium">{auditLabels[event.action] ?? event.action}</p>
-                            <p className="mt-1 text-[11px] text-[var(--fd-muted)]">{event.admin?.name ?? 'Sistema'}</p>
+                            <p className="mt-1 text-xs text-[var(--fd-muted)]">{event.admin?.name ?? 'Sistema'}</p>
                           </div>
                         </div>
-                        <time className="shrink-0 text-[11px] text-[var(--fd-muted)]">{new Date(event.createdAt).toLocaleString('pt-AO')}</time>
+                        <time className="shrink-0 text-xs text-[var(--fd-muted)]">{new Date(event.createdAt).toLocaleString('pt-AO')}</time>
                       </div>
                     ))}
                   </div>

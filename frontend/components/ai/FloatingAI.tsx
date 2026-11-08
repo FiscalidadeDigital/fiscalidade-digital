@@ -2,28 +2,257 @@
 
 import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
-import { Bot, Send, X } from 'lucide-react';
+import { Bot, ExternalLink, Send, X } from 'lucide-react';
+import {
+  assistantErrorMessage,
+  assistantWarnings,
+  parseAssistantContent,
+  safeExternalUrl,
+  sourceById,
+} from '@/lib/assistant-presentation';
 import api from '@/services/api';
+
+type AssistantSource = {
+  id: string;
+  kind?: 'OFFICIAL_WEB' | 'LEGISLATION' | 'LIBRARY';
+  title: string;
+  lawNumber?: string | null;
+  article?: string | null;
+  source?: string | null;
+  sourceUrl?: string | null;
+  publicationDate?: string | null;
+  effectiveDate?: string | null;
+};
 
 type Message = {
   role: 'user' | 'assistant';
   content: string;
-  sources?: Array<{
-    id: string;
-    title: string;
-    lawNumber?: string | null;
-    article?: string | null;
-    source?: string | null;
-    sourceUrl?: string | null;
-  }>;
+  sources?: AssistantSource[];
   warnings?: string[];
 };
 
+type PresentationToken = {
+  type: 'text' | 'strong' | 'citation';
+  value?: string;
+  id?: string;
+};
+
+type PresentationBlock = {
+  type: 'paragraph' | 'unordered-list' | 'ordered-list';
+  tokens?: PresentationToken[];
+  items?: PresentationToken[][];
+};
+
 const suggestions = [
-  'Quais obrigações tenho este mês?',
-  'Tenho algum prazo próximo?',
-  'Explica a minha situação fiscal.',
+  {
+    label: 'Como funciona o IVA em Angola?',
+    message: 'Como funciona o IVA em Angola?',
+    kind: 'Geral',
+  },
+  {
+    label: 'Quais obrigações tenho este mês?',
+    message: 'Quais obrigações tenho este mês?',
+    kind: 'Empresa',
+  },
+  {
+    label: 'Tenho algum prazo próximo?',
+    message: 'Tenho algum prazo próximo?',
+    kind: 'Empresa',
+  },
 ];
+
+function formatDate(value: string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+  return new Intl.DateTimeFormat('pt-AO', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+function sourceLabel(source: AssistantSource) {
+  if (source.kind === 'OFFICIAL_WEB') return 'Fonte oficial pesquisada';
+  if (source.kind === 'LEGISLATION') return 'Base documental';
+  return 'Referência documental';
+}
+
+function AnswerTokens({
+  tokens,
+  sources,
+  sourceAnchorPrefix,
+}: {
+  tokens: PresentationToken[];
+  sources: AssistantSource[];
+  sourceAnchorPrefix: string;
+}) {
+  const sourcesById = sourceById(sources) as Map<string, AssistantSource>;
+
+  return (
+    <>
+      {tokens.map((token, index) => {
+        if (token.type === 'strong') {
+          return <strong key={index}>{token.value}</strong>;
+        }
+
+        if (token.type === 'citation') {
+          const source = sourcesById.get(token.id || '');
+          const sourceUrl = safeExternalUrl(source?.sourceUrl);
+          const label = `[${token.id}]`;
+
+          if (sourceUrl) {
+            return (
+              <a
+                key={index}
+                href={sourceUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={`Abrir fonte ${token.id}: ${source?.title}`}
+                className="mx-0.5 inline-flex items-center gap-0.5 rounded font-semibold text-fd-accent underline decoration-cyan-300 underline-offset-2 hover:text-fd-primary focus:outline-none focus:ring-2 focus:ring-fd-focus"
+              >
+                {label} <ExternalLink aria-hidden="true" size={11} />
+              </a>
+            );
+          }
+
+          if (source) {
+            return (
+              <a
+                key={index}
+                href={`#${sourceAnchorPrefix}-${encodeURIComponent(source.id)}`}
+                aria-label={`Ver referência ${token.id}: ${source.title}`}
+                className="mx-0.5 rounded font-semibold text-fd-accent underline decoration-cyan-300 underline-offset-2 hover:text-fd-primary focus:outline-none focus:ring-2 focus:ring-fd-focus"
+              >
+                {label}
+              </a>
+            );
+          }
+
+          return (
+            <span
+              key={index}
+              className="mx-0.5 text-slate-500"
+              title="A referência não foi devolvida pelo serviço."
+            >
+              {label} (referência indisponível)
+            </span>
+          );
+        }
+
+        return <span key={index}>{token.value}</span>;
+      })}
+    </>
+  );
+}
+
+function AssistantAnswer({
+  content,
+  sources,
+  sourceAnchorPrefix,
+}: {
+  content: string;
+  sources?: AssistantSource[];
+  sourceAnchorPrefix: string;
+}) {
+  const answerSources = Array.isArray(sources) ? sources : [];
+  const blocks = parseAssistantContent(content) as PresentationBlock[];
+
+  return (
+    <>
+      <div className="space-y-2 whitespace-normal">
+        {blocks.map((block, blockIndex) => {
+          if (block.type === 'unordered-list' || block.type === 'ordered-list') {
+            const List = block.type === 'ordered-list' ? 'ol' : 'ul';
+            return (
+              <List
+                key={blockIndex}
+                className={
+                  block.type === 'ordered-list'
+                    ? 'list-decimal space-y-1 pl-5'
+                    : 'list-disc space-y-1 pl-5'
+                }
+              >
+                {block.items?.map((tokens, itemIndex) => (
+                  <li key={itemIndex}>
+                    <AnswerTokens
+                      tokens={tokens}
+                      sources={answerSources}
+                      sourceAnchorPrefix={sourceAnchorPrefix}
+                    />
+                  </li>
+                ))}
+              </List>
+            );
+          }
+
+          return (
+            <p key={blockIndex}>
+              <AnswerTokens
+                tokens={block.tokens || []}
+                sources={answerSources}
+                sourceAnchorPrefix={sourceAnchorPrefix}
+              />
+            </p>
+          );
+        })}
+      </div>
+      {answerSources.length ? (
+        <section
+          className="mt-3 border-t border-slate-200 pt-2 text-xs"
+          aria-label="Fontes e referências da resposta"
+        >
+          <h3 className="font-semibold text-fd-accent">Fontes e referências</h3>
+          <ul className="mt-2 space-y-2">
+            {answerSources.map((source) => {
+              const sourceUrl = safeExternalUrl(source.sourceUrl);
+              const publicationDate = formatDate(source.publicationDate);
+              const effectiveDate = formatDate(source.effectiveDate);
+              return (
+                <li
+                  id={`${sourceAnchorPrefix}-${encodeURIComponent(source.id)}`}
+                  key={source.id}
+                  className="scroll-mt-3 rounded-md bg-white p-2"
+                >
+                  <p className="font-semibold text-slate-700">
+                    [{source.id}] {source.title}
+                  </p>
+                  <p className="mt-0.5 text-slate-500">
+                    {sourceLabel(source)}
+                    {source.lawNumber ? ` · ${source.lawNumber}` : ''}
+                    {source.article ? ` · ${source.article}` : ''}
+                    {source.source ? ` · ${source.source}` : ''}
+                  </p>
+                  {publicationDate || effectiveDate ? (
+                    <p className="mt-0.5 text-slate-500">
+                      {publicationDate ? `Publicação: ${publicationDate}` : ''}
+                      {publicationDate && effectiveDate ? ' · ' : ''}
+                      {effectiveDate ? `Vigência: ${effectiveDate}` : ''}
+                    </p>
+                  ) : null}
+                  {sourceUrl ? (
+                    <a
+                      href={sourceUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 inline-flex items-center gap-1 font-semibold text-fd-accent hover:underline"
+                    >
+                      Abrir fonte <ExternalLink aria-hidden="true" size={12} />
+                    </a>
+                  ) : (
+                    <p className="mt-1 text-slate-500">
+                      Ligação externa não disponibilizada para esta referência.
+                    </p>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+    </>
+  );
+}
 
 export default function FloatingAI() {
   const [open, setOpen] = useState(false);
@@ -31,16 +260,47 @@ export default function FloatingAI() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const launcherRef = useRef<HTMLButtonElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => setMounted(true), []);
   useEffect(() => {
-    if (open) inputRef.current?.focus();
+    if (!open) return;
+
+    const launcher = launcherRef.current;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 0);
+
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setOpen(false);
+      if (event.key !== 'Tab') return;
+
+      const focusable = Array.from(
+        dialogRef.current?.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ) ?? [],
+      ).filter((element) => !element.hasAttribute('hidden'));
+      if (!focusable.length) return;
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
     };
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.clearTimeout(focusTimer);
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      launcher?.focus();
+    };
   }, [open]);
 
   async function sendMessage(value = message) {
@@ -51,22 +311,25 @@ export default function FloatingAI() {
     setLoading(true);
     try {
       const { data } = await api.post('/ai/chat', { message: text });
+      const answer =
+        typeof data?.answer === 'string' && data.answer.trim()
+          ? data.answer
+          : 'O serviço não devolveu uma resposta utilizável. Tente novamente.';
       setMessages((previous) => [
         ...previous,
         {
           role: 'assistant',
-          content: data.answer,
-          sources: data.sources,
-          warnings: data.warnings,
+          content: answer,
+          sources: Array.isArray(data?.sources) ? data.sources : undefined,
+          warnings: assistantWarnings(data?.warnings),
         },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((previous) => [
         ...previous,
         {
           role: 'assistant',
-          content:
-            'Não foi possível obter uma resposta neste momento. Tente novamente.',
+          content: assistantErrorMessage(error),
         },
       ]);
     } finally {
@@ -81,21 +344,32 @@ export default function FloatingAI() {
       <button
         data-testid="fiscal-assistant-launcher"
         data-fiscal-assistant="launcher"
+        ref={launcherRef}
         type="button"
         onClick={() => setOpen(true)}
-        aria-label="Abrir Assistente Fiscal"
+        aria-label="Assistente Fiscal"
+        aria-expanded={open}
+        aria-controls="fiscal-assistant-dialog"
+        aria-haspopup="dialog"
         title="Assistente Fiscal"
-        className="fixed bottom-4 right-4 z-[999] grid h-11 w-11 place-items-center rounded-lg border border-[#183a59] bg-[#071a2f] text-cyan-100 shadow-md transition hover:bg-[#102f4d] focus:outline-none focus:ring-2 focus:ring-cyan-500 sm:bottom-5 sm:right-5"
+        className="fixed bottom-4 right-4 z-[999] grid h-12 w-12 place-items-center rounded-full border border-[#183a59] bg-fd-primary text-cyan-100 shadow-md transition-[background-color,transform] duration-150 hover:bg-fd-primary-hover hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-cyan-300 focus:ring-offset-2 sm:bottom-5 sm:right-5"
       >
-        <Bot size={24} />
+        <Bot aria-hidden="true" size={22} />
       </button>
       {open && (
-        <section
-          role="dialog"
-          aria-modal="true"
-          aria-label="Assistente Fiscal"
-          className="fixed inset-0 z-[1000] flex h-[100dvh] flex-col overflow-hidden border border-slate-200 bg-white shadow-xl sm:inset-auto sm:bottom-20 sm:right-5 sm:h-[min(650px,78dvh)] sm:w-[410px] sm:rounded-xl"
-        >
+        <>
+          <div
+            aria-hidden="true"
+            className="fixed inset-0 z-[999] bg-slate-950/20 backdrop-blur-[1px]"
+          />
+          <section
+            ref={dialogRef}
+            id="fiscal-assistant-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Assistente Fiscal"
+            className="fixed inset-0 z-[1000] flex h-[100dvh] flex-col overflow-hidden border border-slate-200 bg-white shadow-xl sm:inset-auto sm:bottom-20 sm:right-5 sm:h-[min(650px,78dvh)] sm:w-[410px] sm:rounded-xl"
+          >
           <header className="flex items-center justify-between border-b border-slate-200 bg-white px-4 py-3.5 text-[#13233c]">
             <div className="flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-md bg-[#e8f4f7] text-[#087da2]">
@@ -103,7 +377,7 @@ export default function FloatingAI() {
               </span>
               <div>
                 <h2 className="text-sm font-bold">Assistente Fiscal</h2>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-xs text-slate-500">
                   Consulta assistida e fundamentada
                 </p>
               </div>
@@ -112,7 +386,7 @@ export default function FloatingAI() {
               type="button"
               onClick={() => setOpen(false)}
               aria-label="Fechar Assistente Fiscal"
-              className="rounded-md p-2 text-slate-500 hover:bg-slate-100 hover:text-slate-900"
+              className="grid h-11 w-11 place-items-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900"
             >
               <X size={18} />
             </button>
@@ -124,18 +398,26 @@ export default function FloatingAI() {
             {!messages.length && (
               <>
                 <p className="border-l-2 border-[#087da2] bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
-                  Consulte obrigações, prazos e enquadramentos fiscais da
-                  empresa.
+                  Pergunte sobre temas fiscais gerais ou sobre obrigações e
+                  enquadramentos da sua empresa.
+                </p>
+                <p className="text-xs leading-5 text-slate-500">
+                  Perguntas sobre a empresa usam apenas o contexto autorizado.
+                  Quando a pesquisa pública estiver disponível, as fontes são
+                  apresentadas na resposta.
                 </p>
                 <div className="space-y-2">
                   {suggestions.map((item) => (
                     <button
-                      key={item}
+                      key={item.message}
                       type="button"
-                      onClick={() => void sendMessage(item)}
-                      className="block w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-[#0b6f93] hover:border-slate-300 hover:bg-slate-50"
+                      onClick={() => void sendMessage(item.message)}
+                      className="block min-h-11 w-full rounded-md border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-fd-accent hover:border-slate-300 hover:bg-slate-50"
                     >
-                      {item}
+                      <span className="mr-2 text-xs uppercase tracking-wide text-slate-400">
+                        {item.kind}
+                      </span>
+                      {item.label}
                     </button>
                   ))}
                 </div>
@@ -146,43 +428,19 @@ export default function FloatingAI() {
                 key={`${item.role}-${index}`}
                 className={
                   item.role === 'user'
-                    ? 'ml-10 rounded-lg bg-[#102447] px-3 py-2.5 text-sm text-white'
+                    ? 'ml-10 rounded-lg bg-fd-primary px-3 py-2.5 text-sm text-white'
                     : 'mr-3 border-l-2 border-slate-300 bg-slate-50 px-3 py-2.5 text-sm leading-6 text-slate-700'
                 }
               >
-                {item.content}
-                {item.sources?.length ? (
-                  <details className="mt-3 text-xs">
-                    <summary className="cursor-pointer font-semibold text-[#0b6f93]">
-                      Fontes verificadas
-                    </summary>
-                    <ul className="mt-1 space-y-1">
-                      {item.sources.map((source) => (
-                        <li key={source.id}>
-                          <span className="font-semibold">[{source.id}]</span>{' '}
-                          {source.title}
-                          {source.lawNumber ? ` — ${source.lawNumber}` : ''}
-                          {source.article ? `, ${source.article}` : ''}
-                          {source.source ? ` (${source.source})` : ''}
-                          {source.sourceUrl ? (
-                            <>
-                              {' '}
-                              —{' '}
-                              <a
-                                href={source.sourceUrl}
-                                target="_blank"
-                                rel="noreferrer"
-                                className="font-semibold text-[#0b6f93] hover:underline"
-                              >
-                                consultar fonte
-                              </a>
-                            </>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
-                  </details>
-                ) : null}
+                {item.role === 'assistant' ? (
+                  <AssistantAnswer
+                    content={item.content}
+                    sources={item.sources}
+                    sourceAnchorPrefix={`assistant-source-${index}`}
+                  />
+                ) : (
+                  <p className="whitespace-pre-wrap">{item.content}</p>
+                )}
                 {item.warnings?.length ? (
                   <ul className="mt-3 space-y-1 border-t border-amber-200 pt-2 text-xs text-amber-800">
                     {item.warnings.map((warning) => (
@@ -216,24 +474,25 @@ export default function FloatingAI() {
                   }
                 }}
                 rows={2}
-                placeholder="Pergunte sobre a situação fiscal da sua empresa…"
-                className="min-h-10 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-cyan-600 focus:ring-2 focus:ring-cyan-100"
+                placeholder="Pergunte sobre fiscalidade ou sobre a sua empresa…"
+                className="min-h-11 flex-1 resize-none rounded-lg border border-slate-300 px-3 py-2 text-sm outline-none focus:border-fd-accent focus:ring-2 focus:ring-fd-focus"
               />
               <button
                 type="submit"
                 disabled={loading || !message.trim()}
                 aria-label="Enviar mensagem"
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-md bg-[#102447] text-white hover:bg-[#18345f] disabled:opacity-40"
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-md bg-fd-primary text-white hover:bg-fd-primary-hover disabled:opacity-40"
               >
                 <Send size={17} />
               </button>
             </div>
-            <p className="mt-2 text-[10px] text-slate-500">
-              O Assistente utiliza os dados e regras disponíveis na Fiscalidade
-              Digital.
+            <p className="mt-2 text-xs text-slate-500">
+              As respostas não substituem validação profissional. Não partilhe
+              credenciais ou informação que não seja necessária.
             </p>
           </form>
-        </section>
+          </section>
+        </>
       )}
     </>,
     document.body,

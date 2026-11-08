@@ -2,6 +2,7 @@ import {
   BadRequestException,
   Injectable,
   Logger,
+  OnModuleInit,
   Optional,
 } from '@nestjs/common';
 
@@ -11,8 +12,12 @@ import { PrismaService } from '../prisma/prisma.service';
 import { MailService } from './mail.service';
 import { TwilioMessagingService } from './twilio-messaging.service';
 import { FiscalWatchService } from '../fiscal-watch/fiscal-watch.service';
+import { FiscalObligationEligibilityService } from '../fiscal-obligation-eligibility/fiscal-obligation-eligibility.service';
 
 type AlertCheckMetrics = {
+  companiesEligible: number;
+  companiesEvaluated: number;
+  eligibilityErrors: number;
   scanned: number;
   alertsTriggered: number;
   alertsCreated: number;
@@ -21,6 +26,9 @@ type AlertCheckMetrics = {
   emailsSent: number;
   emailsSkipped: number;
   emailsFailed: number;
+  emailAttempts: number;
+  eligibilitySkipped: number;
+  reminderLimitReached: boolean;
   smsSent: number;
   whatsappSent: number;
   skipReasons: Record<string, number>;
@@ -28,6 +36,8 @@ type AlertCheckMetrics = {
 
 function emptyAlertCheckMetrics(): AlertCheckMetrics {
   return {
+    companiesEligible: 0,
+    companiesEvaluated: 0,
     scanned: 0,
     alertsTriggered: 0,
     alertsCreated: 0,
@@ -36,6 +46,10 @@ function emptyAlertCheckMetrics(): AlertCheckMetrics {
     emailsSent: 0,
     emailsSkipped: 0,
     emailsFailed: 0,
+    emailAttempts: 0,
+    eligibilityErrors: 0,
+    eligibilitySkipped: 0,
+    reminderLimitReached: false,
     smsSent: 0,
     whatsappSent: 0,
     skipReasons: {},
@@ -47,9 +61,8 @@ function recordSkip(metrics: AlertCheckMetrics, reason: string) {
 }
 
 @Injectable()
-export class AlertsService {
-  private readonly logger =
-    new Logger(AlertsService.name);
+export class AlertsService implements OnModuleInit {
+  private readonly logger = new Logger(AlertsService.name);
 
   /**
    * Dias em que ser??o gerados alertas preventivos.
@@ -61,90 +74,67 @@ export class AlertsService {
    * 1  = um dia antes
    * 0  = no pr??prio dia
    */
-  private readonly alertDays = [
-    30,
-    15,
-    7,
-    3,
-    1,
-    0,
-  ];
+  private readonly alertDays = [30, 15, 7, 3, 1, 0];
 
   constructor(
     private readonly prisma: PrismaService,
     private readonly mailService: MailService,
     private readonly twilioMessagingService: TwilioMessagingService,
     @Optional() private readonly fiscalWatchService?: FiscalWatchService,
+    @Optional()
+    private readonly eligibility: FiscalObligationEligibilityService = new FiscalObligationEligibilityService(
+      prisma,
+    ),
   ) {}
+
+  onModuleInit(): void {
+    this.logRunSummary(emptyAlertCheckMetrics(), false, 0, 'arranque');
+  }
 
   /**
    * Executa automaticamente todos os dias
    * ??s 08:00 no hor??rio de Angola.
    */
-  @Cron(
-    '0 8 * * *',
-    {
-      name: 'fiscal-deadlines',
-      timeZone: 'Africa/Luanda',
-    },
-  )
+  @Cron('0 8 * * *', {
+    name: 'fiscal-deadlines',
+    timeZone: 'Africa/Luanda',
+  })
   async checkFiscalDeadlines(): Promise<void> {
-    this.logger.log(
-      'A verificar prazos fiscais...',
-    );
+    const metrics = emptyAlertCheckMetrics();
 
     try {
-      const obligations = await this.findEligibleObligations();
-      const metrics = emptyAlertCheckMetrics();
-      metrics.scanned = obligations.length;
+      const obligations = await this.findEligibleObligations(metrics);
+      metrics.scanned = obligations.length + metrics.eligibilitySkipped;
 
-      this.logger.log(
-        'Obrigações elegíveis carregadas para verificação.',
-      );
+      this.logger.log('Obrigações elegíveis carregadas para verificação.');
 
       for (const obligation of obligations) {
-        await this.processObligation(
-          obligation,
-          metrics,
-        );
+        await this.processObligation(obligation, metrics);
       }
 
-      this.logger.log(
-        'Verifica????o de prazos fiscais conclu??da.',
-      );
+      this.logger.log('Verifica????o de prazos fiscais conclu??da.');
     } catch (error) {
-      this.logger.error(
-        'Falha ao verificar prazos fiscais.',
-      );
+      this.logger.error('Falha ao verificar prazos fiscais.');
+    } finally {
+      this.logRunSummary(metrics, false);
     }
   }
 
   /**
    * Processa uma obriga????o individual.
    */
-  private async processObligation(obligation: any, metrics: AlertCheckMetrics): Promise<void> {
+  private async processObligation(
+    obligation: any,
+    metrics: AlertCheckMetrics,
+  ): Promise<void> {
     try {
-      const today =
-        this.startOfDay(
-          new Date(),
-        );
+      const today = this.startOfDay(new Date());
 
-      const dueDate =
-        this.startOfDay(
-          new Date(
-            obligation.dueDate,
-          ),
-        );
+      const dueDate = this.startOfDay(new Date(obligation.dueDate));
 
-      const diffTime =
-        dueDate.getTime() -
-        today.getTime();
+      const diffTime = dueDate.getTime() - today.getTime();
 
-      const diffDays =
-        Math.round(
-          diffTime /
-            (1000 * 60 * 60 * 24),
-        );
+      const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
 
       /*
        * Verifica se a obriga????o est?? atrasada.
@@ -178,13 +168,7 @@ export class AlertsService {
          * Assim n??o criamos um novo alerta todos
          * os dias para a mesma obriga????o.
          */
-        await this.processAlert(
-          obligation,
-          -1,
-          today,
-          dueDate,
-          metrics,
-        );
+        await this.processAlert(obligation, -1, today, dueDate, metrics);
 
         return;
       }
@@ -192,11 +176,7 @@ export class AlertsService {
       /*
        * S?? criamos alertas nos marcos definidos.
        */
-      if (
-        !this.alertDays.includes(
-          diffDays,
-        )
-      ) {
+      if (!this.alertDays.includes(diffDays)) {
         recordSkip(metrics, 'OUTSIDE_WINDOW');
         return;
       }
@@ -205,17 +185,9 @@ export class AlertsService {
         await this.fiscalWatchService.evaluateAllTenants();
       }
 
-      await this.processAlert(
-        obligation,
-        diffDays,
-        today,
-        dueDate,
-        metrics,
-      );
+      await this.processAlert(obligation, diffDays, today, dueDate, metrics);
     } catch (error) {
-      this.logger.error(
-        'Falha ao processar uma obrigação fiscal.',
-      );
+      this.logger.error('Falha ao processar uma obrigação fiscal.');
     }
   }
 
@@ -240,19 +212,17 @@ export class AlertsService {
     /*
      * Verifica as configura????es da empresa.
      */
-    const settings =
-      obligation.tenant
-        ?.companySettings;
+    const settings = obligation.tenant?.companySettings;
 
     const alertsEnabled =
-      settings?.fiscalAlertsEnabled !==
-        false &&
-      settings?.fiscalReminderEnabled !==
-        false;
+      settings?.fiscalAlertsEnabled !== false &&
+      settings?.fiscalReminderEnabled !== false;
 
     if (!alertsEnabled) {
-      if (settings?.fiscalAlertsEnabled === false) recordSkip(metrics, 'FISCAL_ALERTS_DISABLED');
-      if (settings?.fiscalReminderEnabled === false) recordSkip(metrics, 'FISCAL_REMINDER_DISABLED');
+      if (settings?.fiscalAlertsEnabled === false)
+        recordSkip(metrics, 'FISCAL_ALERTS_DISABLED');
+      if (settings?.fiscalReminderEnabled === false)
+        recordSkip(metrics, 'FISCAL_REMINDER_DISABLED');
       this.logger.log(
         `Alertas desativados para a empresa ${obligation.tenant.name}.`,
       );
@@ -270,83 +240,57 @@ export class AlertsService {
      * Se um canal falhou anteriormente,
      * o pr??ximo ciclo poder?? tentar novamente.
      */
-    let fiscalAlert =
-      await this.prisma.fiscalAlert.findUnique({
-        where: {
-          obligationId_daysBefore: {
-            obligationId:
-              obligation.id,
+    let fiscalAlert = await this.prisma.fiscalAlert.findUnique({
+      where: {
+        obligationId_daysBefore: {
+          obligationId: obligation.id,
 
-            daysBefore:
-              diffDays,
-          },
+          daysBefore: diffDays,
         },
-      });
+      },
+    });
 
     /*
      * Se ainda n??o existe, criamos.
      */
     if (!fiscalAlert) {
-      fiscalAlert =
-      await this.prisma.fiscalAlert.create({
-          data: {
-            tenantId:
-              obligation.tenantId,
+      fiscalAlert = await this.prisma.fiscalAlert.create({
+        data: {
+          tenantId: obligation.tenantId,
 
-            obligationId:
-              obligation.id,
+          obligationId: obligation.id,
 
-            daysBefore:
-              diffDays,
+          daysBefore: diffDays,
 
-            notificationSent:
-              false,
+          notificationSent: false,
 
-            emailSent:
-              false,
+          emailSent: false,
 
-            emailStatus:
-              null,
+          emailStatus: null,
 
-            smsSent:
-              false,
+          smsSent: false,
 
-            smsStatus:
-              null,
+          smsStatus: null,
 
-            whatsappSent:
-              false,
+          whatsappSent: false,
 
-            whatsappStatus:
-              null,
+          whatsappStatus: null,
 
-            notificationId:
-              null,
-          },
-        });
+          notificationId: null,
+        },
+      });
 
       metrics.alertsCreated += 1;
 
-      this.logger.log(
-        'Novo alerta fiscal criado.',
-      );
+      this.logger.log('Novo alerta fiscal criado.');
     } else {
       metrics.alertsReused += 1;
-      this.logger.log(
-        'Alerta fiscal existente verificado.',
-      );
+      this.logger.log('Alerta fiscal existente verificado.');
     }
 
-    const notificationType =
-      this.getNotificationType(
-        diffDays,
-      );
+    const notificationType = this.getNotificationType(diffDays);
 
-    const message =
-      this.buildMessage(
-        obligation.title,
-        diffDays,
-      );
+    const message = this.buildMessage(obligation.title, diffDays);
 
     /*
      * =========================================================
@@ -354,33 +298,24 @@ export class AlertsService {
      * =========================================================
      */
     if (!fiscalAlert.notificationSent) {
-      let notificationId:
-        | string
-        | null = null;
+      let notificationId: string | null = null;
 
       try {
-        const notification =
-          await this.prisma.notification.create({
-            data: {
-              tenantId:
-                obligation.tenantId,
+        const notification = await this.prisma.notification.create({
+          data: {
+            tenantId: obligation.tenantId,
 
-              title:
-                this.buildTitle(
-                  diffDays,
-                ),
+            title: this.buildTitle(diffDays),
 
-              message,
+            message,
 
-              isRead:
-                false,
+            isRead: false,
 
-              notificationType,
-            },
-          });
+            notificationType,
+          },
+        });
 
-        notificationId =
-          notification.id;
+        notificationId = notification.id;
 
         await this.prisma.fiscalAlert.update({
           where: {
@@ -388,11 +323,9 @@ export class AlertsService {
           },
 
           data: {
-            notificationSent:
-              true,
+            notificationSent: true,
 
-            notificationId:
-              notification.id,
+            notificationId: notification.id,
           },
         });
 
@@ -404,13 +337,9 @@ export class AlertsService {
 
         metrics.notificationsCreated += 1;
 
-        this.logger.log(
-          'Notificação fiscal interna criada.',
-        );
+        this.logger.log('Notificação fiscal interna criada.');
       } catch (error) {
-        this.logger.error(
-          'Falha ao criar notificação fiscal interna.',
-        );
+        this.logger.error('Falha ao criar notificação fiscal interna.');
       }
     }
 
@@ -433,13 +362,7 @@ export class AlertsService {
      * 3. SMS
      * =========================================================
      */
-    await this.processSms(
-      obligation,
-      fiscalAlert,
-      settings,
-      diffDays,
-      metrics,
-    );
+    await this.processSms(obligation, fiscalAlert, settings, diffDays, metrics);
 
     /*
      * =========================================================
@@ -465,17 +388,13 @@ export class AlertsService {
       },
 
       data: {
-        reminderSent:
-          true,
+        reminderSent: true,
 
-        lastReminderAt:
-          new Date(),
+        lastReminderAt: new Date(),
       },
     });
 
-    this.logger.log(
-      'Alerta fiscal processado.',
-    );
+    this.logger.log('Alerta fiscal processado.');
   }
 
   /**
@@ -490,6 +409,18 @@ export class AlertsService {
     metrics: AlertCheckMetrics,
   ): Promise<void> {
     /*
+     * Interruptor global de segurança para os e-mails de lembrete
+     * fiscal. Fica desligado até ser explicitamente ativado no ambiente.
+     * Não afeta confirmação de conta, recuperação de palavra-passe,
+     * convites ou outros tipos de e-mail.
+     */
+    if (process.env.REMINDER_EMAILS_ENABLED?.trim().toLowerCase() === 'false') {
+      metrics.emailsSkipped += 1;
+      recordSkip(metrics, 'REMINDER_EMAILS_DISABLED');
+      return;
+    }
+
+    /*
      * Se j?? foi enviado, n??o enviamos novamente.
      */
     if (fiscalAlert.emailSent) {
@@ -498,12 +429,19 @@ export class AlertsService {
       return;
     }
 
-    const emailEnabled =
-      settings?.emailEnabled !==
-      false;
+    if ((metrics.emailAttempts ?? 0) >= this.reminderMaxPerRun()) {
+      metrics.emailsSkipped += 1;
+      recordSkip(metrics, 'REMINDER_MAX_PER_RUN_REACHED');
+      if (!metrics.reminderLimitReached) {
+        metrics.reminderLimitReached = true;
+        this.logger.warn('Limite de lembretes por execução atingido.');
+      }
+      return;
+    }
 
-    const companyEmail =
-      obligation.tenant?.email;
+    const emailEnabled = settings?.emailEnabled !== false;
+
+    const companyEmail = obligation.tenant?.email;
 
     if (!emailEnabled) {
       metrics.emailsSkipped += 1;
@@ -514,11 +452,9 @@ export class AlertsService {
         },
 
         data: {
-          emailSent:
-            false,
+          emailSent: false,
 
-          emailStatus:
-            'EMAIL_DISABLED',
+          emailStatus: 'EMAIL_DISABLED',
         },
       });
 
@@ -534,11 +470,9 @@ export class AlertsService {
         },
 
         data: {
-          emailSent:
-            false,
+          emailSent: false,
 
-          emailStatus:
-            'NO_COMPANY_EMAIL',
+          emailStatus: 'NO_COMPANY_EMAIL',
         },
       });
 
@@ -550,6 +484,7 @@ export class AlertsService {
     }
 
     try {
+      metrics.emailAttempts = (metrics.emailAttempts ?? 0) + 1;
       await this.mailService.sendObligationAlert(
         companyEmail,
         obligation.tenant.name,
@@ -562,18 +497,15 @@ export class AlertsService {
 
       await this.prisma.emailLog.create({
         data: {
-          tenantId:
-            obligation.tenantId,
+          tenantId: obligation.tenantId,
 
-          email:
-            this.maskEmail(companyEmail),
+          email: this.maskEmail(companyEmail),
 
           subject: 'Alerta fiscal',
 
           body: null,
 
-          status:
-            'SENT',
+          status: 'SENT',
         },
       });
 
@@ -583,19 +515,15 @@ export class AlertsService {
         },
 
         data: {
-          emailSent:
-            true,
+          emailSent: true,
 
-          emailStatus:
-            'SENT',
+          emailStatus: 'SENT',
         },
       });
 
       metrics.emailsSent += 1;
 
-      this.logger.log(
-        'E-mail de alerta enviado.',
-      );
+      this.logger.log('E-mail de alerta enviado.');
     } catch {
       metrics.emailsFailed += 1;
       recordSkip(metrics, 'PROVIDER_FAILED');
@@ -607,18 +535,15 @@ export class AlertsService {
        */
       await this.prisma.emailLog.create({
         data: {
-          tenantId:
-            obligation.tenantId,
+          tenantId: obligation.tenantId,
 
-          email:
-            this.maskEmail(companyEmail),
+          email: this.maskEmail(companyEmail),
 
           subject: 'Alerta fiscal',
 
           body: null,
 
-          status:
-            'FAILED',
+          status: 'FAILED',
         },
       });
 
@@ -628,17 +553,13 @@ export class AlertsService {
         },
 
         data: {
-          emailSent:
-            false,
+          emailSent: false,
 
-          emailStatus:
-            `FAILED: ${errorMessage}`,
+          emailStatus: `FAILED: ${errorMessage}`,
         },
       });
 
-      this.logger.error(
-        'Falha ao enviar e-mail de alerta.',
-      );
+      this.logger.error('Falha ao enviar e-mail de alerta.');
     }
   }
 
@@ -660,12 +581,9 @@ export class AlertsService {
       return;
     }
 
-    const smsEnabled =
-      settings?.smsEnabled !==
-      false;
+    const smsEnabled = settings?.smsEnabled !== false;
 
-    const phone =
-      obligation.tenant?.phone;
+    const phone = obligation.tenant?.phone;
 
     if (!smsEnabled) {
       await this.prisma.fiscalAlert.update({
@@ -674,11 +592,9 @@ export class AlertsService {
         },
 
         data: {
-          smsSent:
-            false,
+          smsSent: false,
 
-          smsStatus:
-            'SMS_DISABLED',
+          smsStatus: 'SMS_DISABLED',
         },
       });
 
@@ -692,11 +608,9 @@ export class AlertsService {
         },
 
         data: {
-          smsSent:
-            false,
+          smsSent: false,
 
-          smsStatus:
-            'NO_COMPANY_PHONE',
+          smsStatus: 'NO_COMPANY_PHONE',
         },
       });
 
@@ -707,42 +621,31 @@ export class AlertsService {
       return;
     }
 
-    const smsMessage =
-      this.buildSmsMessage(
-        obligation.title,
-        diffDays,
-      );
+    const smsMessage = this.buildSmsMessage(obligation.title, diffDays);
 
     try {
-      const result =
-        await this.twilioMessagingService.sendSms(
-          phone,
-          smsMessage,
-        );
+      const result = await this.twilioMessagingService.sendSms(
+        phone,
+        smsMessage,
+      );
 
       await this.prisma.sMSLog.create({
         data: {
-          tenantId:
-            obligation.tenantId,
+          tenantId: obligation.tenantId,
 
           phone: this.maskPhone(phone),
 
           message: 'Alerta fiscal',
 
-          status:
-            'SENT',
+          status: 'SENT',
 
-          channel:
-            'SMS',
+          channel: 'SMS',
 
-          provider:
-            'TWILIO',
+          provider: 'TWILIO',
 
-          providerMessageId:
-            result.providerMessageId,
+          providerMessageId: result.providerMessageId,
 
-          errorMessage:
-            null,
+          errorMessage: null,
         },
       });
 
@@ -752,22 +655,17 @@ export class AlertsService {
         },
 
         data: {
-          smsSent:
-            true,
+          smsSent: true,
 
-          smsStatus:
-            'SENT',
+          smsStatus: 'SENT',
         },
       });
 
       metrics.smsSent += 1;
 
-      this.logger.log(
-        'SMS de alerta enviado.',
-      );
+      this.logger.log('SMS de alerta enviado.');
     } catch {
-      const errorMessage =
-        'Falha de entrega do fornecedor.';
+      const errorMessage = 'Falha de entrega do fornecedor.';
 
       /*
        * O erro fica registado.
@@ -777,24 +675,19 @@ export class AlertsService {
        */
       await this.prisma.sMSLog.create({
         data: {
-          tenantId:
-            obligation.tenantId,
+          tenantId: obligation.tenantId,
 
           phone: this.maskPhone(phone),
 
           message: 'Alerta fiscal',
 
-          status:
-            'FAILED',
+          status: 'FAILED',
 
-          channel:
-            'SMS',
+          channel: 'SMS',
 
-          provider:
-            'TWILIO',
+          provider: 'TWILIO',
 
-          providerMessageId:
-            null,
+          providerMessageId: null,
 
           errorMessage,
         },
@@ -806,17 +699,13 @@ export class AlertsService {
         },
 
         data: {
-          smsSent:
-            false,
+          smsSent: false,
 
-          smsStatus:
-            `FAILED: ${errorMessage}`,
+          smsStatus: `FAILED: ${errorMessage}`,
         },
       });
 
-      this.logger.error(
-        'Falha ao enviar SMS de alerta.',
-      );
+      this.logger.error('Falha ao enviar SMS de alerta.');
     }
   }
 
@@ -843,15 +732,11 @@ export class AlertsService {
       return;
     }
 
-    const whatsappEnabled =
-      settings?.whatsappEnabled ===
-      true;
+    const whatsappEnabled = settings?.whatsappEnabled === true;
 
-    const whatsappOptIn =
-      !!settings?.whatsappOptInAt;
+    const whatsappOptIn = !!settings?.whatsappOptInAt;
 
-    const phone =
-      obligation.tenant?.phone;
+    const phone = obligation.tenant?.phone;
 
     if (!whatsappEnabled) {
       await this.prisma.fiscalAlert.update({
@@ -860,11 +745,9 @@ export class AlertsService {
         },
 
         data: {
-          whatsappSent:
-            false,
+          whatsappSent: false,
 
-          whatsappStatus:
-            'WHATSAPP_DISABLED',
+          whatsappStatus: 'WHATSAPP_DISABLED',
         },
       });
 
@@ -878,11 +761,9 @@ export class AlertsService {
         },
 
         data: {
-          whatsappSent:
-            false,
+          whatsappSent: false,
 
-          whatsappStatus:
-            'WHATSAPP_NO_OPT_IN',
+          whatsappStatus: 'WHATSAPP_NO_OPT_IN',
         },
       });
 
@@ -900,11 +781,9 @@ export class AlertsService {
         },
 
         data: {
-          whatsappSent:
-            false,
+          whatsappSent: false,
 
-          whatsappStatus:
-            'NO_COMPANY_PHONE',
+          whatsappStatus: 'NO_COMPANY_PHONE',
         },
       });
 
@@ -919,42 +798,31 @@ export class AlertsService {
      * Vari??veis enviadas para o template
      * aprovado no Twilio/WhatsApp.
      */
-    const variables =
-      this.buildWhatsAppVariables(
-        obligation,
-        diffDays,
-      );
+    const variables = this.buildWhatsAppVariables(obligation, diffDays);
 
     try {
-      const result =
-        await this.twilioMessagingService.sendWhatsApp(
-          phone,
-          variables,
-        );
+      const result = await this.twilioMessagingService.sendWhatsApp(
+        phone,
+        variables,
+      );
 
       await this.prisma.sMSLog.create({
         data: {
-          tenantId:
-            obligation.tenantId,
+          tenantId: obligation.tenantId,
 
           phone: this.maskPhone(phone),
 
           message: 'Alerta fiscal',
 
-          status:
-            'SENT',
+          status: 'SENT',
 
-          channel:
-            'WHATSAPP',
+          channel: 'WHATSAPP',
 
-          provider:
-            'TWILIO',
+          provider: 'TWILIO',
 
-          providerMessageId:
-            result.providerMessageId,
+          providerMessageId: result.providerMessageId,
 
-          errorMessage:
-            null,
+          errorMessage: null,
         },
       });
 
@@ -964,43 +832,33 @@ export class AlertsService {
         },
 
         data: {
-          whatsappSent:
-            true,
+          whatsappSent: true,
 
-          whatsappStatus:
-            'SENT',
+          whatsappStatus: 'SENT',
         },
       });
 
       metrics.whatsappSent += 1;
 
-      this.logger.log(
-        'Mensagem WhatsApp de alerta enviada.',
-      );
+      this.logger.log('Mensagem WhatsApp de alerta enviada.');
     } catch {
-      const errorMessage =
-        'Falha de entrega do fornecedor.';
+      const errorMessage = 'Falha de entrega do fornecedor.';
 
       await this.prisma.sMSLog.create({
         data: {
-          tenantId:
-            obligation.tenantId,
+          tenantId: obligation.tenantId,
 
           phone: this.maskPhone(phone),
 
           message: 'Alerta fiscal',
 
-          status:
-            'FAILED',
+          status: 'FAILED',
 
-          channel:
-            'WHATSAPP',
+          channel: 'WHATSAPP',
 
-          provider:
-            'TWILIO',
+          provider: 'TWILIO',
 
-          providerMessageId:
-            null,
+          providerMessageId: null,
 
           errorMessage,
         },
@@ -1012,17 +870,13 @@ export class AlertsService {
         },
 
         data: {
-          whatsappSent:
-            false,
+          whatsappSent: false,
 
-          whatsappStatus:
-            `FAILED: ${errorMessage}`,
+          whatsappStatus: `FAILED: ${errorMessage}`,
         },
       });
 
-      this.logger.error(
-        'Falha ao enviar mensagem WhatsApp de alerta.',
-      );
+      this.logger.error('Falha ao enviar mensagem WhatsApp de alerta.');
     }
   }
 
@@ -1031,18 +885,20 @@ export class AlertsService {
    *
    * Ser?? ??til para testes e administra????o.
    */
-  async runManualCheck(tenantId: string): Promise<{
-    success: boolean;
-    message: string;
-    processed: number;
-  } & AlertCheckMetrics> {
+  async runManualCheck(tenantId: string): Promise<
+    {
+      success: boolean;
+      message: string;
+      processed: number;
+    } & AlertCheckMetrics
+  > {
     if (!tenantId) {
       throw new BadRequestException('Empresa autenticada não identificada.');
     }
 
-    const obligations = await this.findEligibleObligations(tenantId);
     const metrics = emptyAlertCheckMetrics();
-    metrics.scanned = obligations.length;
+    const obligations = await this.findEligibleObligations(metrics, tenantId);
+    metrics.scanned = obligations.length + metrics.eligibilitySkipped;
 
     for (const obligation of obligations) {
       await this.processObligation(obligation, metrics);
@@ -1050,15 +906,76 @@ export class AlertsService {
 
     return {
       success: true,
-      message:
-        'Verifica????o manual de alertas executada com sucesso.',
+      message: 'Verifica????o manual de alertas executada com sucesso.',
       processed: obligations.length,
       ...metrics,
     };
   }
 
-  private findEligibleObligations(tenantId?: string) {
-    return this.prisma.fiscalObligation.findMany({
+  async simulateScheduledCheck(): Promise<
+    AlertCheckMetrics & { emailsWouldSend: number }
+  > {
+    const metrics = emptyAlertCheckMetrics();
+    let emailsWouldSend = 0;
+    const obligations = await this.findEligibleObligations(metrics);
+    metrics.scanned = obligations.length + metrics.eligibilitySkipped;
+
+    for (const obligation of obligations) {
+      const dueDate = this.startOfDay(new Date(obligation.dueDate));
+      const today = this.startOfDay(new Date());
+      const diffDays = Math.round(
+        (dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
+      );
+      if (diffDays >= 0 && !this.alertDays.includes(diffDays)) {
+        recordSkip(metrics, 'OUTSIDE_WINDOW');
+        continue;
+      }
+      const settings = obligation.tenant?.companySettings;
+      if (
+        settings?.fiscalAlertsEnabled === false ||
+        settings?.fiscalReminderEnabled === false ||
+        settings?.emailEnabled === false
+      ) {
+        metrics.emailsSkipped += 1;
+        recordSkip(metrics, 'EMAIL_DISABLED');
+        continue;
+      }
+      if (!obligation.tenant?.email) {
+        metrics.emailsSkipped += 1;
+        recordSkip(metrics, 'MISSING_RECIPIENT');
+        continue;
+      }
+      if (process.env.REMINDER_EMAILS_ENABLED?.trim().toLowerCase() === 'false') {
+        metrics.emailsSkipped += 1;
+        recordSkip(metrics, 'REMINDER_EMAILS_DISABLED');
+        continue;
+      }
+      const alert = await this.prisma.fiscalAlert.findUnique({
+        where: {
+          obligationId_daysBefore: {
+            obligationId: obligation.id,
+            daysBefore: diffDays < 0 ? -1 : diffDays,
+          },
+        },
+        select: { emailSent: true },
+      });
+      if (alert?.emailSent) {
+        metrics.emailsSkipped += 1;
+        recordSkip(metrics, 'ALREADY_SENT');
+        continue;
+      }
+      emailsWouldSend += 1;
+    }
+
+    this.logRunSummary(metrics, true, emailsWouldSend);
+    return { ...metrics, emailsWouldSend };
+  }
+
+  private async findEligibleObligations(
+    metrics: AlertCheckMetrics,
+    tenantId?: string,
+  ) {
+    const obligations = await this.prisma.fiscalObligation.findMany({
       where: {
         ...(tenantId ? { tenantId } : {}),
         alertEnabled: true,
@@ -1073,17 +990,73 @@ export class AlertsService {
       },
       orderBy: { dueDate: 'asc' },
     });
+
+    if (tenantId) {
+      return this.filterTenantObligations(tenantId, obligations, metrics);
+    }
+
+    const byTenant = new Map<string, typeof obligations>();
+    for (const obligation of obligations) {
+      const current = byTenant.get(obligation.tenantId) ?? [];
+      current.push(obligation);
+      byTenant.set(obligation.tenantId, current);
+    }
+
+    const eligible = [] as typeof obligations;
+    for (const [id, items] of byTenant.entries()) {
+      eligible.push(
+        ...(await this.filterTenantObligations(id, items, metrics)),
+      );
+    }
+    return eligible;
+  }
+
+  private async filterTenantObligations<
+    T extends { dueDate: Date; type: string; period?: string | null },
+  >(
+    tenantId: string,
+    obligations: T[],
+    metrics: AlertCheckMetrics,
+  ): Promise<T[]> {
+    metrics.companiesEvaluated += 1;
+    try {
+      const eligible = await this.eligibility.filterEligible(tenantId, obligations);
+      if (eligible.length > 0) metrics.companiesEligible += 1;
+      metrics.eligibilitySkipped += obligations.length - eligible.length;
+      return eligible;
+    } catch {
+      metrics.eligibilitySkipped += obligations.length;
+      metrics.eligibilityErrors += 1;
+      this.logger.error(
+        'Falha ao avaliar elegibilidade de lembretes para uma empresa.',
+      );
+      return [];
+    }
+  }
+
+  private logRunSummary(
+    metrics: AlertCheckMetrics,
+    simulation: boolean,
+    emailsWouldSend = 0,
+    context = 'execução',
+  ): void {
+    const remindersEnabled =
+      process.env.REMINDER_EMAILS_ENABLED?.trim().toLowerCase() !== 'false';
+    this.logger.log(
+      `Resumo ${simulation ? 'da simulação' : `do agendador (${context})`} de lembretes: empresas avaliadas=${metrics.companiesEvaluated}; empresas elegíveis=${metrics.companiesEligible}; e-mails enviados=${simulation ? emailsWouldSend : metrics.emailsSent}; ignoradas por elegibilidade=${metrics.eligibilitySkipped}; ignoradas por erro=${metrics.eligibilityErrors}; limite atingido=${metrics.reminderLimitReached ? 'sim' : 'não'}; lembretes=${remindersEnabled ? 'ligados' : 'desligados'}.`,
+    );
+  }
+
+  private reminderMaxPerRun(): number {
+    const configured = Number(process.env.REMINDER_MAX_PER_RUN);
+    if (!Number.isFinite(configured) || configured < 0) return 150;
+    return Math.floor(configured);
   }
 
   /**
    * Define o tipo visual da notifica????o.
    */
-  private getNotificationType(
-    diffDays: number,
-  ):
-    | 'INFO'
-    | 'WARNING'
-    | 'ERROR' {
+  private getNotificationType(diffDays: number): 'INFO' | 'WARNING' | 'ERROR' {
     if (diffDays >= 15) {
       return 'INFO';
     }
@@ -1098,9 +1071,7 @@ export class AlertsService {
   /**
    * T??tulo da notifica????o.
    */
-  private buildTitle(
-    diffDays: number,
-  ): string {
+  private buildTitle(diffDays: number): string {
     if (diffDays < 0) {
       return 'Obriga????o fiscal em atraso';
     }
@@ -1127,10 +1098,7 @@ export class AlertsService {
   /**
    * Mensagem apresentada na plataforma.
    */
-  private buildMessage(
-    obligationTitle: string,
-    diffDays: number,
-  ): string {
+  private buildMessage(obligationTitle: string, diffDays: number): string {
     if (diffDays < 0) {
       return `${obligationTitle} encontra-se em atraso. Verifique a obriga????o e regularize a situa????o o quanto antes.`;
     }
@@ -1154,15 +1122,11 @@ export class AlertsService {
     diffDays: number,
     dueDate: Date,
   ): string {
-    const prazo =
-      dueDate.toLocaleDateString(
-        'pt-AO',
-      );
+    const prazo = dueDate.toLocaleDateString('pt-AO');
 
-    const saudacao =
-      obligation.tenant?.name
-        ? `Ol??, ${obligation.tenant.name}.`
-        : 'Ol??.';
+    const saudacao = obligation.tenant?.name
+      ? `Ol??, ${obligation.tenant.name}.`
+      : 'Ol??.';
 
     let urgency =
       'Este ?? um aviso preventivo para ajudar a sua empresa a manter os prazos fiscais organizados.';
@@ -1220,10 +1184,7 @@ Gest??o Fiscal Inteligente`;
   /**
    * Mensagem curta para SMS.
    */
-  private buildSmsMessage(
-    obligationTitle: string,
-    diffDays: number,
-  ): string {
+  private buildSmsMessage(obligationTitle: string, diffDays: number): string {
     if (diffDays < 0) {
       return `Fiscalidade Digital: ${obligationTitle} est?? em atraso. Consulte o sistema para verificar e regularizar a obriga????o.`;
     }
@@ -1254,17 +1215,9 @@ Gest??o Fiscal Inteligente`;
     obligation: any,
     diffDays: number,
   ): Record<string, string> {
-    const dueDate =
-      new Date(
-        obligation.dueDate,
-      );
+    const dueDate = new Date(obligation.dueDate);
 
-    const prazo =
-      this.startOfDay(
-        dueDate,
-      ).toLocaleDateString(
-        'pt-AO',
-      );
+    const prazo = this.startOfDay(dueDate).toLocaleDateString('pt-AO');
 
     const tempoRestante =
       diffDays < 0
@@ -1276,18 +1229,13 @@ Gest??o Fiscal Inteligente`;
             : `${diffDays} dias`;
 
     return {
-      '1':
-        obligation.tenant?.name ||
-        'Empresa',
+      '1': obligation.tenant?.name || 'Empresa',
 
-      '2':
-        obligation.title,
+      '2': obligation.title,
 
-      '3':
-        prazo,
+      '3': prazo,
 
-      '4':
-        tempoRestante,
+      '4': tempoRestante,
     };
   }
 
@@ -1316,9 +1264,7 @@ Gest??o Fiscal Inteligente`;
   /**
    * Descri????o amig??vel dos dias.
    */
-  private getDaysDescription(
-    diffDays: number,
-  ): string {
+  private getDaysDescription(diffDays: number): string {
     if (diffDays < 0) {
       return `atraso de ${Math.abs(diffDays)} ${Math.abs(diffDays) === 1 ? 'dia' : 'dias'}`;
     }
@@ -1337,18 +1283,10 @@ Gest??o Fiscal Inteligente`;
   /**
    * Normaliza uma data para o in??cio do dia.
    */
-  private startOfDay(
-    date: Date,
-  ): Date {
-    const result =
-      new Date(date);
+  private startOfDay(date: Date): Date {
+    const result = new Date(date);
 
-    result.setHours(
-      0,
-      0,
-      0,
-      0,
-    );
+    result.setHours(0, 0, 0, 0);
 
     return result;
   }

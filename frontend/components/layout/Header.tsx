@@ -128,7 +128,7 @@ export default function Header() {
               rounded-full
               bg-red-500
               text-white
-              text-[10px]
+              text-xs
               font-bold
               flex
               items-center
@@ -161,7 +161,7 @@ export default function Header() {
               w-11
               h-11
               rounded-full
-              bg-indigo-600
+              bg-fd-primary
               text-white
               font-bold
               flex

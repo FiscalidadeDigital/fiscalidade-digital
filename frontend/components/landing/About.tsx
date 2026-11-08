@@ -97,7 +97,7 @@ export default function About() {
                 icon={TrendingUp}
                 title="Melhor acompanhamento"
                 text="Consulte indicadores para apoiar decisões."
-                color="text-purple-600"
+                color="text-fd-accent"
               />
 
             </div>

@@ -860,7 +860,7 @@ export default function PaymentsPage() {
                 rounded-full
                 border-4
                 border-slate-200
-                border-t-[#5146e5]
+                border-t-fd-primary
               "
             />
 
@@ -940,11 +940,11 @@ export default function PaymentsPage() {
 
                 <span
                   className="
-                    text-[10px]
+                    text-xs
                     font-bold
                     uppercase
                     tracking-wider
-                    text-[#7b87a1]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Gestão financeira
@@ -966,8 +966,8 @@ export default function PaymentsPage() {
               <p
                 className="
                   mt-1
-                  text-[11px]
-                  text-[#7b87a1]
+                  text-xs
+                  text-[var(--fd-text-muted)]
                 "
               >
                 Acompanhe a evolução dos pagamentos fiscais da empresa.
@@ -996,7 +996,7 @@ export default function PaymentsPage() {
                 border-[#e4e7ef]
                 bg-white
                 px-4
-                text-[11px]
+                text-xs
                 font-bold
                 text-[#526080]
                 shadow-sm
@@ -1016,7 +1016,7 @@ export default function PaymentsPage() {
                 }
               />
 
-              Atualizar
+              Actualizar
             </button>
           </div>
 
@@ -1056,7 +1056,7 @@ export default function PaymentsPage() {
                 <p
                   className="
                     mt-1
-                    text-[10px]
+                    text-xs
                     text-red-600
                   "
                 >
@@ -1076,7 +1076,7 @@ export default function PaymentsPage() {
                   rounded-lg
                   bg-red-600
                   px-4
-                  text-[10px]
+                  text-xs
                   font-bold
                   text-white
                   hover:bg-red-700
@@ -1205,8 +1205,8 @@ export default function PaymentsPage() {
                     items-center
                     justify-center
                     rounded-xl
-                    bg-[#f0edff]
-                    text-[#5146e5]
+                    bg-fd-accent-soft
+                    text-fd-accent
                   "
                 >
                   <TrendingUp
@@ -1228,8 +1228,8 @@ export default function PaymentsPage() {
                   <p
                     className="
                       mt-0.5
-                      text-[10px]
-                      text-[#8a96b0]
+                      text-xs
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     Evolução real dos pagamentos fiscais em {new Date().getFullYear()}
@@ -1250,12 +1250,12 @@ export default function PaymentsPage() {
               >
                 <CalendarDays
                   size={13}
-                  className="text-[#5146e5]"
+                  className="text-fd-accent"
                 />
 
                 <span
                   className="
-                    text-[10px]
+                    text-xs
                     font-semibold
                     text-[#526080]
                   "
@@ -1312,8 +1312,8 @@ export default function PaymentsPage() {
                         false
                       }
                       tick={{
-                        fontSize: 10,
-                        fill: '#8a96b0',
+                        fontSize: 12,
+                        fill: 'var(--fd-text-muted)',
                       }}
                     />
 
@@ -1325,8 +1325,8 @@ export default function PaymentsPage() {
                         false
                       }
                       tick={{
-                        fontSize: 9,
-                        fill: '#8a96b0',
+                        fontSize: 12,
+                        fill: 'var(--fd-text-muted)',
                       }}
                       tickFormatter={(
                         value,
@@ -1380,7 +1380,7 @@ export default function PaymentsPage() {
                         boxShadow:
                           '0 8px 25px rgba(15, 27, 61, 0.08)',
                         fontSize:
-                          '11px',
+                          '12px',
                       }}
                       formatter={(
                         value,
@@ -1398,14 +1398,14 @@ export default function PaymentsPage() {
                       type="monotone"
                       dataKey="value"
                       name="Pagamentos"
-                      stroke="#5146e5"
+                      stroke="var(--fd-primary)"
                       strokeWidth={
                         3
                       }
                       dot={{
                         r: 4,
                         fill:
-                          '#5146e5',
+                          'var(--fd-primary)',
                         strokeWidth:
                           2,
                         stroke:
@@ -1414,7 +1414,7 @@ export default function PaymentsPage() {
                       activeDot={{
                         r: 6,
                         fill:
-                          '#5146e5',
+                          'var(--fd-primary)',
                         stroke:
                           '#ffffff',
                         strokeWidth:
@@ -1468,8 +1468,8 @@ export default function PaymentsPage() {
                 <p
                   className="
                     mt-1
-                    text-[10px]
-                    text-[#8a96b0]
+                    text-xs
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Histórico dos pagamentos fiscais da empresa
@@ -1500,7 +1500,7 @@ export default function PaymentsPage() {
                       left-3
                       top-1/2
                       -translate-y-1/2
-                      text-[#9aa4b8]
+                      text-[var(--fd-text-muted)]
                     "
                   />
 
@@ -1524,13 +1524,13 @@ export default function PaymentsPage() {
                       bg-white
                       pl-9
                       pr-3
-                      text-[10px]
+                      text-xs
                       text-[#344361]
                       outline-none
-                      placeholder:text-[#a3acc0]
+                      placeholder:text-[var(--fd-text-muted)]
                       focus:border-[#b9b3ff]
                       focus:ring-2
-                      focus:ring-[#5146e5]/10
+                      focus:ring-fd-focus
                     "
                   />
                 </div>
@@ -1556,7 +1556,7 @@ export default function PaymentsPage() {
                     border-[#e4e7ef]
                     bg-white
                     px-3
-                    text-[10px]
+                    text-xs
                     font-semibold
                     text-[#526080]
                     outline-none
@@ -1607,7 +1607,7 @@ export default function PaymentsPage() {
                     payments.length ===
                     0
                       ? 'Quando a empresa efetuar pagamentos fiscais, eles aparecerão nesta área.'
-                      : 'Tente alterar a pesquisa ou o filtro selecionado.'
+                      : 'Tente alterar a pesquisa ou o filtro seleccionado.'
                   }
                 />
               </div>
@@ -1696,8 +1696,8 @@ export default function PaymentsPage() {
                                     items-center
                                     justify-center
                                     rounded-lg
-                                    bg-[#f0edff]
-                                    text-[#5146e5]
+                                    bg-fd-accent-soft
+                                    text-fd-accent
                                   "
                                 >
                                   <FileText
@@ -1709,7 +1709,7 @@ export default function PaymentsPage() {
 
                                 <span
                                   className="
-                                    text-[10px]
+                                    text-xs
                                     font-bold
                                     text-[#344361]
                                   "
@@ -1724,7 +1724,7 @@ export default function PaymentsPage() {
                             <td className="px-5 py-4">
                               <span
                                 className="
-                                  text-[10px]
+                                  text-xs
                                   font-semibold
                                   text-[#526080]
                                 "
@@ -1738,8 +1738,8 @@ export default function PaymentsPage() {
                             <td className="px-5 py-4">
                               <span
                                 className="
-                                  text-[10px]
-                                  text-[#7b87a1]
+                                  text-xs
+                                  text-[var(--fd-text-muted)]
                                 "
                               >
                                 {payment.tax ||
@@ -1750,8 +1750,8 @@ export default function PaymentsPage() {
                             <td className="px-5 py-4">
                               <span
                                 className="
-                                  text-[10px]
-                                  text-[#7b87a1]
+                                  text-xs
+                                  text-[var(--fd-text-muted)]
                                 "
                               >
                                 {formatDate(
@@ -1769,7 +1769,7 @@ export default function PaymentsPage() {
                             >
                               <span
                                 className="
-                                  text-[10px]
+                                  text-xs
                                   font-bold
                                   text-[#25365f]
                                 "
@@ -1840,8 +1840,8 @@ export default function PaymentsPage() {
                                 items-center
                                 justify-center
                                 rounded-lg
-                                bg-[#f0edff]
-                                text-[#5146e5]
+                                bg-fd-accent-soft
+                                text-fd-accent
                               "
                             >
                               <FileText
@@ -1855,7 +1855,7 @@ export default function PaymentsPage() {
                               <p
                                 className="
                                   truncate
-                                  text-[11px]
+                                  text-xs
                                   font-bold
                                   text-[#344361]
                                 "
@@ -1869,8 +1869,8 @@ export default function PaymentsPage() {
                                 className="
                                   mt-0.5
                                   truncate
-                                  text-[9px]
-                                  text-[#8a96b0]
+                                  text-xs
+                                  text-[var(--fd-text-muted)]
                                 "
                               >
                                 {
@@ -1960,7 +1960,7 @@ function PaymentStat({
       bg:
         'bg-[#ecfdf5]',
       text:
-        'text-[#059669]',
+        'text-fd-success',
     },
 
     orange: {
@@ -1969,7 +1969,7 @@ function PaymentStat({
       bg:
         'bg-[#fff7ed]',
       text:
-        'text-[#ea580c]',
+        'text-fd-warning',
     },
 
     red: {
@@ -1978,16 +1978,16 @@ function PaymentStat({
       bg:
         'bg-[#fef2f2]',
       text:
-        'text-[#dc2626]',
+        'text-fd-danger',
     },
 
     purple: {
       border:
         'border-[#dcd9ff]',
       bg:
-        'bg-[#f0edff]',
+        'bg-fd-accent-soft',
       text:
-        'text-[#5146e5]',
+        'text-fd-accent',
     },
   };
 
@@ -2016,11 +2016,11 @@ function PaymentStat({
       <div className="min-w-0">
         <p
           className="
-            text-[9px]
+            text-xs
             font-bold
             uppercase
             tracking-wider
-            text-[#8a96b0]
+            text-[var(--fd-text-muted)]
           "
         >
           {title}
@@ -2043,7 +2043,7 @@ function PaymentStat({
           className={`
             mt-2
             truncate
-            text-[9px]
+            text-xs
             font-semibold
             ${style.text}
           `}
@@ -2113,8 +2113,8 @@ function EmptyState({
           items-center
           justify-center
           rounded-xl
-          bg-[#f0edff]
-          text-[#5146e5]
+          bg-fd-accent-soft
+          text-fd-accent
         "
       >
         {icon}
@@ -2134,9 +2134,9 @@ function EmptyState({
         className="
           mt-1
           max-w-[400px]
-          text-[10px]
+          text-xs
           leading-5
-          text-[#8a96b0]
+          text-[var(--fd-text-muted)]
         "
       >
         {description}
@@ -2163,11 +2163,11 @@ function TableHead({
       className={`
         px-5
         py-3
-        text-[9px]
+        text-xs
         font-bold
         uppercase
         tracking-wider
-        text-[#8a96b0]
+        text-[var(--fd-text-muted)]
         ${
           align === 'right'
             ? 'text-right'
@@ -2250,7 +2250,7 @@ function PaymentStatusBadge({
         border
         px-2.5
         py-1.5
-        text-[9px]
+        text-xs
         font-bold
         ${item.className}
       `}
@@ -2280,11 +2280,11 @@ function PaymentDetail({
       <span
         className="
           block
-          text-[8px]
+          text-xs
           font-semibold
           uppercase
           tracking-wider
-          text-[#9aa4b8]
+          text-[var(--fd-text-muted)]
         "
       >
         {label}
@@ -2295,7 +2295,7 @@ function PaymentDetail({
           mt-1
           block
           truncate
-          text-[10px]
+          text-xs
           font-semibold
           text-[#526080]
         "

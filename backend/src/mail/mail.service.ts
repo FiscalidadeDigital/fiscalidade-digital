@@ -1,6 +1,6 @@
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common';
 
-import { invitationEmail, obligationEmail, passwordRecoveryEmail, plainText, renderEmailHtml, verificationEmail } from './email-templates';
+import { invitationEmail, obligationEmail, passwordRecoveryEmail, paymentConfirmationEmail, plainText, renderEmailHtml, verificationEmail } from './email-templates';
 
 type SendMailOptions = { html?: string; text?: string };
 
@@ -63,6 +63,37 @@ export class MailService {
   async sendUserInvitation(to: string, inviterName: string, token: string, company = 'a sua empresa', role = 'membro da equipa') {
     const url = `${this.appUrl}/first-access?token=${encodeURIComponent(token)}`;
     return this.sendMail(to, `Foi convidado para ${company} — Fiscalidade Digital`, plainText([`${inviterName} convidou-o para ${company}.`, `Função atribuída: ${role}.`, `Aceite o convite em: ${url}`, 'O convite expira em 48 horas.']), { html: invitationEmail(company, role, inviterName, url) });
+  }
+
+  async sendObligationPaymentConfirmation(
+    to: string,
+    company: string,
+    title: string,
+    amount: string,
+    period: string,
+    url?: string,
+  ) {
+    return this.sendMail(
+      to,
+      `Pagamento registado \u2014 ${title}`,
+      plainText([
+        `Empresa: ${company}`,
+        `Obriga\u00e7\u00e3o: ${title}`,
+        `Per\u00edodo: ${period}`,
+        `Valor registado: ${amount}`,
+        'O pagamento foi registado na Fiscalidade Digital.',
+        ...(url ? [`Consultar: ${url}`] : []),
+      ]),
+      {
+        html: paymentConfirmationEmail(
+          company,
+          title,
+          amount,
+          period,
+          url,
+        ),
+      },
+    );
   }
 
   async sendObligationAlert(to: string, company: string, title: string, period: string, dueDate: string, status: string, url?: string) {

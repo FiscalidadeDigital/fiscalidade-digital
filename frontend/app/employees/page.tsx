@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import {
   FormEvent,
@@ -43,7 +43,7 @@ import {
 } from '@/services/employee';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { getSafeErrorMessage } from '@/lib/safe-error';
+import { ConfirmDialog } from '@/components/ui/enterprise';
 
 // =====================================================
 // FORMATAÇÃO
@@ -158,6 +158,13 @@ export default function EmployeesPage() {
   );
 
   const [
+    pendingEmployeeDeletion,
+    setPendingEmployeeDeletion,
+  ] = useState<Employee | null>(
+    null,
+  );
+
+  const [
     error,
     setError,
   ] = useState('');
@@ -245,9 +252,15 @@ export default function EmployeesPage() {
           ? data
           : [],
       );
-    } catch (err: unknown) {
+    } catch (err: any) {
+      console.error(
+        'Erro ao carregar funcionários:',
+        err,
+      );
+
       setError(
-        getSafeErrorMessage(err, 'Não foi possível carregar os funcionários.'),
+        err?.response?.data?.message ||
+          'Não foi possível carregar os funcionários.',
       );
     } finally {
       setLoading(false);
@@ -514,12 +527,10 @@ export default function EmployeesPage() {
         ...initialSalaryForm,
       });
       setComponentForm({ type: 'MEAL_ALLOWANCE', amount: 0, effectiveFrom: '' });
-    } catch (err: unknown) {
+    } catch (err: any) {
       setError(
-        getSafeErrorMessage(
-          err,
+        err?.response?.data?.message ||
           'Não foi possível carregar o detalhe do funcionário.',
-        ),
       );
     }
   }
@@ -550,9 +561,12 @@ export default function EmployeesPage() {
       await openEmployeeDetails(selectedEmployee.id);
       await loadEmployees();
       setSuccess('Nova vigência salarial registada com sucesso.');
-    } catch (err: unknown) {
+    } catch (err: any) {
+      const message = err?.response?.data?.message;
       setError(
-        getSafeErrorMessage(err, 'Não foi possível registar a vigência salarial.'),
+        Array.isArray(message)
+          ? message.join(' ')
+          : message || 'Não foi possível registar a vigência salarial.',
       );
     } finally {
       setSalarySaving(false);
@@ -566,7 +580,7 @@ export default function EmployeesPage() {
       await addRemunerationComponent(selectedEmployee.id, componentForm);
       await openEmployeeDetails(selectedEmployee.id);
       setSuccess('Componente remuneratório registado.');
-    } catch (err: unknown) { setError(getSafeErrorMessage(err, 'Não foi possível registar o componente.')); }
+    } catch (err: any) { setError(err?.response?.data?.message || 'Não foi possível registar o componente.'); }
     finally { setComponentSaving(false); }
   }
 
@@ -577,7 +591,7 @@ export default function EmployeesPage() {
       await endRemunerationComponent(selectedEmployee.id, componentId, componentEndDates[componentId]);
       await openEmployeeDetails(selectedEmployee.id);
       setSuccess('Fim de vigência registado; o histórico foi preservado.');
-    } catch (err: unknown) { setError(getSafeErrorMessage(err, 'Não foi possível encerrar o componente.')); }
+    } catch (err: any) { setError(err?.response?.data?.message || 'Não foi possível encerrar o componente.'); }
     finally { setComponentSaving(false); }
   }
 
@@ -753,10 +767,27 @@ export default function EmployeesPage() {
       window.setTimeout(() => {
         setSuccess('');
       }, 5000);
-    } catch (err: unknown) {
-      setError(
-        getSafeErrorMessage(err, 'Não foi possível cadastrar o funcionário.'),
+    } catch (err: any) {
+      console.error(
+        'Erro ao criar funcionário:',
+        err,
       );
+
+      const message =
+        err?.response?.data?.message;
+
+      if (
+        Array.isArray(message)
+      ) {
+        setError(
+          message.join(' '),
+        );
+      } else {
+        setError(
+          message ||
+            'Não foi possível registar o funcionário.',
+        );
+      }
     } finally {
       setSaving(false);
     }
@@ -769,15 +800,6 @@ export default function EmployeesPage() {
   async function handleDelete(
     employee: Employee,
   ) {
-    const confirmed =
-      window.confirm(
-        `Tem certeza que deseja remover ${employee.name}?`,
-      );
-
-    if (!confirmed) {
-      return;
-    }
-
     try {
       setDeletingId(
         employee.id,
@@ -806,9 +828,15 @@ export default function EmployeesPage() {
       window.setTimeout(() => {
         setSuccess('');
       }, 4000);
-    } catch (err: unknown) {
+    } catch (err: any) {
+      console.error(
+        'Erro ao remover funcionário:',
+        err,
+      );
+
       setError(
-        getSafeErrorMessage(err, 'Não foi possível remover o funcionário.'),
+        err?.response?.data?.message ||
+          'Não foi possível remover o funcionário.',
       );
     } finally {
       setDeletingId(null);
@@ -1092,7 +1120,7 @@ export default function EmployeesPage() {
                         O sistema atribuirá
                         automaticamente o
                         próximo número disponível
-                        após o cadastro.
+                        após o registo.
                       </p>
                     </div>
                   </div>
@@ -1557,7 +1585,7 @@ export default function EmployeesPage() {
                   ? 'A guardar...'
                   : editingEmployeeId
                     ? 'Guardar alterações'
-                    : 'Cadastrar funcionário'}
+                    : 'Registar funcionário'}
               </button>
 
             </div>
@@ -2036,7 +2064,7 @@ export default function EmployeesPage() {
                 <div className="employees-field"><label>Vigência desde</label><input type="date" value={componentForm.effectiveFrom} onChange={(event) => setComponentForm((current) => ({ ...current, effectiveFrom: event.target.value }))} /></div>
                 <div className="employees-field employees-salary-action"><label> </label><button type="button" className="employees-secondary-button" onClick={handleAddComponent} disabled={componentSaving || !componentForm.effectiveFrom}>{componentSaving ? 'A registar...' : 'Adicionar componente'}</button></div>
               </div>
-              <p className="employees-salary-empty">O tratamento de IRT e INSS é apresentado de forma informativa e não pode ser alterado manualmente.</p>
+              <p className="employees-salary-empty">O tratamento IRT e INSS é informativo e definido pelo motor fiscal; não pode ser alterado manualmente.</p>
             </section>
 
             <div className="employees-modal-footer">
@@ -2112,7 +2140,7 @@ export default function EmployeesPage() {
               gap: 8px;
               margin-bottom: 8px;
               color: #2563eb;
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 800;
               text-transform: uppercase;
               letter-spacing: .12em;
@@ -2264,7 +2292,7 @@ export default function EmployeesPage() {
 
             .employees-metric-label {
               color: #64748b;
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 800;
               text-transform: uppercase;
               letter-spacing: .06em;
@@ -2292,7 +2320,7 @@ export default function EmployeesPage() {
             .employees-metric-detail {
               margin-top: 6px;
               color: var(--fd-muted);
-              font-size: 10px;
+              font-size: 12px;
             }
 
             /* =====================================================
@@ -2356,7 +2384,7 @@ export default function EmployeesPage() {
 
             .employees-filter-label {
               color: #94a3b8;
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 750;
               text-transform: uppercase;
             }
@@ -2369,7 +2397,7 @@ export default function EmployeesPage() {
               border-radius: 6px;
               background: var(--fd-input);
               color: var(--fd-text-primary);
-              font-size: 11px;
+              font-size: 12px;
               font-weight: 650;
               outline: none;
             }
@@ -2383,7 +2411,7 @@ export default function EmployeesPage() {
                 1px solid var(--fd-border);
               background: var(--fd-table-header);
               color: var(--fd-text-secondary);
-              font-size: 10px;
+              font-size: 12px;
             }
 
             .employees-results strong {
@@ -2406,7 +2434,7 @@ export default function EmployeesPage() {
                 1px solid var(--fd-border);
               background: var(--fd-table-header);
               color: var(--fd-text-secondary);
-              font-size: 9px;
+              font-size: 12px;
               font-weight: 800;
               text-align: left;
               text-transform: uppercase;
@@ -2418,7 +2446,7 @@ export default function EmployeesPage() {
               border-bottom:
                 1px solid var(--fd-border);
               color: var(--fd-text-secondary);
-              font-size: 11px;
+              font-size: 12px;
               vertical-align: middle;
             }
 
@@ -2446,20 +2474,20 @@ export default function EmployeesPage() {
               border-radius: 6px;
               background: var(--fd-surface-muted);
               color: var(--fd-primary);
-              font-size: 10px;
+              font-size: 12px;
               font-weight: 850;
             }
 
             .employees-person-name {
               color: var(--fd-text-primary);
-              font-size: 11px;
+              font-size: 12px;
               font-weight: 800;
             }
 
             .employees-person-number {
               margin-top: 3px;
               color: #94a3b8;
-              font-size: 9px;
+              font-size: 12px;
             }
 
             .employees-salary {
@@ -2479,7 +2507,7 @@ export default function EmployeesPage() {
               padding: 5px 8px;
               border: 1px solid;
               border-radius: 5px;
-              font-size: 9px;
+              font-size: 12px;
               font-weight: 800;
             }
 
@@ -2536,7 +2564,7 @@ export default function EmployeesPage() {
               border-radius: 8px;
               background: #fff;
               color: #64748b;
-              font-size: 9px;
+              font-size: 12px;
               font-weight: 750;
               cursor: pointer;
             }
@@ -2584,7 +2612,7 @@ export default function EmployeesPage() {
               max-width: 430px;
               margin: 6px auto 0;
               color: #94a3b8;
-              font-size: 11px;
+              font-size: 12px;
               line-height: 1.6;
             }
 
@@ -2737,7 +2765,7 @@ export default function EmployeesPage() {
             .employees-modal-subtitle {
               margin: 4px 0 0 !important;
               color: var(--fd-muted) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
             }
 
             .employees-modal-close {
@@ -2814,7 +2842,7 @@ export default function EmployeesPage() {
 
               color: var(--fd-text-primary) !important;
 
-              font-size: 10px !important;
+              font-size: 12px !important;
               font-weight: 850 !important;
 
               text-transform: uppercase !important;
@@ -2851,7 +2879,7 @@ export default function EmployeesPage() {
 
             .employees-field label {
               color: var(--fd-text-secondary) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
               font-weight: 750 !important;
             }
 
@@ -2876,7 +2904,7 @@ export default function EmployeesPage() {
               font-family:
                 inherit !important;
 
-              font-size: 11px !important;
+              font-size: 12px !important;
             }
 
             .employees-field input {
@@ -2946,14 +2974,14 @@ export default function EmployeesPage() {
             .employees-auto-number strong {
               display: block !important;
               color: var(--fd-text-primary) !important;
-              font-size: 11px !important;
+              font-size: 12px !important;
               font-weight: 800 !important;
             }
 
             .employees-auto-number p {
               margin: 3px 0 0 !important;
               color: var(--fd-text-secondary) !important;
-              font-size: 9px !important;
+              font-size: 12px !important;
               line-height: 1.5 !important;
             }
 
@@ -2998,7 +3026,7 @@ export default function EmployeesPage() {
               background: var(--fd-surface-muted) !important;
               color: var(--fd-primary) !important;
 
-              font-size: 11px !important;
+              font-size: 12px !important;
               font-weight: 850 !important;
             }
 
@@ -3025,7 +3053,7 @@ export default function EmployeesPage() {
 
               color: var(--fd-primary) !important;
 
-              font-size: 9px !important;
+              font-size: 12px !important;
               font-weight: 850 !important;
 
               text-transform: uppercase !important;
@@ -3040,7 +3068,7 @@ export default function EmployeesPage() {
 
             .employees-profile-role {
               color: var(--fd-text-secondary) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
             }
 
             .employees-info-field {
@@ -3061,14 +3089,14 @@ export default function EmployeesPage() {
 
             .employees-info-field label {
               color: #94a3b8 !important;
-              font-size: 9px !important;
+              font-size: 12px !important;
               font-weight: 750 !important;
               text-transform: uppercase !important;
             }
 
             .employees-info-field strong {
               color: #334155 !important;
-              font-size: 11px !important;
+              font-size: 12px !important;
               font-weight: 650 !important;
               overflow-wrap: anywhere !important;
             }
@@ -3115,13 +3143,13 @@ export default function EmployeesPage() {
             .employees-salary-empty {
               margin: 3px 0 0 !important;
               color: var(--fd-text-secondary) !important;
-              font-size: 11px !important;
+              font-size: 12px !important;
             }
 
             .employees-salary-state {
               flex: none !important;
               color: var(--fd-text-secondary) !important;
-              font-size: 10px !important;
+              font-size: 12px !important;
               font-weight: 700 !important;
             }
 
@@ -3266,7 +3294,7 @@ export default function EmployeesPage() {
                   size={15}
                 />
 
-                Atualizar
+                Actualizar
               </button>
 
               <button
@@ -3769,7 +3797,7 @@ export default function EmployeesPage() {
                                     color:
                                       '#94a3b8',
                                     fontSize:
-                                      9,
+                                      12,
                                   }}
                                 >
                                   {
@@ -3845,7 +3873,7 @@ export default function EmployeesPage() {
                                     employee.id
                                   }
                                   onClick={() =>
-                                    handleDelete(
+                                    setPendingEmployeeDeletion(
                                       employee,
                                     )
                                   }
@@ -3879,6 +3907,32 @@ export default function EmployeesPage() {
 
         </div>
       </DashboardLayout>
+
+      <ConfirmDialog
+        confirmLabel="Remover funcionário"
+        description={
+          pendingEmployeeDeletion
+            ? `Tem a certeza de que deseja remover ${pendingEmployeeDeletion.name}?`
+            : undefined
+        }
+        destructive
+        loading={Boolean(
+          pendingEmployeeDeletion &&
+            deletingId === pendingEmployeeDeletion.id,
+        )}
+        onClose={() => setPendingEmployeeDeletion(null)}
+        onConfirm={async () => {
+          if (!pendingEmployeeDeletion) {
+            return;
+          }
+
+          const employee = pendingEmployeeDeletion;
+          await handleDelete(employee);
+          setPendingEmployeeDeletion(null);
+        }}
+        open={Boolean(pendingEmployeeDeletion)}
+        title="Remover funcionário"
+      />
 
       {/* MODAL NOVO FUNCIONÁRIO */}
 

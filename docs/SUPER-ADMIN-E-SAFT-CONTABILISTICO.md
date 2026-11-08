@@ -17,6 +17,16 @@ A administração global usa a entidade `PlatformAdmin`, separada de `User` e se
 
 As operações de autenticação, bootstrap e mudança de palavra-passe são registadas em `PlatformAuditLog`, separado do log empresarial. Não existe endpoint HTTP de bootstrap, palavra-passe hardcoded ou conversão de utilizador de tenant em Super Admin.
 
+### Recuperação local de acesso
+
+Quando já existe uma conta administrativa e a palavra-passe foi perdida, um operador autorizado pode usar apenas no ambiente controlado o comando compilado `npm run admin:recover`. O comando requer um terminal interactivo e pede localmente o email, a nova palavra-passe e a confirmação explícita `RESET_PLATFORM_ADMIN_PASSWORD`. A palavra-passe não é aceite por argumento nem variável de ambiente.
+
+Em Windows, prefira `./scripts/recover-platform-admin.ps1` a partir de `backend/`; é apenas um lançador para o recuperador compilado. A palavra-passe é introduzida sem eco pelo recuperador, não é passada em argumentos, não é escrita no histórico nem em ficheiros versionados, e só permanece na memória do processo enquanto a operação decorre. Acrescente `-Reactivate` apenas após autorização explícita para reactivar uma conta inactiva. Em ambientes Linux, execute `npm run admin:recover` directamente num terminal autorizado.
+
+O comando não cria contas, não expõe a palavra-passe, hash ou token, limpa o bloqueio por tentativas, invalida as sessões administrativas existentes, força a troca da credencial temporária no próximo acesso e regista `ADMIN_PASSWORD_RECOVERED` em `PlatformAuditLog`. Uma conta inactiva não é reactivada por omissão: exige o argumento não secreto `--reactivate` (ou `-Reactivate` no lançador PowerShell).
+
+Este é um procedimento de recuperação, não um mecanismo de aprovisionamento remoto. Não deve ser executado contra produção sem autorização explícita para alterar a credencial da conta indicada.
+
 ### Configuração
 
 - `ADMIN_JWT_SECRET`: obrigatório para autenticação administrativa e distinto de `JWT_SECRET`; mínimo de 32 bytes.

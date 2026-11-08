@@ -35,6 +35,13 @@ export type AdminDashboardSummary = {
     documents: number;
     storageBytes: string;
   };
+  plans: {
+    byPlanType: Partial<Record<AdminPlanType, number>>;
+  };
+  storage: {
+    measurement: AdminStorageMeasurement;
+    isEstimated: false;
+  };
   growth: {
     periodDays: number;
     tenantsCreated: number;
@@ -52,6 +59,7 @@ export type AdminDashboardSummary = {
 
 export type AdminTenantStatus = 'ACTIVE' | 'SUSPENDED' | 'TRIAL';
 export type AdminPlanType = 'FREE' | 'BASIC' | 'PREMIUM' | 'ENTERPRISE';
+export type AdminStorageMeasurement = 'CATALOGUED_DOCUMENT_BYTES';
 export type AdminPaymentStatus =
   | 'PENDING'
   | 'PAID'
@@ -76,6 +84,8 @@ export type AdminTenant = {
     documents: number;
     storageUsedBytes: string;
     storageQuotaBytes: string | null;
+    storageMeasurement: AdminStorageMeasurement;
+    storageIsEstimated: false;
   };
   subscription: {
     planType: AdminPlanType;

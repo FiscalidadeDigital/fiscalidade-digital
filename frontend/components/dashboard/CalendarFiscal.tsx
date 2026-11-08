@@ -79,7 +79,7 @@ export default function CalendarFiscal({
 
   const monthName =
     currentDate.toLocaleDateString(
-      'pt-PT',
+      'pt-AO',
       {
         month: 'long',
         year: 'numeric',
@@ -283,7 +283,7 @@ export default function CalendarFiscal({
     switch (status) {
 
       case 'today':
-        return 'bg-[#5146e5]';
+        return 'bg-fd-primary';
 
       case 'warning':
         return 'bg-[#f59e0b]';
@@ -428,8 +428,8 @@ export default function CalendarFiscal({
               items-center
               justify-center
               rounded-xl
-              bg-[#f0edff]
-              text-[#5146e5]
+              bg-fd-accent-soft
+              text-fd-accent
             "
           >
             <CalendarDays
@@ -457,8 +457,8 @@ export default function CalendarFiscal({
             <p
               className="
                 mt-0.5
-                text-[11px]
-                text-[#7180a2]
+                text-xs
+                text-[var(--fd-text-muted)]
               "
             >
               Acompanhe os seus próximos prazos
@@ -495,12 +495,12 @@ export default function CalendarFiscal({
               border-[#e4e7ef]
               bg-white
               px-3
-              text-[10px]
+              text-xs
               font-semibold
-              text-[#64708a]
+              text-[var(--fd-text-muted)]
               transition
               hover:bg-[#f8f7ff]
-              hover:text-[#5146e5]
+              hover:text-fd-accent
             "
           >
             Hoje
@@ -518,9 +518,9 @@ export default function CalendarFiscal({
               border-[#e4e7ef]
               bg-white
               px-3
-              text-[10px]
+              text-xs
               font-semibold
-              text-[#5146e5]
+              text-fd-accent
               transition
               hover:bg-[#f8f7ff]
             "
@@ -638,9 +638,9 @@ export default function CalendarFiscal({
                 <p
                   className="
                     mt-0.5
-                    text-[9px]
+                    text-xs
                     font-medium
-                    text-[#9aa4b8]
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   {currentYear}
@@ -707,10 +707,10 @@ export default function CalendarFiscal({
                       items-center
                       justify-center
                       text-center
-                      text-[8px]
+                      text-xs
                       font-extrabold
                       tracking-wide
-                      text-[#929caf]
+                      text-[var(--fd-text-muted)]
                     "
                   >
                     {day}
@@ -767,7 +767,7 @@ export default function CalendarFiscal({
                           items-center
                           justify-center
                           rounded-full
-                          text-[11px]
+                          text-xs
                           font-medium
                           transition
                           ${
@@ -778,7 +778,7 @@ export default function CalendarFiscal({
                           ${
                             isToday
                               ? `
-                                bg-[#5146e5]
+                                bg-fd-primary
                                 font-extrabold
                                 text-white
                                 shadow-sm
@@ -834,7 +834,7 @@ export default function CalendarFiscal({
             >
 
               <LegendItem
-                color="bg-[#5146e5]"
+                color="bg-fd-primary"
                 label="Hoje"
               />
 
@@ -893,8 +893,8 @@ export default function CalendarFiscal({
                 <p
                   className="
                     mt-1
-                    text-[10px]
-                    text-[#8a96b0]
+                    text-xs
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   Obrigações que exigem atenção
@@ -908,12 +908,12 @@ export default function CalendarFiscal({
                   className="
                     shrink-0
                     rounded-full
-                    bg-[#f0edff]
+                    bg-fd-accent-soft
                     px-2.5
                     py-1
-                    text-[9px]
+                    text-xs
                     font-bold
-                    text-[#5146e5]
+                    text-fd-accent
                   "
                 >
                   {deadlines.length}
@@ -951,8 +951,8 @@ export default function CalendarFiscal({
                     items-center
                     justify-center
                     rounded-xl
-                    bg-[#f0edff]
-                    text-[#5146e5]
+                    bg-fd-accent-soft
+                    text-fd-accent
                   "
                 >
                   <CalendarDays
@@ -974,8 +974,8 @@ export default function CalendarFiscal({
                 <p
                   className="
                     mt-1
-                    text-[10px]
-                    text-[#9aa4b8]
+                    text-xs
+                    text-[var(--fd-text-muted)]
                   "
                 >
                   O calendário fiscal da sua empresa aparecerá aqui.
@@ -1013,7 +1013,7 @@ export default function CalendarFiscal({
 
                     const month =
                       date.toLocaleDateString(
-                        'pt-PT',
+                        'pt-AO',
                         {
                           month:
                             'short',
@@ -1038,6 +1038,49 @@ export default function CalendarFiscal({
                       daysLeft > 0 &&
                       daysLeft <= 3;
 
+                    const shortTitle =
+                      deadline.title
+                        .split(/[—–:|]/)[0]
+                        ?.trim() || deadline.title;
+
+                    const dateLabel =
+                      date.toLocaleDateString(
+                        'pt-AO',
+                        {
+                          day: '2-digit',
+                          month: 'short',
+                          year: 'numeric',
+                        },
+                      );
+
+                    const deadlineState =
+                      isOverdue
+                        ? {
+                            label: 'Em atraso',
+                            days: `${Math.abs(daysLeft ?? 0)} dias de atraso`,
+                            className: 'bg-red-50 text-red-700',
+                          }
+                        : isToday
+                          ? {
+                              label: 'Vence hoje',
+                              days: 'Hoje',
+                              className: 'bg-red-50 text-red-700',
+                            }
+                          : isWarning
+                            ? {
+                                label: 'A vencer',
+                                days: `${daysLeft} dias`,
+                                className: 'bg-orange-50 text-orange-700',
+                              }
+                            : {
+                                label: 'Planeado',
+                                days:
+                                  typeof daysLeft === 'number'
+                                    ? `${daysLeft} dias`
+                                    : 'Data a confirmar',
+                                className: 'bg-emerald-50 text-emerald-700',
+                              };
+
                     return (
                       <div
                         key={`${deadline.date}-${deadline.title}-${index}`}
@@ -1045,7 +1088,7 @@ export default function CalendarFiscal({
                           group
                           grid
                           grid-cols-[58px_minmax(0,1fr)_auto]
-                          items-center
+                          items-start
                           gap-3
                           rounded-xl
                           border
@@ -1053,9 +1096,10 @@ export default function CalendarFiscal({
                           bg-white
                           px-3
                           py-3
-                          transition
-                          hover:border-[#d9d5ff]
-                          hover:bg-[#fcfbff]
+                          transition-[border-color,background-color]
+                          duration-150
+                          hover:border-[#b7d3df]
+                          hover:bg-[#f8fcfd]
                         "
                       >
 
@@ -1071,7 +1115,7 @@ export default function CalendarFiscal({
                             items-center
                             justify-center
                             rounded-xl
-                            bg-[#f0edff]
+                            bg-fd-accent-soft
                           "
                         >
 
@@ -1080,7 +1124,7 @@ export default function CalendarFiscal({
                               text-[15px]
                               font-extrabold
                               leading-none
-                              text-[#5146e5]
+                              text-fd-accent
                             "
                           >
                             {day}
@@ -1089,11 +1133,11 @@ export default function CalendarFiscal({
                           <span
                             className="
                               mt-1
-                              text-[8px]
+                              text-xs
                               font-bold
                               uppercase
                               tracking-wide
-                              text-[#7069c7]
+                              text-fd-accent
                             "
                           >
                             {month}
@@ -1110,36 +1154,42 @@ export default function CalendarFiscal({
                         >
 
                           <h5
-                            className="
-                              line-clamp-2
-                              text-[11px]
-                              font-bold
-                              leading-4
-                              text-[#25365f]
-                            "
+                            className="text-sm font-bold leading-5 text-[#25365f]"
                             title={
                               deadline.title
                             }
                           >
-                            {deadline.title}
+                            {shortTitle}
                           </h5>
 
                           <p
                             className="
                               mt-1
-                              truncate
-                              text-[9px]
+                              text-xs
                               leading-4
-                              text-[#8994a9]
+                              text-[var(--fd-text-muted)]
                             "
-                            title={
-                              deadline.description ||
-                              ''
-                            }
                           >
-                            {deadline.description ||
-                              'Obrigação fiscal conforme calendário oficial da AGT.'}
+                            {dateLabel}
                           </p>
+
+                          <details className="mt-2">
+                            <summary className="flex min-h-11 cursor-pointer items-center text-xs font-semibold text-fd-accent outline-none hover:underline focus-visible:ring-2 focus-visible:ring-fd-focus">
+                              Ver detalhe
+                            </summary>
+                            <div className="rounded-lg bg-[var(--fd-surface-muted)] px-3 py-2 text-xs leading-5 text-[var(--fd-text-secondary)]">
+                              <p className="font-semibold text-[var(--fd-text-primary)]">
+                                {deadline.title}
+                              </p>
+                              <p className="mt-1">
+                                {deadline.description ||
+                                  'Obrigação fiscal conforme o calendário configurado para a empresa.'}
+                              </p>
+                              <p className="mt-1.5 text-[var(--fd-text-muted)]">
+                                Prazo: {dateLabel}
+                              </p>
+                            </div>
+                          </details>
 
                         </div>
 
@@ -1154,40 +1204,27 @@ export default function CalendarFiscal({
                           "
                         >
 
-                          {typeof daysLeft ===
-                            'number' && (
-
-                            <span
-                              className={`
-                                rounded-lg
-                                px-2
-                                py-1.5
-                                text-[8px]
-                                font-extrabold
-                                whitespace-nowrap
-                                ${
-                                  isOverdue
-                                    ? 'bg-red-50 text-red-600'
-                                    : isToday
-                                    ? 'bg-red-50 text-red-600'
-                                    : isWarning
-                                    ? 'bg-orange-50 text-orange-600'
-                                    : 'bg-emerald-50 text-emerald-600'
-                                }
-                              `}
-                            >
-                              {isOverdue
-                                ? `${Math.abs(
-                                    daysLeft,
-                                  )}d atrasado`
-                                : isToday
-                                ? 'Hoje'
-                                : isWarning
-                                ? `${daysLeft}d`
-                                : `${daysLeft}d`}
+                          <span
+                            className={`
+                              inline-flex
+                              flex-col
+                              items-end
+                              rounded-lg
+                              px-2.5
+                              py-1.5
+                              text-right
+                              text-xs
+                              font-bold
+                              leading-4
+                              whitespace-nowrap
+                              ${deadlineState.className}
+                            `}
+                          >
+                            <span>{deadlineState.label}</span>
+                            <span className="font-medium">
+                              {deadlineState.days}
                             </span>
-
-                          )}
+                          </span>
 
                         </div>
 
@@ -1228,8 +1265,8 @@ export default function CalendarFiscal({
 
         <p
           className="
-            text-[9px]
-            text-[#98a2b5]
+            text-xs
+            text-[var(--fd-text-muted)]
           "
         >
           Os prazos apresentados são aplicáveis ao regime fiscal da empresa.
@@ -1255,7 +1292,7 @@ export default function CalendarFiscal({
 
           <span
             className="
-              text-[9px]
+              text-xs
               font-semibold
               text-emerald-700
             "
@@ -1303,9 +1340,9 @@ function LegendItem({
 
       <span
         className="
-          text-[9px]
+          text-xs
           font-medium
-          text-[#7a86a0]
+          text-[var(--fd-text-muted)]
         "
       >
         {label}
