@@ -74,9 +74,7 @@ export type CreatePayrollData = {
   year: number;
 };
 
-function extractPayroll(
-  value: unknown,
-): Payroll | null {
+function extractPayroll(value: unknown): Payroll | null {
   if (!value || typeof value !== 'object') {
     return null;
   }
@@ -84,9 +82,7 @@ function extractPayroll(
   return value as Payroll;
 }
 
-function extractPayrollList(
-  value: unknown,
-): Payroll[] {
+function extractPayrollList(value: unknown): Payroll[] {
   if (Array.isArray(value)) {
     return value as Payroll[];
   }
@@ -95,9 +91,7 @@ function extractPayrollList(
     value &&
     typeof value === 'object' &&
     'data' in value &&
-    Array.isArray(
-      (value as { data?: unknown }).data,
-    )
+    Array.isArray((value as { data?: unknown }).data)
   ) {
     return (value as { data: Payroll[] }).data;
   }
@@ -116,9 +110,7 @@ export async function getPayrollByPeriod(
   month: number,
 ): Promise<Payroll | null> {
   try {
-    const response = await api.get(
-      `/payroll/${year}/${month}`,
-    );
+    const response = await api.get(`/payroll/${year}/${month}`);
 
     return extractPayroll(response.data);
   } catch (error: any) {
@@ -130,105 +122,66 @@ export async function getPayrollByPeriod(
   }
 }
 
-export async function createPayroll(
-  data: CreatePayrollData,
-): Promise<Payroll> {
-  const response = await api.post(
-    '/payroll',
-    {
-      month: Number(data.month),
-      year: Number(data.year),
-    },
-  );
+export async function createPayroll(data: CreatePayrollData): Promise<Payroll> {
+  const response = await api.post('/payroll', {
+    month: Number(data.month),
+    year: Number(data.year),
+  });
 
-  const payroll = extractPayroll(
-    response.data,
-  );
+  const payroll = extractPayroll(response.data);
+
+  if (!payroll) {
+    throw new Error('Não foi possível confirmar a criação da folha.');
+  }
+
+  return payroll;
+}
+
+export async function calculatePayroll(id: string): Promise<Payroll> {
+  const response = await api.post(`/payroll/${id}/calculate`);
+
+  const payroll = extractPayroll(response.data);
+
+  if (!payroll) {
+    throw new Error('Não foi possível confirmar o cálculo da folha.');
+  }
+
+  return payroll;
+}
+
+export async function approvePayroll(id: string): Promise<Payroll> {
+  const response = await api.post(`/payroll/${id}/approve`);
+
+  const payroll = extractPayroll(response.data);
+
+  if (!payroll) {
+    throw new Error('Não foi possível confirmar a aprovação da folha.');
+  }
+
+  return payroll;
+}
+
+export async function payPayroll(id: string): Promise<Payroll> {
+  const response = await api.post(`/payroll/${id}/pay`);
+
+  const payroll = extractPayroll(response.data);
 
   if (!payroll) {
     throw new Error(
-      'A API não devolveu a folha criada.',
+      'Não foi possível confirmar o registo do pagamento da folha.',
     );
   }
 
   return payroll;
 }
 
-export async function calculatePayroll(
-  id: string,
-): Promise<Payroll> {
-  const response = await api.post(
-    `/payroll/${id}/calculate`,
-  );
+export async function closePayroll(id: string): Promise<Payroll> {
+  const response = await api.post(`/payroll/${id}/close`);
 
-  const payroll = extractPayroll(
-    response.data,
-  );
+  const payroll = extractPayroll(response.data);
 
   if (!payroll) {
-    throw new Error(
-      'A API não devolveu a folha calculada.',
-    );
-  }
-
-  return payroll;
-}
-
-export async function approvePayroll(
-  id: string,
-): Promise<Payroll> {
-  const response = await api.post(
-    `/payroll/${id}/approve`,
-  );
-
-  const payroll = extractPayroll(
-    response.data,
-  );
-
-  if (!payroll) {
-    throw new Error(
-      'A API não devolveu a folha aprovada.',
-    );
-  }
-
-  return payroll;
-}
-
-export async function payPayroll(
-  id: string,
-): Promise<Payroll> {
-  const response = await api.post(
-    `/payroll/${id}/pay`,
-  );
-
-  const payroll = extractPayroll(
-    response.data,
-  );
-
-  if (!payroll) {
-    throw new Error(
-      'A API não devolveu a folha paga.',
-    );
-  }
-
-  return payroll;
-}
-
-export async function closePayroll(
-  id: string,
-): Promise<Payroll> {
-  const response = await api.post(
-    `/payroll/${id}/close`,
-  );
-
-  const payroll = extractPayroll(
-    response.data,
-  );
-
-  if (!payroll) {
-    throw new Error(
-      'A API não devolveu a folha fechada.',
-    );
+    throw new Error('Não foi possível confirmar o fecho da folha.');
   }
 
   return payroll;

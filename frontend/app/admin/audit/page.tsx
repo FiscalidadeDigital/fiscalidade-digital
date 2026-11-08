@@ -60,7 +60,7 @@ export default function AdminAuditPage() {
           <p className="text-xs font-semibold uppercase tracking-[0.16em] text-sky-700">Segurança</p>
           <h1 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">Auditoria administrativa</h1>
           <p className="mt-2 max-w-3xl text-sm text-[var(--fd-text-secondary)]">
-            Registo cronológico das acções da administração da plataforma. Metadados técnicos e conteúdo tenant permanecem fora desta vista.
+            Registo cronológico das ações da administração da plataforma. Dados protegidos das empresas permanecem fora desta vista.
           </p>
         </header>
 

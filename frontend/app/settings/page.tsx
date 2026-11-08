@@ -93,8 +93,8 @@ export default function SettingsPage() {
               Trial e subscrição
             </h2>
             <p className="mt-1 text-sm text-[var(--fd-muted)]">
-              Estado calculado pelo backend. Não existem cobranças activas nesta
-              fase.
+              Consulte aqui o estado atual da sua conta. Não existem cobranças
+              ativas nesta fase.
             </p>
           </div>
 

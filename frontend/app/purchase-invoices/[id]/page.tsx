@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, CheckCircle2, CreditCard, Pencil, XCircle } from 'lucide-react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 import { useAuth } from '@/context/AuthContext';
 import {
   addPurchaseInvoicePayment, cancelPurchaseInvoice, getPurchaseInvoice,
@@ -18,11 +19,8 @@ const paymentLabels = { UNPAID: 'Por pagar', PARTIALLY_PAID: 'Parcialmente paga'
 const methodLabels = { BANK_TRANSFER: 'Transferência bancária', MULTICAIXA_TPA: 'Multicaixa / TPA', CASH: 'Numerário', OTHER: 'Outro' } as const;
 const money = (value: string | number) => new Intl.NumberFormat('pt-AO', { style: 'currency', currency: 'AOA' }).format(Number(value));
 const date = (value?: string | null) => value ? new Date(value).toLocaleDateString('pt-AO') : '—';
-const errorMessage = (error: unknown) => {
-  const candidate = error as { response?: { data?: { message?: string | string[] } } };
-  const message = candidate.response?.data?.message;
-  return Array.isArray(message) ? message.join(' ') : message ?? 'Não foi possível concluir a operação.';
-};
+const errorMessage = (error: unknown) =>
+  getSafeErrorMessage(error, 'Não foi possível concluir a operação.');
 
 export default function PurchaseInvoiceDetailPage() {
   const { id } = useParams<{ id: string }>();

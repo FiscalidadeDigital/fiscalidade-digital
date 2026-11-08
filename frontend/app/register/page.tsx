@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { register } from '@/services/auth';
 import AuthFrame from '@/components/auth/AuthFrame';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -16,7 +17,7 @@ export default function RegisterPage() {
     if (form.password !== form.confirmPassword) return setError('As palavras-passe não coincidem.');
     setLoading(true);
     try { const result = await register(form); router.replace(`/verify-email?email=${encodeURIComponent(result.email)}`); }
-    catch (cause: unknown) { const response = (cause as { response?: { status?: number; data?: { message?: string } } })?.response; setError(response?.status === 429 ? 'Foram efectuadas várias tentativas. Aguarde alguns instantes e tente novamente.' : response?.data?.message || 'Não foi possível criar a conta.'); }
+    catch (cause: unknown) { setError(getSafeErrorMessage(cause, 'Não foi possível criar a conta.')); }
     finally { setLoading(false); }
   }
   const field = (key: keyof typeof form, value: string | boolean) => setForm((current) => ({ ...current, [key]: value }));

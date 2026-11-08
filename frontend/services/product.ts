@@ -1,5 +1,4 @@
-import { isAxiosError } from 'axios';
-
+import { getSafeErrorMessage } from '@/lib/safe-error';
 import api from './api';
 
 export type ProductUnit = 'UN' | 'SERVICO' | 'HORA' | 'KG' | 'L' | 'M';
@@ -70,7 +69,5 @@ export async function deleteProduct(id: string): Promise<Product> {
 }
 
 export function getProductApiError(error: unknown, fallback: string) {
-  if (!isAxiosError<{ message?: string | string[] }>(error)) return fallback;
-  const message = error.response?.data?.message;
-  return Array.isArray(message) ? message.join(' ') : message || fallback;
+  return getSafeErrorMessage(error, fallback);
 }

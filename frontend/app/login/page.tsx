@@ -18,6 +18,7 @@ import {
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/context/AuthContext';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -186,70 +187,9 @@ export default function LoginPage() {
         redirect,
       );
     } catch (err: unknown) {
-      console.error(
-        'Erro ao iniciar sessão:',
-        err,
+      setError(
+        getSafeErrorMessage(err, 'Não foi possível iniciar sessão.'),
       );
-
-      let message =
-        'Não foi possível iniciar sessão.';
-
-      /*
-       * Erro vindo do Axios/API.
-       */
-
-      if (
-        err &&
-        typeof err === 'object' &&
-        'response' in err
-      ) {
-        const response =
-          (
-            err as {
-              response?: {
-                data?: {
-                  message?:
-                    | string
-                    | string[];
-                };
-              };
-            }
-          ).response;
-
-        const apiMessage =
-          response?.data?.message;
-
-        if (
-          Array.isArray(
-            apiMessage,
-          )
-        ) {
-          message =
-            apiMessage.join(
-              ' ',
-            );
-        } else if (
-          typeof apiMessage ===
-          'string'
-        ) {
-          message =
-            apiMessage;
-        }
-      }
-
-      /*
-       * Erro JavaScript normal.
-       */
-
-      else if (
-        err instanceof Error &&
-        err.message
-      ) {
-        message =
-          err.message;
-      }
-
-      setError(message);
     } finally {
       setLoading(false);
     }

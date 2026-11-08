@@ -1,4 +1,4 @@
-import { isAxiosError } from 'axios';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 import api from './api';
 import type { ElectronicOperationType, ProductUnit } from './product';
@@ -174,9 +174,5 @@ export async function openInvoicePdf(id: string) {
 }
 
 export function getInvoiceApiError(error: unknown, fallback: string) {
-  if (!isAxiosError<{ message?: string | string[] }>(error)) {
-    return error instanceof Error ? error.message : fallback;
-  }
-  const message = error.response?.data?.message;
-  return Array.isArray(message) ? message.join(' ') : message || fallback;
+  return getSafeErrorMessage(error, fallback);
 }

@@ -1,6 +1,5 @@
 'use client';
 
-import axios from 'axios';
 import {
   ArrowRight,
   Eye,
@@ -13,6 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { FormEvent, useEffect, useState } from 'react';
 
+import { getSafeErrorMessage } from '@/lib/safe-error';
 import {
   changePlatformAdminPassword,
   getPlatformAdmin,
@@ -22,12 +22,10 @@ import {
 } from '@/services/admin-api';
 
 function apiErrorMessage(error: unknown) {
-  if (axios.isAxiosError(error)) {
-    const message = error.response?.data?.message;
-    if (Array.isArray(message)) return message.join(' ');
-    if (typeof message === 'string') return message;
-  }
-  return 'Não foi possível concluir o pedido. Tente novamente.';
+  return getSafeErrorMessage(
+    error,
+    'Não foi possível concluir o pedido. Tente novamente.',
+  );
 }
 
 export default function AdminLoginPage() {

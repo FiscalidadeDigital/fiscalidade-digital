@@ -19,6 +19,12 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import Link from 'next/link';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
+import {
+  changeFiscalEnrollment,
+  listFiscalEnrollments,
+  type FiscalEnrollment,
+} from '@/services/fiscal-enrollments';
 import {
   confirmFiscalSituation,
   getFiscalSituation,
@@ -101,6 +107,7 @@ function formatPeriod(value: string) {
 export default function FiscalSituationPage() {
   const [period, setPeriod] = useState(currentPeriod);
   const [situation, setSituation] = useState<FiscalSituation | null>(null);
+  const [enrollments, setEnrollments] = useState<FiscalEnrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [confirming, setConfirming] = useState<FiscalSituationTax | null>(null);
@@ -114,16 +121,19 @@ export default function FiscalSituationPage() {
     try {
       setLoading(true);
       setError('');
-      setSituation(await getFiscalSituation(selectedPeriod));
-    } catch (requestError: any) {
-      console.error(
-        'Não foi possível carregar a situação fiscal.',
-        requestError,
-      );
+      const [nextSituation, nextEnrollments] = await Promise.all([
+        getFiscalSituation(selectedPeriod),
+        listFiscalEnrollments(),
+      ]);
+      setSituation(nextSituation);
+      setEnrollments(nextEnrollments);
+    } catch (requestError: unknown) {
       setSituation(null);
       setError(
-        requestError?.response?.data?.message ||
+        getSafeErrorMessage(
+          requestError,
           'Não foi possível carregar a situação fiscal. Tente novamente.',
+        ),
       );
     } finally {
       setLoading(false);
@@ -138,17 +148,27 @@ export default function FiscalSituationPage() {
     if (!confirming) return;
     try {
       setConfirmBusy(true);
-      await confirmFiscalSituation({
-        taxType: confirming.taxType as 'IVA' | 'INDUSTRIAL',
-        regime: confirmRegime,
-        validFrom: confirmDate,
-      });
+      if (confirming.enrollment) {
+        await changeFiscalEnrollment({
+          taxType: confirming.taxType as 'IVA' | 'INDUSTRIAL',
+          regime: confirmRegime,
+          validFrom: confirmDate,
+        });
+      } else {
+        await confirmFiscalSituation({
+          taxType: confirming.taxType as 'IVA' | 'INDUSTRIAL',
+          regime: confirmRegime,
+          validFrom: confirmDate,
+        });
+      }
       setConfirming(null);
       await load(period);
-    } catch (requestError: any) {
+    } catch (requestError: unknown) {
       setError(
-        requestError?.response?.data?.message ||
-          'Não foi possível confirmar a situação fiscal.',
+        getSafeErrorMessage(
+          requestError,
+          'Não foi possível guardar a situação fiscal.',
+        ),
       );
     } finally {
       setConfirmBusy(false);
@@ -167,6 +187,16 @@ export default function FiscalSituationPage() {
         ),
     [situation],
   );
+
+  const enrollmentHistory = useMemo(() => {
+    const entries = new Map<string, FiscalEnrollment[]>();
+    for (const enrollment of enrollments) {
+      const history = entries.get(enrollment.taxType) ?? [];
+      history.push(enrollment);
+      entries.set(enrollment.taxType, history);
+    }
+    return entries;
+  }, [enrollments]);
 
   return (
     <DashboardLayout>
@@ -296,6 +326,7 @@ export default function FiscalSituationPage() {
                       <TaxCard
                         key={tax.taxType}
                         tax={tax}
+                        history={enrollmentHistory.get(tax.taxType) ?? []}
                         onConfirm={setConfirming}
                       />
                     ))}
@@ -376,10 +407,14 @@ export default function FiscalSituationPage() {
                 className="w-full max-w-md rounded-2xl bg-white p-5 shadow-2xl"
               >
                 <h2 className="text-lg font-extrabold text-[#152343]">
-                  Confirmar situação fiscal
+                  {confirming.enrollment
+                    ? 'Alterar regime fiscal'
+                    : 'Confirmar situação fiscal'}
                 </h2>
                 <p className="mt-2 text-sm text-slate-600">
-                  Indique apenas os dados actualmente conhecidos da empresa.
+                  {confirming.enrollment
+                    ? 'A vigência atual termina no dia anterior à data indicada. As obrigações já registadas são preservadas.'
+                    : 'Indique apenas os dados atualmente conhecidos da empresa.'}
                 </p>
                 <label className="mt-5 block text-sm font-semibold">
                   Regime fiscal
@@ -397,7 +432,7 @@ export default function FiscalSituationPage() {
                   </select>
                 </label>
                 <label className="mt-4 block text-sm font-semibold">
-                  Início da vigência
+                  Data de efeito
                   <input
                     required
                     type="date"
@@ -418,7 +453,11 @@ export default function FiscalSituationPage() {
                     disabled={confirmBusy}
                     className="rounded-xl bg-[#102447] px-4 py-2 text-sm font-bold text-white disabled:opacity-50"
                   >
-                    {confirmBusy ? 'A guardar…' : 'Confirmar'}
+                    {confirmBusy
+                      ? 'A guardar…'
+                      : confirming.enrollment
+                        ? 'Alterar regime'
+                        : 'Confirmar'}
                   </button>
                 </div>
               </form>
@@ -471,9 +510,11 @@ function Metric({
 
 function TaxCard({
   tax,
+  history,
   onConfirm,
 }: {
   tax: FiscalSituationTax;
+  history: FiscalEnrollment[];
   onConfirm: (tax: FiscalSituationTax) => void;
 }) {
   const item = presentation[tax.taxType] ?? {
@@ -569,16 +610,35 @@ function TaxCard({
             'É necessária revisão antes de automatizar este enquadramento.'}
         </p>
       )}
-      {(tax.taxType === 'IVA' || tax.taxType === 'INDUSTRIAL') &&
-        !tax.enrollment && (
+      {(tax.taxType === 'IVA' || tax.taxType === 'INDUSTRIAL') && (
           <button
             type="button"
             onClick={() => onConfirm(tax)}
             className="mt-3 rounded-xl border border-[#b9dbe8] bg-white px-3 py-2 text-xs font-bold text-[#075f86] hover:bg-[#f2f7fb]"
           >
-            Confirmar situação fiscal
+            {tax.enrollment
+              ? 'Alterar regime'
+              : 'Confirmar situação fiscal'}
           </button>
         )}
+      {history.length > 0 && (
+        <details className="mt-3 rounded-xl border border-[#e5ebf3] bg-white px-3 py-2.5">
+          <summary className="cursor-pointer text-xs font-bold text-[#075f86]">
+            Histórico de vigências ({history.length})
+          </summary>
+          <ul className="mt-2 space-y-1.5 text-xs text-[#405275]">
+            {history.map((entry) => (
+              <li key={entry.id}>
+                {entry.regime || 'Regime por confirmar'} ·{' '}
+                {formatDate(entry.validFrom)} até{' '}
+                {entry.validUntil
+                  ? formatDate(entry.validUntil)
+                  : 'sem termo definido'}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
       {!tax.automationReady && !needsAttention && (
         <p className="mt-3 text-xs text-[#7180a2]">
           Automação indisponível até confirmação dos dados ou regras aplicáveis.

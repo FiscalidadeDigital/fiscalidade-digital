@@ -3,65 +3,1014 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useState, type ReactNode } from 'react';
-import { AlertTriangle, ArrowRight, BarChart3, BellRing, Briefcase, CalendarDays, Check, ChevronRight, FileCheck2, FileText, Landmark, Layers3, Linkedin, Menu, MessageCircle, ReceiptText, ShieldCheck, UsersRound, WalletCards, X } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowRight,
+  BarChart3,
+  BellRing,
+  Briefcase,
+  CalendarDays,
+  Check,
+  ChevronRight,
+  FileCheck2,
+  FileText,
+  Landmark,
+  Layers3,
+  Linkedin,
+  Menu,
+  MessageCircle,
+  ReceiptText,
+  ShieldCheck,
+  UsersRound,
+  WalletCards,
+  X,
+} from 'lucide-react';
 import WhyChooseSection from '@/components/landing/WhyChooseSection';
 
-const nav = [['Início', '#inicio'], ['Plataforma', '#plataforma'], ['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona'], ['Para quem', '#para-quem'], ['Sobre nós', '#sobre'], ['Contacto', '#contacto']] as const;
+const nav = [
+  ['Início', '#inicio'],
+  ['Plataforma', '#plataforma'],
+  ['Funcionalidades', '#funcionalidades'],
+  ['Como funciona', '#como-funciona'],
+  ['Para quem', '#para-quem'],
+  ['Sobre nós', '#sobre'],
+  ['Contacto', '#contacto'],
+] as const;
 const whatsappUrl = 'https://wa.me/244924462591';
 const features = [
-  ['Gestão fiscal', Landmark, ['Central Fiscal', 'Obrigações Fiscais', 'Calendário Fiscal', 'Alertas']],
-  ['Operação empresarial', ReceiptText, ['Facturação', 'Compras e facturas recebidas', 'Clientes']],
-  ['Pessoas', UsersRound, ['Funcionários', 'Processamento salarial', 'IRT e INSS']],
+  [
+    'Gestão fiscal',
+    Landmark,
+    ['Central Fiscal', 'Obrigações Fiscais', 'Calendário Fiscal', 'Alertas'],
+  ],
+  [
+    'Operação empresarial',
+    ReceiptText,
+    ['Facturação', 'Compras e facturas recebidas', 'Clientes'],
+  ],
+  [
+    'Pessoas',
+    UsersRound,
+    ['Funcionários', 'Processamento salarial', 'IRT e INSS'],
+  ],
   ['Dados e conformidade', FileCheck2, ['SAF-T', 'Relatórios', 'Histórico']],
 ] as const;
 const members = [
-  { name: 'Desidério Pereira', area: 'Contabilidade • Fiscalidade • Estratégia', image: '/Desiderio.jpeg', position: 'object-[center_20%]', link: 'https://www.linkedin.com/in/desiderio-pereira-4b1a492a7', bio: 'Jovem angolano e finalista de Contabilidade e Finanças no Instituto Superior de Administração e Finanças — ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação. É co-fundador da Respirando Contabilidade e idealizador da Fiscalidade Digital, procurando combinar tecnologia, contabilidade e fiscalidade para desenvolver soluções mais acessíveis para empresas angolanas.', education: ['Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL', 'Finalista de Contabilidade e Finanças no ISAF', 'IFRS, Fiscalidade, Contabilidade, Empreendedorismo e Inovação'], highlights: ['Co-fundador da Respirando Contabilidade', 'Idealizador da Fiscalidade Digital', 'Embaixador da KPMG Angola no ISAF', 'Bolseiro de Mérito'] },
-  { name: 'Edgar Gilson da Silva António', area: 'Contabilidade • Fiscalidade • Análise Financeira', image: '/edgar.jpg', position: 'object-[center_18%]', link: 'https://www.linkedin.com/in/edgar-ant%C3%B3nio-3a1048289', bio: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade, Análise Financeira, Contabilidade de Custos, Contabilidade Gerencial, IFRS e Contabilidade Forense. O seu percurso combina formação académica, conhecimento técnico, liderança e inovação.', education: ['Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL', 'Finalista de Contabilidade e Finanças no ISAF', 'Excel Avançado, Primavera ERP, Portal do Contribuinte e Microsoft Office 365'], highlights: ['Co-fundador da Respirando Contabilidade', 'Monitor de Contabilidade Analítica', 'Bolseiro de Mérito da Fundação BAI', 'Investigador Científico Certificado'] },
-  { name: 'Francisco António', area: 'Contabilidade • Fiscalidade • Investigação', image: '/Francisco.jpeg', position: 'object-[center_18%]', link: 'https://www.linkedin.com/in/francisco-ant%C3%B3nio-891555281',
-    bio: 'Finalista de Contabilidade e Finanças no ISAF, Francisco contribui para a componente contabilística e fiscal da Fiscalidade Digital, com experiência de formação, investigação e empreendedorismo.', education: ['Finalista de Contabilidade e Finanças — ISAF', 'Contabilidade e Fiscalidade — Centro de Formação Ferkund', 'Gestão Financeira — DW e Kixicrédito', 'Voluntariado — Fundação BAI'], highlights: ['Bolseiro de Mérito BAI', 'Co-Fundador da Respirando Contabilidade', 'Presidente do Clube de Fiscalidade do ISAF', 'Investigador pelo Programa de Iniciação Científica do ISAF'] },
-  { name: 'Anildo Manuel João', area: 'Tecnologia • Desenvolvimento • Automação', image: '/Anildodev.jpg', position: 'object-[center_15%]', link: 'https://www.linkedin.com/in/anildo-jo%C3%A3o-85643330b', bio: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação, desenvolvedor Full Stack e técnico com formação nas áreas de Automação Industrial, Instrumentação e Controlo. O seu percurso está na intersecção entre software, sistemas, infraestrutura tecnológica e tecnologia industrial.', education: ['Técnico Médio de Informática de Gestão pelo Instituto Médio de Economia de Luanda — IMEL', 'Engenharia Informática e Comunicação — Universidade Óscar Ribas', 'Full Stack, APIs, Bases de Dados, Redes, IoT, Inteligência Artificial e Gestão de Projectos'], highlights: ['Desenvolvimento tecnológico da Fiscalidade Digital', 'CEO e Fundador da Yash Hub5', 'Software + Automação Industrial + Instrumentação + Control Systems'] },
+  {
+    name: 'Desidério Pereira',
+    area: 'Contabilidade • Fiscalidade • Estratégia',
+    image: '/Desiderio.jpeg',
+    position: 'object-[center_20%]',
+    link: 'https://www.linkedin.com/in/desiderio-pereira-4b1a492a7',
+    bio: 'Jovem angolano e finalista de Contabilidade e Finanças no Instituto Superior de Administração e Finanças — ISAF, com forte interesse em IFRS, fiscalidade, empreendedorismo e inovação. É co-fundador da Respirando Contabilidade e idealizador da Fiscalidade Digital, procurando combinar tecnologia, contabilidade e fiscalidade para desenvolver soluções mais acessíveis para empresas angolanas.',
+    education: [
+      'Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL',
+      'Finalista de Contabilidade e Finanças no ISAF',
+      'IFRS, Fiscalidade, Contabilidade, Empreendedorismo e Inovação',
+    ],
+    highlights: [
+      'Co-fundador da Respirando Contabilidade',
+      'Idealizador da Fiscalidade Digital',
+      'Embaixador da KPMG Angola no ISAF',
+      'Bolseiro de Mérito',
+    ],
+  },
+  {
+    name: 'Edgar Gilson da Silva António',
+    area: 'Contabilidade • Fiscalidade • Análise Financeira',
+    image: '/edgar.jpg',
+    position: 'object-[center_18%]',
+    link: 'https://www.linkedin.com/in/edgar-ant%C3%B3nio-3a1048289',
+    bio: 'Jovem angolano e finalista de Contabilidade e Finanças no ISAF, com interesse em Contabilidade, Fiscalidade, Análise Financeira, Contabilidade de Custos, Contabilidade Gerencial, IFRS e Contabilidade Forense. O seu percurso combina formação académica, conhecimento técnico, liderança e inovação.',
+    education: [
+      'Ensino médio concluído no Instituto Médio de Economia de Luanda — IMEL',
+      'Finalista de Contabilidade e Finanças no ISAF',
+      'Excel Avançado, Primavera ERP, Portal do Contribuinte e Microsoft Office 365',
+    ],
+    highlights: [
+      'Co-fundador da Respirando Contabilidade',
+      'Monitor de Contabilidade Analítica',
+      'Bolseiro de Mérito da Fundação BAI',
+      'Investigador Científico Certificado',
+    ],
+  },
+  {
+    name: 'Francisco António',
+    area: 'Contabilidade • Fiscalidade • Investigação',
+    image: '/Francisco.jpeg',
+    position: 'object-[center_18%]',
+    link: 'https://www.linkedin.com/in/francisco-ant%C3%B3nio-891555281',
+    bio: 'Finalista de Contabilidade e Finanças no ISAF, Francisco contribui para a componente contabilística e fiscal da Fiscalidade Digital, com experiência de formação, investigação e empreendedorismo.',
+    education: [
+      'Finalista de Contabilidade e Finanças — ISAF',
+      'Contabilidade e Fiscalidade — Centro de Formação Ferkund',
+      'Gestão Financeira — DW e Kixicrédito',
+      'Voluntariado — Fundação BAI',
+    ],
+    highlights: [
+      'Bolseiro de Mérito BAI',
+      'Co-Fundador da Respirando Contabilidade',
+      'Presidente do Clube de Fiscalidade do ISAF',
+      'Investigador pelo Programa de Iniciação Científica do ISAF',
+    ],
+  },
+  {
+    name: 'Anildo Manuel João',
+    area: 'Tecnologia • Desenvolvimento • Automação',
+    image: '/Anildodev.jpg',
+    position: 'object-[center_15%]',
+    link: 'https://www.linkedin.com/in/anildo-jo%C3%A3o-85643330b',
+    bio: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação, desenvolvedor Full Stack e técnico com formação nas áreas de Automação Industrial, Instrumentação e Controlo. O seu percurso está na intersecção entre software, sistemas, infraestrutura tecnológica e tecnologia industrial.',
+    education: [
+      'Técnico Médio de Informática de Gestão pelo Instituto Médio de Economia de Luanda — IMEL',
+      'Engenharia Informática e Comunicação — Universidade Óscar Ribas',
+      'Full Stack, APIs, Bases de Dados, Redes, IoT, Inteligência Artificial e Gestão de Projectos',
+    ],
+    highlights: [
+      'Desenvolvimento tecnológico da Fiscalidade Digital',
+      'CEO e Fundador da Yash Hub5',
+      'Software + Automação Industrial + Instrumentação + Control Systems',
+    ],
+  },
 ];
 
-function Brand({ inverse = false }: { inverse?: boolean }) { return <Link href="/" aria-label="Fiscalidade Digital — início" className="inline-flex items-center gap-3"><span className="rounded-xl bg-white p-1 shadow-sm"><Image src="/logofiscalidade.png" alt="" width={34} height={34} priority /></span><span className={`font-extrabold tracking-tight ${inverse ? 'text-white' : 'text-[#102447]'}`}>Fiscalidade <span className="text-cyan-500">Digital</span></span></Link>; }
-
-function Mockup() { return <div className="hero-mockup relative mx-auto max-w-[470px]"><div className="absolute -left-6 bottom-8 hidden w-44 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)] sm:block"><p className="text-xs font-bold text-[#102447]">Obrigações</p><p className="mt-1 text-[11px] text-slate-500">Prazos organizados</p></div><div className="absolute -right-5 top-8 hidden w-44 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)] sm:block"><p className="text-xs font-bold text-[#102447]">Impostos</p><p className="mt-1 text-[11px] text-slate-500">Fiscalidade num só lugar</p></div><div className="rounded-[28px] border border-white bg-white p-5 shadow-[0_30px_70px_rgba(15,41,79,.16)]"><div className="flex gap-1.5"><i className="h-2 w-2 rounded-full bg-cyan-400" /><i className="h-2 w-2 rounded-full bg-slate-200" /><i className="h-2 w-2 rounded-full bg-slate-200" /></div><div className="mt-12 rounded-2xl bg-[#f2f9fb] p-5"><p className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-cyan-700"><FileText size={13} /> Gestão fiscal</p><h2 className="mt-4 text-3xl font-extrabold leading-[1.05] tracking-tight text-[#102447]">Simplifique<br />a gestão da<br />sua empresa.</h2></div><div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-bold"><span className="rounded-xl bg-cyan-50 px-2 py-3 text-cyan-800">Impostos</span><span className="rounded-xl bg-slate-50 px-2 py-3 text-[#102447]">Obrigações</span><span className="rounded-xl bg-slate-50 px-2 py-3 text-[#102447]">Folha salarial</span></div></div></div>; }
-
-function FiscalDemo() { const rows = [['IVA', 'Regime Geral', 'Em dia'], ['Imposto Industrial', 'Regime Simplificado', 'Aplicável'], ['IRT', 'Próxima obrigação', 'Acompanhar'], ['INSS', 'Factos laborais', 'Em dia'], ['SAF-T', 'Requisito fiscal', 'Preparar']]; return <div className="demo-panel rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_24px_60px_rgba(15,41,79,.12)] sm:p-5"><div className="flex items-center justify-between border-b border-slate-100 pb-4"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Demonstração da plataforma</span><span className="rounded bg-cyan-50 px-2 py-1 text-[10px] font-bold text-cyan-800">Central Fiscal</span></div><div className="mt-4 grid gap-2 sm:grid-cols-3"><Metric label="Situação fiscal" value="Organizada" dark /><Metric label="Em atenção" value="01" /><Metric label="Próximas" value="02" /></div><div className="mt-4 space-y-2">{rows.map(([tax, text, state], index) => <div className="demo-row flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5" key={tax} style={{ animationDelay: `${200 + index * 90}ms` }}><b className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-[10px] text-cyan-800">{tax === 'Imposto Industrial' ? 'II' : tax}</b><span className="min-w-0 flex-1"><strong className="block text-xs text-[#102447]">{tax}</strong><small className="text-[11px] text-slate-500">{text}</small></span><em className="rounded-full bg-slate-100 px-2 py-1 text-[10px] not-italic text-slate-600">{state}</em></div>)}</div><p className="mt-4 text-[11px] leading-5 text-slate-500">Demonstração visual. Os dados não correspondem a uma empresa real.</p></div>; }
-function Metric({ label, value, dark = false }: { label: string; value: string; dark?: boolean }) { return <div className={`demo-stat rounded-xl p-3 ${dark ? 'bg-[#102447] text-white' : 'bg-slate-50 text-[#102447]'}`}><p className={`text-[10px] font-semibold uppercase tracking-wider ${dark ? 'text-cyan-200' : 'text-slate-500'}`}>{label}</p><p className="mt-1 text-base font-bold">{value}</p></div>; }
-
-export default function HomePage() {
-  const [menuOpen, setMenuOpen] = useState(false); const [memberIndex, setMemberIndex] = useState(0); const member = members[memberIndex];
-  return <main className="site min-h-screen overflow-x-hidden bg-white text-slate-800"><header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur"><div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 lg:px-8"><Brand /><nav aria-label="Navegação principal" className="hidden gap-5 xl:flex">{nav.map(([name, href]) => <a key={href} href={href} className="text-sm font-bold text-slate-600 hover:text-cyan-700">{name}</a>)}</nav><div className="hidden items-center gap-4 sm:flex"><Link href="/login" className="text-sm font-bold text-[#102447]">Entrar</Link><Link href="/register" className="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-cyan-600">Criar conta</Link></div><button type="button" className="rounded-lg p-2 xl:hidden" aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'} aria-expanded={menuOpen} onClick={() => setMenuOpen(!menuOpen)}>{menuOpen ? <X /> : <Menu />}</button></div>{menuOpen && <nav className="border-t border-slate-100 bg-white px-5 py-4 xl:hidden">{nav.map(([name, href]) => <a key={href} href={href} onClick={() => setMenuOpen(false)} className="block border-b border-slate-100 py-3 text-sm font-bold">{name}</a>)}<Link href="/register" className="mt-3 inline-block rounded-lg bg-cyan-500 px-4 py-3 text-sm font-bold text-white">Criar conta</Link></nav>}</header>
-
-    <section id="inicio" className="relative overflow-hidden bg-white py-16 sm:py-20"><svg aria-hidden="true" className="absolute right-0 top-0 h-full w-2/3 opacity-70" viewBox="0 0 800 600" fill="none"><path d="M110 50c220 0 120 185 330 185S555 430 820 420" stroke="#A5F3FC" strokeDasharray="5 8" /><circle cx="610" cy="120" r="180" fill="#EEF9FC" /></svg><div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[.95fr_1.05fr] lg:items-center lg:px-8"><div><p className="hero-reveal r1 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.17em] text-cyan-700"><i className="h-2 w-2 rounded-full bg-cyan-500" />Fiscalidade Digital</p><h1 className="hero-reveal r2 mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl">A gestão fiscal<br />da sua empresa<br /><span className="text-cyan-500">num só lugar.</span></h1><p className="hero-reveal r3 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">Uma plataforma criada para empresas em Angola organizarem facturação, impostos, obrigações, compras e salários com mais clareza e controlo.</p><div className="hero-reveal r4 mt-8 flex flex-col gap-3 sm:flex-row"><Link href="/register" className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] hover:bg-cyan-600">Criar conta <ArrowRight size={17} /></Link><a href="#plataforma" className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] hover:border-cyan-300">Conhecer a plataforma <ChevronRight size={17} /></a></div><div className="hero-reveal r4 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">{['Pensado para empresas em Angola', 'Fiscalidade num só lugar', 'Controlo e organização'].map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-cyan-600" />{text}</span>)}</div></div><div className="hero-reveal r5"><Mockup /></div></div></section>
-
-    <section className="py-16 sm:py-20"><div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[.85fr_1.15fr] lg:px-8"><Title eyebrow="Sobre a Fiscalidade Digital"><>Tecnologia<br />criada para<br /><span className="text-cyan-500">simplificar</span><br />a fiscalidade.</></Title><div className="space-y-5 self-center text-base leading-7 text-slate-600"><p>A Fiscalidade Digital é uma plataforma tecnológica pensada para simplificar a gestão fiscal das empresas em Angola.</p><p>A plataforma reúne diferentes áreas da operação empresarial num único ambiente, permitindo acompanhar informação fiscal e administrativa de forma mais organizada.</p><p className="border-l-2 border-cyan-500 pl-4 font-bold text-[#102447]">Menos informação espalhada. Mais organização para acompanhar a realidade da empresa.</p></div></div></section>
-
-    <section className="border-y border-slate-100 bg-[#f7fafc] py-14"><div className="mx-auto grid max-w-7xl gap-8 px-5 lg:grid-cols-[.8fr_1.2fr] lg:px-8"><Title eyebrow="O desafio">Gerir a fiscalidade não deveria significar trabalhar com informações espalhadas.</Title><div className="grid gap-5 sm:grid-cols-2">{['Obrigações e prazos acompanhados em lugares diferentes.', 'Documentos, facturas, salários e informação laboral separados.', 'Pouca visibilidade sobre o que exige atenção no momento.'].map((item) => <p key={item} className="border-t border-slate-300 pt-4 text-sm font-bold leading-6 text-[#102447]"><AlertTriangle size={18} className="mb-3 text-cyan-700" />{item}</p>)}<p className="border-t border-cyan-500 pt-4 text-sm font-bold leading-6 text-cyan-800"><Layers3 size={18} className="mb-3" />A Fiscalidade Digital reúne esses processos numa única plataforma.</p></div></div></section>
-
-    <section id="plataforma" className="py-16 sm:py-20"><div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[.78fr_1.22fr] lg:items-center lg:px-8"><div><Title eyebrow="Central Fiscal">Conheça a situação fiscal da sua empresa.</Title><p className="mt-5 text-base leading-7 text-slate-600">A Central Fiscal reúne numa única visão os principais domínios fiscais da empresa, enquadramentos, próximas obrigações, prazos e situações que exigem atenção.</p><div className="mt-7 border-l-2 border-cyan-500 pl-4 text-sm leading-7 text-slate-600"><p><b className="text-[#102447]">Enquadramento</b> para compreender o imposto aplicável.</p><p><b className="text-[#102447]">Obrigações</b> para acompanhar o que está pendente.</p><p><b className="text-[#102447]">Acompanhamento</b> para dar prioridade ao que exige atenção.</p></div><Link href="/register" className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-cyan-800 hover:text-cyan-600">Quero organizar a situação fiscal da minha empresa <ArrowRight size={16} /></Link></div><FiscalDemo /></div></section>
-
-    <WhyChooseSection />
-
-    <section className="bg-white py-16 sm:py-20"><div className="mx-auto max-w-7xl px-5 lg:px-8"><Title eyebrow="Funcionalidades">Uma plataforma para organizar a operação fiscal e empresarial.</Title><div className="mt-10 grid gap-x-14 gap-y-10 lg:grid-cols-2">{features.map(([name, Icon, items], index) => <article key={name} className="border-t border-slate-300 pt-5"><div className="flex gap-4"><span className="text-xs font-bold text-cyan-700">0{index + 1}</span><Icon size={20} className="text-cyan-700" /><h3 className="text-xl font-extrabold text-[#102447]">{name}</h3></div><div className="mt-5 divide-y divide-slate-200">{items.map((item) => <p key={item} className="py-3 text-sm font-semibold text-slate-600">{item}</p>)}</div></article>)}</div></div></section>
-
-    <section id="como-funciona" className="py-16 sm:py-20"><div className="mx-auto max-w-7xl px-5 lg:px-8"><Title eyebrow="Como funciona">Da operação diária a uma visão fiscal mais clara.</Title><ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">{[['01', 'Cadastre a sua empresa'], ['02', 'Organize a operação'], ['03', 'Contexto fiscal'], ['04', 'Acompanhe na Central Fiscal'], ['05', 'Antecipe atenção']].map(([n, text]) => <li key={n} className="border-t border-slate-300 pt-4"><span className="text-xs font-bold text-cyan-700">{n}</span><p className="mt-4 text-sm font-extrabold leading-6 text-[#102447]">{text}</p></li>)}</ol></div></section>
-
-    <section id="para-quem" className="bg-[#102447] py-16 text-white sm:py-20"><div className="mx-auto max-w-7xl px-5 lg:px-8"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Para quem é</p><h2 className="mt-3 max-w-3xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">Informação organizada para quem acompanha a empresa todos os dias.</h2><div className="mt-10 grid gap-8 md:grid-cols-3">{[[Briefcase, 'Empresas', 'Centralize a operação fiscal e tenha maior visibilidade sobre obrigações, facturação, equipa e prazos.'], [FileCheck2, 'Contabilistas', 'Organize informação fiscal e operacional e acompanhe responsabilidades dos clientes.'], [BarChart3, 'Equipas financeiras', 'Tenha informação empresarial e fiscal estruturada para acompanhamento e decisão.']].map(([Icon, title, text]) => { const ItemIcon = Icon as typeof Briefcase; return <div key={title as string} className="border-t border-white/25 pt-5"><ItemIcon size={22} className="text-cyan-300" /><h3 className="mt-4 text-lg font-extrabold">{title as string}</h3><p className="mt-3 text-sm leading-6 text-slate-200">{text as string}</p></div>; })}</div></div></section>
-
-    <section id="sobre" className="py-16 sm:py-20"><div className="mx-auto max-w-7xl px-5 lg:px-8"><div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr]"><Title eyebrow="A nossa história">Quatro jovens. Competências diferentes. Uma visão comum.</Title><div className="space-y-5 text-base leading-7 text-slate-600"><p>Construir tecnologia capaz de tornar a gestão fiscal mais organizada, compreensível e próxima da realidade das empresas angolanas.</p><p>A Fiscalidade Digital foi criada por quatro jovens angolanos — três ligados à Contabilidade e Fiscalidade e um ligado a Tecnologia e Automação.</p></div></div><div className="mt-12 grid gap-5 border-y border-slate-300 py-7 sm:grid-cols-4"><b className="text-xs uppercase tracking-[.15em] text-cyan-700">IMEL</b><b className="text-sm text-[#102447]">Contabilidade + Tecnologia</b><span className="text-sm text-slate-600">Experiências académicas e profissionais</span><span className="text-sm text-slate-600">Fiscalidade Digital</span></div><p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">Os quatro membros partilham uma ligação académica ao Instituto Médio de Economia de Luanda — IMEL, onde concluíram o ensino médio.</p></div></section>
-
-    <section className="bg-[#f7fafc] py-16 sm:py-20"><div className="mx-auto max-w-7xl px-5 lg:px-8"><Title eyebrow="Nossa equipa">Pessoas que combinam contexto local e construção tecnológica.</Title><div className="mt-10 grid gap-8 lg:grid-cols-[.9fr_1.1fr]"><div className="relative min-h-[420px] overflow-hidden bg-[#eaf4f8]"><Image key={member.image} src={member.image} alt={`Fotografia de ${member.name}`} fill sizes="(min-width:1024px) 42vw, 100vw" className={`team-photo object-cover ${member.position}`} /><div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#061a36]/90 to-transparent p-6 pt-24 text-white"><p className="text-xs font-bold uppercase tracking-[.15em] text-cyan-200">Fiscalidade Digital</p><p className="mt-2 text-2xl font-extrabold">{member.name}</p></div></div><div><div role="tablist" aria-label="Membros da equipa" className="flex flex-wrap gap-x-4 gap-y-2 border-b border-slate-200 pb-4">{members.map((item, index) => <button key={item.name} type="button" role="tab" aria-selected={memberIndex === index} onClick={() => setMemberIndex(index)} className={`border-b-2 pb-2 text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-700 ${memberIndex === index ? 'border-cyan-600 text-[#102447]' : 'border-transparent text-slate-400 hover:text-[#102447]'}`}>{item.name.split(' ')[0]}</button>)}</div><div role="tabpanel" className="team-copy pt-7"><p className="text-xs font-bold uppercase tracking-[.14em] text-cyan-700">{member.area}</p><h3 className="mt-3 text-3xl font-extrabold tracking-[-.04em] text-[#102447]">{member.name}</h3><p className="mt-5 text-sm leading-7 text-slate-600">{member.bio}</p><div className="mt-7 grid gap-6 sm:grid-cols-2"><List title="Formação & competências" items={member.education} /><List title="Destaques" items={member.highlights} check /></div><a href={member.link} target="_blank" rel="noopener noreferrer" className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#102447] hover:text-cyan-700">LinkedIn <Linkedin size={16} /></a></div></div></div></div></section>
-
-    <section id="contacto" className="relative overflow-hidden bg-[#102447] py-11 text-white sm:py-14"><svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-20" viewBox="0 0 1200 260" fill="none"><path d="M0 196c260-16 310-154 552-154s316 142 648 76" stroke="#67E8F9" strokeDasharray="5 8" /></svg><div className="relative mx-auto grid max-w-7xl gap-7 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(26rem,.75fr)] lg:items-center lg:px-8"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Contacto</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">Vamos falar sobre a sua empresa?</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">Conheça as nossas soluções ou fale com a equipa sobre as necessidades fiscais e contabilísticas do seu negócio.</p></div><div className="grid gap-3 sm:grid-cols-2"><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="group rounded-xl bg-[#25D366] p-4 text-[#06351b] transition-[transform,box-shadow] duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_12px_26px_rgba(0,0,0,.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><span className="flex items-center gap-2 text-sm font-extrabold"><MessageCircle size={18} aria-hidden="true" />WhatsApp</span><span className="mt-2 block text-xs font-semibold opacity-80">Fale directamente com a equipa</span></a><a href="mailto:fiscalidadedigital@empresa.ao" className="group rounded-xl border border-white/25 bg-white/5 p-4 transition-[background-color,transform] duration-200 hover:bg-white/10 motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><span className="flex items-center gap-2 text-sm font-extrabold"><FileText size={18} aria-hidden="true" />E-mail</span><span className="mt-2 block break-all text-xs font-semibold text-cyan-100">fiscalidadedigital@empresa.ao</span></a></div></div></section>
-
-    <section className="bg-[#082755] py-11 text-white sm:py-14"><div className="mx-auto flex max-w-7xl flex-col justify-between gap-7 px-5 lg:flex-row lg:items-center lg:px-8"><div><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">Mais controlo fiscal. Mais tempo para a sua empresa.</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">Comece a organizar a sua gestão fiscal com ferramentas digitais pensadas para as empresas angolanas.</p></div><div className="flex flex-wrap items-center gap-3"><Link href="/register" className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:bg-cyan-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">Criar conta</Link><a href="#plataforma" className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">Conhecer a plataforma</a><Link href="/login" className="px-1 py-2 text-sm font-semibold text-cyan-100 underline underline-offset-4 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">Já tenho conta</Link></div></div></section>
-    <footer className="bg-[#061a36] text-slate-300"><div className="mx-auto max-w-7xl px-5 py-10 pb-20 sm:pb-10 lg:px-8"><div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-4"><div><Brand inverse /><p className="mt-4 text-sm leading-6 text-slate-400">Plataforma de gestão fiscal e empresarial desenvolvida para ajudar empresas e profissionais a organizar informação, obrigações e processos fiscais.</p></div><Footer title="Plataforma" links={[['Plataforma', '#plataforma'], ['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} /><Footer title="Empresa" links={[['Sobre nós', '#sobre'], ['Contacto', '#contacto']]} /><Footer title="Conta" links={[['Entrar', '/login'], ['Criar conta', '/register'], ['fiscalidadedigital@empresa.ao', 'mailto:fiscalidadedigital@empresa.ao']]} /></div><p className="pt-6 text-xs text-slate-500">© {new Date().getFullYear()} Fiscalidade Digital · Angola</p></div></footer>
-    <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label="Falar no WhatsApp da Fiscalidade Digital" className="fixed bottom-4 left-4 z-40 inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-3.5 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition-[background-color,transform] duration-200 hover:bg-[#53e589] motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5 sm:px-4" style={{ bottom: 'max(1rem, env(safe-area-inset-bottom))', left: 'max(1rem, env(safe-area-inset-left))' }}><MessageCircle size={20} aria-hidden="true" /><span className="hidden sm:inline">Falar no WhatsApp</span></a>
-    <style jsx global>{`@keyframes reveal{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}@keyframes row{from{opacity:0;transform:translateX(10px)}to{opacity:1;transform:none}}.hero-reveal,.hero-mockup{animation:reveal .62s both cubic-bezier(.2,.7,.2,1)}.r1{animation-delay:60ms}.r2{animation-delay:140ms}.r3{animation-delay:220ms}.r4{animation-delay:300ms}.r5{animation-delay:380ms}.demo-stat,.demo-row{animation:row .42s both ease-out}.team-photo{animation:reveal .35s both ease-out}@media(prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}`}</style>
-  </main>;
+function Brand({ inverse = false }: { inverse?: boolean }) {
+  return (
+    <Link
+      href="/"
+      aria-label="Fiscalidade Digital — início"
+      className="inline-flex items-center gap-3"
+    >
+      <span className="rounded-xl bg-white p-1 shadow-sm">
+        <Image
+          src="/logofiscalidade.png"
+          alt=""
+          width={34}
+          height={34}
+          priority
+        />
+      </span>
+      <span
+        className={`font-extrabold tracking-tight ${inverse ? 'text-white' : 'text-[#102447]'}`}
+      >
+        Fiscalidade <span className="text-cyan-500">Digital</span>
+      </span>
+    </Link>
+  );
 }
 
-function Title({ eyebrow, children }: { eyebrow: string; children: ReactNode }) { return <div><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">{eyebrow}</p><h2 className="mt-3 text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">{children}</h2></div>; }
-function List({ title, items, check = false }: { title: string; items: string[]; check?: boolean }) { return <div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">{title}</p><ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{items.map((item) => <li key={item} className="flex gap-2">{check ? <Check size={15} className="mt-1 shrink-0 text-cyan-700" /> : <i className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-600" />}{item}</li>)}</ul></div>; }
-function Footer({ title, links }: { title: string; links: readonly (readonly [string, string])[] }) { return <div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">{title}</p><div className="mt-4 grid gap-3 text-sm">{links.map(([name, href]) => href.startsWith('/') ? <Link key={href} href={href}>{name}</Link> : <a key={href} href={href}>{name}</a>)}</div></div>; }
+function Mockup() {
+  return (
+    <div className="hero-mockup relative mx-auto max-w-[470px]">
+      <div className="absolute -left-6 bottom-8 hidden w-44 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)] sm:block">
+        <p className="text-xs font-bold text-[#102447]">Obrigações</p>
+        <p className="mt-1 text-[11px] text-slate-500">Prazos organizados</p>
+      </div>
+      <div className="absolute -right-5 top-8 hidden w-44 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)] sm:block">
+        <p className="text-xs font-bold text-[#102447]">Impostos</p>
+        <p className="mt-1 text-[11px] text-slate-500">
+          Fiscalidade num só lugar
+        </p>
+      </div>
+      <div className="rounded-[28px] border border-white bg-white p-5 shadow-[0_30px_70px_rgba(15,41,79,.16)]">
+        <div className="flex gap-1.5">
+          <i className="h-2 w-2 rounded-full bg-cyan-400" />
+          <i className="h-2 w-2 rounded-full bg-slate-200" />
+          <i className="h-2 w-2 rounded-full bg-slate-200" />
+        </div>
+        <div className="mt-12 rounded-2xl bg-[#f2f9fb] p-5">
+          <p className="inline-flex items-center gap-2 text-[10px] font-extrabold uppercase tracking-wider text-cyan-700">
+            <FileText size={13} /> Gestão fiscal
+          </p>
+          <h2 className="mt-4 text-3xl font-extrabold leading-[1.05] tracking-tight text-[#102447]">
+            Simplifique
+            <br />a gestão da
+            <br />
+            sua empresa.
+          </h2>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-[10px] font-bold">
+          <span className="rounded-xl bg-cyan-50 px-2 py-3 text-cyan-800">
+            Impostos
+          </span>
+          <span className="rounded-xl bg-slate-50 px-2 py-3 text-[#102447]">
+            Obrigações
+          </span>
+          <span className="rounded-xl bg-slate-50 px-2 py-3 text-[#102447]">
+            Folha salarial
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FiscalPreview() {
+  const rows = [
+    ['IVA', 'Regime Geral', 'Em dia'],
+    ['Imposto Industrial', 'Regime Simplificado', 'Aplicável'],
+    ['IRT', 'Próxima obrigação', 'Acompanhar'],
+    ['INSS', 'Factos laborais', 'Em dia'],
+    ['SAF-T', 'Requisito fiscal', 'Preparar'],
+  ];
+
+  return (
+    <div className="preview-panel rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_24px_60px_rgba(15,41,79,.12)] sm:p-5">
+      <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">
+          Visão ilustrativa da plataforma
+        </span>
+        <span className="rounded bg-cyan-50 px-2 py-1 text-[10px] font-bold text-cyan-800">
+          Central Fiscal
+        </span>
+      </div>
+      <div className="mt-4 grid gap-2 sm:grid-cols-3">
+        <Metric label="Situação fiscal" value="Organizada" dark />
+        <Metric label="Em atenção" value="01" />
+        <Metric label="Próximas" value="02" />
+      </div>
+      <div className="mt-4 space-y-2">
+        {rows.map(([tax, text, state], index) => (
+          <div
+            className="preview-row flex items-center gap-3 rounded-xl border border-slate-100 px-3 py-2.5"
+            key={tax}
+            style={{ animationDelay: `${200 + index * 90}ms` }}
+          >
+            <b className="flex h-8 w-8 items-center justify-center rounded-lg bg-cyan-50 text-[10px] text-cyan-800">
+              {tax === 'Imposto Industrial' ? 'II' : tax}
+            </b>
+            <span className="min-w-0 flex-1">
+              <strong className="block text-xs text-[#102447]">{tax}</strong>
+              <small className="text-[11px] text-slate-500">{text}</small>
+            </span>
+            <em className="rounded-full bg-slate-100 px-2 py-1 text-[10px] not-italic text-slate-600">
+              {state}
+            </em>
+          </div>
+        ))}
+      </div>
+      <p className="mt-4 text-[11px] leading-5 text-slate-500">
+        Visão ilustrativa. Os dados não correspondem a uma empresa real.
+      </p>
+    </div>
+  );
+}
+
+function Metric({
+  label,
+  value,
+  dark = false,
+}: {
+  label: string;
+  value: string;
+  dark?: boolean;
+}) {
+  return (
+    <div
+      className={`preview-stat rounded-xl p-3 ${dark ? 'bg-[#102447] text-white' : 'bg-slate-50 text-[#102447]'}`}
+    >
+      <p
+        className={`text-[10px] font-semibold uppercase tracking-wider ${dark ? 'text-cyan-200' : 'text-slate-500'}`}
+      >
+        {label}
+      </p>
+      <p className="mt-1 text-base font-bold">{value}</p>
+    </div>
+  );
+}
+
+export default function HomePage() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [memberIndex, setMemberIndex] = useState(0);
+  const member = members[memberIndex];
+  return (
+    <main className="site min-h-screen overflow-x-hidden bg-white text-slate-800">
+      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur">
+        <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 lg:px-8">
+          <Brand />
+          <nav
+            aria-label="Navegação principal"
+            className="hidden gap-5 xl:flex"
+          >
+            {nav.map(([name, href]) => (
+              <a
+                key={href}
+                href={href}
+                className="text-sm font-bold text-slate-600 hover:text-cyan-700"
+              >
+                {name}
+              </a>
+            ))}
+          </nav>
+          <div className="hidden items-center gap-4 sm:flex">
+            <Link href="/login" className="text-sm font-bold text-[#102447]">
+              Entrar
+            </Link>
+            <Link
+              href="/register"
+              className="rounded-xl bg-cyan-500 px-4 py-2.5 text-sm font-bold text-white shadow-sm hover:bg-cyan-600"
+            >
+              Criar conta
+            </Link>
+          </div>
+          <button
+            type="button"
+            className="rounded-lg p-2 xl:hidden"
+            aria-label={menuOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen(!menuOpen)}
+          >
+            {menuOpen ? <X /> : <Menu />}
+          </button>
+        </div>
+        {menuOpen && (
+          <nav className="border-t border-slate-100 bg-white px-5 py-4 xl:hidden">
+            {nav.map(([name, href]) => (
+              <a
+                key={href}
+                href={href}
+                onClick={() => setMenuOpen(false)}
+                className="block border-b border-slate-100 py-3 text-sm font-bold"
+              >
+                {name}
+              </a>
+            ))}
+            <Link
+              href="/register"
+              className="mt-3 inline-block rounded-lg bg-cyan-500 px-4 py-3 text-sm font-bold text-white"
+            >
+              Criar conta
+            </Link>
+          </nav>
+        )}
+      </header>
+
+      <section
+        id="inicio"
+        className="relative overflow-hidden bg-white py-16 sm:py-20"
+      >
+        <svg
+          aria-hidden="true"
+          className="absolute right-0 top-0 h-full w-2/3 opacity-70"
+          viewBox="0 0 800 600"
+          fill="none"
+        >
+          <path
+            d="M110 50c220 0 120 185 330 185S555 430 820 420"
+            stroke="#A5F3FC"
+            strokeDasharray="5 8"
+          />
+          <circle cx="610" cy="120" r="180" fill="#EEF9FC" />
+        </svg>
+        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[.95fr_1.05fr] lg:items-center lg:px-8">
+          <div>
+            <p className="hero-reveal r1 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.17em] text-cyan-700">
+              <i className="h-2 w-2 rounded-full bg-cyan-500" />
+              Fiscalidade Digital
+            </p>
+            <h1 className="hero-reveal r2 mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-[#102447] sm:text-6xl">
+              A gestão fiscal
+              <br />
+              da sua empresa
+              <br />
+              <span className="text-cyan-500">num só lugar.</span>
+            </h1>
+            <p className="hero-reveal r3 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">
+              Uma plataforma criada para empresas em Angola organizarem
+              facturação, impostos, obrigações, compras e salários com mais
+              clareza e controlo.
+            </p>
+            <div className="hero-reveal r4 mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link
+                href="/register"
+                className="inline-flex items-center justify-center gap-2 rounded-xl bg-cyan-500 px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] hover:bg-cyan-600"
+              >
+                Criar conta <ArrowRight size={17} />
+              </Link>
+              <a
+                href="#plataforma"
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-[#102447] hover:border-cyan-300"
+              >
+                Conhecer a plataforma <ChevronRight size={17} />
+              </a>
+            </div>
+            <div className="hero-reveal r4 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
+              {[
+                'Pensado para empresas em Angola',
+                'Fiscalidade num só lugar',
+                'Controlo e organização',
+              ].map((text) => (
+                <span key={text} className="inline-flex items-center gap-1.5">
+                  <Check size={14} className="text-cyan-600" />
+                  {text}
+                </span>
+              ))}
+            </div>
+          </div>
+          <div className="hero-reveal r5">
+            <Mockup />
+          </div>
+        </div>
+      </section>
+
+      <section className="py-16 sm:py-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[.85fr_1.15fr] lg:px-8">
+          <Title eyebrow="Sobre a Fiscalidade Digital">
+            <>
+              Tecnologia
+              <br />
+              criada para
+              <br />
+              <span className="text-cyan-500">simplificar</span>
+              <br />a fiscalidade.
+            </>
+          </Title>
+          <div className="space-y-5 self-center text-base leading-7 text-slate-600">
+            <p>
+              A Fiscalidade Digital é uma plataforma tecnológica pensada para
+              simplificar a gestão fiscal das empresas em Angola.
+            </p>
+            <p>
+              A plataforma reúne diferentes áreas da operação empresarial num
+              único ambiente, permitindo acompanhar informação fiscal e
+              administrativa de forma mais organizada.
+            </p>
+            <p className="border-l-2 border-cyan-500 pl-4 font-bold text-[#102447]">
+              Menos informação espalhada. Mais organização para acompanhar a
+              realidade da empresa.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="border-y border-slate-100 bg-[#f7fafc] py-14">
+        <div className="mx-auto grid max-w-7xl gap-8 px-5 lg:grid-cols-[.8fr_1.2fr] lg:px-8">
+          <Title eyebrow="O desafio">
+            Gerir a fiscalidade não deveria significar trabalhar com informações
+            espalhadas.
+          </Title>
+          <div className="grid gap-5 sm:grid-cols-2">
+            {[
+              'Obrigações e prazos acompanhados em lugares diferentes.',
+              'Documentos, facturas, salários e informação laboral separados.',
+              'Pouca visibilidade sobre o que exige atenção no momento.',
+            ].map((item) => (
+              <p
+                key={item}
+                className="border-t border-slate-300 pt-4 text-sm font-bold leading-6 text-[#102447]"
+              >
+                <AlertTriangle size={18} className="mb-3 text-cyan-700" />
+                {item}
+              </p>
+            ))}
+            <p className="border-t border-cyan-500 pt-4 text-sm font-bold leading-6 text-cyan-800">
+              <Layers3 size={18} className="mb-3" />A Fiscalidade Digital reúne
+              esses processos numa única plataforma.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section id="plataforma" className="py-16 sm:py-20">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[.78fr_1.22fr] lg:items-center lg:px-8">
+          <div>
+            <Title eyebrow="Central Fiscal">
+              Conheça a situação fiscal da sua empresa.
+            </Title>
+            <p className="mt-5 text-base leading-7 text-slate-600">
+              A Central Fiscal reúne numa única visão os principais domínios
+              fiscais da empresa, enquadramentos, próximas obrigações, prazos e
+              situações que exigem atenção.
+            </p>
+            <div className="mt-7 border-l-2 border-cyan-500 pl-4 text-sm leading-7 text-slate-600">
+              <p>
+                <b className="text-[#102447]">Enquadramento</b> para compreender
+                o imposto aplicável.
+              </p>
+              <p>
+                <b className="text-[#102447]">Obrigações</b> para acompanhar o
+                que está pendente.
+              </p>
+              <p>
+                <b className="text-[#102447]">Acompanhamento</b> para dar
+                prioridade ao que exige atenção.
+              </p>
+            </div>
+            <Link
+              href="/register"
+              className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-cyan-800 hover:text-cyan-600"
+            >
+              Quero organizar a situação fiscal da minha empresa{' '}
+              <ArrowRight size={16} />
+            </Link>
+          </div>
+          <FiscalPreview />
+        </div>
+      </section>
+
+      <WhyChooseSection />
+
+      <section className="bg-white py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <Title eyebrow="Funcionalidades">
+            Uma plataforma para organizar a operação fiscal e empresarial.
+          </Title>
+          <div className="mt-10 grid gap-x-14 gap-y-10 lg:grid-cols-2">
+            {features.map(([name, Icon, items], index) => (
+              <article key={name} className="border-t border-slate-300 pt-5">
+                <div className="flex gap-4">
+                  <span className="text-xs font-bold text-cyan-700">
+                    0{index + 1}
+                  </span>
+                  <Icon size={20} className="text-cyan-700" />
+                  <h3 className="text-xl font-extrabold text-[#102447]">
+                    {name}
+                  </h3>
+                </div>
+                <div className="mt-5 divide-y divide-slate-200">
+                  {items.map((item) => (
+                    <p
+                      key={item}
+                      className="py-3 text-sm font-semibold text-slate-600"
+                    >
+                      {item}
+                    </p>
+                  ))}
+                </div>
+              </article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="como-funciona" className="py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <Title eyebrow="Como funciona">
+            Da operação diária a uma visão fiscal mais clara.
+          </Title>
+          <ol className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-5">
+            {[
+              ['01', 'Cadastre a sua empresa'],
+              ['02', 'Organize a operação'],
+              ['03', 'Contexto fiscal'],
+              ['04', 'Acompanhe na Central Fiscal'],
+              ['05', 'Antecipe atenção'],
+            ].map(([n, text]) => (
+              <li key={n} className="border-t border-slate-300 pt-4">
+                <span className="text-xs font-bold text-cyan-700">{n}</span>
+                <p className="mt-4 text-sm font-extrabold leading-6 text-[#102447]">
+                  {text}
+                </p>
+              </li>
+            ))}
+          </ol>
+        </div>
+      </section>
+
+      <section
+        id="para-quem"
+        className="bg-[#102447] py-16 text-white sm:py-20"
+      >
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">
+            Para quem é
+          </p>
+          <h2 className="mt-3 max-w-3xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">
+            Informação organizada para quem acompanha a empresa todos os dias.
+          </h2>
+          <div className="mt-10 grid gap-8 md:grid-cols-3">
+            {[
+              [
+                Briefcase,
+                'Empresas',
+                'Centralize a operação fiscal e tenha maior visibilidade sobre obrigações, facturação, equipa e prazos.',
+              ],
+              [
+                FileCheck2,
+                'Contabilistas',
+                'Organize informação fiscal e operacional e acompanhe responsabilidades dos clientes.',
+              ],
+              [
+                BarChart3,
+                'Equipas financeiras',
+                'Tenha informação empresarial e fiscal estruturada para acompanhamento e decisão.',
+              ],
+            ].map(([Icon, title, text]) => {
+              const ItemIcon = Icon as typeof Briefcase;
+              return (
+                <div
+                  key={title as string}
+                  className="border-t border-white/25 pt-5"
+                >
+                  <ItemIcon size={22} className="text-cyan-300" />
+                  <h3 className="mt-4 text-lg font-extrabold">
+                    {title as string}
+                  </h3>
+                  <p className="mt-3 text-sm leading-6 text-slate-200">
+                    {text as string}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      <section id="sobre" className="py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr]">
+            <Title eyebrow="A nossa história">
+              Quatro jovens. Competências diferentes. Uma visão comum.
+            </Title>
+            <div className="space-y-5 text-base leading-7 text-slate-600">
+              <p>
+                Construir tecnologia capaz de tornar a gestão fiscal mais
+                organizada, compreensível e próxima da realidade das empresas
+                angolanas.
+              </p>
+              <p>
+                A Fiscalidade Digital foi criada por quatro jovens angolanos —
+                três ligados à Contabilidade e Fiscalidade e um ligado a
+                Tecnologia e Automação.
+              </p>
+            </div>
+          </div>
+          <div className="mt-12 grid gap-5 border-y border-slate-300 py-7 sm:grid-cols-4">
+            <b className="text-xs uppercase tracking-[.15em] text-cyan-700">
+              IMEL
+            </b>
+            <b className="text-sm text-[#102447]">Contabilidade + Tecnologia</b>
+            <span className="text-sm text-slate-600">
+              Experiências académicas e profissionais
+            </span>
+            <span className="text-sm text-slate-600">Fiscalidade Digital</span>
+          </div>
+          <p className="mt-5 max-w-3xl text-sm leading-6 text-slate-600">
+            Os quatro membros partilham uma ligação académica ao Instituto Médio
+            de Economia de Luanda — IMEL, onde concluíram o ensino médio.
+          </p>
+        </div>
+      </section>
+
+      <section className="bg-[#f7fafc] py-16 sm:py-20">
+        <div className="mx-auto max-w-7xl px-5 lg:px-8">
+          <Title eyebrow="Nossa equipa">
+            Pessoas que combinam contexto local e construção tecnológica.
+          </Title>
+          <div className="mt-10 grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
+            <div className="relative min-h-[420px] overflow-hidden bg-[#eaf4f8]">
+              <Image
+                key={member.image}
+                src={member.image}
+                alt={`Fotografia de ${member.name}`}
+                fill
+                sizes="(min-width:1024px) 42vw, 100vw"
+                className={`team-photo object-cover ${member.position}`}
+              />
+              <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#061a36]/90 to-transparent p-6 pt-24 text-white">
+                <p className="text-xs font-bold uppercase tracking-[.15em] text-cyan-200">
+                  Fiscalidade Digital
+                </p>
+                <p className="mt-2 text-2xl font-extrabold">{member.name}</p>
+              </div>
+            </div>
+            <div>
+              <div
+                role="tablist"
+                aria-label="Membros da equipa"
+                className="flex flex-wrap gap-x-4 gap-y-2 border-b border-slate-200 pb-4"
+              >
+                {members.map((item, index) => (
+                  <button
+                    key={item.name}
+                    type="button"
+                    role="tab"
+                    aria-selected={memberIndex === index}
+                    onClick={() => setMemberIndex(index)}
+                    className={`border-b-2 pb-2 text-sm font-extrabold focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-700 ${memberIndex === index ? 'border-cyan-600 text-[#102447]' : 'border-transparent text-slate-400 hover:text-[#102447]'}`}
+                  >
+                    {item.name.split(' ')[0]}
+                  </button>
+                ))}
+              </div>
+              <div role="tabpanel" className="team-copy pt-7">
+                <p className="text-xs font-bold uppercase tracking-[.14em] text-cyan-700">
+                  {member.area}
+                </p>
+                <h3 className="mt-3 text-3xl font-extrabold tracking-[-.04em] text-[#102447]">
+                  {member.name}
+                </h3>
+                <p className="mt-5 text-sm leading-7 text-slate-600">
+                  {member.bio}
+                </p>
+                <div className="mt-7 grid gap-6 sm:grid-cols-2">
+                  <List
+                    title="Formação & competências"
+                    items={member.education}
+                  />
+                  <List title="Destaques" items={member.highlights} check />
+                </div>
+                <a
+                  href={member.link}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-7 inline-flex items-center gap-2 text-sm font-extrabold text-[#102447] hover:text-cyan-700"
+                >
+                  LinkedIn <Linkedin size={16} />
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section
+        id="contacto"
+        className="relative overflow-hidden bg-[#102447] py-11 text-white sm:py-14"
+      >
+        <svg
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full opacity-20"
+          viewBox="0 0 1200 260"
+          fill="none"
+        >
+          <path
+            d="M0 196c260-16 310-154 552-154s316 142 648 76"
+            stroke="#67E8F9"
+            strokeDasharray="5 8"
+          />
+        </svg>
+        <div className="relative mx-auto grid max-w-7xl gap-7 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(26rem,.75fr)] lg:items-center lg:px-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">
+              Contacto
+            </p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">
+              Vamos falar sobre a sua empresa?
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">
+              Conheça as nossas soluções ou fale com a equipa sobre as
+              necessidades fiscais e contabilísticas do seu negócio.
+            </p>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <a
+              href={whatsappUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group rounded-xl bg-[#25D366] p-4 text-[#06351b] transition-[transform,box-shadow] duration-200 motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_12px_26px_rgba(0,0,0,.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+            >
+              <span className="flex items-center gap-2 text-sm font-extrabold">
+                <MessageCircle size={18} aria-hidden="true" />
+                WhatsApp
+              </span>
+              <span className="mt-2 block text-xs font-semibold opacity-80">
+                Fale directamente com a equipa
+              </span>
+            </a>
+            <a
+              href="mailto:fiscalidadedigital@empresa.ao"
+              className="group rounded-xl border border-white/25 bg-white/5 p-4 transition-[background-color,transform] duration-200 hover:bg-white/10 motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+            >
+              <span className="flex items-center gap-2 text-sm font-extrabold">
+                <FileText size={18} aria-hidden="true" />
+                E-mail
+              </span>
+              <span className="mt-2 block break-all text-xs font-semibold text-cyan-100">
+                fiscalidadedigital@empresa.ao
+              </span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <section className="bg-[#082755] py-11 text-white sm:py-14">
+        <div className="mx-auto flex max-w-7xl flex-col justify-between gap-7 px-5 lg:flex-row lg:items-center lg:px-8">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">
+              Fiscalidade Digital
+            </p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">
+              Mais controlo fiscal. Mais tempo para a sua empresa.
+            </h2>
+            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">
+              Comece a organizar a sua gestão fiscal com ferramentas digitais
+              pensadas para as empresas angolanas.
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <Link
+              href="/register"
+              className="rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-[#062247] transition hover:bg-cyan-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+            >
+              Criar conta
+            </Link>
+            <a
+              href="#plataforma"
+              className="rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+            >
+              Conhecer a plataforma
+            </a>
+            <Link
+              href="/login"
+              className="px-1 py-2 text-sm font-semibold text-cyan-100 underline underline-offset-4 transition hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"
+            >
+              Já tenho conta
+            </Link>
+          </div>
+        </div>
+      </section>
+      <footer className="bg-[#061a36] text-slate-300">
+        <div className="mx-auto max-w-7xl px-5 py-10 pb-20 sm:pb-10 lg:px-8">
+          <div className="grid gap-8 border-b border-white/15 pb-9 sm:grid-cols-2 lg:grid-cols-4">
+            <div>
+              <Brand inverse />
+              <p className="mt-4 text-sm leading-6 text-slate-400">
+                Plataforma de gestão fiscal e empresarial desenvolvida para
+                ajudar empresas e profissionais a organizar informação,
+                obrigações e processos fiscais.
+              </p>
+            </div>
+            <Footer
+              title="Plataforma"
+              links={[
+                ['Plataforma', '#plataforma'],
+                ['Funcionalidades', '#funcionalidades'],
+                ['Como funciona', '#como-funciona'],
+              ]}
+            />
+            <Footer
+              title="Empresa"
+              links={[
+                ['Sobre nós', '#sobre'],
+                ['Contacto', '#contacto'],
+              ]}
+            />
+            <Footer
+              title="Conta"
+              links={[
+                ['Entrar', '/login'],
+                ['Criar conta', '/register'],
+                [
+                  'fiscalidadedigital@empresa.ao',
+                  'mailto:fiscalidadedigital@empresa.ao',
+                ],
+              ]}
+            />
+          </div>
+          <p className="pt-6 text-xs text-slate-500">
+            © {new Date().getFullYear()} Fiscalidade Digital · Angola
+          </p>
+        </div>
+      </footer>
+      <a
+        href={whatsappUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label="Falar no WhatsApp da Fiscalidade Digital"
+        className="fixed bottom-4 left-4 z-40 inline-flex min-h-12 min-w-12 items-center justify-center gap-2 rounded-full bg-[#25D366] px-3.5 py-3 text-sm font-extrabold text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition-[background-color,transform] duration-200 hover:bg-[#53e589] motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:bottom-5 sm:left-5 sm:px-4"
+        style={{
+          bottom: 'max(1rem, env(safe-area-inset-bottom))',
+          left: 'max(1rem, env(safe-area-inset-left))',
+        }}
+      >
+        <MessageCircle size={20} aria-hidden="true" />
+        <span className="hidden sm:inline">Falar no WhatsApp</span>
+      </a>
+      <style jsx global>{`
+        @keyframes reveal {
+          from {
+            opacity: 0;
+            transform: translateY(16px);
+          }
+          to {
+            opacity: 1;
+            transform: none;
+          }
+        }
+        @keyframes row {
+          from {
+            opacity: 0;
+            transform: translateX(10px);
+          }
+          to {
+            opacity: 1;
+            transform: none;
+          }
+        }
+        .hero-reveal,
+        .hero-mockup {
+          animation: reveal 0.62s both cubic-bezier(0.2, 0.7, 0.2, 1);
+        }
+        .r1 {
+          animation-delay: 60ms;
+        }
+        .r2 {
+          animation-delay: 140ms;
+        }
+        .r3 {
+          animation-delay: 220ms;
+        }
+        .r4 {
+          animation-delay: 300ms;
+        }
+        .r5 {
+          animation-delay: 380ms;
+        }
+        .preview-stat,
+        .preview-row {
+          animation: row 0.42s both ease-out;
+        }
+        .team-photo {
+          animation: reveal 0.35s both ease-out;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *:before,
+          *:after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+            scroll-behavior: auto !important;
+          }
+        }
+      `}</style>
+    </main>
+  );
+}
+
+function Title({
+  eyebrow,
+  children,
+}: {
+  eyebrow: string;
+  children: ReactNode;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-700">
+        {eyebrow}
+      </p>
+      <h2 className="mt-3 text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-[#102447] sm:text-4xl">
+        {children}
+      </h2>
+    </div>
+  );
+}
+function List({
+  title,
+  items,
+  check = false,
+}: {
+  title: string;
+  items: string[];
+  check?: boolean;
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-[.14em] text-slate-400">
+        {title}
+      </p>
+      <ul className="mt-3 space-y-2 text-sm leading-6 text-slate-600">
+        {items.map((item) => (
+          <li key={item} className="flex gap-2">
+            {check ? (
+              <Check size={15} className="mt-1 shrink-0 text-cyan-700" />
+            ) : (
+              <i className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-cyan-600" />
+            )}
+            {item}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+function Footer({
+  title,
+  links,
+}: {
+  title: string;
+  links: readonly (readonly [string, string])[];
+}) {
+  return (
+    <div>
+      <p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">
+        {title}
+      </p>
+      <div className="mt-4 grid gap-3 text-sm">
+        {links.map(([name, href]) =>
+          href.startsWith('/') ? (
+            <Link key={href} href={href}>
+              {name}
+            </Link>
+          ) : (
+            <a key={href} href={href}>
+              {name}
+            </a>
+          ),
+        )}
+      </div>
+    </div>
+  );
+}

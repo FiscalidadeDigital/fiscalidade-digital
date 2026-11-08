@@ -1,6 +1,5 @@
 'use client';
 
-import { isAxiosError } from 'axios';
 import {
   Building2,
   ChevronLeft,
@@ -20,6 +19,7 @@ import {
 import { FormEvent, useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 import { PageHeader, StatCard } from '@/components/ui/enterprise';
 import { useAuth } from '@/context/AuthContext';
 import api from '@/services/api';
@@ -92,9 +92,7 @@ const config = {
 } as const;
 
 function apiMessage(error: unknown, fallback: string) {
-  if (!isAxiosError<{ message?: string | string[] }>(error)) return fallback;
-  const message = error.response?.data?.message;
-  return Array.isArray(message) ? message.join(' ') : message || fallback;
+  return getSafeErrorMessage(error, fallback);
 }
 
 export default function PartyDirectoryPage({ kind }: { kind: DirectoryKind }) {

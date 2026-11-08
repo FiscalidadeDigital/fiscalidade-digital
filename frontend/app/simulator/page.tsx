@@ -7,6 +7,7 @@ import {
 } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 import { getCompany } from '@/services/company';
 
@@ -259,11 +260,7 @@ export default function SimulatorPage() {
       const data = await getCompany();
 
       setCompany(data);
-    } catch (error) {
-      console.error(
-        'Erro ao carregar empresa:',
-        error,
-      );
+    } catch {
     } finally {
       setLoadingCompany(false);
     }
@@ -308,16 +305,9 @@ export default function SimulatorPage() {
         });
 
       setIvaResult(result);
-    } catch (error: any) {
-      console.error(
-        'Erro ao calcular IVA:',
-        error,
-      );
-
+    } catch (error: unknown) {
       setIvaError(
-        error?.response?.data?.message ||
-          error?.message ||
-          'Não foi possível calcular o IVA.',
+        getSafeErrorMessage(error, 'Não foi possível calcular o IVA.'),
       );
     } finally {
       setIvaLoading(false);
@@ -358,16 +348,9 @@ export default function SimulatorPage() {
         );
 
       setRetentionResult(result);
-    } catch (error: any) {
-      console.error(
-        'Erro ao calcular retenção:',
-        error,
-      );
-
+    } catch (error: unknown) {
       setRetentionError(
-        error?.response?.data?.message ||
-          error?.message ||
-          'Não foi possível calcular a retenção.',
+        getSafeErrorMessage(error, 'Não foi possível calcular a retenção.'),
       );
     } finally {
       setRetentionLoading(false);
@@ -431,16 +414,12 @@ export default function SimulatorPage() {
         );
 
       setIndustrialResult(result);
-    } catch (error: any) {
-      console.error(
-        'Erro ao calcular imposto industrial:',
-        error,
-      );
-
+    } catch (error: unknown) {
       setIndustrialError(
-        error?.response?.data?.message ||
-          error?.message ||
+        getSafeErrorMessage(
+          error,
           'Não foi possível calcular o imposto industrial.',
+        ),
       );
     } finally {
       setIndustrialLoading(false);
@@ -569,7 +548,7 @@ export default function SimulatorPage() {
 
                     <span className="w-2 h-2 rounded-full bg-emerald-500" />
 
-                    Motor Fiscal
+                    Simulações fiscais
 
                   </div>
 
@@ -753,13 +732,12 @@ export default function SimulatorPage() {
             <div>
 
               <p className="text-sm font-semibold text-slate-800">
-                Motor fiscal disponível
+                Simulações disponíveis
               </p>
 
               <p className="text-sm text-slate-500 leading-6 mt-0.5">
-                Os cálculos são processados pelo motor
-                fiscal do sistema e os resultados são
-                apresentados em tempo real.
+                Os resultados são apresentados com base nos dados indicados e
+                nas regras fiscais disponíveis para o período.
               </p>
 
             </div>
@@ -1327,7 +1305,7 @@ export default function SimulatorPage() {
                 </div>
 
                 {industrialResult.calculationStatus !== 'REVIEW_REQUIRED' && (
-                  <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">Os dados foram aceites pelo motor fiscal. Consulte os campos devolvidos acima; nenhum imposto é inferido quando o backend não fornece um valor confirmado.</p>
+                  <p className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-700">Os dados foram analisados. Consulte os campos apresentados; quando não houver valor confirmado, o montante permanece por apurar.</p>
                 )}
 
                 <ClearButton

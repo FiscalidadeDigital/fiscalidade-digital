@@ -1,6 +1,6 @@
 ﻿'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 
 import {
   RefreshCw,
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 import {
   Obligation,
@@ -52,11 +53,14 @@ type Company = {
 const formatCurrency = (
   value: number | null | undefined,
 ) => {
+  if (value === null || value === undefined) {
+    return 'Por apurar';
+  }
   return new Intl.NumberFormat('pt-AO', {
     style: 'currency',
     currency: 'AOA',
     maximumFractionDigits: 0,
-  }).format(Number(value || 0));
+  }).format(Number(value));
 };
 
 const formatDate = (
@@ -239,13 +243,52 @@ const statusLabel = (
     status
   ) {
     case 'PAID':
+    case 'FULFILLED':
       return 'Paga';
 
     case 'LATE':
+    case 'OVERDUE':
       return 'Atrasada';
+
+    case 'FUTURE':
+      return 'Futura';
+
+    case 'DUE_SOON':
+      return 'A vencer';
+
+    case 'IN_DEADLINE':
+      return 'Em prazo';
+
+    case 'TO_DETERMINE':
+      return 'Por apurar';
+
+    case 'HISTORICAL_CONFIRMATION':
+      return 'Confirmação necessária';
 
     default:
       return 'Pendente';
+  }
+};
+
+const urgency = (status: ObligationStatus) => {
+  switch (status) {
+    case 'OVERDUE':
+    case 'LATE':
+      return { rank: 0, label: 'Vencidas' };
+    case 'DUE_SOON':
+    case 'IN_DEADLINE':
+      return { rank: 1, label: 'A vencer ou em prazo' };
+    case 'TO_DETERMINE':
+    case 'HISTORICAL_CONFIRMATION':
+      return { rank: 2, label: 'Por confirmar' };
+    case 'FUTURE':
+    case 'PENDING':
+      return { rank: 3, label: 'Futuras' };
+    case 'PAID':
+    case 'FULFILLED':
+      return { rank: 4, label: 'Cumpridas' };
+    default:
+      return { rank: 5, label: 'Outras' };
   }
 };
 
@@ -497,21 +540,13 @@ export default function ObligationsPage() {
             '—',
 
           regime:
-            data?.regime ||
-            'GERAL',
+            data?.regime ?? undefined,
 
           sector:
             data?.sector ||
             '—',
         });
-      } catch (
-        companyError
-      ) {
-        console.error(
-          'Erro ao carregar empresa:',
-          companyError,
-        );
-
+      } catch {
         /*
          * Não inventamos o regime.
          *
@@ -551,17 +586,12 @@ export default function ObligationsPage() {
             ? data
             : [],
         );
-      } catch (
-        err: any
-      ) {
-        console.error(
-          'Erro ao carregar obrigações:',
-          err,
-        );
-
+      } catch (err: unknown) {
         setError(
-          err?.response?.data?.message ||
+          getSafeErrorMessage(
+            err,
             'Não foi possível carregar as obrigações fiscais.',
+          ),
         );
       } finally {
         setLoading(false);
@@ -602,17 +632,12 @@ export default function ObligationsPage() {
           loadCompany(),
           loadObligations(),
         ]);
-      } catch (
-        err: any
-      ) {
-        console.error(
-          'Erro ao sincronizar obrigações:',
-          err,
-        );
-
+      } catch (err: unknown) {
         setError(
-          err?.response?.data?.message ||
+          getSafeErrorMessage(
+            err,
             'Não foi possível sincronizar o calendário fiscal.',
+          ),
         );
       } finally {
         setSyncing(false);
@@ -645,17 +670,12 @@ export default function ObligationsPage() {
         );
 
         await loadObligations();
-      } catch (
-        err: any
-      ) {
-        console.error(
-          'Erro ao marcar obrigação como paga:',
-          err,
-        );
-
+      } catch (err: unknown) {
         setError(
-          err?.response?.data?.message ||
+          getSafeErrorMessage(
+            err,
             'Não foi possível atualizar o pagamento.',
+          ),
         );
       } finally {
         setPayingId(null);
@@ -671,8 +691,7 @@ export default function ObligationsPage() {
       () =>
         obligations.filter(
           (item) =>
-            item.status ===
-            'PENDING',
+            !['PAID', 'FULFILLED', 'OVERDUE', 'LATE'].includes(item.status),
         ),
       [obligations],
     );
@@ -682,8 +701,7 @@ export default function ObligationsPage() {
       () =>
         obligations.filter(
           (item) =>
-            item.status ===
-            'PAID',
+            ['PAID', 'FULFILLED'].includes(item.status),
         ),
       [obligations],
     );
@@ -693,8 +711,7 @@ export default function ObligationsPage() {
       () =>
         obligations.filter(
           (item) =>
-            item.status ===
-            'LATE',
+            ['LATE', 'OVERDUE'].includes(item.status),
         ),
       [obligations],
     );
@@ -712,9 +729,9 @@ export default function ObligationsPage() {
             item,
           ) =>
             total +
-            Number(
-              item.amount || 0,
-            ),
+            (item.amount === null || item.amount === undefined
+              ? 0
+              : Number(item.amount)),
           0,
         ),
       [obligations],
@@ -726,10 +743,7 @@ export default function ObligationsPage() {
         obligations
           .filter(
             (item) =>
-              item.status ===
-                'PENDING' ||
-              item.status ===
-                'LATE',
+              !['PAID', 'FULFILLED'].includes(item.status),
           )
           .reduce(
             (
@@ -737,10 +751,9 @@ export default function ObligationsPage() {
               item,
             ) =>
               total +
-              Number(
-                item.amount ||
-                  0,
-              ),
+              (item.amount === null || item.amount === undefined
+                ? 0
+                : Number(item.amount)),
             0,
           ),
       [obligations],
@@ -752,8 +765,7 @@ export default function ObligationsPage() {
         obligations
           .filter(
             (item) =>
-              item.status ===
-              'PAID',
+            ['PAID', 'FULFILLED'].includes(item.status),
           )
           .reduce(
             (
@@ -761,10 +773,9 @@ export default function ObligationsPage() {
               item,
             ) =>
               total +
-              Number(
-                item.amount ||
-                  0,
-              ),
+              (item.amount === null || item.amount === undefined
+                ? 0
+                : Number(item.amount)),
             0,
           ),
       [obligations],
@@ -782,6 +793,14 @@ export default function ObligationsPage() {
             100,
         )
       : 0;
+
+  const undeterminedAmountCount = useMemo(
+    () =>
+      obligations.filter(
+        (item) => item.amount === null || item.amount === undefined,
+      ).length,
+    [obligations],
+  );
 
   /* =====================================================
      PESQUISA + FILTRO
@@ -827,7 +846,11 @@ export default function ObligationsPage() {
             matchesSearch
           );
         },
-      );
+      ).sort((left, right) => {
+        const priority = urgency(left.status).rank - urgency(right.status).rank;
+        if (priority !== 0) return priority;
+        return left.dueDate.localeCompare(right.dueDate);
+      });
     }, [
       obligations,
       search,
@@ -1151,7 +1174,7 @@ export default function ObligationsPage() {
                     text-[#8a96b0]
                   "
                 >
-                  Regime utilizado pelo sistema
+                  Enquadramento fiscal
                 </p>
 
                 <p
@@ -1273,10 +1296,9 @@ export default function ObligationsPage() {
                 text-[#7180a2]
               "
             >
-              As regras fiscais são
-              selecionadas de acordo com
-              o regime fiscal da empresa
-              cadastrada.
+              Cada obrigação usa o enquadramento aplicável ao respetivo
+              imposto e período. Confirme os dados fiscais antes de concluir
+              uma declaração.
             </p>
 
             <div
@@ -1508,8 +1530,9 @@ export default function ObligationsPage() {
                     text-[#7180a2]
                   "
                 >
-                  Soma dos valores reais
-                  das obrigações registadas.
+                  {undeterminedAmountCount > 0
+                    ? `${undeterminedAmountCount} valor(es) continuam por apurar e não entram nesta soma.`
+                    : 'Soma dos valores apurados das obrigações registadas.'}
                 </p>
               </div>
 
@@ -1893,6 +1916,22 @@ export default function ObligationsPage() {
                       Pendentes
                     </option>
 
+                    <option value="DUE_SOON">
+                      A vencer
+                    </option>
+
+                    <option value="IN_DEADLINE">
+                      Em prazo
+                    </option>
+
+                    <option value="OVERDUE">
+                      Vencidas
+                    </option>
+
+                    <option value="TO_DETERMINE">
+                      Por apurar
+                    </option>
+
                     <option value="PAID">
                       Pagas
                     </option>
@@ -2010,7 +2049,7 @@ export default function ObligationsPage() {
               >
                 {search
                   ? 'Não encontramos obrigações correspondentes à sua pesquisa.'
-                  : `Não existem obrigações fiscais disponíveis para ${currentRegimeLabel}. Sincronize o calendário fiscal para verificar novamente.`}
+                  : 'Não existem obrigações fiscais disponíveis neste período. Atualize a situação fiscal ou consulte o calendário para verificar novamente.'}
               </p>
 
               {!search && (
@@ -2068,14 +2107,20 @@ export default function ObligationsPage() {
               {filteredObligations.map(
                 (
                   obligation,
+                  index,
                 ) => {
-                  const isPaid =
-                    obligation.status ===
-                    'PAID';
+                  const isPaid = ['PAID', 'FULFILLED'].includes(
+                    obligation.status,
+                  );
 
-                  const isLate =
-                    obligation.status ===
-                    'LATE';
+                  const isLate = ['LATE', 'OVERDUE'].includes(
+                    obligation.status,
+                  );
+
+                  const group = urgency(obligation.status);
+                  const previous = filteredObligations[index - 1];
+                  const startsGroup =
+                    !previous || urgency(previous.status).label !== group.label;
 
                   const hasDeterminedAmount =
                     obligation.amount !== null &&
@@ -2084,6 +2129,12 @@ export default function ObligationsPage() {
                   const amount = hasDeterminedAmount
                     ? Number(obligation.amount)
                     : null;
+
+                  const canMarkPaid =
+                    !isPaid &&
+                    amount !== null &&
+                    amount > 0 &&
+                    obligation.status !== 'HISTORICAL_CONFIRMATION';
 
                   const description =
                     cleanCalendarDescription(
@@ -2095,11 +2146,14 @@ export default function ObligationsPage() {
                   );
 
                   return (
-                    <div
-                      key={
-                        obligation.id
-                      }
-                      className="
+                    <Fragment key={obligation.id}>
+                      {startsGroup && (
+                        <div className="border-y border-[#e8ebf3] bg-[#f8fafc] px-5 py-2 text-[10px] font-extrabold uppercase tracking-wide text-[#526080] sm:px-6">
+                          {group.label}
+                        </div>
+                      )}
+                      <div
+                        className="
                         group
                         p-5
                         transition
@@ -2426,7 +2480,7 @@ export default function ObligationsPage() {
                               "
                             >
                               {amount === null
-                                ? 'Montante ainda não determinado'
+                                ? 'Por apurar'
                                 : formatCurrency(amount)}
                             </p>
 
@@ -2456,7 +2510,7 @@ export default function ObligationsPage() {
 
                           {/* PAGAMENTO */}
 
-                          {!isPaid && (
+                          {canMarkPaid && (
                             <button
                               type="button"
                               onClick={() =>
@@ -2507,6 +2561,12 @@ export default function ObligationsPage() {
                             </button>
                           )}
 
+                          {!isPaid && !canMarkPaid && (
+                            <p className="max-w-[150px] text-[10px] leading-4 text-[#7180a2]">
+                              Confirme o valor antes de registar o pagamento.
+                            </p>
+                          )}
+
                           {isPaid && (
                             <div
                               className="
@@ -2542,7 +2602,8 @@ export default function ObligationsPage() {
                           />
                         </div>
                       </div>
-                    </div>
+                      </div>
+                    </Fragment>
                   );
                 },
               )}

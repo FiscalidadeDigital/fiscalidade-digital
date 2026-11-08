@@ -43,6 +43,7 @@ import {
 } from '@/services/employee';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 // =====================================================
 // FORMATAÇÃO
@@ -244,15 +245,9 @@ export default function EmployeesPage() {
           ? data
           : [],
       );
-    } catch (err: any) {
-      console.error(
-        'Erro ao carregar funcionários:',
-        err,
-      );
-
+    } catch (err: unknown) {
       setError(
-        err?.response?.data?.message ||
-          'Não foi possível carregar os funcionários.',
+        getSafeErrorMessage(err, 'Não foi possível carregar os funcionários.'),
       );
     } finally {
       setLoading(false);
@@ -519,10 +514,12 @@ export default function EmployeesPage() {
         ...initialSalaryForm,
       });
       setComponentForm({ type: 'MEAL_ALLOWANCE', amount: 0, effectiveFrom: '' });
-    } catch (err: any) {
+    } catch (err: unknown) {
       setError(
-        err?.response?.data?.message ||
+        getSafeErrorMessage(
+          err,
           'Não foi possível carregar o detalhe do funcionário.',
+        ),
       );
     }
   }
@@ -553,12 +550,9 @@ export default function EmployeesPage() {
       await openEmployeeDetails(selectedEmployee.id);
       await loadEmployees();
       setSuccess('Nova vigência salarial registada com sucesso.');
-    } catch (err: any) {
-      const message = err?.response?.data?.message;
+    } catch (err: unknown) {
       setError(
-        Array.isArray(message)
-          ? message.join(' ')
-          : message || 'Não foi possível registar a vigência salarial.',
+        getSafeErrorMessage(err, 'Não foi possível registar a vigência salarial.'),
       );
     } finally {
       setSalarySaving(false);
@@ -572,7 +566,7 @@ export default function EmployeesPage() {
       await addRemunerationComponent(selectedEmployee.id, componentForm);
       await openEmployeeDetails(selectedEmployee.id);
       setSuccess('Componente remuneratório registado.');
-    } catch (err: any) { setError(err?.response?.data?.message || 'Não foi possível registar o componente.'); }
+    } catch (err: unknown) { setError(getSafeErrorMessage(err, 'Não foi possível registar o componente.')); }
     finally { setComponentSaving(false); }
   }
 
@@ -583,7 +577,7 @@ export default function EmployeesPage() {
       await endRemunerationComponent(selectedEmployee.id, componentId, componentEndDates[componentId]);
       await openEmployeeDetails(selectedEmployee.id);
       setSuccess('Fim de vigência registado; o histórico foi preservado.');
-    } catch (err: any) { setError(err?.response?.data?.message || 'Não foi possível encerrar o componente.'); }
+    } catch (err: unknown) { setError(getSafeErrorMessage(err, 'Não foi possível encerrar o componente.')); }
     finally { setComponentSaving(false); }
   }
 
@@ -759,27 +753,10 @@ export default function EmployeesPage() {
       window.setTimeout(() => {
         setSuccess('');
       }, 5000);
-    } catch (err: any) {
-      console.error(
-        'Erro ao criar funcionário:',
-        err,
+    } catch (err: unknown) {
+      setError(
+        getSafeErrorMessage(err, 'Não foi possível cadastrar o funcionário.'),
       );
-
-      const message =
-        err?.response?.data?.message;
-
-      if (
-        Array.isArray(message)
-      ) {
-        setError(
-          message.join(' '),
-        );
-      } else {
-        setError(
-          message ||
-            'Não foi possível cadastrar o funcionário.',
-        );
-      }
     } finally {
       setSaving(false);
     }
@@ -829,15 +806,9 @@ export default function EmployeesPage() {
       window.setTimeout(() => {
         setSuccess('');
       }, 4000);
-    } catch (err: any) {
-      console.error(
-        'Erro ao remover funcionário:',
-        err,
-      );
-
+    } catch (err: unknown) {
       setError(
-        err?.response?.data?.message ||
-          'Não foi possível remover o funcionário.',
+        getSafeErrorMessage(err, 'Não foi possível remover o funcionário.'),
       );
     } finally {
       setDeletingId(null);
@@ -2065,7 +2036,7 @@ export default function EmployeesPage() {
                 <div className="employees-field"><label>Vigência desde</label><input type="date" value={componentForm.effectiveFrom} onChange={(event) => setComponentForm((current) => ({ ...current, effectiveFrom: event.target.value }))} /></div>
                 <div className="employees-field employees-salary-action"><label> </label><button type="button" className="employees-secondary-button" onClick={handleAddComponent} disabled={componentSaving || !componentForm.effectiveFrom}>{componentSaving ? 'A registar...' : 'Adicionar componente'}</button></div>
               </div>
-              <p className="employees-salary-empty">O tratamento IRT e INSS é informativo e definido pelo motor fiscal; não pode ser alterado manualmente.</p>
+              <p className="employees-salary-empty">O tratamento de IRT e INSS é apresentado de forma informativa e não pode ser alterado manualmente.</p>
             </section>
 
             <div className="employees-modal-footer">

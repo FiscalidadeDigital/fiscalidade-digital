@@ -27,6 +27,7 @@ import {
   Upload,
   X,
 } from 'lucide-react';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 import {
   deleteDocument,
@@ -280,17 +281,8 @@ export default function DocumentsPage() {
       setSummary(
         summaryData,
       );
-    } catch (err: any) {
-      console.error(
-        'Erro ao carregar documentos:',
-        err,
-      );
-
-      setError(
-        err?.response?.data
-          ?.message ||
-          'Não foi possível carregar os documentos.',
-      );
+    } catch (err: unknown) {
+      setError(getSafeErrorMessage(err, 'Não foi possível carregar os documentos.'));
     } finally {
       setLoading(false);
     }
@@ -455,17 +447,8 @@ export default function DocumentsPage() {
       window.setTimeout(() => {
         setSuccess('');
       }, 3500);
-    } catch (err: any) {
-      console.error(
-        'Erro no upload:',
-        err,
-      );
-
-      setError(
-        err?.response?.data
-          ?.message ||
-          'Não foi possível enviar o documento.',
-      );
+    } catch (err: unknown) {
+      setError(getSafeErrorMessage(err, 'Não foi possível enviar o documento.'));
     } finally {
       setUploading(false);
     }
@@ -519,17 +502,8 @@ export default function DocumentsPage() {
       window.setTimeout(() => {
         setSuccess('');
       }, 3000);
-    } catch (err: any) {
-      console.error(
-        'Erro ao eliminar:',
-        err,
-      );
-
-      setError(
-        err?.response?.data
-          ?.message ||
-          'Não foi possível eliminar o documento.',
-      );
+    } catch (err: unknown) {
+      setError(getSafeErrorMessage(err, 'Não foi possível eliminar o documento.'));
     } finally {
       setDeletingId(null);
     }
@@ -559,12 +533,9 @@ export default function DocumentsPage() {
       }
 
       window.setTimeout(() => URL.revokeObjectURL(objectUrl), 60_000);
-    } catch (err: any) {
+    } catch (err: unknown) {
       popup?.close();
-      setError(
-        err?.response?.data?.message ||
-          'Não foi possível abrir o documento.',
-      );
+      setError(getSafeErrorMessage(err, 'Não foi possível abrir o documento.'));
     }
   };
 

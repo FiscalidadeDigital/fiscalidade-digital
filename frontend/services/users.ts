@@ -1,5 +1,4 @@
-import { isAxiosError } from 'axios';
-
+import { getSafeErrorMessage } from '@/lib/safe-error';
 import api from './api';
 
 export type TenantUserRole = 'OWNER' | 'ADMIN' | 'ACCOUNTANT' | 'VIEWER';
@@ -60,8 +59,5 @@ export async function createTenantInvitation(input: { email: string; role: Exclu
 }
 
 export function getUserApiError(error: unknown, fallback: string) {
-  if (!isAxiosError<{ message?: string | string[] }>(error)) return fallback;
-  const message = error.response?.data?.message;
-  if (Array.isArray(message)) return message.join(' ');
-  return message || fallback;
+  return getSafeErrorMessage(error, fallback);
 }

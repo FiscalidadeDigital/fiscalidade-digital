@@ -187,8 +187,8 @@ export default function InvoicesPage() {
         <aside className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Ambiente de testes — os documentos não têm validade fiscal oficial.
-            A integração electrónica com a AGT ainda não está activa.
+            Emissão em preparação — os documentos ainda não têm validade fiscal
+            oficial. A integração electrónica com a AGT ainda não está activa.
           </p>
         </aside>
 
