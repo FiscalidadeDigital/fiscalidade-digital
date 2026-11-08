@@ -28,6 +28,34 @@ describe('MailService', () => {
     expect(body.html).toContain('Fiscalidade');
   });
 
+  it('sends password recovery without the reminder switch', async () => {
+    process.env.REMINDER_EMAILS_ENABLED = 'false';
+    await new MailService().sendPasswordRecovery(
+      'user@example.com',
+      'Ana',
+      '123456',
+    );
+
+    const request = (global.fetch as jest.Mock).mock.calls[0][1];
+    const body = JSON.parse(request.body as string);
+    expect(body.subject).toContain('Recuperação');
+    expect(body.text).toContain('123456');
+  });
+
+  it('sends invitations without the reminder switch', async () => {
+    process.env.REMINDER_EMAILS_ENABLED = 'false';
+    await new MailService().sendUserInvitation(
+      'member@example.com',
+      'Ana',
+      'invite-token',
+    );
+
+    const request = (global.fetch as jest.Mock).mock.calls[0][1];
+    const body = JSON.parse(request.body as string);
+    expect(body.subject).toContain('convidado');
+    expect(body.text).toContain('invite-token');
+  });
+
   it('sends obligation payment confirmations through Resend', async () => {
     await new MailService().sendObligationPaymentConfirmation(
       'financeiro@example.com',
