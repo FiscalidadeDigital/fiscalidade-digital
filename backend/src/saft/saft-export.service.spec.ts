@@ -24,33 +24,94 @@ describe('SaftExportService technical fixture', () => {
       previousHash: null,
     });
     const invoice = {
-      id: 'invoice-1', tenantId: 'tenant-1', clientId: 'customer-1', invoiceNumber: 'FT 2026/1',
-      fiscalDocumentType: 'FT', fiscalSeries: '2026', fiscalSequence: 1, fiscalYear: 2026,
-      status: 'PENDING', cancellationReason: null, issuedAt, createdAt: issuedAt,
-      fiscalHash: signature.hash, fiscalHashControl: signature.hashControl,
-      subtotal: 100, subtotalAmount: new Prisma.Decimal('100.00'), iva: 14,
-      ivaAmount: new Prisma.Decimal('14.00'), total: 114, totalAmount: new Prisma.Decimal('114.00'),
-      client: { id: 'customer-1', nif: '5000000000', name: 'Cliente Teste', address: 'Rua de Teste', city: 'Luanda', country: 'AO', email: null },
-      items: [{ productId: 'product-1', productName: 'Serviço técnico', unit: 'UN', quantity: 1,
-        quantityAmount: new Prisma.Decimal('1'), unitPrice: 100, unitPriceAmount: new Prisma.Decimal('100.00'),
-        total: 100, totalAmount: new Prisma.Decimal('100.00'), taxType: 'IVA', taxCode: 'NOR',
-        taxRate: new Prisma.Decimal('14'), taxAmount: new Prisma.Decimal('14'), taxExemptionCode: null,
-        taxExemptionReason: null, product: { code: 'SERV-001' } }],
+      id: 'invoice-1',
+      tenantId: 'tenant-1',
+      clientId: 'customer-1',
+      invoiceNumber: 'FT 2026/1',
+      fiscalDocumentType: 'FT',
+      fiscalSeries: '2026',
+      fiscalSequence: 1,
+      fiscalYear: 2026,
+      status: 'PENDING',
+      cancellationReason: null,
+      issuedAt,
+      createdAt: issuedAt,
+      fiscalHash: signature.hash,
+      fiscalHashControl: signature.hashControl,
+      subtotal: 100,
+      subtotalAmount: new Prisma.Decimal('100.00'),
+      iva: 14,
+      ivaAmount: new Prisma.Decimal('14.00'),
+      total: 114,
+      totalAmount: new Prisma.Decimal('114.00'),
+      client: {
+        id: 'customer-1',
+        nif: '5000000000',
+        name: 'Cliente Teste',
+        address: 'Rua de Teste',
+        city: 'Luanda',
+        country: 'AO',
+        email: null,
+      },
+      items: [
+        {
+          productId: 'product-1',
+          productName: 'Serviço técnico',
+          unit: 'UN',
+          quantity: 1,
+          quantityAmount: new Prisma.Decimal('1'),
+          unitPrice: 100,
+          unitPriceAmount: new Prisma.Decimal('100.00'),
+          total: 100,
+          totalAmount: new Prisma.Decimal('100.00'),
+          taxType: 'IVA',
+          taxCode: 'NOR',
+          taxRate: new Prisma.Decimal('14'),
+          taxAmount: new Prisma.Decimal('14'),
+          taxExemptionCode: null,
+          taxExemptionReason: null,
+          product: { code: 'SERV-001' },
+        },
+      ],
     };
     const serializer = new SaftXmlSerializer();
     const validator = new SaftXsdValidator();
-    const service = new SaftExportService({} as any, serializer, validator, new FiscalSignatureService());
+    const service = new SaftExportService(
+      {} as any,
+      serializer,
+      validator,
+      new FiscalSignatureService(),
+    );
     const model = service.compose({
-      tenant: { id: 'tenant-1', nif: '5000000001', name: 'Empresa Teste', address: 'Avenida de Teste', city: 'Luanda', country: 'AO', email: 'teste@example.ao' },
-      invoices: [invoice], start: new Date('2026-01-01T00:00:00Z'), end: new Date('2026-12-31T00:00:00Z'),
-      software: { productCompanyTaxId: '5000000002', softwareValidationNumber: '999/AGT/2026', productId: 'Fiscalidade Digital / TEST_KEY_ONLY', productVersion: 'test' },
+      tenant: {
+        id: 'tenant-1',
+        nif: '5000000001',
+        name: 'Empresa Teste',
+        address: 'Avenida de Teste',
+        city: 'Luanda',
+        country: 'AO',
+        email: 'teste@example.ao',
+      },
+      invoices: [invoice],
+      start: new Date('2026-01-01T00:00:00Z'),
+      end: new Date('2026-12-31T00:00:00Z'),
+      software: {
+        productCompanyTaxId: '5000000002',
+        softwareValidationNumber: '999/AGT/2026',
+        productId: 'Fiscalidade Digital / TEST_KEY_ONLY',
+        productVersion: 'test',
+      },
       sourceId: 'user-1',
     });
     const xml = serializer.serialize(model);
     expect(xml).toContain(signature.hash);
     expect(xml).not.toMatch(/undefined|null|NaN|Infinity/);
     const result = await validator.validate(xml);
-    expect(result).toEqual({ valid: true, kind: 'TECHNICAL_XSD_VALIDATION', errors: [] });
+    expect(result).toEqual({
+      valid: true,
+      kind: 'TECHNICAL_XSD_VALIDATION',
+      errors: [],
+    });
   });
 });
 
@@ -59,14 +120,26 @@ describe('SaftExportService company city preflight', () => {
     const prisma = {
       tenant: {
         findUnique: jest.fn().mockResolvedValue({
-          id: 'tenant-1', nif: '5000000001', name: 'Empresa Teste',
-          address: 'Avenida de Teste', city, country: 'AO', email: null,
+          id: 'tenant-1',
+          nif: '5000000001',
+          name: 'Empresa Teste',
+          address: 'Avenida de Teste',
+          city,
+          country: 'AO',
+          email: null,
         }),
       },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const signature = { configuration: jest.fn().mockReturnValue({ configured: true }) };
-    const service = new SaftExportService(prisma as any, {} as any, {} as any, signature as any);
+    const signature = {
+      configuration: jest.fn().mockReturnValue({ configured: true }),
+    };
+    const service = new SaftExportService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      signature as any,
+    );
     return { prisma, service };
   }
 
@@ -82,9 +155,15 @@ describe('SaftExportService company city preflight', () => {
 
     const result = await service.preflight('tenant-1', 2026);
 
-    expect(result.issues).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 'COMPANY_DATA_MISSING', severity: 'BLOCKING' }),
-    ]));
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'BLOCKING',
+          message:
+            'Complete os dados obrigatórios da empresa antes de continuar.',
+        }),
+      ]),
+    );
   });
 
   it('não produz COMPANY_DATA_MISSING quando os dados obrigatórios existem', async () => {
@@ -92,21 +171,43 @@ describe('SaftExportService company city preflight', () => {
 
     const result = await service.preflight('tenant-1', 2026);
 
-    expect(result.issues).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 'COMPANY_DATA_MISSING' }),
-    ]));
+    expect(result.issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message:
+            'Complete os dados obrigatórios da empresa antes de continuar.',
+        }),
+      ]),
+    );
   });
 
   it('usa a city persistida no Header sem fallback', () => {
     const { service } = setup('Lubango');
 
     const model = service.compose({
-      tenant: { id: 'tenant-1', nif: '5000000001', name: 'Empresa Teste', address: 'Rua 1', city: 'Lubango', country: 'AO', email: null },
-      invoices: [], start: new Date('2026-01-01T00:00:00Z'), end: new Date('2026-12-31T23:59:59Z'),
-      software: { productCompanyTaxId: '5000000002', softwareValidationNumber: 'TEST-ONLY', productId: 'TEST-ONLY', productVersion: 'test' },
+      tenant: {
+        id: 'tenant-1',
+        nif: '5000000001',
+        name: 'Empresa Teste',
+        address: 'Rua 1',
+        city: 'Lubango',
+        country: 'AO',
+        email: null,
+      },
+      invoices: [],
+      start: new Date('2026-01-01T00:00:00Z'),
+      end: new Date('2026-12-31T23:59:59Z'),
+      software: {
+        productCompanyTaxId: '5000000002',
+        softwareValidationNumber: 'TEST-ONLY',
+        productId: 'TEST-ONLY',
+        productVersion: 'test',
+      },
       sourceId: 'user-1',
     });
 
-    expect(model.header.CompanyAddress).toEqual(expect.objectContaining({ City: 'Lubango' }));
+    expect(model.header.CompanyAddress).toEqual(
+      expect.objectContaining({ City: 'Lubango' }),
+    );
   });
 });

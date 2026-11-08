@@ -16,8 +16,14 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { calculateTrialEnd } from '../common/config/trial-policy';
 import { MailService } from '../mail/mail.service';
-import { AuthChallengePurpose, LegalDocumentType, Prisma, TaxRegimeAssignmentStatus, UserRole } from '@prisma/client';
-import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
+import {
+  AuthChallengePurpose,
+  LegalDocumentType,
+  Prisma,
+  TaxRegimeAssignmentStatus,
+  TaxRegimeKnowledgeStatus,
+  UserRole,
+} from '@prisma/client';
 import { ObligationGenerationService } from '../obligation-generation/obligation-generation.service';
 
 @Injectable()
@@ -29,8 +35,8 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
-    private readonly fiscalEnrollmentService: FiscalEnrollmentService,
-    @Optional() private readonly obligationGeneration?: ObligationGenerationService,
+    @Optional()
+    private readonly obligationGeneration?: ObligationGenerationService,
   ) {}
 
   private normalizeEmail(email: string) {
@@ -56,7 +62,10 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
     if (latest && now.getTime() - latest.lastSentAt.getTime() < 60_000) {
-      throw new HttpException('Aguarde antes de pedir um novo código.', HttpStatus.TOO_MANY_REQUESTS);
+      throw new HttpException(
+        'Aguarde antes de pedir um novo código.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
     }
     await this.prisma.authChallenge.updateMany({
       where: { email, purpose, usedAt: null },
@@ -86,7 +95,11 @@ export class AuthService {
       orderBy: { createdAt: 'desc' },
     });
     const now = new Date();
-    if (!challenge || challenge.expiresAt <= now || challenge.attemptCount >= 5) {
+    if (
+      !challenge ||
+      challenge.expiresAt <= now ||
+      challenge.attemptCount >= 5
+    ) {
       throw new BadRequestException('O código é inválido ou expirou.');
     }
     if (challenge.codeHash !== this.hashSecret(code)) {
@@ -97,17 +110,28 @@ export class AuthService {
       throw new BadRequestException('O código é inválido ou expirou.');
     }
     const claimed = await this.prisma.authChallenge.updateMany({
-      where: { id: challenge.id, usedAt: null, expiresAt: { gt: now }, attemptCount: { lt: 5 } },
+      where: {
+        id: challenge.id,
+        usedAt: null,
+        expiresAt: { gt: now },
+        attemptCount: { lt: 5 },
+      },
       data: { usedAt: now },
     });
-    if (claimed.count !== 1) throw new BadRequestException('O código é inválido ou expirou.');
+    if (claimed.count !== 1)
+      throw new BadRequestException('O código é inválido ou expirou.');
     return challenge;
   }
 
   /** Account creation intentionally precedes company/fiscal onboarding. */
   async registerAccount(dto: {
-    name: string; email: string; password: string; confirmPassword: string;
-    phone?: string; acceptTerms: boolean; acceptPrivacyPolicy: boolean;
+    name: string;
+    email: string;
+    password: string;
+    confirmPassword: string;
+    phone?: string;
+    acceptTerms: boolean;
+    acceptPrivacyPolicy: boolean;
   }) {
     const email = this.normalizeEmail(dto.email);
     if (dto.password !== dto.confirmPassword) {
@@ -123,71 +147,142 @@ export class AuthService {
     const acceptedAt = new Date();
     const passwordHash = await bcrypt.hash(dto.password, 12);
     const pending = await this.prisma.$transaction(async (transaction) => {
-      const created = await transaction.pendingRegistration.create({ data: {
-        name: dto.name.trim(), email, phone: dto.phone?.trim() || null, passwordHash,
-        acceptedTermsAt: acceptedAt, acceptedPrivacyAt: acceptedAt,
-      } });
-      await transaction.legalAcceptance.createMany({ data: [
-        { documentType: LegalDocumentType.TERMS_OF_USE, version: AuthService.TERMS_VERSION, acceptedAt, pendingRegistrationId: created.id },
-        { documentType: LegalDocumentType.PRIVACY_POLICY, version: AuthService.PRIVACY_VERSION, acceptedAt, pendingRegistrationId: created.id },
-      ] });
+      const created = await transaction.pendingRegistration.create({
+        data: {
+          name: dto.name.trim(),
+          email,
+          phone: dto.phone?.trim() || null,
+          passwordHash,
+          acceptedTermsAt: acceptedAt,
+          acceptedPrivacyAt: acceptedAt,
+        },
+      });
+      await transaction.legalAcceptance.createMany({
+        data: [
+          {
+            documentType: LegalDocumentType.TERMS_OF_USE,
+            version: AuthService.TERMS_VERSION,
+            acceptedAt,
+            pendingRegistrationId: created.id,
+          },
+          {
+            documentType: LegalDocumentType.PRIVACY_POLICY,
+            version: AuthService.PRIVACY_VERSION,
+            acceptedAt,
+            pendingRegistrationId: created.id,
+          },
+        ],
+      });
       return created;
     });
-    const code = await this.issueChallenge(email, AuthChallengePurpose.EMAIL_VERIFICATION, {
-      pendingRegistrationId: pending.id,
-    });
+    const code = await this.issueChallenge(
+      email,
+      AuthChallengePurpose.EMAIL_VERIFICATION,
+      {
+        pendingRegistrationId: pending.id,
+      },
+    );
     await this.mailService.sendEmailVerification(email, pending.name, code);
     return { message: 'Verifique o seu email para continuar.', email };
   }
 
   async verifyEmail(dto: { email: string; code: string }) {
     const email = this.normalizeEmail(dto.email);
-    const pending = await this.prisma.pendingRegistration.findUnique({ where: { email } });
-    if (!pending) throw new BadRequestException('O código é inválido ou expirou.');
-    await this.consumeChallenge(email, AuthChallengePurpose.EMAIL_VERIFICATION, dto.code);
+    const pending = await this.prisma.pendingRegistration.findUnique({
+      where: { email },
+    });
+    if (!pending)
+      throw new BadRequestException('O código é inválido ou expirou.');
+    await this.consumeChallenge(
+      email,
+      AuthChallengePurpose.EMAIL_VERIFICATION,
+      dto.code,
+    );
     await this.prisma.pendingRegistration.update({
-      where: { id: pending.id }, data: { emailVerifiedAt: new Date() },
+      where: { id: pending.id },
+      data: { emailVerifiedAt: new Date() },
     });
     const onboardingToken = await this.jwtService.signAsync(
-      { sub: pending.id, purpose: 'ONBOARDING' }, { expiresIn: '30m' },
+      { sub: pending.id, purpose: 'ONBOARDING' },
+      { expiresIn: '30m' },
     );
-    return { message: 'Email confirmado. Continue a configuração da empresa.', onboardingToken };
+    return {
+      message: 'Email confirmado. Continue a configuração da empresa.',
+      onboardingToken,
+    };
   }
 
   async resendVerification(dto: { email: string }) {
     const email = this.normalizeEmail(dto.email);
-    const pending = await this.prisma.pendingRegistration.findUnique({ where: { email } });
-    if (!pending || pending.emailVerifiedAt) {
-      return { message: 'Se existir uma conta pendente, enviámos novas instruções.' };
-    }
-    const code = await this.issueChallenge(email, AuthChallengePurpose.EMAIL_VERIFICATION, {
-      pendingRegistrationId: pending.id,
+    const pending = await this.prisma.pendingRegistration.findUnique({
+      where: { email },
     });
+    if (!pending || pending.emailVerifiedAt) {
+      return {
+        message: 'Se existir uma conta pendente, enviámos novas instruções.',
+      };
+    }
+    const code = await this.issueChallenge(
+      email,
+      AuthChallengePurpose.EMAIL_VERIFICATION,
+      {
+        pendingRegistrationId: pending.id,
+      },
+    );
     await this.mailService.sendEmailVerification(email, pending.name, code);
-    return { message: 'Se existir uma conta pendente, enviámos novas instruções.' };
+    return {
+      message: 'Se existir uma conta pendente, enviámos novas instruções.',
+    };
   }
 
   async forgotPassword(dto: { email: string }) {
     const email = this.normalizeEmail(dto.email);
-    const user = await this.prisma.user.findFirst({ where: { email, isActive: true } });
+    const user = await this.prisma.user.findFirst({
+      where: { email, isActive: true },
+    });
     if (user) {
-      const code = await this.issueChallenge(email, AuthChallengePurpose.PASSWORD_RESET, { userId: user.id });
+      const code = await this.issueChallenge(
+        email,
+        AuthChallengePurpose.PASSWORD_RESET,
+        { userId: user.id },
+      );
       await this.mailService.sendPasswordRecovery(email, user.name, code);
     }
-    return { message: 'Se existir uma conta associada, enviámos instruções para redefinir a palavra-passe.' };
+    return {
+      message:
+        'Se existir uma conta associada, enviámos instruções para redefinir a palavra-passe.',
+    };
   }
 
-  async resetPassword(dto: { email: string; code: string; password: string; confirmPassword: string }) {
-    if (dto.password !== dto.confirmPassword) throw new BadRequestException('As palavras-passe não coincidem.');
+  async resetPassword(dto: {
+    email: string;
+    code: string;
+    password: string;
+    confirmPassword: string;
+  }) {
+    if (dto.password !== dto.confirmPassword)
+      throw new BadRequestException('As palavras-passe não coincidem.');
     const email = this.normalizeEmail(dto.email);
-    const challenge = await this.consumeChallenge(email, AuthChallengePurpose.PASSWORD_RESET, dto.code);
-    if (!challenge.userId) throw new BadRequestException('O código é inválido ou expirou.');
+    const challenge = await this.consumeChallenge(
+      email,
+      AuthChallengePurpose.PASSWORD_RESET,
+      dto.code,
+    );
+    if (!challenge.userId)
+      throw new BadRequestException('O código é inválido ou expirou.');
     const user = await this.prisma.user.update({
       where: { id: challenge.userId },
-      data: { password: await bcrypt.hash(dto.password, 12), passwordChangedAt: new Date() },
+      data: {
+        password: await bcrypt.hash(dto.password, 12),
+        passwordChangedAt: new Date(),
+      },
     });
     await this.prisma.authChallenge.updateMany({
-      where: { userId: user.id, purpose: AuthChallengePurpose.PASSWORD_RESET, usedAt: null },
+      where: {
+        userId: user.id,
+        purpose: AuthChallengePurpose.PASSWORD_RESET,
+        usedAt: null,
+      },
       data: { usedAt: new Date() },
     });
     await this.mailService.sendPasswordChanged(user.email, user.name);
@@ -195,140 +290,321 @@ export class AuthService {
   }
 
   async completeOnboarding(dto: {
-    onboardingToken: string; companyName: string; nif: string; phone?: string;
-    address?: string; sector?: string; companyType?: string; employees?: number;
-    enrollments: Array<{ taxType: any; regime: any; validFrom: string; validUntil?: string; legalReference?: string }>;
+    onboardingToken: string;
+    companyName: string;
+    nif: string;
+    phone?: string;
+    address?: string;
+    sector?: string;
+    companyType?: string;
+    employees?: number;
+    /** ISO date. activityStartDate is accepted during the client transition. */
+    activityStartedAt?: string;
+    activityStartDate?: string;
+    /** A declaration, not an assertion that a debt exists or of its value. */
+    hasPriorUnregularizedObligations?: boolean;
+    hasPriorObligations?: boolean;
+    enrollments: Array<{
+      taxType: any;
+      regime?: any;
+      status?: string;
+      validFrom?: string;
+      validUntil?: string;
+      legalReference?: string;
+      officialSourceUrl?: string;
+      sourceDiploma?: string;
+      sourceArticle?: string;
+    }>;
   }) {
     let payload: { sub?: string; purpose?: string };
     try {
       payload = await this.jwtService.verifyAsync(dto.onboardingToken);
     } catch {
-      throw new UnauthorizedException('A sessão de onboarding expirou. Confirme o email novamente.');
+      throw new UnauthorizedException(
+        'A sessão de onboarding expirou. Confirme o email novamente.',
+      );
     }
     if (payload.purpose !== 'ONBOARDING' || !payload.sub) {
       throw new UnauthorizedException('A sessão de onboarding é inválida.');
     }
     if (!dto.enrollments?.length) {
-      throw new BadRequestException('Indique pelo menos uma situação fiscal declarada.');
-    }
-    const parsedEnrollments = dto.enrollments.map((enrollment) => {
-      const validFrom = new Date(enrollment.validFrom);
-      const validUntil = enrollment.validUntil ? new Date(enrollment.validUntil) : null;
-      if (Number.isNaN(validFrom.getTime()) || (validUntil && validUntil < validFrom)) {
-        throw new BadRequestException('Vigência fiscal inválida.');
-      }
-      return { ...enrollment, validFrom, validUntil };
-    });
-    if (new Set(parsedEnrollments.map((item) => item.taxType)).size !== parsedEnrollments.length) {
-      throw new BadRequestException('Indique apenas um enquadramento inicial por imposto.');
+      throw new BadRequestException(
+        'Indique pelo menos uma situação fiscal declarada.',
+      );
     }
     const trialStartedAt = new Date();
-    const result = await this.prisma.$transaction(async (transaction) => {
-      const pending = await transaction.pendingRegistration.findUnique({ where: { id: payload.sub } });
-      if (!pending?.emailVerifiedAt || pending.onboardingCompletedAt) {
-        throw new BadRequestException('Este onboarding já não está disponível.');
+    const activityStartValue = dto.activityStartedAt ?? dto.activityStartDate;
+    const activityStartedAt = activityStartValue
+      ? new Date(activityStartValue)
+      : trialStartedAt;
+    if (Number.isNaN(activityStartedAt.getTime())) {
+      throw new BadRequestException(
+        'A data de início de actividade é inválida.',
+      );
+    }
+    const parsedEnrollments = dto.enrollments.map((enrollment) => {
+      const validFrom = new Date(enrollment.validFrom ?? activityStartedAt);
+      const validUntil = enrollment.validUntil
+        ? new Date(enrollment.validUntil)
+        : null;
+      if (
+        Number.isNaN(validFrom.getTime()) ||
+        (validUntil && validUntil < validFrom)
+      ) {
+        throw new BadRequestException('Vigência fiscal inválida.');
       }
-      if (await transaction.user.findFirst({ where: { email: pending.email } })) {
-        throw new BadRequestException('Esta identidade já possui uma conta.');
-      }
-      const tenant = await transaction.tenant.create({
-        data: {
-          name: dto.companyName.trim(), nif: dto.nif.trim().toUpperCase(), email: pending.email,
-          phone: dto.phone?.trim() || pending.phone || null, address: dto.address?.trim() || null,
-          sector: dto.sector?.trim() || null, companyType: dto.companyType?.trim() || null,
-          employeeCount: dto.employees ?? 0, createdAt: trialStartedAt,
-          trialEndsAt: calculateTrialEnd(trialStartedAt),
-        },
-      });
-      const user = await transaction.user.create({
-        data: {
-          tenantId: tenant.id, name: pending.name, email: pending.email, password: pending.passwordHash,
-          phone: pending.phone, role: UserRole.OWNER, emailVerifiedAt: pending.emailVerifiedAt,
-          emailVerificationRequired: true, onboardingCompletedAt: new Date(),
-        },
-      });
-      await transaction.companySettings.create({ data: { tenantId: tenant.id } });
-      if (parsedEnrollments.length) {
-        await transaction.taxRegimeAssignment.createMany({
-          data: parsedEnrollments.map((enrollment) => ({
-            tenantId: tenant.id, taxType: enrollment.taxType, regime: enrollment.regime,
-            validFrom: enrollment.validFrom, validUntil: enrollment.validUntil,
-            legalReference: enrollment.legalReference,
-            status: TaxRegimeAssignmentStatus.ACTIVE,
-            reviewStatus: TaxRegimeAssignmentStatus.REVIEW_REQUIRED,
-            decisionDate: new Date(), decisionType: 'MANUAL_REVIEW_REQUIRED',
-          })),
+      const status = String(enrollment.status ?? '')
+        .trim()
+        .toUpperCase();
+      const knowledgeStatus =
+        !enrollment.regime || ['UNKNOWN', 'NAO_SEI', 'NÃO_SEI'].includes(status)
+          ? TaxRegimeKnowledgeStatus.UNKNOWN
+          : TaxRegimeKnowledgeStatus.CONFIRMED;
+      return {
+        ...enrollment,
+        regime:
+          knowledgeStatus === TaxRegimeKnowledgeStatus.UNKNOWN
+            ? null
+            : enrollment.regime,
+        knowledgeStatus,
+        validFrom,
+        validUntil,
+      };
+    });
+    if (
+      new Set(parsedEnrollments.map((item) => item.taxType)).size !==
+      parsedEnrollments.length
+    ) {
+      throw new BadRequestException(
+        'Indique apenas um enquadramento inicial por imposto.',
+      );
+    }
+    const hasPriorUnregularizedObligations =
+      dto.hasPriorUnregularizedObligations === true ||
+      dto.hasPriorObligations === true;
+    const result = await this.prisma.$transaction(
+      async (transaction) => {
+        const pending = await transaction.pendingRegistration.findUnique({
+          where: { id: payload.sub },
         });
-      }
-      await transaction.pendingRegistration.update({
-        where: { id: pending.id }, data: { onboardingCompletedAt: new Date() },
-      });
-      return { pending, tenant, user };
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
+        if (!pending?.emailVerifiedAt || pending.onboardingCompletedAt) {
+          throw new BadRequestException(
+            'Este onboarding já não está disponível.',
+          );
+        }
+        if (
+          await transaction.user.findFirst({ where: { email: pending.email } })
+        ) {
+          throw new BadRequestException('Esta identidade já possui uma conta.');
+        }
+        const tenant = await transaction.tenant.create({
+          data: {
+            name: dto.companyName.trim(),
+            nif: dto.nif.trim().toUpperCase(),
+            email: pending.email,
+            phone: dto.phone?.trim() || pending.phone || null,
+            address: dto.address?.trim() || null,
+            sector: dto.sector?.trim() || null,
+            companyType: dto.companyType?.trim() || null,
+            employeeCount: dto.employees ?? 0,
+            createdAt: trialStartedAt,
+            trialEndsAt: calculateTrialEnd(trialStartedAt),
+            activityStartedAt,
+            hasPriorUnregularizedObligations,
+          },
+        });
+        const user = await transaction.user.create({
+          data: {
+            tenantId: tenant.id,
+            name: pending.name,
+            email: pending.email,
+            password: pending.passwordHash,
+            phone: pending.phone,
+            role: UserRole.OWNER,
+            emailVerifiedAt: pending.emailVerifiedAt,
+            emailVerificationRequired: true,
+            onboardingCompletedAt: new Date(),
+          },
+        });
+        await transaction.companySettings.create({
+          data: { tenantId: tenant.id },
+        });
+        if (parsedEnrollments.length) {
+          await transaction.taxRegimeAssignment.createMany({
+            data: parsedEnrollments.map((enrollment) => ({
+              tenantId: tenant.id,
+              taxType: enrollment.taxType,
+              regime: enrollment.regime,
+              knowledgeStatus: enrollment.knowledgeStatus,
+              validFrom: enrollment.validFrom,
+              validUntil: enrollment.validUntil,
+              legalReference: enrollment.legalReference,
+              officialSourceUrl: enrollment.officialSourceUrl,
+              sourceDiploma: enrollment.sourceDiploma,
+              sourceArticle: enrollment.sourceArticle,
+              status: TaxRegimeAssignmentStatus.ACTIVE,
+              reviewStatus: TaxRegimeAssignmentStatus.REVIEW_REQUIRED,
+              decisionDate: new Date(),
+              decisionType: 'MANUAL_REVIEW_REQUIRED',
+            })),
+          });
+        }
+        await transaction.pendingRegistration.update({
+          where: { id: pending.id },
+          data: { onboardingCompletedAt: new Date() },
+        });
+        return { pending, tenant, user };
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
     if (this.obligationGeneration) {
       await this.obligationGeneration.generate(result.tenant.id, new Date());
     }
-    await this.mailService.sendMail(result.pending.email, 'Bem-vindo à Fiscalidade Digital', `Olá ${result.pending.name},\n\nA empresa ${result.tenant.name} foi configurada. Pode iniciar sessão.`);
-    return { message: 'Onboarding concluído.', userId: result.user.id, tenantId: result.tenant.id };
+    await this.mailService.sendMail(
+      result.pending.email,
+      'Bem-vindo à Fiscalidade Digital',
+      `Olá ${result.pending.name},\n\nA empresa ${result.tenant.name} foi configurada. Pode iniciar sessão.`,
+    );
+    return {
+      message: 'Onboarding concluído.',
+      userId: result.user.id,
+      tenantId: result.tenant.id,
+    };
   }
 
-  async createInvitation(requester: { userId: string; tenantId: string; role: UserRole }, dto: { email: string; role: UserRole }) {
+  async createInvitation(
+    requester: { userId: string; tenantId: string; role: UserRole },
+    dto: { email: string; role: UserRole },
+  ) {
     const email = this.normalizeEmail(dto.email);
     if (dto.role === UserRole.OWNER && requester.role !== UserRole.OWNER) {
-      throw new UnauthorizedException('Apenas um proprietário pode convidar outro proprietário.');
+      throw new UnauthorizedException(
+        'Apenas um proprietário pode convidar outro proprietário.',
+      );
     }
     const [existingUser, pendingRegistration] = await Promise.all([
       this.prisma.user.findFirst({ where: { email } }),
       this.prisma.pendingRegistration.findUnique({ where: { email } }),
     ]);
-    if (existingUser || pendingRegistration) throw new BadRequestException('Não foi possível criar este convite.');
+    if (existingUser || pendingRegistration)
+      throw new BadRequestException('Não foi possível criar este convite.');
     const inviter = await this.prisma.user.findFirst({
-      where: { id: requester.userId, tenantId: requester.tenantId, isActive: true }, select: { name: true },
+      where: {
+        id: requester.userId,
+        tenantId: requester.tenantId,
+        isActive: true,
+      },
+      select: { name: true },
     });
     if (!inviter) throw new UnauthorizedException();
     const token = randomBytes(32).toString('base64url');
     const now = new Date();
     await this.prisma.$transaction([
       this.prisma.userInvitation.updateMany({
-        where: { tenantId: requester.tenantId, email, acceptedAt: null }, data: { acceptedAt: now },
+        where: { tenantId: requester.tenantId, email, acceptedAt: null },
+        data: { acceptedAt: now },
       }),
-      this.prisma.userInvitation.create({ data: {
-        tenantId: requester.tenantId, email, role: dto.role, tokenHash: this.hashSecret(token),
-        expiresAt: new Date(now.getTime() + 48 * 60 * 60_000), createdById: requester.userId,
-      } }),
+      this.prisma.userInvitation.create({
+        data: {
+          tenantId: requester.tenantId,
+          email,
+          role: dto.role,
+          tokenHash: this.hashSecret(token),
+          expiresAt: new Date(now.getTime() + 48 * 60 * 60_000),
+          createdById: requester.userId,
+        },
+      }),
     ]);
-    const tenant = await this.prisma.tenant.findUnique({ where: { id: requester.tenantId }, select: { name: true } });
-    await this.mailService.sendUserInvitation(email, inviter.name, token, tenant?.name || 'a sua empresa', dto.role);
+    const tenant = await this.prisma.tenant.findUnique({
+      where: { id: requester.tenantId },
+      select: { name: true },
+    });
+    await this.mailService.sendUserInvitation(
+      email,
+      inviter.name,
+      token,
+      tenant?.name || 'a sua empresa',
+      dto.role,
+    );
     return { message: 'Convite enviado.' };
   }
 
-  async acceptInvitation(dto: { token: string; name: string; password: string; confirmPassword: string; acceptTerms: boolean; acceptPrivacyPolicy: boolean }) {
-    if (dto.password !== dto.confirmPassword) throw new BadRequestException('As palavras-passe não coincidem.');
-    if (!dto.acceptTerms || !dto.acceptPrivacyPolicy) throw new BadRequestException('É necessário aceitar os documentos jurídicos aplicáveis.');
+  async acceptInvitation(dto: {
+    token: string;
+    name: string;
+    password: string;
+    confirmPassword: string;
+    acceptTerms: boolean;
+    acceptPrivacyPolicy: boolean;
+  }) {
+    if (dto.password !== dto.confirmPassword)
+      throw new BadRequestException('As palavras-passe não coincidem.');
+    if (!dto.acceptTerms || !dto.acceptPrivacyPolicy)
+      throw new BadRequestException(
+        'É necessário aceitar os documentos jurídicos aplicáveis.',
+      );
     const tokenHash = this.hashSecret(dto.token);
     const password = await bcrypt.hash(dto.password, 12);
     const now = new Date();
-    const user = await this.prisma.$transaction(async (transaction) => {
-      const invitation = await transaction.userInvitation.findUnique({ where: { tokenHash } });
-      if (!invitation || invitation.acceptedAt || invitation.expiresAt <= now) {
-        throw new BadRequestException('O convite é inválido ou expirou.');
-      }
-      if (await transaction.user.findFirst({ where: { email: invitation.email } })) {
-        throw new BadRequestException('O convite já não está disponível.');
-      }
-      const created = await transaction.user.create({ data: {
-        tenantId: invitation.tenantId, email: invitation.email, name: dto.name.trim(), password,
-        role: invitation.role, emailVerifiedAt: now, emailVerificationRequired: true,
-        onboardingCompletedAt: now,
-      } });
-      await transaction.legalAcceptance.createMany({ data: [
-        { documentType: LegalDocumentType.TERMS_OF_USE, version: AuthService.TERMS_VERSION, acceptedAt: now, userId: created.id },
-        { documentType: LegalDocumentType.PRIVACY_POLICY, version: AuthService.PRIVACY_VERSION, acceptedAt: now, userId: created.id },
-      ] });
-      await transaction.userInvitation.update({ where: { id: invitation.id }, data: { acceptedAt: now } });
-      return created;
-    }, { isolationLevel: Prisma.TransactionIsolationLevel.Serializable });
-    return { message: 'Acesso criado. Já pode iniciar sessão.', userId: user.id };
+    const user = await this.prisma.$transaction(
+      async (transaction) => {
+        const invitation = await transaction.userInvitation.findUnique({
+          where: { tokenHash },
+        });
+        if (
+          !invitation ||
+          invitation.acceptedAt ||
+          invitation.expiresAt <= now
+        ) {
+          throw new BadRequestException('O convite é inválido ou expirou.');
+        }
+        if (
+          await transaction.user.findFirst({
+            where: { email: invitation.email },
+          })
+        ) {
+          throw new BadRequestException('O convite já não está disponível.');
+        }
+        const created = await transaction.user.create({
+          data: {
+            tenantId: invitation.tenantId,
+            email: invitation.email,
+            name: dto.name.trim(),
+            password,
+            role: invitation.role,
+            emailVerifiedAt: now,
+            emailVerificationRequired: true,
+            onboardingCompletedAt: now,
+          },
+        });
+        await transaction.legalAcceptance.createMany({
+          data: [
+            {
+              documentType: LegalDocumentType.TERMS_OF_USE,
+              version: AuthService.TERMS_VERSION,
+              acceptedAt: now,
+              userId: created.id,
+            },
+            {
+              documentType: LegalDocumentType.PRIVACY_POLICY,
+              version: AuthService.PRIVACY_VERSION,
+              acceptedAt: now,
+              userId: created.id,
+            },
+          ],
+        });
+        await transaction.userInvitation.update({
+          where: { id: invitation.id },
+          data: { acceptedAt: now },
+        });
+        return created;
+      },
+      { isolationLevel: Prisma.TransactionIsolationLevel.Serializable },
+    );
+    return {
+      message: 'Acesso criado. Já pode iniciar sessão.',
+      userId: user.id,
+    };
   }
 
   // =====================================================
@@ -336,57 +612,45 @@ export class AuthService {
   // =====================================================
 
   async login(dto: any) {
-    const user =
-      await this.prisma.user.findFirst({
-        where: {
-          email:
-            dto.email,
-        },
+    const user = await this.prisma.user.findFirst({
+      where: {
+        email: dto.email,
+      },
 
-        include: {
-          tenant: true,
-        },
-      });
+      include: {
+        tenant: true,
+      },
+    });
 
     if (!user) {
-      throw new UnauthorizedException(
-        'Credenciais inválidas.',
-      );
+      throw new UnauthorizedException('Credenciais inválidas.');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException(
-        'Esta conta está desativada.',
-      );
+      throw new UnauthorizedException('Esta conta está desativada.');
     }
 
     if (user.emailVerificationRequired && !user.emailVerifiedAt) {
-      throw new UnauthorizedException('Confirme o seu email antes de iniciar sessão.');
+      throw new UnauthorizedException(
+        'Confirme o seu email antes de iniciar sessão.',
+      );
     }
 
-    const passwordMatch =
-      await bcrypt.compare(
-        dto.password,
-        user.password,
-      );
+    const passwordMatch = await bcrypt.compare(dto.password, user.password);
 
     if (!passwordMatch) {
-      throw new UnauthorizedException(
-        'Credenciais inválidas.',
-      );
+      throw new UnauthorizedException('Credenciais inválidas.');
     }
 
     // ===================================================
     // ATUALIZAR ÚLTIMO LOGIN
     // ===================================================
 
-    const lastLogin =
-      new Date();
+    const lastLogin = new Date();
 
     await this.prisma.user.update({
       where: {
-        id:
-          user.id,
+        id: user.id,
       },
 
       data: {
@@ -404,36 +668,27 @@ export class AuthService {
 
     await this.prisma.companySettings.upsert({
       where: {
-        tenantId:
-          user.tenantId,
+        tenantId: user.tenantId,
       },
 
       update: {},
 
       create: {
-        tenantId:
-          user.tenantId,
+        tenantId: user.tenantId,
 
-        emailEnabled:
-          true,
+        emailEnabled: true,
 
-        smsEnabled:
-          true,
+        smsEnabled: true,
 
-        aiEnabled:
-          true,
+        aiEnabled: true,
 
-        fiscalAlertsEnabled:
-          true,
+        fiscalAlertsEnabled: true,
 
-        fiscalAlertDaysBefore:
-          7,
+        fiscalAlertDaysBefore: 7,
 
-        fiscalDueDateReminder:
-          true,
+        fiscalDueDateReminder: true,
 
-        fiscalReminderEnabled:
-          true,
+        fiscalReminderEnabled: true,
       },
     });
 
@@ -441,96 +696,77 @@ export class AuthService {
     // JWT
     // ===================================================
 
-    const accessToken =
-      await this.jwtService.signAsync({
-        sub:
-          user.id,
+    const accessToken = await this.jwtService.signAsync({
+      sub: user.id,
 
-        tenantId:
-          user.tenantId,
+      tenantId: user.tenantId,
 
-        email:
-          user.email,
+      email: user.email,
 
-        role:
-          user.role,
-      });
+      role: user.role,
+    });
 
     // ===================================================
     // RESPOSTA
     // ===================================================
 
     return {
-      message:
-        'Login realizado com sucesso.',
+      message: 'Login realizado com sucesso.',
 
-      access_token:
-        accessToken,
+      access_token: accessToken,
 
       user: {
-        id:
-          user.id,
+        id: user.id,
 
-        name:
-          user.name,
+        name: user.name,
 
-        email:
-          user.email,
+        email: user.email,
 
-        role:
-          user.role,
+        role: user.role,
 
-        tenantId:
-          user.tenantId,
+        tenantId: user.tenantId,
 
-        isActive:
-          user.isActive,
+        isActive: user.isActive,
 
         lastLogin,
       },
 
       tenant: {
-        id:
-          user.tenant.id,
+        id: user.tenant.id,
 
-        name:
-          user.tenant.name,
+        name: user.tenant.name,
 
-        nif:
-          user.tenant.nif,
+        nif: user.tenant.nif,
 
-        email:
-          user.tenant.email,
+        email: user.tenant.email,
 
-        phone:
-          user.tenant.phone,
+        phone: user.tenant.phone,
 
-        address:
-          user.tenant.address,
+        address: user.tenant.address,
 
-        sector:
-          user.tenant.sector,
+        sector: user.tenant.sector,
 
-        regime:
-          user.tenant.regime,
+        // Kept only so older accounts can be displayed during migration. Tax
+        // calculations and obligations must resolve fiscal-enrollments by tax
+        // and period instead of consulting this legacy field.
+        legacyRegime: user.tenant.regime ?? null,
 
-        retentionRate:
-          user.tenant.retentionRate,
+        activityStartedAt: user.tenant.activityStartedAt,
 
-        companyType:
-          user.tenant.companyType,
+        hasPriorUnregularizedObligations:
+          user.tenant.hasPriorUnregularizedObligations,
 
-        employeeCount:
-          user.tenant.employeeCount,
+        retentionRate: user.tenant.retentionRate,
 
-        status:
-          user.tenant.status,
+        companyType: user.tenant.companyType,
 
-        planType:
-          user.tenant.planType,
+        employeeCount: user.tenant.employeeCount,
 
-        trialEndsAt:
-          user.tenant.trialEndsAt,
+        status: user.tenant.status,
+
+        planType: user.tenant.planType,
+
+        trialEndsAt: user.tenant.trialEndsAt,
       },
     };
   }
@@ -539,31 +775,23 @@ export class AuthService {
   // UTILIZADOR AUTENTICADO
   // =====================================================
 
-  async getCurrentUser(
-    userId: string,
-  ) {
-    const user =
-      await this.prisma.user.findUnique({
-        where: {
-          id:
-            userId,
-        },
+  async getCurrentUser(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: {
+        id: userId,
+      },
 
-        include: {
-          tenant: true,
-        },
-      });
+      include: {
+        tenant: true,
+      },
+    });
 
     if (!user) {
-      throw new UnauthorizedException(
-        'Utilizador autenticado não encontrado.',
-      );
+      throw new UnauthorizedException('Utilizador autenticado não encontrado.');
     }
 
     if (!user.isActive) {
-      throw new UnauthorizedException(
-        'Esta conta está desativada.',
-      );
+      throw new UnauthorizedException('Esta conta está desativada.');
     }
 
     // ===================================================
@@ -572,105 +800,80 @@ export class AuthService {
 
     await this.prisma.companySettings.upsert({
       where: {
-        tenantId:
-          user.tenantId,
+        tenantId: user.tenantId,
       },
 
       update: {},
 
       create: {
-        tenantId:
-          user.tenantId,
+        tenantId: user.tenantId,
 
-        emailEnabled:
-          true,
+        emailEnabled: true,
 
-        smsEnabled:
-          true,
+        smsEnabled: true,
 
-        aiEnabled:
-          true,
+        aiEnabled: true,
 
-        fiscalAlertsEnabled:
-          true,
+        fiscalAlertsEnabled: true,
 
-        fiscalAlertDaysBefore:
-          7,
+        fiscalAlertDaysBefore: 7,
 
-        fiscalDueDateReminder:
-          true,
+        fiscalDueDateReminder: true,
 
-        fiscalReminderEnabled:
-          true,
+        fiscalReminderEnabled: true,
       },
     });
 
     return {
       user: {
-        id:
-          user.id,
+        id: user.id,
 
-        name:
-          user.name,
+        name: user.name,
 
-        email:
-          user.email,
+        email: user.email,
 
-        role:
-          user.role,
+        role: user.role,
 
-        tenantId:
-          user.tenantId,
+        tenantId: user.tenantId,
 
-        isActive:
-          user.isActive,
+        isActive: user.isActive,
 
-        lastLogin:
-          user.lastLogin,
+        lastLogin: user.lastLogin,
       },
 
       tenant: {
-        id:
-          user.tenant.id,
+        id: user.tenant.id,
 
-        name:
-          user.tenant.name,
+        name: user.tenant.name,
 
-        nif:
-          user.tenant.nif,
+        nif: user.tenant.nif,
 
-        email:
-          user.tenant.email,
+        email: user.tenant.email,
 
-        phone:
-          user.tenant.phone,
+        phone: user.tenant.phone,
 
-        address:
-          user.tenant.address,
+        address: user.tenant.address,
 
-        sector:
-          user.tenant.sector,
+        sector: user.tenant.sector,
 
-        companyType:
-          user.tenant.companyType,
+        companyType: user.tenant.companyType,
 
-        employeeCount:
-          user.tenant.employeeCount,
+        employeeCount: user.tenant.employeeCount,
 
-        regime:
-          user.tenant.regime,
+        legacyRegime: user.tenant.regime ?? null,
 
-        retentionRate:
-          user.tenant.retentionRate,
+        activityStartedAt: user.tenant.activityStartedAt,
 
-        status:
-          user.tenant.status,
+        hasPriorUnregularizedObligations:
+          user.tenant.hasPriorUnregularizedObligations,
 
-        planType:
-          user.tenant.planType,
+        retentionRate: user.tenant.retentionRate,
 
-        trialEndsAt:
-          user.tenant.trialEndsAt,
+        status: user.tenant.status,
+
+        planType: user.tenant.planType,
+
+        trialEndsAt: user.tenant.trialEndsAt,
       },
     };
   }

@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
@@ -21,7 +18,8 @@ const COMPANY_SELECT = {
   trialEndsAt: true,
   createdAt: true,
   updatedAt: true,
-  regime: true,
+  activityStartedAt: true,
+  hasPriorUnregularizedObligations: true,
   companyType: true,
   employeeCount: true,
   retentionRate: true,
@@ -29,43 +27,32 @@ const COMPANY_SELECT = {
 
 @Injectable()
 export class CompanyService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async getCompany(tenantId: string) {
-    const company =
-      await this.prisma.tenant.findUnique({
-        where: {
-          id: tenantId,
-        },
-        select: COMPANY_SELECT,
-      });
+    const company = await this.prisma.tenant.findUnique({
+      where: {
+        id: tenantId,
+      },
+      select: COMPANY_SELECT,
+    });
 
     if (!company) {
-      throw new NotFoundException(
-        'Empresa não encontrada',
-      );
+      throw new NotFoundException('Empresa não encontrada');
     }
 
     return company;
   }
 
-  async updateCompany(
-    tenantId: string,
-    body: UpdateCompanyDto,
-  ) {
-    const company =
-      await this.prisma.tenant.findUnique({
-        where: {
-          id: tenantId,
-        },
-      });
+  async updateCompany(tenantId: string, body: UpdateCompanyDto) {
+    const company = await this.prisma.tenant.findUnique({
+      where: {
+        id: tenantId,
+      },
+    });
 
     if (!company) {
-      throw new NotFoundException(
-        'Empresa não encontrada',
-      );
+      throw new NotFoundException('Empresa não encontrada');
     }
 
     return this.prisma.tenant.update({
@@ -75,16 +62,42 @@ export class CompanyService {
       select: COMPANY_SELECT,
 
       data: {
-        name: typeof body.name === 'string' ? body.name.trim() || undefined : undefined,
-        nif: typeof body.nif === 'string' ? body.nif.trim() || undefined : undefined,
-        email: typeof body.email === 'string' ? body.email.trim().toLowerCase() || undefined : undefined,
-        phone: typeof body.phone === 'string' ? body.phone.trim() || null : undefined,
-        address: typeof body.address === 'string' ? body.address.trim() || null : undefined,
-        city: typeof body.city === 'string' ? body.city.trim() || null : undefined,
-        sector: typeof body.sector === 'string' ? body.sector.trim() || null : undefined,
+        name:
+          typeof body.name === 'string'
+            ? body.name.trim() || undefined
+            : undefined,
+        nif:
+          typeof body.nif === 'string'
+            ? body.nif.trim() || undefined
+            : undefined,
+        email:
+          typeof body.email === 'string'
+            ? body.email.trim().toLowerCase() || undefined
+            : undefined,
+        phone:
+          typeof body.phone === 'string'
+            ? body.phone.trim() || null
+            : undefined,
+        address:
+          typeof body.address === 'string'
+            ? body.address.trim() || null
+            : undefined,
+        city:
+          typeof body.city === 'string' ? body.city.trim() || null : undefined,
+        sector:
+          typeof body.sector === 'string'
+            ? body.sector.trim() || null
+            : undefined,
         companyType: body.companyType || undefined,
         employeeCount: body.employeeCount,
-        regime: body.regime,
+        activityStartedAt:
+          typeof body.activityStartedAt === 'string'
+            ? new Date(body.activityStartedAt)
+            : undefined,
+        hasPriorUnregularizedObligations:
+          typeof body.hasPriorUnregularizedObligations === 'boolean'
+            ? body.hasPriorUnregularizedObligations
+            : undefined,
       },
     });
   }

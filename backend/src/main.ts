@@ -1,8 +1,8 @@
-
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { SafeHttpExceptionFilter } from './common/filters/safe-http-exception.filter';
 import {
   createCorsOptions,
   resolveCorsOrigins,
@@ -44,6 +44,8 @@ async function bootstrap() {
     }),
   );
 
+  app.useGlobalFilters(new SafeHttpExceptionFilter());
+
   // =========================================================
   // CORS
   // =========================================================
@@ -55,29 +57,15 @@ async function bootstrap() {
   // PORTA
   // =========================================================
 
-  const port =
-    Number(process.env.PORT) || 3001;
+  const port = Number(process.env.PORT) || 3001;
 
-  await app.listen(
-    port,
-    '0.0.0.0',
-  );
+  await app.listen(port, '0.0.0.0');
 
-  console.log(
-    `Fiscalidade Digital API executando na porta ${port}.`,
-  );
+  console.log(`Fiscalidade Digital API executando na porta ${port}.`);
 
-  console.log(
-    `Ambiente: ${
-      process.env.NODE_ENV || 'development'
-    }`,
-  );
+  console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
 
-  console.log(
-    `CORS autorizado: ${
-      configuredOrigins.join(', ')
-    }`,
-  );
+  console.log(`CORS autorizado: ${configuredOrigins.join(', ')}`);
 }
 
 bootstrap();

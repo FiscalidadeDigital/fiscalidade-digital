@@ -27,28 +27,47 @@ export class AccountingSaftController {
     @CurrentUser() user: CurrentUserPayload,
     @Query() query: SaftReadinessQueryDto,
   ) {
-    return this.accountingSaftService.getReadiness(
-      user.tenantId,
-      query.fiscalYear,
-    );
+    return this.accountingSaftService
+      .getReadiness(user.tenantId, query.fiscalYear)
+      .then((result) => ({
+        fiscalYear: result.fiscalYear,
+        period: result.period,
+        ready: result.canExport,
+        message: result.canExport
+          ? 'A preparação do ficheiro está concluída.'
+          : 'Existem informações a rever antes de preparar o ficheiro.',
+      }));
   }
 
   @Get('preflight')
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
-  getPreflight(@CurrentUser() user: CurrentUserPayload, @Query() query: SaftPeriodQueryDto) {
+  getPreflight(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: SaftPeriodQueryDto,
+  ) {
     return this.saftExportService.preflight(user.tenantId, query.fiscalYear);
   }
 
   @Get('summary')
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
-  getSummary(@CurrentUser() user: CurrentUserPayload, @Query() query: SaftPeriodQueryDto) {
+  getSummary(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: SaftPeriodQueryDto,
+  ) {
     return this.saftExportService.summary(user.tenantId, query.fiscalYear);
   }
 
   @Get('generate')
   @Roles(UserRole.OWNER, UserRole.ADMIN, UserRole.ACCOUNTANT)
-  generate(@CurrentUser() user: CurrentUserPayload, @Query() query: SaftPeriodQueryDto) {
-    return this.saftExportService.generate(user.tenantId, user.userId, query.fiscalYear);
+  generate(
+    @CurrentUser() user: CurrentUserPayload,
+    @Query() query: SaftPeriodQueryDto,
+  ) {
+    return this.saftExportService.generationStatus(
+      user.tenantId,
+      user.userId,
+      query.fiscalYear,
+    );
   }
 
   @Get('download')
@@ -58,9 +77,16 @@ export class AccountingSaftController {
     @Query() query: SaftPeriodQueryDto,
     @Res() response: Response,
   ) {
-    const result = await this.saftExportService.generate(user.tenantId, user.userId, query.fiscalYear);
+    const result = await this.saftExportService.generate(
+      user.tenantId,
+      user.userId,
+      query.fiscalYear,
+    );
     response.setHeader('Content-Type', 'application/xml; charset=utf-8');
-    response.setHeader('Content-Disposition', `attachment; filename="${result.filename}"`);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${result.filename}"`,
+    );
     response.send(result.xml);
   }
 }
