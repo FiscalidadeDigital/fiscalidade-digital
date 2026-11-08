@@ -7,6 +7,10 @@ global do backend não é um portão desta entrega, porque contém dívida herda
 - Referência: `origin/main`.
 - Medição histórica: **2.849 erros** no lint global do backend, registados em
   08-11-2026 antes da adopção deste portão.
+- Varredura completa dos **42 ficheiros backend** presentes no diff contra
+  `origin/main`: **1.039 erros e 37 avisos**. Este conjunto já incluía a
+  alteração ampla anterior do branch; não corresponde só ao código novo desta
+  entrega.
 - Auditoria dirigida ao delta backend actual: **352 erros e 31 avisos** em 29
   ficheiros após aplicar a formatação. São regras tipadas herdadas em serviços
   extensos e testes antigos (por exemplo, `no-unsafe-*` e
