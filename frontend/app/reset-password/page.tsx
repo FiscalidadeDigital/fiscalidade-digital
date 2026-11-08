@@ -26,4 +26,3 @@ function ResetPasswordContent() {
 export default function ResetPasswordPage() {
   return <Suspense fallback={<main className="fd-auth-page grid min-h-screen place-items-center bg-slate-100 p-4 text-sm text-slate-600">A carregar…</main>}><ResetPasswordContent /></Suspense>;
 }
-
