@@ -7,6 +7,7 @@ import { PrismaModule } from '../prisma/prisma.module';
 import { FiscalObligationPersistenceModule } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.module';
 import { FiscalEnrollmentModule } from '../fiscal-enrollment/fiscal-enrollment.module';
 import { MailModule } from '../mail/mail.module';
+import { FiscalObligationEligibilityModule } from '../fiscal-obligation-eligibility/fiscal-obligation-eligibility.module';
 
 @Module({
   imports: [
@@ -14,18 +15,13 @@ import { MailModule } from '../mail/mail.module';
     FiscalObligationPersistenceModule,
     FiscalEnrollmentModule,
     MailModule,
+    FiscalObligationEligibilityModule,
   ],
 
-  controllers: [
-    ObligationsController,
-  ],
+  controllers: [ObligationsController],
 
-  providers: [
-    ObligationsService,
-  ],
+  providers: [ObligationsService],
 
-  exports: [
-    ObligationsService,
-  ],
+  exports: [ObligationsService],
 })
 export class ObligationsModule {}

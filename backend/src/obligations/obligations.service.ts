@@ -20,17 +20,24 @@ import { PrismaService } from '../prisma/prisma.service';
 import { FiscalObligationPersistenceService } from '../fiscal-obligation-persistence/fiscal-obligation-persistence.service';
 import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 import { MailService } from '../mail/mail.service';
+import { FiscalObligationEligibilityService } from '../fiscal-obligation-eligibility/fiscal-obligation-eligibility.service';
 
 @Injectable()
 export class ObligationsService {
-  private readonly logger =
-    new Logger(ObligationsService.name);
+  private readonly logger = new Logger(ObligationsService.name);
 
   constructor(
     private readonly prisma: PrismaService,
-    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(prisma),
-    private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(prisma),
+    private readonly obligationPersistence: FiscalObligationPersistenceService = new FiscalObligationPersistenceService(
+      prisma,
+    ),
+    private readonly enrollments: FiscalEnrollmentService = new FiscalEnrollmentService(
+      prisma,
+    ),
     private readonly mailService: MailService = new MailService(),
+    private readonly eligibility: FiscalObligationEligibilityService = new FiscalObligationEligibilityService(
+      prisma,
+    ),
   ) {}
 
   // ============================================================
@@ -38,24 +45,23 @@ export class ObligationsService {
   // ============================================================
 
   async syncAllCompanies() {
-    const tenants =
-      await this.prisma.tenant.findMany({
-        where: {
-          status: {
-            in: ['ACTIVE', 'TRIAL'],
-          },
+    const tenants = await this.prisma.tenant.findMany({
+      where: {
+        status: {
+          in: ['ACTIVE', 'TRIAL'],
         },
+      },
 
-        select: {
-          id: true,
-          name: true,
-          regime: true,
-        },
+      select: {
+        id: true,
+        name: true,
+        regime: true,
+      },
 
-        orderBy: {
-          createdAt: 'asc',
-        },
-      });
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
 
     let created = 0;
     let updated = 0;
@@ -64,37 +70,22 @@ export class ObligationsService {
 
     for (const tenant of tenants) {
       try {
-        const result =
-          await this.syncCompany(
-            tenant.id,
-          );
+        const result = await this.syncCompany(tenant.id);
 
-        created += Number(
-          result.created || 0,
-        );
+        created += Number(result.created || 0);
 
-        updated += Number(
-          result.updated || 0,
-        );
+        updated += Number(result.updated || 0);
 
-        late += Number(
-          result.late || 0,
-        );
+        late += Number(result.late || 0);
 
-        backfilledPayments +=
-          Number(
-            result.backfilledPayments ||
-              0,
-          );
+        backfilledPayments += Number(result.backfilledPayments || 0);
       } catch (error) {
         this.logger.error(
           [
             'Erro ao sincronizar empresa.',
             `Empresa: ${tenant.name}`,
             `ID: ${tenant.id}`,
-            error instanceof Error
-              ? error.message
-              : String(error),
+            error instanceof Error ? error.message : String(error),
           ].join(' | '),
         );
       }
@@ -116,62 +107,49 @@ export class ObligationsService {
   // ============================================================
 
   async sync(tenantId: string) {
-    return this.syncCompany(
-      tenantId,
-    );
+    return this.syncCompany(tenantId);
   }
 
   // ============================================================
   // SINCRONIZAR EMPRESA
   // ============================================================
 
-  async syncCompany(
-    tenantId: string,
-  ) {
-    const tenant =
-      await this.prisma.tenant.findUnique({
-        where: {
-          id: tenantId,
-        },
+  async syncCompany(tenantId: string) {
+    const tenant = await this.prisma.tenant.findUnique({
+      where: {
+        id: tenantId,
+      },
 
-        select: {
-          id: true,
-          name: true,
-          nif: true,
-          regime: true,
-          sector: true,
-          companyType: true,
-          retentionRate: true,
-          status: true,
-          createdAt: true,
-        },
-      });
+      select: {
+        id: true,
+        name: true,
+        nif: true,
+        regime: true,
+        sector: true,
+        companyType: true,
+        retentionRate: true,
+        status: true,
+        createdAt: true,
+      },
+    });
 
     if (!tenant) {
-      throw new NotFoundException(
-        'Empresa não encontrada.',
-      );
+      throw new NotFoundException('Empresa não encontrada.');
     }
 
     const now = new Date();
 
-    const currentYear =
-      now.getFullYear();
+    const currentYear = now.getFullYear();
 
-    const companyCreationDate =
-      tenant.createdAt > now
-        ? now
-        : tenant.createdAt;
+    const companyCreationDate = tenant.createdAt > now ? now : tenant.createdAt;
 
-    const existingObligationCount =
-      await this.prisma.fiscalObligation.count({
-        where: {
-          tenantId,
-        },
-      });
+    const existingObligationCount = await this.prisma.fiscalObligation.count({
+      where: {
+        tenantId,
+      },
+    });
 
-    const isFirstSynchronization =
-      existingObligationCount === 0;
+    const isFirstSynchronization = existingObligationCount === 0;
 
     /*
      * Primeira sincronização:
@@ -181,46 +159,57 @@ export class ObligationsService {
      * reconciliar desde a criação da empresa.
      */
 
-    const minimumDueDate =
-      isFirstSynchronization
-        ? now
-        : companyCreationDate;
+    const minimumDueDate = isFirstSynchronization ? now : companyCreationDate;
 
     // ==========================================================
     // CALENDÁRIO FISCAL
     // ==========================================================
 
-    const rawCalendarRules =
-      await this.prisma.fiscalCalendar.findMany({
-        where: {
-          active: true,
+    const rawCalendarRules = await this.prisma.fiscalCalendar.findMany({
+      where: {
+        active: true,
 
-          referenceYear:
-            currentYear,
+        referenceYear: currentYear,
 
-          dueDate: {
-            gte:
-              minimumDueDate,
-          },
+        dueDate: {
+          gte: minimumDueDate,
         },
+      },
 
-        include: {
-          regimes: true,
-        },
+      include: {
+        regimes: true,
+      },
 
-        orderBy: {
-          dueDate: 'asc',
-        },
-      });
+      orderBy: {
+        dueDate: 'asc',
+      },
+    });
 
-    const calendarRules: Array<{ rule: (typeof rawCalendarRules)[number]; regime: FiscalRegime | null }> = [];
+    const calendarRules: Array<{
+      rule: (typeof rawCalendarRules)[number];
+      regime: FiscalRegime | null;
+    }> = [];
     for (const rule of rawCalendarRules) {
-      const effectiveDate = this.ruleEffectiveDate(rule.period, rule.referenceYear, rule.dueDate);
+      const effectiveDate = this.ruleEffectiveDate(
+        rule.period,
+        rule.referenceYear,
+        rule.dueDate,
+      );
       const enrollmentTaxType = this.enrollmentTaxType(rule.taxType);
       const enrollment = enrollmentTaxType
-        ? await this.enrollments.resolve(tenantId, enrollmentTaxType, effectiveDate)
+        ? await this.enrollments.resolve(
+            tenantId,
+            enrollmentTaxType,
+            effectiveDate,
+          )
         : null;
-      if (this.isCalendarRuleApplicable(rule, enrollment?.regime ?? null, Boolean(enrollmentTaxType))) {
+      if (
+        this.isCalendarRuleApplicable(
+          rule,
+          enrollment?.regime ?? null,
+          Boolean(enrollmentTaxType),
+        )
+      ) {
         calendarRules.push({ rule, regime: enrollment?.regime ?? null });
       }
     }
@@ -234,66 +223,54 @@ export class ObligationsService {
     // ==========================================================
 
     for (const { rule, regime } of calendarRules) {
-      const period =
-        rule.period ||
-        String(
-          rule.referenceYear ||
-            currentYear,
-        );
+      const period = rule.period || String(rule.referenceYear || currentYear);
 
-      let existing =
-        await this.prisma.fiscalObligation.findFirst({
-          where: {
-            tenantId,
+      let existing = await this.prisma.fiscalObligation.findFirst({
+        where: {
+          tenantId,
 
-            fiscalCalendarId:
-              rule.id,
+          fiscalCalendarId: rule.id,
 
-            period,
-          },
-        });
+          period,
+        },
+      });
 
       // --------------------------------------------------------
       // COMPATIBILIDADE COM OBRIGAÇÕES ANTIGAS
       // --------------------------------------------------------
 
       if (!existing) {
-        existing =
-          await this.prisma.fiscalObligation.findFirst({
-            where: {
-              tenantId,
+        existing = await this.prisma.fiscalObligation.findFirst({
+          where: {
+            tenantId,
 
-              period,
+            period,
 
-              type:
-                rule.obligationType,
+            type: rule.obligationType,
 
-              dueDate:
-                rule.dueDate,
-            },
+            dueDate: rule.dueDate,
+          },
 
-            orderBy: {
-              createdAt:
-                'asc',
-            },
-          });
+          orderBy: {
+            createdAt: 'asc',
+          },
+        });
       }
 
       // --------------------------------------------------------
       // CALCULAR VALOR
       // --------------------------------------------------------
 
-      const calculatedAmount =
-        await this.calculateObligationAmount(
-          tenant,
-          rule.obligationType,
-          rule.taxType,
-          rule.title,
-          rule.description,
-          rule.dueDate,
-          period,
-          regime,
-        );
+      const calculatedAmount = await this.calculateObligationAmount(
+        tenant,
+        rule.obligationType,
+        rule.taxType,
+        rule.title,
+        rule.description,
+        rule.dueDate,
+        period,
+        regime,
+      );
 
       const existingAmount = existing?.amount ?? null;
 
@@ -325,8 +302,7 @@ export class ObligationsService {
           rule.description,
         )
       ) {
-        finalAmount =
-          existingAmount;
+        finalAmount = existingAmount;
       }
 
       if (finalAmount !== null) {
@@ -342,69 +318,49 @@ export class ObligationsService {
          * Nunca recalcular uma obrigação já paga.
          */
 
-        if (
-          existing.status ===
-          ObligationStatus.PAID
-        ) {
+        if (existing.status === ObligationStatus.PAID) {
           await this.ensureTaxPaymentForObligation(
             existing.id,
             tenant.id,
             existing.amount,
-            rule.taxType ??
-              this.mapObligationTypeToTaxType(
-                existing.type,
-              ),
-            existing.period ||
-              period,
+            rule.taxType ?? this.mapObligationTypeToTaxType(existing.type),
+            existing.period || period,
           );
 
           continue;
         }
 
-        const isLate =
-          rule.dueDate <
-          now;
+        const isLate = rule.dueDate < now;
 
-        const nextStatus =
-          isLate
-            ? ObligationStatus.LATE
-            : ObligationStatus.PENDING;
+        const nextStatus = isLate
+          ? ObligationStatus.LATE
+          : ObligationStatus.PENDING;
 
         await this.prisma.fiscalObligation.update({
           where: {
-            id:
-              existing.id,
+            id: existing.id,
           },
 
           data: {
-            fiscalCalendarId:
-              rule.id,
+            fiscalCalendarId: rule.id,
 
-            title:
-              rule.title,
+            title: rule.title,
 
-            description:
-              rule.description,
+            description: rule.description,
 
-            type:
-              rule.obligationType,
+            type: rule.obligationType,
 
-            dueDate:
-              rule.dueDate,
+            dueDate: rule.dueDate,
 
             period,
 
-            amount:
-              finalAmount,
+            amount: finalAmount,
 
-            status:
-              nextStatus,
+            status: nextStatus,
 
-            alertEnabled:
-              true,
+            alertEnabled: true,
 
-            alertDaysBefore:
-              7,
+            alertDaysBefore: 7,
           },
         });
 
@@ -421,17 +377,12 @@ export class ObligationsService {
       // NOVA OBRIGAÇÃO
       // ========================================================
 
-      const isLate =
-        rule.dueDate <
-        now;
+      const isLate = rule.dueDate < now;
 
-      const status =
-        isLate
-          ? ObligationStatus.LATE
-          : ObligationStatus.PENDING;
+      const status = isLate ? ObligationStatus.LATE : ObligationStatus.PENDING;
 
-      const persisted =
-        await this.obligationPersistence.persistCalendarDerived({
+      const persisted = await this.obligationPersistence.persistCalendarDerived(
+        {
           tenantId: tenant.id,
           fiscalCalendarId: rule.id,
           period,
@@ -445,7 +396,8 @@ export class ObligationsService {
           alertDaysBefore: 7,
           reminderSent: false,
           origin: 'CALENDAR',
-        });
+        },
+      );
 
       if (persisted.outcome === 'CREATED') created++;
 
@@ -458,27 +410,15 @@ export class ObligationsService {
     // ACTUALIZAR ESTADOS
     // ==========================================================
 
-    const statusResult =
-      await this.updateStatuses(
-        tenant.id,
-      );
+    const statusResult = await this.updateStatuses(tenant.id);
 
-    late = Math.max(
-      late,
-      Number(
-        statusResult.updated ||
-          0,
-      ),
-    );
+    late = Math.max(late, Number(statusResult.updated || 0));
 
     // ==========================================================
     // RECONCILIAR PAGAMENTOS
     // ==========================================================
 
-    const backfilledPayments =
-      await this.backfillPaidObligations(
-        tenant.id,
-      );
+    const backfilledPayments = await this.backfillPaidObligations(tenant.id);
 
     this.logger.log(
       [
@@ -486,16 +426,9 @@ export class ObligationsService {
         `NIF: ${tenant.nif}`,
         'Enquadramento: resolvido por imposto e período',
         `Ano: ${currentYear}`,
-        `Primeira sincronização: ${
-          isFirstSynchronization
-            ? 'SIM'
-            : 'NÃO'
-        }`,
+        `Primeira sincronização: ${isFirstSynchronization ? 'SIM' : 'NÃO'}`,
         `Regras elegíveis: ${calendarRules.length}`,
-        `Regras ignoradas: ${
-          rawCalendarRules.length -
-          calendarRules.length
-        }`,
+        `Regras ignoradas: ${rawCalendarRules.length - calendarRules.length}`,
         `Criadas: ${created}`,
         `Actualizadas: ${updated}`,
         `Atrasadas: ${late}`,
@@ -507,34 +440,26 @@ export class ObligationsService {
       success: true,
 
       tenant: {
-        id:
-          tenant.id,
+        id: tenant.id,
 
-        name:
-          tenant.name,
+        name: tenant.name,
 
-        nif:
-          tenant.nif,
+        nif: tenant.nif,
 
         regime: null,
       },
 
-      year:
-        currentYear,
+      year: currentYear,
 
-      firstSynchronization:
-        isFirstSynchronization,
+      firstSynchronization: isFirstSynchronization,
 
       existingObligationCount,
 
       minimumDueDate,
 
-      calendarRules:
-          calendarRules.length,
+      calendarRules: calendarRules.length,
 
-      ignoredCalendarRules:
-        rawCalendarRules.length -
-        calendarRules.length,
+      ignoredCalendarRules: rawCalendarRules.length - calendarRules.length,
 
       created,
 
@@ -544,8 +469,7 @@ export class ObligationsService {
 
       backfilledPayments,
 
-      synchronizedAt:
-        new Date(),
+      synchronizedAt: new Date(),
     };
   }
 
@@ -556,15 +480,22 @@ export class ObligationsService {
   /** Only IVA and Industrial currently use explicit regime enrollment. */
   private enrollmentTaxType(taxType: TaxType): TaxType | null {
     if (taxType === TaxType.IVA) return TaxType.IVA;
-    if (taxType === TaxType.INDUSTRIAL || taxType === TaxType.II) return TaxType.INDUSTRIAL;
+    if (taxType === TaxType.INDUSTRIAL || taxType === TaxType.II)
+      return TaxType.INDUSTRIAL;
     return null;
   }
 
   /** Resolves an enrollment against the obligation's fiscal period, never today's date. */
-  private ruleEffectiveDate(period: string | null, referenceYear: number, dueDate: Date): Date {
+  private ruleEffectiveDate(
+    period: string | null,
+    referenceYear: number,
+    dueDate: Date,
+  ): Date {
     const parsed = this.parseFiscalPeriod(period || '', referenceYear);
     if (parsed) return new Date(Date.UTC(parsed.year, parsed.month - 1, 1));
-    return new Date(Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), 1));
+    return new Date(
+      Date.UTC(dueDate.getUTCFullYear(), dueDate.getUTCMonth(), 1),
+    );
   }
 
   private isCalendarRuleApplicable(
@@ -580,13 +511,15 @@ export class ObligationsService {
     enrollmentRequired: boolean,
   ): boolean {
     if (enrollmentRequired && !regime) return false;
-    if (enrollmentRequired && rule.regimes?.length && !rule.regimes.some((item) => item.regime === regime)) return false;
-    const text =
-      this.normalizeFiscalText(
-        `${rule.title ?? ''} ${
-          rule.description ?? ''
-        }`,
-      );
+    if (
+      enrollmentRequired &&
+      rule.regimes?.length &&
+      !rule.regimes.some((item) => item.regime === regime)
+    )
+      return false;
+    const text = this.normalizeFiscalText(
+      `${rule.title ?? ''} ${rule.description ?? ''}`,
+    );
 
     const isGeneral = regime ? this.isGeneralRegime(regime) : false;
 
@@ -602,20 +535,11 @@ export class ObligationsService {
        * obrigações específicas do IVA Simplificado.
        */
 
-      if (
-        text.includes(
-          'iva simplificado',
-        )
-      ) {
+      if (text.includes('iva simplificado')) {
         return false;
       }
 
-      if (
-        text.includes(
-          'regime simplificado',
-        ) &&
-        text.includes('iva')
-      ) {
+      if (text.includes('regime simplificado') && text.includes('iva')) {
         return false;
       }
     }
@@ -630,20 +554,11 @@ export class ObligationsService {
        * regras específicas do IVA Geral.
        */
 
-      if (
-        text.includes(
-          'iva regime geral',
-        )
-      ) {
+      if (text.includes('iva regime geral')) {
         return false;
       }
 
-      if (
-        text.includes(
-          'regime geral',
-        ) &&
-        text.includes('iva')
-      ) {
+      if (text.includes('regime geral') && text.includes('iva')) {
         return false;
       }
     }
@@ -664,30 +579,22 @@ export class ObligationsService {
       retentionRate: number;
     },
 
-    obligationType:
-      ObligationType,
+    obligationType: ObligationType,
 
-    taxType:
-      TaxType,
+    taxType: TaxType,
 
-    title:
-      string,
+    title: string,
 
-    description:
-      string | null,
+    description: string | null,
 
-    dueDate:
-      Date,
+    dueDate: Date,
 
-    period:
-      string,
+    period: string,
     applicableRegime: FiscalRegime | null = null,
   ): Promise<number | null> {
-    const dueYear =
-      dueDate.getFullYear();
+    const dueYear = dueDate.getFullYear();
 
-    const dueMonth =
-      dueDate.getMonth() + 1;
+    const dueMonth = dueDate.getMonth() + 1;
 
     // ==========================================================
     // PERÍODO FISCAL DA OBRIGAÇÃO
@@ -705,11 +612,7 @@ export class ObligationsService {
     // regras antigas cujo período não seja um mês reconhecível.
     // ==========================================================
 
-    const parsedPeriod =
-      this.parseFiscalPeriod(
-        period,
-        dueYear,
-      );
+    const parsedPeriod = this.parseFiscalPeriod(period, dueYear);
 
     /*
      * Para impostos mensais, o período fiscal é determinado
@@ -731,61 +634,27 @@ export class ObligationsService {
      * calendário quando ele for reconhecível.
      */
     const isGeneralIva =
-      taxType === TaxType.IVA &&
-      applicableRegime === FiscalRegime.GERAL;
+      taxType === TaxType.IVA && applicableRegime === FiscalRegime.GERAL;
 
-    const referenceMonth =
-      isGeneralIva
-        ? (
-            dueMonth === 1
-              ? 12
-              : dueMonth - 1
-          )
-        : (
-            parsedPeriod?.month ??
-            (
-              dueMonth === 1
-                ? 12
-                : dueMonth - 1
-            )
-          );
+    const referenceMonth = isGeneralIva
+      ? dueMonth === 1
+        ? 12
+        : dueMonth - 1
+      : (parsedPeriod?.month ?? (dueMonth === 1 ? 12 : dueMonth - 1));
 
-    const referenceYear =
-      isGeneralIva
-        ? (
-            dueMonth === 1
-              ? dueYear - 1
-              : dueYear
-          )
-        : (
-            parsedPeriod?.year ??
-            (
-              dueMonth === 1
-                ? dueYear - 1
-                : dueYear
-            )
-          );
+    const referenceYear = isGeneralIva
+      ? dueMonth === 1
+        ? dueYear - 1
+        : dueYear
+      : (parsedPeriod?.year ?? (dueMonth === 1 ? dueYear - 1 : dueYear));
 
-    const start =
-      new Date(
-        referenceYear,
-        referenceMonth - 1,
-        1,
-      );
+    const start = new Date(referenceYear, referenceMonth - 1, 1);
 
-    const end =
-      new Date(
-        referenceYear,
-        referenceMonth,
-        1,
-      );
+    const end = new Date(referenceYear, referenceMonth, 1);
 
-    const ruleText =
-      this.normalizeFiscalText(
-        `${title ?? ''} ${
-          description ?? ''
-        }`,
-      );
+    const ruleText = this.normalizeFiscalText(
+      `${title ?? ''} ${description ?? ''}`,
+    );
 
     /*
      * The FiscalEngine is the sole authority for assessed IVA and Industrial
@@ -823,10 +692,7 @@ export class ObligationsService {
     // SAF-T
     // ==========================================================
 
-    if (
-      ruleText.includes('saft') ||
-      ruleText.includes('saf-t')
-    ) {
+    if (ruleText.includes('saft') || ruleText.includes('saf-t')) {
       return 0;
     }
 
@@ -834,35 +700,20 @@ export class ObligationsService {
     // IRT
     // ==========================================================
 
-    if (
-      taxType ===
-      TaxType.IRT
-    ) {
-      const isGroupA =
-        ruleText.includes(
-          'grupo a',
-        );
+    if (taxType === TaxType.IRT) {
+      const isGroupA = ruleText.includes('grupo a');
 
       const isGroupBC =
-        ruleText.includes(
-          'grupos b e c',
-        ) ||
-        ruleText.includes(
-          'grupo b',
-        ) ||
-        ruleText.includes(
-          'grupo c',
-        );
+        ruleText.includes('grupos b e c') ||
+        ruleText.includes('grupo b') ||
+        ruleText.includes('grupo c');
 
       /*
        * Grupo B/C não deve utilizar a folha
        * de salários dos trabalhadores.
        */
 
-      if (
-        isGroupBC &&
-        !isGroupA
-      ) {
+      if (isGroupBC && !isGroupA) {
         return 0;
       }
 
@@ -871,9 +722,7 @@ export class ObligationsService {
        * fonte oficial interna = Payroll.
        */
 
-      if (
-        isGroupA
-      ) {
+      if (isGroupA) {
         return this.getPayrollTaxAmount(
           tenant.id,
           referenceYear,
@@ -889,10 +738,7 @@ export class ObligationsService {
     // SEGURANÇA SOCIAL
     // ==========================================================
 
-    if (
-      taxType ===
-      TaxType.SS
-    ) {
+    if (taxType === TaxType.SS) {
       return this.getPayrollTaxAmount(
         tenant.id,
         referenceYear,
@@ -905,10 +751,7 @@ export class ObligationsService {
     // IVA
     // ==========================================================
 
-    if (
-      taxType === TaxType.IVA ||
-      obligationType === ObligationType.IVA
-    ) {
+    if (taxType === TaxType.IVA || obligationType === ObligationType.IVA) {
       return null;
     }
 
@@ -916,62 +759,40 @@ export class ObligationsService {
     // RETENÇÃO
     // ==========================================================
 
-    if (
-      obligationType ===
-      ObligationType.RETENCAO
-    ) {
-      const invoices =
-        await this.prisma.invoice.findMany({
-          where: {
-            tenantId:
-              tenant.id,
+    if (obligationType === ObligationType.RETENCAO) {
+      const invoices = await this.prisma.invoice.findMany({
+        where: {
+          tenantId: tenant.id,
 
-            issuedAt: {
-              gte:
-                start,
+          issuedAt: {
+            gte: start,
 
-              lt:
-                end,
-            },
-
-            status: {
-              not:
-                'CANCELLED',
-            },
+            lt: end,
           },
 
-          select: {
-            withholdingTax:
-              true,
+          status: {
+            not: 'CANCELLED',
           },
-        });
+        },
 
-      const amount =
-        invoices.reduce(
-          (
-            sum,
-            invoice,
-          ) =>
-            sum +
-            this.number(
-              invoice.withholdingTax,
-            ),
-          0,
-        );
+        select: {
+          withholdingTax: true,
+        },
+      });
 
-      return this.round(
-        amount,
+      const amount = invoices.reduce(
+        (sum, invoice) => sum + this.number(invoice.withholdingTax),
+        0,
       );
+
+      return this.round(amount);
     }
 
     // ==========================================================
     // IMPOSTO INDUSTRIAL
     // ==========================================================
 
-    if (
-      taxType ===
-      TaxType.INDUSTRIAL
-    ) {
+    if (taxType === TaxType.INDUSTRIAL) {
       return null;
     }
 
@@ -979,25 +800,16 @@ export class ObligationsService {
     // TAX DECLARATION
     // ==========================================================
 
-    const declarationAmount =
-      await this.getDeclarationAmount(
-        tenant.id,
-        taxType,
-        period,
-        referenceYear,
-        referenceMonth,
-      );
+    const declarationAmount = await this.getDeclarationAmount(
+      tenant.id,
+      taxType,
+      period,
+      referenceYear,
+      referenceMonth,
+    );
 
-    if (
-      declarationAmount !==
-      null
-    ) {
-      return this.round(
-        Math.max(
-          0,
-          declarationAmount,
-        ),
-      );
+    if (declarationAmount !== null) {
+      return this.round(Math.max(0, declarationAmount));
     }
 
     // ==========================================================
@@ -1010,56 +822,38 @@ export class ObligationsService {
       TaxRuleOperation.OTHER,
       referenceMonth === null
         ? null
-        : (await this.enrollments.resolve(
-            tenant.id,
-            taxType,
-            new Date(Date.UTC(referenceYear, referenceMonth - 1, 1)),
-          ))?.regime ?? null,
+        : ((
+            await this.enrollments.resolve(
+              tenant.id,
+              taxType,
+              new Date(Date.UTC(referenceYear, referenceMonth - 1, 1)),
+            )
+          )?.regime ?? null),
       new Date(Date.UTC(referenceYear, Math.max(0, referenceMonth - 1), 1)),
     );
 
-    if (
-      taxRule
-    ) {
-      const revenues =
-        await this.prisma.revenue.findMany({
-          where: {
-            tenantId:
-              tenant.id,
+    if (taxRule) {
+      const revenues = await this.prisma.revenue.findMany({
+        where: {
+          tenantId: tenant.id,
 
-            year:
-              referenceYear,
+          year: referenceYear,
 
-            month:
-              referenceMonth,
-          },
+          month: referenceMonth,
+        },
 
-          select: {
-            amount:
-              true,
-          },
-        });
+        select: {
+          amount: true,
+        },
+      });
 
-      const base =
-        revenues.reduce(
-          (
-            sum,
-            revenue,
-          ) =>
-            sum +
-            this.number(
-              revenue.amount,
-            ),
-          0,
-        );
+      const base = revenues.reduce(
+        (sum, revenue) => sum + this.number(revenue.amount),
+        0,
+      );
 
-      if (
-        base > 0
-      ) {
-        return this.applyTaxRule(
-          base,
-          taxRule,
-        );
+      if (base > 0) {
+        return this.applyTaxRule(base, taxRule);
       }
     }
 
@@ -1089,8 +883,7 @@ export class ObligationsService {
         },
 
         orderBy: {
-          updatedAt:
-            'desc',
+          updatedAt: 'desc',
         },
       });
     } catch {
@@ -1109,62 +902,37 @@ export class ObligationsService {
     year: number,
     month: number,
   ): Promise<number | null> {
-    const candidates =
-      this.buildPeriodCandidates(
-        period,
-        year,
-        month,
-      );
+    const candidates = this.buildPeriodCandidates(period, year, month);
 
-    const declarations =
-      await this.prisma.taxDeclaration.findMany({
-        where: {
-          tenantId,
+    const declarations = await this.prisma.taxDeclaration.findMany({
+      where: {
+        tenantId,
 
-          taxType,
+        taxType,
 
-          period: {
-            in:
-              candidates,
-          },
+        period: {
+          in: candidates,
         },
+      },
 
-        orderBy: {
-          declarationDate:
-            'desc',
-        },
+      orderBy: {
+        declarationDate: 'desc',
+      },
 
-        take:
-          10,
-      });
+      take: 10,
+    });
 
-    if (
-      declarations.length ===
-      0
-    ) {
+    if (declarations.length === 0) {
       return null;
     }
 
-    const declaration =
-      declarations[0];
+    const declaration = declarations[0];
 
-    const declared =
-      this.number(
-        declaration.declaredAmount,
-      );
+    const declared = this.number(declaration.declaredAmount);
 
-    const paid =
-      this.number(
-        declaration.paidAmount,
-      );
+    const paid = this.number(declaration.paidAmount);
 
-    return this.round(
-      Math.max(
-        0,
-        declared -
-          paid,
-      ),
-    );
+    return this.round(Math.max(0, declared - paid));
   }
 
   // ============================================================
@@ -1176,20 +944,12 @@ export class ObligationsService {
     year: number,
     month: number,
   ): string[] {
-    const values =
-      new Set<string>();
+    const values = new Set<string>();
 
-    const raw =
-      String(
-        period || '',
-      ).trim();
+    const raw = String(period || '').trim();
 
-    if (
-      raw
-    ) {
-      values.add(
-        raw,
-      );
+    if (raw) {
+      values.add(raw);
     }
 
     const months = [
@@ -1207,56 +967,25 @@ export class ObligationsService {
       'Dezembro',
     ];
 
-    const monthName =
-      months[
-        month - 1
-      ];
+    const monthName = months[month - 1];
 
-    if (
-      monthName
-    ) {
-      values.add(
-        monthName,
-      );
+    if (monthName) {
+      values.add(monthName);
 
-      values.add(
-        monthName.toLowerCase(),
-      );
+      values.add(monthName.toLowerCase());
 
-      values.add(
-        `${monthName}/${year}`,
-      );
+      values.add(`${monthName}/${year}`);
 
-      values.add(
-        `${monthName} ${year}`,
-      );
+      values.add(`${monthName} ${year}`);
 
-      values.add(
-        `${String(
-          month,
-        ).padStart(
-          2,
-          '0',
-        )}/${year}`,
-      );
+      values.add(`${String(month).padStart(2, '0')}/${year}`);
 
-      values.add(
-        `${year}-${String(
-          month,
-        ).padStart(
-          2,
-          '0',
-        )}`,
-      );
+      values.add(`${year}-${String(month).padStart(2, '0')}`);
     }
 
-    values.add(
-      String(year),
-    );
+    values.add(String(year));
 
-    return Array.from(
-      values,
-    );
+    return Array.from(values);
   }
 
   // ============================================================
@@ -1279,24 +1008,15 @@ export class ObligationsService {
     month: number;
     year: number;
   } | null {
-    const raw =
-      String(
-        period ?? '',
-      ).trim();
+    const raw = String(period ?? '').trim();
 
     if (!raw) {
       return null;
     }
 
-    const normalized =
-      this.normalizeFiscalText(
-        raw,
-      );
+    const normalized = this.normalizeFiscalText(raw);
 
-    const monthNames: Record<
-      string,
-      number
-    > = {
+    const monthNames: Record<string, number> = {
       janeiro: 1,
       fevereiro: 2,
       marco: 3,
@@ -1311,57 +1031,29 @@ export class ObligationsService {
       dezembro: 12,
     };
 
-    for (
-      const [monthName, month] of
-        Object.entries(
-          monthNames,
-        )
-    ) {
+    for (const [monthName, month] of Object.entries(monthNames)) {
       if (
         normalized === monthName ||
-        normalized.startsWith(
-          `${monthName}/`,
-        ) ||
-        normalized.startsWith(
-          `${monthName} `,
-        )
+        normalized.startsWith(`${monthName}/`) ||
+        normalized.startsWith(`${monthName} `)
       ) {
-        const yearMatch =
-          normalized.match(
-            /(19|20)\\d{2}/,
-          );
+        const yearMatch = normalized.match(/(19|20)\\d{2}/);
 
         return {
           month,
-          year: yearMatch
-            ? Number(
-                yearMatch[0],
-              )
-            : fallbackYear,
+          year: yearMatch ? Number(yearMatch[0]) : fallbackYear,
         };
       }
     }
 
-    let match =
-      normalized.match(
-        /^(\\d{4})[-/]([01]\\d)$/,
-      );
+    let match = normalized.match(/^(\\d{4})[-/]([01]\\d)$/);
 
     if (match) {
-      const year =
-        Number(
-          match[1],
-        );
+      const year = Number(match[1]);
 
-      const month =
-        Number(
-          match[2],
-        );
+      const month = Number(match[2]);
 
-      if (
-        month >= 1 &&
-        month <= 12
-      ) {
+      if (month >= 1 && month <= 12) {
         return {
           month,
           year,
@@ -1369,26 +1061,14 @@ export class ObligationsService {
       }
     }
 
-    match =
-      normalized.match(
-        /^([01]\\d)[-/](\\d{4})$/,
-      );
+    match = normalized.match(/^([01]\\d)[-/](\\d{4})$/);
 
     if (match) {
-      const month =
-        Number(
-          match[1],
-        );
+      const month = Number(match[1]);
 
-      const year =
-        Number(
-          match[2],
-        );
+      const year = Number(match[2]);
 
-      if (
-        month >= 1 &&
-        month <= 12
-      ) {
+      if (month >= 1 && month <= 12) {
         return {
           month,
           year,
@@ -1404,63 +1084,35 @@ export class ObligationsService {
   // ============================================================
 
   private hasReliableZeroSource(
-    obligationType:
-      ObligationType,
+    obligationType: ObligationType,
 
-    taxType:
-      TaxType,
+    taxType: TaxType,
 
-    title:
-      string,
+    title: string,
 
-    description:
-      string | null,
+    description: string | null,
   ): boolean {
-    const text =
-      this.normalizeFiscalText(
-        `${title ?? ''} ${
-          description ?? ''
-        }`,
-      );
+    const text = this.normalizeFiscalText(
+      `${title ?? ''} ${description ?? ''}`,
+    );
 
-    if (
-      text.includes('saft') ||
-      text.includes('saf-t')
-    ) {
+    if (text.includes('saft') || text.includes('saf-t')) {
       return true;
     }
 
-    if (
-      taxType ===
-        TaxType.IVA ||
-      obligationType ===
-        ObligationType.IVA
-    ) {
+    if (taxType === TaxType.IVA || obligationType === ObligationType.IVA) {
       return true;
     }
 
-    if (
-      taxType ===
-        TaxType.IRT ||
-      obligationType ===
-        ObligationType.IRT
-    ) {
+    if (taxType === TaxType.IRT || obligationType === ObligationType.IRT) {
       return true;
     }
 
-    if (
-      taxType ===
-        TaxType.SS ||
-      obligationType ===
-        ObligationType.SS
-    ) {
+    if (taxType === TaxType.SS || obligationType === ObligationType.SS) {
       return true;
     }
 
-    if (
-      obligationType ===
-      ObligationType.RETENCAO
-    ) {
+    if (obligationType === ObligationType.RETENCAO) {
       return true;
     }
 
@@ -1475,85 +1127,60 @@ export class ObligationsService {
     tenantId: string,
     year: number,
     month: number,
-    type:
-      | 'IRT'
-      | 'SS',
+    type: 'IRT' | 'SS',
   ): Promise<number> {
-    const payrolls =
-      await this.prisma.payroll.findMany({
-        where: {
-          tenantId,
+    const payrolls = await this.prisma.payroll.findMany({
+      where: {
+        tenantId,
 
-          year,
+        year,
 
-          month,
+        month,
 
-          status: {
-            not:
-              'DRAFT',
-          },
+        status: {
+          not: 'DRAFT',
+        },
+      },
+
+      orderBy: [
+        {
+          processedAt: 'desc',
         },
 
-        orderBy: [
-          {
-            processedAt:
-              'desc',
-          },
-
-          {
-            updatedAt:
-              'desc',
-          },
-
-          {
-            createdAt:
-              'desc',
-          },
-        ],
-
-        select: {
-          irtAmount:
-            true,
-
-          socialSecurityAmount:
-            true,
+        {
+          updatedAt: 'desc',
         },
-      });
 
-    if (
-      payrolls.length ===
-      0
-    ) {
+        {
+          createdAt: 'desc',
+        },
+      ],
+
+      select: {
+        irtAmount: true,
+
+        socialSecurityAmount: true,
+      },
+    });
+
+    if (payrolls.length === 0) {
       return 0;
     }
 
-    const payroll =
-      payrolls[0];
+    const payroll = payrolls[0];
 
-    if (
-      type === 'IRT'
-    ) {
-      return this.round(
-        this.number(
-          payroll.irtAmount,
-        ),
-      );
+    if (type === 'IRT') {
+      return this.round(this.number(payroll.irtAmount));
     }
 
-    return this.round(
-      this.number(
-        payroll.socialSecurityAmount,
-      ),
-    );
+    return this.round(this.number(payroll.socialSecurityAmount));
   }
 
   // ============================================================
   // TAX RULES
   // ============================================================
 
-  private async getTaxRules(
-    _tenantId: string,
-  ): Promise<any[]> {
+  private async getTaxRules(_tenantId: string): Promise<any[]> {
     try {
       /*
        * TaxRule NÃO possui tenantId no schema Prisma.
@@ -1563,22 +1190,18 @@ export class ObligationsService {
        * de empresa.
        */
 
-      const rules =
-        await this.prisma.taxRule.findMany({
-          where: {
-            active:
-              true,
-          },
-        });
+      const rules = await this.prisma.taxRule.findMany({
+        where: {
+          active: true,
+        },
+      });
 
       return rules;
     } catch (error) {
       this.logger.warn(
         [
           'Não foi possível carregar TaxRules.',
-          error instanceof Error
-            ? error.message
-            : String(error),
+          error instanceof Error ? error.message : String(error),
         ].join(' '),
       );
 
@@ -1597,98 +1220,52 @@ export class ObligationsService {
       companyType: string | null;
     },
 
-    taxType:
-      TaxType,
+    taxType: TaxType,
 
-    operation:
-      TaxRuleOperation,
+    operation: TaxRuleOperation,
     regime: FiscalRegime | null,
     referenceDate: Date,
   ): Promise<any | null> {
-    const rules =
-      await this.getTaxRules(
-        tenant.id,
-      );
+    const rules = await this.getTaxRules(tenant.id);
 
-    const candidates =
-      rules.filter(
-        (rule) => {
-          if (
-            rule.taxType !==
-            taxType
-          ) {
-            return false;
-          }
+    const candidates = rules.filter((rule) => {
+      if (rule.taxType !== taxType) {
+        return false;
+      }
 
-          if (
-            rule.regime &&
-            rule.regime !==
-              regime
-          ) {
-            return false;
-          }
+      if (rule.regime && rule.regime !== regime) {
+        return false;
+      }
 
-          if (
-            rule.operation &&
-            rule.operation !==
-              operation
-          ) {
-            return false;
-          }
+      if (rule.operation && rule.operation !== operation) {
+        return false;
+      }
 
-          if (
-            rule.sector &&
-            rule.sector !==
-              tenant.sector
-          ) {
-            return false;
-          }
+      if (rule.sector && rule.sector !== tenant.sector) {
+        return false;
+      }
 
-          if (
-            rule.companyType &&
-            rule.companyType !==
-              tenant.companyType
-          ) {
-            return false;
-          }
+      if (rule.companyType && rule.companyType !== tenant.companyType) {
+        return false;
+      }
 
-          if (
-            rule.validFrom &&
-            new Date(
-              rule.validFrom,
-            ) > referenceDate
-          ) {
-            return false;
-          }
+      if (rule.validFrom && new Date(rule.validFrom) > referenceDate) {
+        return false;
+      }
 
-          if (
-            rule.validTo &&
-            new Date(
-              rule.validTo,
-            ) < referenceDate
-          ) {
-            return false;
-          }
+      if (rule.validTo && new Date(rule.validTo) < referenceDate) {
+        return false;
+      }
 
-          return true;
-        },
-      );
+      return true;
+    });
 
-    if (
-      candidates.length ===
-      0
-    ) {
+    if (candidates.length === 0) {
       return null;
     }
 
     return candidates.sort(
-      (a, b) =>
-        this.taxRuleSpecificity(
-          b,
-        ) -
-        this.taxRuleSpecificity(
-          a,
-        ),
+      (a, b) => this.taxRuleSpecificity(b) - this.taxRuleSpecificity(a),
     )[0];
   }
 
@@ -1696,32 +1273,22 @@ export class ObligationsService {
   // ESPECIFICIDADE DA REGRA
   // ============================================================
 
-  private taxRuleSpecificity(
-    rule: any,
-  ): number {
+  private taxRuleSpecificity(rule: any): number {
     let score = 0;
 
-    if (
-      rule.regime
-    ) {
+    if (rule.regime) {
       score += 30;
     }
 
-    if (
-      rule.operation
-    ) {
+    if (rule.operation) {
       score += 20;
     }
 
-    if (
-      rule.sector
-    ) {
+    if (rule.sector) {
       score += 10;
     }
 
-    if (
-      rule.companyType
-    ) {
+    if (rule.companyType) {
       score += 10;
     }
 
@@ -1732,104 +1299,50 @@ export class ObligationsService {
   // APLICAR TAX RULE
   // ============================================================
 
-  private applyTaxRule(
-    base: number,
-    rule: any,
-  ): number {
-    const safeBase =
-      Math.max(
-        0,
-        this.number(
-          base,
-        ),
-      );
+  private applyTaxRule(base: number, rule: any): number {
+    const safeBase = Math.max(0, this.number(base));
 
-    const rate =
-      this.number(
-        rule.rate,
-      );
+    const rate = this.number(rule.rate);
 
-    const fixedAmount =
-      this.number(
-        rule.fixedAmount,
-      );
+    const fixedAmount = this.number(rule.fixedAmount);
 
-    let amount =
-      fixedAmount > 0
-        ? fixedAmount
-        : safeBase *
-          rate;
+    let amount = fixedAmount > 0 ? fixedAmount : safeBase * rate;
 
-    const min =
-      this.number(
-        rule.minAmount,
-      );
+    const min = this.number(rule.minAmount);
 
-    const max =
-      this.number(
-        rule.maxAmount,
-      );
+    const max = this.number(rule.maxAmount);
 
-    if (
-      min > 0 &&
-      amount < min
-    ) {
-      amount =
-        min;
+    if (min > 0 && amount < min) {
+      amount = min;
     }
 
-    if (
-      max > 0 &&
-      amount > max
-    ) {
-      amount =
-        max;
+    if (max > 0 && amount > max) {
+      amount = max;
     }
 
-    return this.round(
-      Math.max(
-        0,
-        amount,
-      ),
-    );
+    return this.round(Math.max(0, amount));
   }
 
   // ============================================================
   // LISTAR OBRIGAÇÕES
   // ============================================================
 
-  async findAll(
-    tenantId: string,
-    referenceYear?: number,
-  ) {
-    await this.syncCompany(
+  async findAll(tenantId: string, referenceYear?: number) {
+    const where: Prisma.FiscalObligationWhereInput = {
       tenantId,
-    );
+    };
 
-    await this.updateStatuses(
-      tenantId,
-    );
-
-    const where:
-      Prisma.FiscalObligationWhereInput =
-      {
-        tenantId,
-      };
-
-    if (
-      referenceYear
-    ) {
-      where.dueDate = {
-        gte:
-          new Date(
-            `${referenceYear}-01-01T00:00:00`,
-          ),
-
-        lt:
-          new Date(
-            `${referenceYear + 1}-01-01T00:00:00`,
-          ),
-      };
+    if (referenceYear) {
+      where.OR = [
+        { fiscalCalendar: { is: { referenceYear } } },
+        {
+          fiscalCalendarId: null,
+          dueDate: {
+            gte: new Date(`${referenceYear}-01-01T00:00:00`),
+            lt: new Date(`${referenceYear + 1}-01-01T00:00:00`),
+          },
+        },
+      ];
     }
 
     const obligations = await this.prisma.fiscalObligation.findMany({
@@ -1838,27 +1351,29 @@ export class ObligationsService {
       include: {
         fiscalCalendar: {
           include: {
-            regimes:
-              true,
+            regimes: true,
           },
         },
       },
 
       orderBy: [
         {
-          dueDate:
-            'asc',
+          dueDate: 'asc',
         },
 
         {
-          title:
-            'asc',
+          title: 'asc',
         },
       ],
     });
 
+    const eligibleObligations = await this.eligibility.filterEligible(
+      tenantId,
+      obligations,
+    );
+
     return Promise.all(
-      obligations.map((obligation) =>
+      eligibleObligations.map((obligation) =>
         this.withCalculationContext(tenantId, obligation),
       ),
     );
@@ -1868,153 +1383,73 @@ export class ObligationsService {
   // DASHBOARD
   // ============================================================
 
-  async getDashboard(
-    tenantId: string,
-  ) {
-    await this.syncCompany(
-      tenantId,
-    );
+  async getDashboard(tenantId: string) {
+    const loadedObligations = await this.prisma.fiscalObligation.findMany({
+      where: {
+        tenantId,
+      },
 
-    await this.updateStatuses(
-      tenantId,
-    );
-
-    const obligations =
-      await this.prisma.fiscalObligation.findMany({
-        where: {
-          tenantId,
-        },
-
-        include: {
-          fiscalCalendar: {
-            include: {
-              regimes:
-                true,
-            },
+      include: {
+        fiscalCalendar: {
+          include: {
+            regimes: true,
           },
         },
+      },
 
-        orderBy: {
-          dueDate:
-            'asc',
-        },
-      });
+      orderBy: {
+        dueDate: 'asc',
+      },
+    });
 
-    const now =
-      new Date();
+    const obligations = (
+      await this.eligibility.filterEligible(tenantId, loadedObligations)
+    ).map((obligation) => this.withCalculatedStatus(obligation));
 
-    const total =
-      obligations.length;
+    const now = new Date();
 
-    const pending =
-      obligations.filter(
+    const total = obligations.length;
+
+    const pending = obligations.filter(
+      (item) => item.status === ObligationStatus.PENDING,
+    ).length;
+
+    const paid = obligations.filter(
+      (item) => item.status === ObligationStatus.PAID,
+    ).length;
+
+    const late = obligations.filter(
+      (item) =>
+        item.status === ObligationStatus.LATE ||
+        (item.status === ObligationStatus.PENDING && item.dueDate < now),
+    ).length;
+
+    const upcoming = obligations
+      .filter(
+        (item) => item.status !== ObligationStatus.PAID && item.dueDate >= now,
+      )
+      .slice(0, 10);
+
+    const overdue = obligations
+      .filter(
         (item) =>
-          item.status ===
-          ObligationStatus.PENDING,
-      ).length;
+          item.status === ObligationStatus.LATE ||
+          (item.status === ObligationStatus.PENDING && item.dueDate < now),
+      )
+      .slice(0, 10);
 
-    const paid =
-      obligations.filter(
-        (item) =>
-          item.status ===
-          ObligationStatus.PAID,
-      ).length;
+    const totalAmount = obligations.reduce(
+      (sum, item) => sum + this.number(item.amount),
+      0,
+    );
 
-    const late =
-      obligations.filter(
-        (item) =>
-          item.status ===
-            ObligationStatus.LATE ||
-          (
-            item.status ===
-              ObligationStatus.PENDING &&
-            item.dueDate <
-              now
-          ),
-      ).length;
+    const pendingAmount = obligations
+      .filter((item) => item.status !== ObligationStatus.PAID)
+      .reduce((sum, item) => sum + this.number(item.amount), 0);
 
-    const upcoming =
-      obligations
-        .filter(
-          (item) =>
-            item.status !==
-              ObligationStatus.PAID &&
-            item.dueDate >=
-              now,
-        )
-        .slice(
-          0,
-          10,
-        );
-
-    const overdue =
-      obligations
-        .filter(
-          (item) =>
-            item.status ===
-              ObligationStatus.LATE ||
-            (
-              item.status ===
-                ObligationStatus.PENDING &&
-              item.dueDate <
-                now
-            ),
-        )
-        .slice(
-          0,
-          10,
-        );
-
-    const totalAmount =
-      obligations.reduce(
-        (
-          sum,
-          item,
-        ) =>
-          sum +
-          this.number(
-            item.amount,
-          ),
-        0,
-      );
-
-    const pendingAmount =
-      obligations
-        .filter(
-          (item) =>
-            item.status !==
-            ObligationStatus.PAID,
-        )
-        .reduce(
-          (
-            sum,
-            item,
-          ) =>
-            sum +
-            this.number(
-              item.amount,
-            ),
-          0,
-        );
-
-    const paidAmount =
-      obligations
-        .filter(
-          (item) =>
-            item.status ===
-            ObligationStatus.PAID,
-        )
-        .reduce(
-          (
-            sum,
-            item,
-          ) =>
-            sum +
-            this.number(
-              item.amount,
-            ),
-          0,
-        );
+    const paidAmount = obligations
+      .filter((item) => item.status === ObligationStatus.PAID)
+      .reduce((sum, item) => sum + this.number(item.amount), 0);
 
     return {
       total,
@@ -2025,35 +1460,23 @@ export class ObligationsService {
 
       late,
 
-      totalAmount:
-        this.round(
-          totalAmount,
-        ),
+      totalAmount: this.round(totalAmount),
 
-      pendingAmount:
-        this.round(
-          pendingAmount,
-        ),
+      pendingAmount: this.round(pendingAmount),
 
-      paidAmount:
-        this.round(
-          paidAmount,
-        ),
+      paidAmount: this.round(paidAmount),
 
       upcoming,
 
       overdue,
 
       source: {
-        name:
-          'Calendário Fiscal AGT',
+        name: 'Calendário Fiscal AGT',
 
-        official:
-          true,
+        official: true,
       },
 
-      synchronizedAt:
-        new Date(),
+      synchronizedAt: new Date(),
     };
   }
 
@@ -2061,52 +1484,92 @@ export class ObligationsService {
   // BUSCAR OBRIGAÇÃO
   // ============================================================
 
-  async findOne(
-    tenantId: string,
-    id: string,
-  ) {
-    const obligation =
-      await this.prisma.fiscalObligation.findFirst({
-        where: {
-          id,
+  async findOne(tenantId: string, id: string) {
+    const obligation = await this.prisma.fiscalObligation.findFirst({
+      where: {
+        id,
 
-          tenantId,
-        },
+        tenantId,
+      },
 
-        include: {
-          fiscalCalendar: {
-            include: {
-              regimes:
-                true,
-            },
+      include: {
+        fiscalCalendar: {
+          include: {
+            regimes: true,
           },
         },
-      });
+      },
+    });
 
     if (!obligation) {
-      throw new NotFoundException(
-        'Obrigação fiscal não encontrada.',
-      );
+      throw new NotFoundException('Obrigação fiscal não encontrada.');
     }
 
-    return this.withCalculationContext(tenantId, obligation);
+    const [eligibleObligation] = await this.eligibility.filterEligible(
+      tenantId,
+      [obligation],
+    );
+    if (!eligibleObligation) {
+      throw new NotFoundException('Obrigação fiscal não encontrada.');
+    }
+
+    return this.withCalculationContext(
+      tenantId,
+      this.withCalculatedStatus(eligibleObligation),
+    );
   }
 
   /** Read-only historical listing for reports: no synchronization or status writes. */
   async findAllReadOnly(tenantId: string, referenceYear?: number) {
     const where: Prisma.FiscalObligationWhereInput = { tenantId };
     if (referenceYear) {
-      where.dueDate = {
-        gte: new Date(`${referenceYear}-01-01T00:00:00`),
-        lt: new Date(`${referenceYear + 1}-01-01T00:00:00`),
-      };
+      where.OR = [
+        { fiscalCalendar: { is: { referenceYear } } },
+        {
+          fiscalCalendarId: null,
+          dueDate: {
+            gte: new Date(`${referenceYear}-01-01T00:00:00`),
+            lt: new Date(`${referenceYear + 1}-01-01T00:00:00`),
+          },
+        },
+      ];
     }
     const obligations = await this.prisma.fiscalObligation.findMany({
       where,
       include: { fiscalCalendar: { include: { regimes: true } } },
       orderBy: [{ dueDate: 'asc' }, { title: 'asc' }],
     });
-    return Promise.all(obligations.map((obligation) => this.withCalculationContext(tenantId, obligation)));
+    const eligibleObligations = await this.eligibility.filterEligible(
+      tenantId,
+      obligations,
+    );
+    return Promise.all(
+      eligibleObligations.map((obligation) =>
+        this.withCalculationContext(
+          tenantId,
+          this.withCalculatedStatus(obligation),
+        ),
+      ),
+    );
+  }
+
+  private withCalculatedStatus<
+    T extends { status: ObligationStatus; dueDate: Date },
+  >(obligation: T): T {
+    if (
+      obligation.status === ObligationStatus.PAID ||
+      this.endOfDay(obligation.dueDate) >= new Date()
+    ) {
+      return obligation;
+    }
+
+    return { ...obligation, status: ObligationStatus.LATE };
+  }
+
+  private endOfDay(value: Date): Date {
+    const result = new Date(value);
+    result.setHours(23, 59, 59, 999);
+    return result;
   }
 
   /**
@@ -2118,14 +1581,20 @@ export class ObligationsService {
     const taxType =
       obligation.fiscalCalendar?.taxType ??
       this.mapObligationTypeToTaxType(obligation.type);
-    const year = Number(String(obligation.period ?? obligation.dueDate.getUTCFullYear()).slice(0, 4));
+    const year = Number(
+      String(obligation.period ?? obligation.dueDate.getUTCFullYear()).slice(
+        0,
+        4,
+      ),
+    );
 
     if (!taxType || !Number.isInteger(year)) {
       return {
         ...obligation,
         calculation: {
           quality: 'REVIEW_REQUIRED',
-          message: 'Não existe regra fiscal estruturada para explicar este valor.',
+          message:
+            'Não existe regra fiscal estruturada para explicar este valor.',
         },
       };
     }
@@ -2170,12 +1639,19 @@ export class ObligationsService {
         snapshot: assessment?.calculationSnapshot ?? null,
         amounts: assessment
           ? {
-              taxableAmount: assessment.taxableAmountValue ?? assessment.taxableAmount,
-              taxDueAmount: assessment.taxDueAmountValue ?? assessment.taxDueAmount,
-              deductibleAmount: assessment.deductibleAmountValue ?? assessment.deductibleAmount,
-              withheldAmount: assessment.withheldAmountValue ?? assessment.withheldAmount,
-              adjustmentsAmount: assessment.adjustmentsAmountValue ?? assessment.adjustmentsAmount,
-              finalAmount: assessment.finalAmountValue ?? assessment.finalAmount,
+              taxableAmount:
+                assessment.taxableAmountValue ?? assessment.taxableAmount,
+              taxDueAmount:
+                assessment.taxDueAmountValue ?? assessment.taxDueAmount,
+              deductibleAmount:
+                assessment.deductibleAmountValue ?? assessment.deductibleAmount,
+              withheldAmount:
+                assessment.withheldAmountValue ?? assessment.withheldAmount,
+              adjustmentsAmount:
+                assessment.adjustmentsAmountValue ??
+                assessment.adjustmentsAmount,
+              finalAmount:
+                assessment.finalAmountValue ?? assessment.finalAmount,
             }
           : null,
         origin: {
@@ -2210,46 +1686,25 @@ export class ObligationsService {
   // MARCAR COMO PAGA
   // ============================================================
 
-  async markAsPaid(
-    tenantId: string,
-    id: string,
-  ) {
-    const obligation =
-      await this.findOne(
-        tenantId,
-        id,
-      );
+  async markAsPaid(tenantId: string, id: string) {
+    const obligation = await this.findOne(tenantId, id);
 
-    if (
-      obligation.status ===
-      ObligationStatus.PAID
-    ) {
+    if (obligation.status === ObligationStatus.PAID) {
       await this.ensureTaxPaymentForObligation(
         obligation.id,
         tenantId,
         obligation.amount,
         obligation.fiscalCalendar?.taxType ??
-          this.mapObligationTypeToTaxType(
-            obligation.type,
-          ),
-        obligation.period ??
-          undefined,
+          this.mapObligationTypeToTaxType(obligation.type),
+        obligation.period ?? undefined,
       );
 
-      return this.findOne(
-        tenantId,
-        id,
-      );
+      return this.findOne(tenantId, id);
     }
 
-    const amount =
-      this.number(
-        obligation.amount,
-      );
+    const amount = this.number(obligation.amount);
 
-    if (
-      amount <= 0
-    ) {
+    if (amount <= 0) {
       throw new BadRequestException(
         'Não é possível registar um pagamento para uma obrigação sem valor fiscal.',
       );
@@ -2257,113 +1712,80 @@ export class ObligationsService {
 
     const taxType =
       obligation.fiscalCalendar?.taxType ??
-      this.mapObligationTypeToTaxType(
-        obligation.type,
-      );
+      this.mapObligationTypeToTaxType(obligation.type);
 
-    const paymentRegistered =
-      await this.prisma.$transaction(
-      async (tx) => {
-        const transition =
-          await tx.fiscalObligation.updateMany({
-          where: {
-            id:
-              obligation.id,
+    const paymentRegistered = await this.prisma.$transaction(async (tx) => {
+      const transition = await tx.fiscalObligation.updateMany({
+        where: {
+          id: obligation.id,
 
-            tenantId,
-
-            status: {
-              in: [
-                ObligationStatus.PENDING,
-                ObligationStatus.LATE,
-              ],
-            },
-          },
-
-          data: {
-            status:
-              ObligationStatus.PAID,
-
-            reminderSent:
-              true,
-          },
-        });
-
-        if (
-          transition.count === 0
-        ) {
-          return false;
-        }
-
-        const reference =
-          `OBL-${obligation.id}`;
-
-        const existingPayment =
-          await tx.taxPayment.findFirst({
-            where: {
-              tenantId,
-
-              reference,
-            },
-          });
-
-        if (
-          !existingPayment
-        ) {
-          await tx.taxPayment.create({
-            data: {
-              tenantId,
-
-              taxType,
-
-              amount,
-
-              reference,
-
-              paymentMethod:
-                'OBRIGAÇÃO FISCAL',
-
-              paidAt:
-                new Date(),
-            },
-          });
-        }
-
-        await tx.notification.create({
-          data: {
-            tenantId,
-
-            title:
-              'Pagamento registado',
-
-            message:
-              `O pagamento da obriga\u00e7\u00e3o fiscal "${obligation.title}" no valor de ${this.formatPaymentAmount(amount)} foi registado com sucesso.`,
-
-            isRead:
-              false,
-
-            notificationType:
-              NotificationType.SUCCESS,
-          },
-        });
-
-        return true;
-      },
-    );
-
-    if (
-      !paymentRegistered
-    ) {
-      const latestObligation =
-        await this.findOne(
           tenantId,
-          id,
-        );
 
-      if (
-        latestObligation.status !==
-        ObligationStatus.PAID
-      ) {
+          status: {
+            in: [ObligationStatus.PENDING, ObligationStatus.LATE],
+          },
+        },
+
+        data: {
+          status: ObligationStatus.PAID,
+
+          reminderSent: true,
+        },
+      });
+
+      if (transition.count === 0) {
+        return false;
+      }
+
+      const reference = `OBL-${obligation.id}`;
+
+      const existingPayment = await tx.taxPayment.findFirst({
+        where: {
+          tenantId,
+
+          reference,
+        },
+      });
+
+      if (!existingPayment) {
+        await tx.taxPayment.create({
+          data: {
+            tenantId,
+
+            taxType,
+
+            amount,
+
+            reference,
+
+            paymentMethod: 'OBRIGAÇÃO FISCAL',
+
+            paidAt: new Date(),
+          },
+        });
+      }
+
+      await tx.notification.create({
+        data: {
+          tenantId,
+
+          title: 'Pagamento registado',
+
+          message: `O pagamento da obriga\u00e7\u00e3o fiscal "${obligation.title}" no valor de ${this.formatPaymentAmount(amount)} foi registado com sucesso.`,
+
+          isRead: false,
+
+          notificationType: NotificationType.SUCCESS,
+        },
+      });
+
+      return true;
+    });
+
+    if (!paymentRegistered) {
+      const latestObligation = await this.findOne(tenantId, id);
+
+      if (latestObligation.status !== ObligationStatus.PAID) {
         throw new ConflictException(
           'O estado da obrigação foi alterado. Atualize a página antes de tentar registar o pagamento novamente.',
         );
@@ -2374,11 +1796,8 @@ export class ObligationsService {
         tenantId,
         latestObligation.amount,
         latestObligation.fiscalCalendar?.taxType ??
-          this.mapObligationTypeToTaxType(
-            latestObligation.type,
-          ),
-        latestObligation.period ??
-          undefined,
+          this.mapObligationTypeToTaxType(latestObligation.type),
+        latestObligation.period ?? undefined,
       );
 
       return latestObligation;
@@ -2387,8 +1806,7 @@ export class ObligationsService {
     await this.sendPaymentConfirmationEmail(
       tenantId,
       obligation.title,
-      obligation.period ??
-        'Per\u00edodo n\u00e3o especificado',
+      obligation.period ?? 'Per\u00edodo n\u00e3o especificado',
       amount,
     );
 
@@ -2402,91 +1820,68 @@ export class ObligationsService {
       ].join(' | '),
     );
 
-    return this.findOne(
-      tenantId,
-      id,
-    );
+    return this.findOne(tenantId, id);
   }
 
   // ============================================================
   // RECONCILIAR OBRIGAÇÕES PAGAS
   // ============================================================
 
-  private async backfillPaidObligations(
-    tenantId: string,
-  ): Promise<number> {
-    const paidObligations =
-      await this.prisma.fiscalObligation.findMany({
-        where: {
-          tenantId,
+  private async backfillPaidObligations(tenantId: string): Promise<number> {
+    const paidObligations = await this.prisma.fiscalObligation.findMany({
+      where: {
+        tenantId,
 
-          status:
-            ObligationStatus.PAID,
-        },
+        status: ObligationStatus.PAID,
+      },
 
-        include: {
-          fiscalCalendar: {
-            select: {
-              taxType:
-                true,
-            },
+      include: {
+        fiscalCalendar: {
+          select: {
+            taxType: true,
           },
         },
+      },
 
-        orderBy: {
-          createdAt:
-            'asc',
-        },
-      });
+      orderBy: {
+        createdAt: 'asc',
+      },
+    });
 
     let created = 0;
 
-    for (
-      const obligation of
-        paidObligations
-    ) {
-      const reference =
-        `OBL-${obligation.id}`;
+    for (const obligation of paidObligations) {
+      const reference = `OBL-${obligation.id}`;
 
-      const existingPayment =
-        await this.prisma.taxPayment.findFirst({
-          where: {
-            tenantId,
+      const existingPayment = await this.prisma.taxPayment.findFirst({
+        where: {
+          tenantId,
 
-            reference,
-          },
+          reference,
+        },
 
-          select: {
-            id:
-              true,
-          },
-        });
+        select: {
+          id: true,
+        },
+      });
 
-      if (
-        existingPayment
-      ) {
+      if (existingPayment) {
         continue;
       }
 
       const taxType =
         obligation.fiscalCalendar?.taxType ??
-        this.mapObligationTypeToTaxType(
-          obligation.type,
-        );
+        this.mapObligationTypeToTaxType(obligation.type);
 
-      const payment =
-        await this.ensureTaxPaymentForObligation(
-          obligation.id,
-          tenantId,
-          obligation.amount,
-          taxType,
-          obligation.period ??
-            undefined,
-        );
+      const payment = await this.ensureTaxPaymentForObligation(
+        obligation.id,
+        tenantId,
+        obligation.amount,
+        taxType,
+        obligation.period ?? undefined,
+      );
 
-      if (
-        payment
-      ) {
+      if (payment) {
         created++;
       }
     }
@@ -2501,42 +1896,29 @@ export class ObligationsService {
   private async ensureTaxPaymentForObligation(
     obligationId: string,
     tenantId: string,
-    amountValue:
-      | number
-      | null
-      | undefined,
+    amountValue: number | null | undefined,
 
-    taxType:
-      TaxType,
+    taxType: TaxType,
 
     period?: string,
   ) {
-    const amount =
-      this.number(
-        amountValue,
-      );
+    const amount = this.number(amountValue);
 
-    if (
-      amount <= 0
-    ) {
+    if (amount <= 0) {
       return null;
     }
 
-    const reference =
-      `OBL-${obligationId}`;
+    const reference = `OBL-${obligationId}`;
 
-    const existing =
-      await this.prisma.taxPayment.findFirst({
-        where: {
-          tenantId,
+    const existing = await this.prisma.taxPayment.findFirst({
+      where: {
+        tenantId,
 
-          reference,
-        },
-      });
+        reference,
+      },
+    });
 
-    if (
-      existing
-    ) {
+    if (existing) {
       return existing;
     }
 
@@ -2552,11 +1934,9 @@ export class ObligationsService {
 
         reference,
 
-        paymentMethod:
-          'OBRIGAÇÃO FISCAL',
+        paymentMethod: 'OBRIGAÇÃO FISCAL',
 
-        paidAt:
-          new Date(),
+        paidAt: new Date(),
       },
     });
   }
@@ -2571,21 +1951,19 @@ export class ObligationsService {
     period: string,
     amount: number,
   ): Promise<void> {
-    const subject =
-      `Pagamento registado \u2014 ${obligationTitle}`;
+    const subject = `Pagamento registado \u2014 ${obligationTitle}`;
 
     try {
-      const tenant =
-        await this.prisma.tenant.findUnique({
-          where: {
-            id: tenantId,
-          },
+      const tenant = await this.prisma.tenant.findUnique({
+        where: {
+          id: tenantId,
+        },
 
-          select: {
-            name: true,
-            email: true,
-          },
-        });
+        select: {
+          name: true,
+          email: true,
+        },
+      });
 
       if (!tenant?.email) {
         this.logger.warn(
@@ -2595,41 +1973,31 @@ export class ObligationsService {
         return;
       }
 
-      let status =
-        'SENT';
+      let status = 'SENT';
 
       try {
-        const applicationUrl =
-          (
-            process.env.APP_URL ||
-            process.env.FRONTEND_URL ||
-            'https://fiscalidadedigital.ao'
-          ).replace(
-            /\/$/,
-            '',
-          );
+        const applicationUrl = (
+          process.env.APP_URL ||
+          process.env.FRONTEND_URL ||
+          'https://fiscalidadedigital.ao'
+        ).replace(/\/$/, '');
 
         await this.mailService.sendObligationPaymentConfirmation(
           tenant.email,
           tenant.name,
           obligationTitle,
-          this.formatPaymentAmount(
-            amount,
-          ),
+          this.formatPaymentAmount(amount),
           period,
           `${applicationUrl}/obligations`,
         );
       } catch (error) {
-        status =
-          'FAILED';
+        status = 'FAILED';
 
         this.logger.error(
           [
             'Falha ao enviar a confirma\u00e7\u00e3o de pagamento por e-mail.',
             `Empresa: ${tenantId}`,
-            error instanceof Error
-              ? error.message
-              : String(error),
+            error instanceof Error ? error.message : String(error),
           ].join(' | '),
         );
       }
@@ -2639,15 +2007,11 @@ export class ObligationsService {
           data: {
             tenantId,
 
-            email:
-              this.maskEmail(
-                tenant.email,
-              ),
+            email: this.maskEmail(tenant.email),
 
             subject,
 
-            body:
-              null,
+            body: null,
 
             status,
           },
@@ -2657,9 +2021,7 @@ export class ObligationsService {
           [
             'Falha ao registar o envio da confirma\u00e7\u00e3o de pagamento.',
             `Empresa: ${tenantId}`,
-            error instanceof Error
-              ? error.message
-              : String(error),
+            error instanceof Error ? error.message : String(error),
           ].join(' | '),
         );
       }
@@ -2668,181 +2030,115 @@ export class ObligationsService {
         [
           'Falha ao preparar a confirma\u00e7\u00e3o de pagamento por e-mail.',
           `Empresa: ${tenantId}`,
-          error instanceof Error
-            ? error.message
-            : String(error),
+          error instanceof Error ? error.message : String(error),
         ].join(' | '),
       );
     }
   }
 
-  private formatPaymentAmount(
-    amount: number,
-  ): string {
-    return new Intl.NumberFormat(
-      'pt-AO',
-      {
-        style:
-          'currency',
+  private formatPaymentAmount(amount: number): string {
+    return new Intl.NumberFormat('pt-AO', {
+      style: 'currency',
 
-        currency:
-          'AOA',
+      currency: 'AOA',
 
-        minimumFractionDigits:
-          2,
+      minimumFractionDigits: 2,
 
-        maximumFractionDigits:
-          2,
-      },
-    ).format(amount);
+      maximumFractionDigits: 2,
+    }).format(amount);
   }
 
-  private maskEmail(
-    email: string,
-  ): string {
-    const [
-      localPart,
-      domain,
-    ] = email.split('@');
+  private maskEmail(email: string): string {
+    const [localPart, domain] = email.split('@');
 
-    if (
-      !localPart ||
-      !domain
-    ) {
+    if (!localPart || !domain) {
       return '***';
     }
 
     return `${localPart.slice(0, 1)}***@${domain}`;
   }
 
-  private mapObligationTypeToTaxType(
-    type: ObligationType,
-  ): TaxType {
-    const map: Record<
-      string,
-      TaxType
-    > = {
-      IVA:
-        TaxType.IVA,
+  private mapObligationTypeToTaxType(type: ObligationType): TaxType {
+    const map: Record<string, TaxType> = {
+      IVA: TaxType.IVA,
 
-      IRT:
-        TaxType.IRT,
+      IRT: TaxType.IRT,
 
-      II:
-        TaxType.II,
+      II: TaxType.II,
 
-      SS:
-        TaxType.SS,
+      SS: TaxType.SS,
 
-      IEC:
-        TaxType.IEC,
+      IEC: TaxType.IEC,
 
-      IAC:
-        TaxType.IAC,
+      IAC: TaxType.IAC,
 
-      IP:
-        TaxType.IP,
+      IP: TaxType.IP,
 
-      IVM:
-        TaxType.IVM,
+      IVM: TaxType.IVM,
 
-      IEJ:
-        TaxType.IEJ,
+      IEJ: TaxType.IEJ,
 
-      IS:
-        TaxType.IS,
+      IS: TaxType.IS,
 
-      CEOC:
-        TaxType.CEOC,
+      CEOC: TaxType.CEOC,
 
-      IRP:
-        TaxType.IRP,
+      IRP: TaxType.IRP,
 
-      RCN:
-        TaxType.RCN,
+      RCN: TaxType.RCN,
 
-      TS:
-        TaxType.TS,
+      TS: TaxType.TS,
 
-      CFQA:
-        TaxType.CFQA,
+      CFQA: TaxType.CFQA,
 
-      ITP:
-        TaxType.ITP,
+      ITP: TaxType.ITP,
 
-      IPP:
-        TaxType.IPP,
+      IPP: TaxType.IPP,
 
-      IVRM:
-        TaxType.IVRM,
+      IVRM: TaxType.IVRM,
 
-      TAXA_GAS:
-        TaxType.TAXA_GAS,
+      TAXA_GAS: TaxType.TAXA_GAS,
 
-      INDUSTRIAL:
-        TaxType.INDUSTRIAL,
+      INDUSTRIAL: TaxType.INDUSTRIAL,
 
-      SELO:
-        TaxType.SELO,
+      SELO: TaxType.SELO,
     };
 
-    return (
-      map[
-        String(
-          type,
-        ).toUpperCase()
-      ] ??
-      TaxType.SELO
-    );
+    return map[String(type).toUpperCase()] ?? TaxType.SELO;
   }
 
   // ============================================================
   // ACTUALIZAR ESTADOS
   // ============================================================
 
-  async updateStatuses(
-    tenantId?: string,
-  ) {
-    const now =
-      new Date();
+  async updateStatuses(tenantId?: string) {
+    const now = new Date();
 
-    const where:
-      Prisma.FiscalObligationWhereInput =
-      {
-        status:
-          ObligationStatus.PENDING,
+    const where: Prisma.FiscalObligationWhereInput = {
+      status: ObligationStatus.PENDING,
 
-        dueDate: {
-          lt:
-            now,
-        },
-      };
+      dueDate: {
+        lt: now,
+      },
+    };
 
-    if (
-      tenantId
-    ) {
-      where.tenantId =
-        tenantId;
+    if (tenantId) {
+      where.tenantId = tenantId;
     }
 
-    const result =
-      await this.prisma.fiscalObligation.updateMany({
-        where,
+    const result = await this.prisma.fiscalObligation.updateMany({
+      where,
 
-        data: {
-          status:
-            ObligationStatus.LATE,
-        },
-      });
+      data: {
+        status: ObligationStatus.LATE,
+      },
+    });
 
     return {
       success: true,
 
-      updated:
-        result.count,
+      updated: result.count,
 
-      updatedAt:
-        new Date(),
+      updatedAt: new Date(),
     };
   }
 
@@ -2850,20 +2146,10 @@ export class ObligationsService {
   // REMOVER
   // ============================================================
 
-  async remove(
-    tenantId: string,
-    id: string,
-  ) {
-    const obligation =
-      await this.findOne(
-        tenantId,
-        id,
-      );
+  async remove(tenantId: string, id: string) {
+    const obligation = await this.findOne(tenantId, id);
 
-    if (
-      obligation.status ===
-      ObligationStatus.PAID
-    ) {
+    if (obligation.status === ObligationStatus.PAID) {
       throw new BadRequestException(
         'Uma obrigação já paga não pode ser removida, pois faz parte do histórico fiscal da empresa.',
       );
@@ -2873,27 +2159,22 @@ export class ObligationsService {
       where: {
         tenantId,
 
-        obligationId:
-          id,
+        obligationId: id,
       },
     });
 
-    const deleted =
-      await this.prisma.fiscalObligation.delete({
-        where: {
-          id:
-            obligation.id,
-        },
-      });
+    const deleted = await this.prisma.fiscalObligation.delete({
+      where: {
+        id: obligation.id,
+      },
+    });
 
     return {
       success: true,
 
-      message:
-        'Obrigação fiscal removida com sucesso.',
+      message: 'Obrigação fiscal removida com sucesso.',
 
-      obligation:
-        deleted,
+      obligation: deleted,
     };
   }
 
@@ -2901,56 +2182,28 @@ export class ObligationsService {
   // REGIME GERAL
   // ============================================================
 
-  private isGeneralRegime(
-    regime: FiscalRegime,
-  ): boolean {
-    return (
-      String(
-        regime,
-      ).toUpperCase() ===
-      'GERAL'
-    );
+  private isGeneralRegime(regime: FiscalRegime): boolean {
+    return String(regime).toUpperCase() === 'GERAL';
   }
 
   // ============================================================
   // REGIME SIMPLIFICADO
   // ============================================================
 
-  private isSimplifiedRegime(
-    regime: FiscalRegime,
-  ): boolean {
-    return String(
-      regime,
-    )
-      .toUpperCase()
-      .includes(
-        'SIMPLIFICADO',
-      );
+  private isSimplifiedRegime(regime: FiscalRegime): boolean {
+    return String(regime).toUpperCase().includes('SIMPLIFICADO');
   }
 
   // ============================================================
   // NORMALIZAR TEXTO
   // ============================================================
 
-  private normalizeFiscalText(
-    value: string,
-  ): string {
-    return String(
-      value || '',
-    )
+  private normalizeFiscalText(value: string): string {
+    return String(value || '')
       .normalize('NFD')
-      .replace(
-        /[\u0300-\u036f]/g,
-        '',
-      )
-      .replace(
-        /[—–−]/g,
-        '-',
-      )
-      .replace(
-        /\s+/g,
-        ' ',
-      )
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[—–−]/g, '-')
+      .replace(/\s+/g, ' ')
       .trim()
       .toLowerCase();
   }
@@ -2959,36 +2212,17 @@ export class ObligationsService {
   // CONVERTER PARA NUMBER
   // ============================================================
 
-  private number(
-    value: any,
-  ): number {
-    const result =
-      Number(value);
+  private number(value: any): number {
+    const result = Number(value);
 
-    return Number.isFinite(
-      result,
-    )
-      ? result
-      : 0;
+    return Number.isFinite(result) ? result : 0;
   }
 
   // ============================================================
   // ARREDONDAMENTO
   // ============================================================
 
-  private round(
-    value: number,
-  ): number {
-    return (
-      Math.round(
-        (
-          this.number(
-            value,
-          ) +
-          Number.EPSILON
-        ) *
-          100,
-      ) / 100
-    );
+  private round(value: number): number {
+    return Math.round((this.number(value) + Number.EPSILON) * 100) / 100;
   }
 }
