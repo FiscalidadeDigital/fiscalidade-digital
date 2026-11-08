@@ -15,6 +15,8 @@
     "prisma:seed": "ts-node prisma/seed.ts",
     "admin:bootstrap": "ts-node scripts/bootstrap-platform-admin.ts",
     "admin:recover": "node dist/scripts/recover-platform-admin.js",
+    "audit:affected-reminders": "ts-node scripts/audit-affected-reminder-emails.ts",
+    "simulate:reminders": "ts-node scripts/simulate-fiscal-reminders.ts",
     "prisma:studio": "prisma studio",
     "test": "jest --config test/jest.config.json --runInBand",
     "test:integration:local": "node scripts/run-local-integration-tests.js",
