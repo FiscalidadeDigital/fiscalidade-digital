@@ -44,7 +44,7 @@ interface Deadline {
   date: string;
   title: string;
   description?: string | null;
-  amount?: number;
+  amount?: number | null;
   type?: string;
   daysLeft?: number;
   status?: 'today' | 'warning' | 'normal' | 'success';
@@ -208,12 +208,20 @@ function getMessage(error: any): string {
   return 'Erro ao carregar os dados fiscais.';
 }
 
-function formatCurrency(value: number): string {
+function formatCurrency(value: number | null | undefined): string {
+  if (
+    value === null ||
+    value === undefined ||
+    !Number.isFinite(Number(value))
+  ) {
+    return 'Por apurar';
+  }
+
   return new Intl.NumberFormat('pt-AO', {
     style: 'currency',
     currency: 'AOA',
     maximumFractionDigits: 0,
-  }).format(Number(value || 0));
+  }).format(Number(value));
 }
 
 function getRegimeLabel(regime: string): string {
@@ -568,11 +576,7 @@ export default function DashboardPage() {
           <DashboardStat
             title="Obrigações pendentes"
             value={dashboard.pendingObligations}
-            status={
-              pendingAmount > 0
-                ? 'Atenção necessária'
-                : 'Em dia'
-            }
+            status={pendingAmount > 0 ? 'Atenção necessária' : 'Em dia'}
             description={
               pendingAmount > 0
                 ? `Valor pendente: ${formatCurrency(pendingAmount)}`
@@ -604,11 +608,7 @@ export default function DashboardPage() {
           <DashboardStat
             title="Obrigações vencidas"
             value={overdueCount}
-            status={
-              overdueCount > 0
-                ? 'Regularizar'
-                : 'Em dia'
-            }
+            status={overdueCount > 0 ? 'Regularizar' : 'Em dia'}
             description={
               overdueCount > 0
                 ? 'Necessitam de regularização'
@@ -622,11 +622,7 @@ export default function DashboardPage() {
           <DashboardStat
             title="Pagamentos fiscais"
             value={formatCurrency(totalPayments)}
-            status={
-              totalPayments > 0
-                ? 'Com actividade'
-                : 'Sem registos'
-            }
+            status={totalPayments > 0 ? 'Com actividade' : 'Sem registos'}
             description={
               totalPayments > 0
                 ? 'Pagamentos registados'
@@ -1093,7 +1089,10 @@ function DashboardStat({
             ${style.text}
           `}
         >
-          <span className="h-1.5 w-1.5 rounded-full bg-current" aria-hidden="true" />
+          <span
+            className="h-1.5 w-1.5 rounded-full bg-current"
+            aria-hidden="true"
+          />
           {status}
         </span>
 
