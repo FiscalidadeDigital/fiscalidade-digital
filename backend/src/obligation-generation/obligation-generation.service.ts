@@ -116,7 +116,15 @@ export class ObligationGenerationService {
         // already past its deadline. Historical matters are represented by a
         // separate confirmation item above, without a made-up amount.
         if (this.startOfDay(dueDate) < this.startOfDay(new Date())) {
-          results.push(this.skipped(taxType, domain, 'PAST_DUE_DATE'));
+          results.push(
+            this.skipped(
+              taxType,
+              domain,
+              profile.activityStartedAt
+                ? 'PAST_DUE_DATE'
+                : 'ACTIVITY_START_DATE_REQUIRED',
+            ),
+          );
           continue;
         }
         const persisted = await this.persistence.persistCalendarDerived({
@@ -139,7 +147,11 @@ export class ObligationGenerationService {
         });
       }
     }
-    return { fiscalPeriod, results };
+    return {
+      fiscalPeriod,
+      requiresActivityStartDate: profile.activityStartedAt === null,
+      results,
+    };
   }
 
   /**

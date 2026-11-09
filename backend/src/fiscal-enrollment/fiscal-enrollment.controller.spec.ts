@@ -1,7 +1,12 @@
 import { ForbiddenException, UnauthorizedException } from '@nestjs/common';
 import { GUARDS_METADATA } from '@nestjs/common/constants';
 import { Reflector } from '@nestjs/core';
-import { FiscalRegime, TaxType, UserRole } from '@prisma/client';
+import {
+  FiscalRegime,
+  TaxRegimeKnowledgeStatus,
+  TaxType,
+  UserRole,
+} from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { REQUIRED_ROLES_KEY } from '../common/decorators/roles.decorator';
 import { FiscalEnrollmentController } from './fiscal-enrollment.controller';
@@ -52,6 +57,23 @@ describe('FiscalEnrollmentController', () => {
       'tenant-authenticated',
       'assignment-a',
       '2026-06-30',
+    );
+  });
+
+  it('accepts UNKNOWN for a subsequent enrollment without inventing a regime', async () => {
+    const { controller, lifecycle } = setup();
+    const unknown = {
+      taxType: TaxType.IVA,
+      regime: null,
+      knowledgeStatus: TaxRegimeKnowledgeStatus.UNKNOWN,
+      validFrom: '2026-07-01',
+    };
+
+    await controller.change(request, unknown);
+
+    expect(lifecycle.change).toHaveBeenCalledWith(
+      'tenant-authenticated',
+      unknown,
     );
   });
 

@@ -1,5 +1,9 @@
 import { BadRequestException } from '@nestjs/common';
-import { FiscalRegime, TaxType } from '@prisma/client';
+import {
+  FiscalRegime,
+  TaxRegimeKnowledgeStatus,
+  TaxType,
+} from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FiscalEnrollmentLifecycleService } from './fiscal-enrollment-lifecycle.service';
 
@@ -87,6 +91,26 @@ describe('FiscalEnrollmentLifecycleService', () => {
 
     expect(assignment.update).not.toHaveBeenCalled();
     expect(assignment.create).not.toHaveBeenCalled();
+  });
+
+  it('accepts an UNKNOWN enrollment without inventing a regime', async () => {
+    const { assignment, service } = setup();
+    assignment.findFirst.mockResolvedValueOnce(null);
+
+    await service.create('tenant-a', {
+      taxType: TaxType.IVA,
+      knowledgeStatus: TaxRegimeKnowledgeStatus.UNKNOWN,
+      validFrom: '2026-07-01',
+    });
+
+    expect(assignment.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          regime: null,
+          knowledgeStatus: TaxRegimeKnowledgeStatus.UNKNOWN,
+        }),
+      }),
+    );
   });
 
   it('closes a validity range without changing the historical enrollment status or obligations', async () => {

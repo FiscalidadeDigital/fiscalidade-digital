@@ -8,7 +8,12 @@ import {
   Req,
   UseGuards,
 } from '@nestjs/common';
-import { FiscalRegime, TaxType, UserRole } from '@prisma/client';
+import {
+  FiscalRegime,
+  TaxRegimeKnowledgeStatus,
+  TaxType,
+  UserRole,
+} from '@prisma/client';
 import type { Request } from 'express';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../common/decorators/roles.decorator';
@@ -34,7 +39,8 @@ export class FiscalEnrollmentController {
     @Body()
     body: {
       taxType: TaxType;
-      regime: FiscalRegime;
+      regime?: FiscalRegime | null;
+      knowledgeStatus?: TaxRegimeKnowledgeStatus;
       validFrom: string;
       validUntil?: string;
       legalReference?: string;
@@ -51,7 +57,12 @@ export class FiscalEnrollmentController {
   change(
     @Req() req: AuthenticatedRequest,
     @Body()
-    body: { taxType: TaxType; regime: FiscalRegime; validFrom: string },
+    body: {
+      taxType: TaxType;
+      regime?: FiscalRegime | null;
+      knowledgeStatus?: TaxRegimeKnowledgeStatus;
+      validFrom: string;
+    },
   ) {
     return this.lifecycle.change(req.user.tenantId, body);
   }

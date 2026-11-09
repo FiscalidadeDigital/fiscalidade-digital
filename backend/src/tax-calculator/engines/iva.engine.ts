@@ -58,14 +58,40 @@ export class IvaEngine {
     if (isSimplified) {
       return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: enrollment.regime, operation: dto.operation, referenceDate: referenceDate.toISOString().slice(0, 10), amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION', ruleVersion: enrollment.legalReference || null, legalSource: enrollment.officialSourceUrl || null, message: 'O enquadramento IVA Simplificado foi reconhecido, mas a fórmula definitiva não está automatizada sem confirmação oficial.' };
     }
+    const hasLineClassification = Boolean(dto.productType?.trim());
+    if (!hasLineClassification) {
+      return {
+        success: true,
+        tenantId,
+        company: { id: tenant.id, name: tenant.name, nif: tenant.nif },
+        regime: enrollment.regime,
+        operation: dto.operation,
+        referenceDate: referenceDate.toISOString().slice(0, 10),
+        amount: asDisplayNumber(amount),
+        taxableBase: asDisplayNumber(amount),
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        supportedIva: null,
+        deductibleIva: null,
+        total: null,
+        currency: 'AOA',
+        productType: null,
+        description: dto.description || null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+        ruleVersion: 'AO-CIVA-LEI-14-23-ART19-A',
+        legalSource: IVA_LEGAL_SOURCE.officialUrl,
+        message:
+          'IVA por apurar: falta classificação fiscal da operação. Nenhuma taxa de 14% foi assumida.',
+      };
+    }
     const rate = new Prisma.Decimal(
       IVA_RATES_FROM_2023_12_28.general,
     );
-    const hasLineClassification = Boolean(dto.productType?.trim());
     const isPurchase =
       dto.operation === IvaOperation.PURCHASE || dto.operation === IvaOperation.IMPORT;
     const preview = amount.mul(rate);
-    const requiresReview = !hasLineClassification || dto.operation === IvaOperation.EXPORT;
+    const requiresReview = dto.operation === IvaOperation.EXPORT;
 
     // A calculator result is a review aid only. It never records or confirms
     // a fiscal deduction; that decision is made from the reviewed purchase.

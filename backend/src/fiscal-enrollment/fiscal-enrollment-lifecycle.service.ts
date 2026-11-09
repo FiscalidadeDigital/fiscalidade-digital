@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import {
   FiscalRegime,
+  TaxRegimeKnowledgeStatus,
   TaxRegimeAssignmentStatus,
   TaxType,
 } from '@prisma/client';
@@ -13,7 +14,8 @@ import { PrismaService } from '../prisma/prisma.service';
 
 type ChangeEnrollmentInput = {
   taxType: TaxType;
-  regime: FiscalRegime;
+  regime?: FiscalRegime | null;
+  knowledgeStatus?: TaxRegimeKnowledgeStatus;
   validFrom: string;
 };
 
@@ -44,6 +46,7 @@ export class FiscalEnrollmentLifecycleService {
   async create(tenantId: string, input: CreateEnrollmentInput) {
     const validFrom = this.utcDay(input.validFrom);
     const validUntil = input.validUntil ? this.utcDay(input.validUntil) : null;
+    const assignment = this.resolveAssignment(input);
 
     if (validUntil && validUntil < validFrom) {
       throw new BadRequestException('Vigência fiscal inválida.');
@@ -68,7 +71,8 @@ export class FiscalEnrollmentLifecycleService {
       data: {
         tenantId,
         taxType: input.taxType,
-        regime: input.regime,
+        regime: assignment.regime,
+        knowledgeStatus: assignment.knowledgeStatus,
         validFrom,
         validUntil,
         legalReference: input.legalReference,
@@ -85,6 +89,7 @@ export class FiscalEnrollmentLifecycleService {
 
   async change(tenantId: string, input: ChangeEnrollmentInput) {
     const validFrom = this.utcDay(input.validFrom);
+    const assignment = this.resolveAssignment(input);
 
     return this.prisma.$transaction(async (tx) => {
       const sameDay = await tx.taxRegimeAssignment.findFirst({
@@ -145,7 +150,8 @@ export class FiscalEnrollmentLifecycleService {
         data: {
           tenantId,
           taxType: input.taxType,
-          regime: input.regime,
+          regime: assignment.regime,
+          knowledgeStatus: assignment.knowledgeStatus,
           validFrom,
           status: TaxRegimeAssignmentStatus.ACTIVE,
           reviewStatus: TaxRegimeAssignmentStatus.REVIEW_REQUIRED,
@@ -190,6 +196,32 @@ export class FiscalEnrollmentLifecycleService {
         parsed.getUTCDate(),
       ),
     );
+  }
+
+  private resolveAssignment(input: {
+    regime?: FiscalRegime | null;
+    knowledgeStatus?: TaxRegimeKnowledgeStatus;
+  }) {
+    const knowledgeStatus =
+      input.knowledgeStatus ??
+      (input.regime
+        ? TaxRegimeKnowledgeStatus.CONFIRMED
+        : TaxRegimeKnowledgeStatus.UNKNOWN);
+    const regime =
+      knowledgeStatus === TaxRegimeKnowledgeStatus.UNKNOWN
+        ? null
+        : input.regime ?? null;
+
+    if (
+      knowledgeStatus === TaxRegimeKnowledgeStatus.CONFIRMED &&
+      !regime
+    ) {
+      throw new BadRequestException(
+        'Indique o regime confirmado ou seleccione UNKNOWN.',
+      );
+    }
+
+    return { regime, knowledgeStatus };
   }
 
   private previousUtcDay(value: Date) {

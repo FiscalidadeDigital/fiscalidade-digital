@@ -62,6 +62,25 @@ describe('IvaEngine enrollment resolution', () => {
     );
   });
 
+  it('leaves IVA undetermined without a fiscal line classification', async () => {
+    const { engine } = setup({ regime: FiscalRegime.GERAL });
+
+    const result = await engine.calculate('tenant-a', {
+      amount: 1000,
+      operation: IvaOperation.SALE,
+    });
+
+    expect(result).toEqual(
+      expect.objectContaining({
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      }),
+    );
+  });
+
   it('keeps a zero-value IVA operation at zero without creating a tax amount', async () => {
     const { engine } = setup({ regime: FiscalRegime.GERAL });
 

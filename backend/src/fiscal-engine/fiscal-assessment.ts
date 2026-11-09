@@ -126,7 +126,7 @@ export function calculateSocialSecurityTotal(
 export function industrialAssessmentRequiresReview() {
   return {
     calculationStatus: 'REVIEW_REQUIRED' as const,
-    finalAmount: '0.00',
+    finalAmount: null,
     message:
       'A matéria colectável e os ajustamentos fiscais não estão completos. Nenhum Imposto Industrial definitivo foi calculado.',
   };
