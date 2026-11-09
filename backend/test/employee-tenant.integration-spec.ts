@@ -414,6 +414,7 @@ describe('Core records HTTP tenant isolation', () => {
         priceAmount: '1000.05',
         ivaRate: 14,
         unit: 'HORA',
+        electronicOperationType: 'SE',
       },
     });
     const otherTenantProduct = await prisma.product.create({
@@ -475,6 +476,23 @@ describe('Core records HTTP tenant isolation', () => {
         items: [{ productName: 'Teste', quantity: 1, unitPrice: 10.999 }],
       })
       .expect(400);
+    const unclassified = await request(app.getHttpServer())
+      .post('/invoice')
+      .set('Authorization', bearer(ownerAToken))
+      .send({
+        clientId,
+        items: [{ productName: 'Operação sem classificação', quantity: 1, unitPrice: 10 }],
+      })
+      .expect(400);
+    expect(unclassified.body).toEqual(
+      expect.objectContaining({
+        code: 'IVA_FISCAL_CLASSIFICATION_REQUIRED',
+        rate: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      }),
+    );
     await request(app.getHttpServer())
       .post('/invoice')
       .set('Authorization', bearer(viewerAToken))
@@ -497,6 +515,7 @@ describe('Core records HTTP tenant isolation', () => {
               productName: 'Revisão contabilística',
               quantity: 2,
               unitPrice: 750,
+              electronicOperationType: 'SE',
             },
           ],
         })
@@ -545,8 +564,7 @@ describe('Core records HTTP tenant isolation', () => {
         total: 3420.17,
         totalAmount: '3420.17',
         taxRuleVersion: 'AO-CIVA-LEI-14-23-ART19-A',
-        taxCalculationStatus:
-          'STANDARD_RATE_ASSUMED_PENDING_ITEM_CLASSIFICATION',
+        taxCalculationStatus: 'STANDARD_RATE_CLASSIFIED',
       }),
     );
     expect(firstInvoice.items).toEqual([

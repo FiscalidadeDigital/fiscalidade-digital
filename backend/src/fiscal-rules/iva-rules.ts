@@ -23,7 +23,8 @@ export type InvoiceVatPolicy = {
   ruleVersion: string;
   calculationStatus:
     | 'PAYMENT_BASIS_NOT_INVOICE_LIQUIDATION'
-    | 'STANDARD_RATE_ASSUMED_PENDING_ITEM_CLASSIFICATION';
+    | 'STANDARD_RATE_CLASSIFIED';
+  requiresLineClassification: boolean;
   requiredInvoiceMention: string | null;
 };
 
@@ -41,6 +42,7 @@ export function resolveInvoiceVatPolicy(regime: string): InvoiceVatPolicy {
       settlementRate: IVA_RATES_FROM_2023_12_28.simplifiedSettlement,
       ruleVersion: 'AO-CIVA-LEI-14-23-ART19-B-69B-69C',
       calculationStatus: 'PAYMENT_BASIS_NOT_INVOICE_LIQUIDATION',
+      requiresLineClassification: false,
       requiredInvoiceMention: SIMPLIFIED_IVA_INVOICE_MENTION,
     };
   }
@@ -49,7 +51,8 @@ export function resolveInvoiceVatPolicy(regime: string): InvoiceVatPolicy {
     invoiceRate: IVA_RATES_FROM_2023_12_28.general,
     settlementRate: null,
     ruleVersion: 'AO-CIVA-LEI-14-23-ART19-A',
-    calculationStatus: 'STANDARD_RATE_ASSUMED_PENDING_ITEM_CLASSIFICATION',
+    calculationStatus: 'STANDARD_RATE_CLASSIFIED',
+    requiresLineClassification: true,
     requiredInvoiceMention: null,
   };
 }

@@ -36,13 +36,43 @@ indicados na tabela.
 Nenhuma regra sem ligação oficial acima é implementada. Nos restantes casos o
 produto mantém montante nulo e apresenta “Por apurar — confirme na AGT/INSS”.
 
+## As 12 implementações parciais, exactamente
+
+| # | Regra | O que está implementado | O que não está implementado |
+| --- | --- | --- | --- |
+| 1 | IVA geral | O simulador e a emissão de factura usam a taxa geral de 14% apenas com enquadramento confirmado e classificação AGT em cada linha. | Classificação/validação de anexos, isenções, taxa reduzida e regime territorial. Sem classificação, a API devolve taxa e montantes como `null` e não assina nem persiste a factura normal. |
+| 2 | IVA simplificado: enquadramento | Guarda enquadramento por imposto e período. | Não valida limiar, previsão nem decisão/cadastro oficial. |
+| 3 | IVA simplificado: factura/dedução | Acrescenta a menção obrigatória na factura. | Não calcula os 10% de IVA suportado nem a dedução ao imposto sobre rendimento. |
+| 4 | II simplificado: enquadramento | Guarda um enquadramento separado por imposto e período. | Não prova a condição IVA nem calcula imposto definitivo. |
+| 5 | IRT Grupo A: base | A folha subtrai a segurança social e aplica os limites configurados. | Não classifica todas as rubricas isentas/não sujeitas. |
+| 6 | IRT Grupo A: alimentação/transporte | Aplica o limite de Kz 30.000. | Não verifica a natureza nem a prova de cada componente. |
+| 7 | IRT Grupo A: liquidação | Gera apenas quando há trabalhador/folha e limita a tabela a 2026. | Não decide Grupo B/C nem prolonga o calendário a outro ano. |
+| 8 | INSS: inscrição de trabalhador | Guarda dados do trabalhador. | Não confirma inscrição, dependentes ou todos os prazos legais. |
+| 9 | INSS: regime geral | Calcula 8% da entidade e 3% do trabalhador com Decimal. | Não decide regimes especiais nem elegibilidade documental. |
+| 10 | INSS: reformado | Usa 8%/8% para a categoria declarada. | Não verifica a prova de reforma. |
+| 11 | INSS: base contributiva | Exclui subsídio de férias. | Não classifica todas as rubricas excluídas/incluídas. |
+| 12 | INSS: folha/pagamento | Só gera obrigação com trabalhador/folha e deixa o valor nulo sem facto laboral. | Não cobre o regime especial ou o reporte legal completo. |
+
+## Conflito de fontes resolvido
+
+O conflito é a dedução do IVA suportado no regime simplificado. Guias e páginas
+históricas do Portal do Contribuinte, redigidos para o regime transitório de
+2020, referem 7%. A fonte primária vigente, a [Lei n.º 14/23, CIVA
+republicado](https://www.ucm.minfin.gov.ao/cs/groups/public/documents/document/aw4z/nzu5/~edisp/minfin3759673.pdf),
+art. 69.º-C, n.º 4, determina 10%; a [tabela de procedimentos da
+AGT](https://www.ucm.minfin.gov.ao/cs/groups/public/documents/document/aw4z/oty4/~edisp/minfin3968223.pdf)
+é usada apenas como fonte operacional complementar. Foi escolhida a lei, por
+ser a fonte primária e posterior. O produto não automatiza nenhuma das duas
+percentagens enquanto não existir compra documentalmente elegível, logo o
+conflito não cria um valor fiscal calculado.
+
 ## IVA — Imposto sobre o Valor Acrescentado
 
 **Diploma e vigência:** Lei n.º 14/23, publicada em 28-12-2023. Pelo art. 19.º, n.º 4 do CIVA, a taxa é a vigente quando o imposto se torna exigível. Rever a fonte antes de calcular períodos posteriores a 2026.
 
 | Regime/operação | Regra oficial | Obrigação/período | Fonte | Estado no produto |
 | --- | --- | --- | --- | --- |
-| Geral — taxa normal | 14% para importações, transmissões de bens e prestações de serviços. | Modelo 7, anexos e pagamento até dia 15 de cada mês em 2026; SAF-T até ao fim de cada mês. | CIVA, art. 19.º, n.º 1, al. a); Calendário 2026. | **Implementada (parcial).** A factura grava 14%, mas sem classificação fiscal por linha não pode afastar taxas/isenções especiais. |
+| Geral — taxa normal | 14% para importações, transmissões de bens e prestações de serviços. | Modelo 7, anexos e pagamento até dia 15 de cada mês em 2026; SAF-T até ao fim de cada mês. | CIVA, art. 19.º, n.º 1, al. a); Calendário 2026. | **Implementada (parcial).** A factura grava `NOR`/14% somente com enquadramento confirmado e classificação AGT em cada linha. Sem ela, retorna “IVA por apurar” com taxa, IVA e total `null`; não há emissão assinada com 14% por omissão. |
 | Geral — hotelaria/restauração | 7% somente se forem cumpridas cumulativamente as condições do art. 19.º, n.º 2. | Conforme regime geral. | CIVA, art. 19.º, n.º 1, al. c) e n.º 2. | **Por apurar — confirme na AGT.** Faltam actividade e prova das condições. |
 | Geral — bens alimentares/insumos | 5% somente para bens dos Anexos I e II. | Conforme operação. | CIVA, art. 19.º, n.º 1, al. d). | **Por apurar — confirme na AGT.** Não existe classificação pelos anexos. |
 | Geral — Cabinda | 1% para operações abrangidas pelo regime especial, com as excepções legais. | Conforme operação. | CIVA, art. 19.º, n.º 1, al. e). | **Por apurar — confirme na AGT.** Não há dado territorial/classificação. |
@@ -68,7 +98,7 @@ custos; é necessário apurar correcções, prejuízos, actividade e sector.
 
 | Regime/operação | Regra oficial | Obrigação/período | Fonte | Estado no produto |
 | --- | --- | --- | --- | --- |
-| Geral — definitivo | Incide sobre lucros. AGT publica 25% geral, 10% para certas actividades primárias e 35% para banca, seguros, telecomunicações e petrolíferas angolanas. | Modelo 1 e pagamento até último dia útil de Maio; em 2026, 29-05. | CII; AGT-II; Calendário 2026. | **Por apurar — confirme na AGT.** O motor não calcula definitivo sem matéria colectável fiscal. |
+| Geral — definitivo | Incide sobre lucros. AGT publica 25% geral, 10% para certas actividades primárias e 35% para banca, seguros, telecomunicações e petrolíferas angolanas. | Modelo 1 e pagamento até último dia útil de Maio; em 2026, 29-05. | CII; AGT-II; Calendário 2026. | **Por apurar — confirme na AGT.** O motor mantém `finalAmount: null` e a obrigação sem montante quando falta matéria colectável fiscal. |
 | Geral — provisório 2026 | 2% sobre vendas de bens e serviços não sujeitos a retenção dos primeiros seis meses. Prejuízo no exercício anterior dispensa liquidação, mas exige declaração. | 31-08-2026. | CII, art. 66.º, n.os 1, 2, 4 e 10, conforme comunicado AGT 985597; Calendário 2026. | **Por apurar — confirme na AGT.** Faltam vendas excluídas, prejuízo e excepções sectoriais. |
 | Simplificado — enquadramento | Aplica-se aos sujeitos de II abrangidos pelo regime de não sujeição/exclusão de IVA, segundo a AGT. | Exige prova da situação IVA. | AGT-II. | **Implementada (parcial).** Há enquadramento por imposto/período, não validação da condição. |
 | Simplificado — definitivo | Declaração simplificada/livro de compras, vendas e serviços e pagamento anual; o calendário 2026 distingue modalidade com e sem contabilidade. | O calendário mostra instâncias Fevereiro/Abril e 30-04 para modalidade sem contabilidade; escolher pelo canal real do contribuinte. | AGT-II; Calendário 2026. | **Por apurar — confirme na AGT.** Não há fórmula definitiva nem selector documental. |
@@ -121,8 +151,8 @@ Fonte: Lei n.º 14/25, art. 21.º, n.º 3 e Anexo I.
 
 | Evento | Fonte/regra oficial | Tratamento seguro |
 | --- | --- | --- |
-| Antes de actividade comercial/industrial | AGT-II informa inscrição no Registo Geral de Contribuintes antes do exercício. Para intenção de iniciar, confirma/actualiza elementos em 60 dias ou comunica que não iniciou. | Guardar data de início de actividade, distinta da criação da conta. Não gerar obrigações anteriores. |
-| Início/alteração IVA | Portal disponibiliza Modelo 6; para Simplificado, previsão do ano corrente é base de enquadramento no início. | Regime IVA separado, opção “Não sei” e comprovativo/revisão antes do cálculo. |
+| Antes de actividade comercial/industrial | AGT-II informa inscrição no Registo Geral de Contribuintes antes do exercício. Para intenção de iniciar, confirma/actualiza elementos em 60 dias ou comunica que não iniciou. | Guardar `activityStartedAt` explicitamente, distinta da criação da conta; nunca a inferir de `trialStartedAt`. Não gerar obrigações anteriores. |
+| Início/alteração IVA | Portal disponibiliza Modelo 6; para Simplificado, previsão do ano corrente é base de enquadramento no início. | Regime IVA separado. A API aceita “Não sei” como `knowledgeStatus: UNKNOWN`, guarda `regime: null` e exige comprovativo/revisão antes do cálculo; nunca infere um regime. |
 | Início II | A AGT esclarece que cadastramento e declaração de início não implicam por si pagamento; pessoa singular poderá estar em IRT Grupo C. | Regime II separado do IVA; não criar valor de II só por existir empresa. |
 | Primeiro trabalhador | Inscrição INSS e IRT/INSS apenas com vínculo/folha. | Gerar apenas a partir de factos laborais; nunca valor sem folha. |
 | História anterior | Não há base para apurar dívida/multa sem declaração/documento oficial. | Criar estado “obrigações anteriores por confirmar”; nunca reescrever paga/submetida. |
@@ -131,7 +161,7 @@ Fonte: Lei n.º 14/25, art. 21.º, n.º 3 e Anexo I.
 
 | Área | Resultado | Acção/documentação |
 | --- | --- | --- |
-| backend/src/fiscal-rules/iva-rules.ts e invoice | Taxas estão centralizadas, mas factura do Geral aplica 14% e código NOR a todas as linhas sem classificá-las. | **Parcial.** Bloquear/por apurar a classificação ausente antes de tratar o valor persistido como definitivo. |
+| backend/src/fiscal-rules/iva-rules.ts e invoice | Taxas estão centralizadas; a factura normal exige enquadramento confirmado e operação AGT em todas as linhas antes de gravar `NOR`/14%. | **Parcial.** Classificações especiais (isenção, taxa reduzida, Cabinda) continuam por apurar, mas já não existe 14% por omissão. |
 | IVA Simplificado | Não acrescenta 14% e inclui menção, mas não modela recebimentos nem dedução legal de 10%. | **Por apurar.** Falta modelo/implementação, não fonte primária. |
 | II | Motor não transforma receitas/custos em definitivo e não automatiza provisório. | **Por apurar.** Preservar bloqueio até haver factos e versão consolidada. |
 | Retenções | RetentionEngine falha fechado, mas InvoiceService aplica Tenant.retentionRate a toda factura normal. | **Por apurar — risco activo.** Taxa por empresa não prova incidência, natureza, residência, artigo ou vigência. |
@@ -161,7 +191,8 @@ deliberados: não são valores fiscais de zero.
 
 | Cálculo/caso | Fonte e vigência | Esperado | Obtido |
 | --- | --- | --- | --- |
-| IVA Geral, operação de Kz 1.000,05 | CIVA-2023, art. 19.º, n.º 1, al. a), 2026 | IVA Kz 140,01; total Kz 1.140,06 com arredondamento Decimal | IVA Kz 140,01; total Kz 1.140,06 |
+| IVA Geral, linha classificada, operação de Kz 1.000,05 | CIVA-2023, art. 19.º, n.º 1, al. a), 2026 | IVA Kz 140,01; total Kz 1.140,06 com arredondamento Decimal | IVA Kz 140,01; total Kz 1.140,06 |
+| IVA Geral, linha sem classificação | CIVA-2023; classificação por linha obrigatória para aplicar a regra geral | Taxa, IVA e total `null`; não emitir/assinar factura fiscal | `NEEDS_OFFICIAL_CONFIRMATION`; sem 14% por omissão |
 | IVA Geral, valor zero | CIVA-2023, art. 19.º, n.º 1, al. a) | IVA e total Kz 0,00 | IVA e total Kz 0,00 |
 | IVA Simplificado | CIVA-2023, arts. 69.º-B e 69.º-C, 2026 | Sem liquidação automática enquanto faltarem recebimentos e IVA suportado elegível | Estado de confirmação oficial; sem liquidação |
 | IRT Grupo A, fronteiras 150.000 / 200.000 / 10.000.000 Kz | OGE-2026, art. 21.º, n.º 3 e Anexo I | Kz 0,00 / 20.500,00 / 2.342.250,00 | Kz 0,00 / 20.500,00 / 2.342.250,00 |

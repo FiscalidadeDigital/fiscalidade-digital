@@ -239,6 +239,9 @@ export default function InvoiceComposer({
       if (toScaledInteger(item.quantity, 4) === null || toScaledInteger(item.unitPrice, 2) === null) {
         return setError('Use até quatro casas na quantidade e duas casas no preço.');
       }
+      if (!isProForma && !item.electronicOperationType) {
+        return setError('Classifique a operação AGT em todas as linhas antes de emitir a factura; sem essa classificação o IVA fica por apurar.');
+      }
     }
 
     setSaving(true);

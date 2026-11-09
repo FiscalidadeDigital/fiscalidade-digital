@@ -47,6 +47,41 @@ estratégia de rollback durante incidente.
 7. Só então fazer o deploy do Render e observar logs, métricas e consultas de
    leitura. Nunca usar esse arranque como primeira aplicação desta migração.
 
+## Ordem exacta de publicação
+
+Esta ordem é obrigatória para a migração
+`20261108090000_fiscal_enrollment_lifecycle`; não se executa contra uma base
+remota nesta tarefa.
+
+1. **[CONFIRMAR] Criar backup/branch Neon.** Criar uma branch Neon a partir de
+   produção, guardar o ID e manter a produção inalterada.
+2. **[CONFIRMAR] Ensaiar na branch.** Apontar `DATABASE_URL` exclusivamente
+   para essa branch, aplicar manualmente `npx prisma migrate deploy`, confirmar
+   `_prisma_migrations`, gerar o cliente, executar build e testes e correr
+   apenas a simulação de leitura.
+3. **Verificar compatibilidade e dados.** Antes de escrever dados novos,
+   confirmar que a versão actualmente publicada (`bba7ef1`) ainda lê o
+   esquema migrado. A alteração é estruturalmente aditiva/relaxante, mas essa
+   versão antiga só é aceitável num ensaio de leitura contra dados antigos:
+   depois da migração o `DEFAULT GERAL` de `Tenant.regime` deixa de existir e
+   o onboarding antigo pode gravar/devolver `regime = NULL`. Ela também deixa
+   de ser segura depois de serem gravados `regime = NULL` ou os novos valores
+   de `ObligationStatus`, que o Prisma antigo não conhece. O ensaio deve,
+   portanto, testar a aplicação antiga contra a branch migrada sem permitir
+   escritas nem fluxos que gravem esses valores novos.
+4. **[CONFIRMAR] Migrar produção manualmente, antes do Render.** Numa janela
+   aprovada, repetir o comando Prisma uma vez, com credencial de produção, e
+   confirmar que nenhuma migração fica pendente. Assim o arranque do Render
+   não é a primeira aplicação nem tem nada para migrar.
+5. **Deploy do backend no Render.** Confirmar health check, logs sem erro de
+   Prisma, criação/leitura de enquadramentos e que o agendador apenas simula
+   ou respeita o limite configurado.
+6. **Só depois deploy do frontend no Vercel.** Se o frontend for publicado
+   antes do backend, pode apresentar estados/endpoints novos que o backend
+   antigo não compreende ou rejeitar uma alteração de regime. Bloquear a
+   promoção do preview até o passo 5 e verificar a versão da API antes de
+   liberar o Vercel.
+
 ## Reversão
 
 1. Parar o rollout e encaminhar tráfego para a revisão de aplicação anterior

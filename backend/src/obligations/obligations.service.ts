@@ -1651,7 +1651,9 @@ export class ObligationsService {
                 assessment.adjustmentsAmountValue ??
                 assessment.adjustmentsAmount,
               finalAmount:
-                assessment.finalAmountValue ?? assessment.finalAmount,
+                taxType === TaxType.INDUSTRIAL
+                  ? null
+                  : assessment.finalAmountValue ?? assessment.finalAmount,
             }
           : null,
         origin: {

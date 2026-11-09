@@ -14,12 +14,12 @@ describe('resolveInvoiceVatPolicy', () => {
     );
   });
 
-  it('marks the general rate as pending item-level classification', () => {
+  it('requires a line classification before the general rate can be used', () => {
     expect(resolveInvoiceVatPolicy('GERAL')).toEqual(
       expect.objectContaining({
         invoiceRate: '0.14',
-        calculationStatus:
-          'STANDARD_RATE_ASSUMED_PENDING_ITEM_CLASSIFICATION',
+        calculationStatus: 'STANDARD_RATE_CLASSIFIED',
+        requiresLineClassification: true,
       }),
     );
     expect(IVA_LEGAL_SOURCE.officialUrl).toMatch(/^https:\/\/www\.ucm\.minfin\.gov\.ao\//);

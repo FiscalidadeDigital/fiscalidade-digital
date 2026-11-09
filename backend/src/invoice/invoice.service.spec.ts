@@ -78,7 +78,7 @@ describe('InvoiceService paged list', () => {
     const prisma = {
       tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', regime: FiscalRegime.GERAL, retentionRate: 0 }) },
       client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a', city: 'Luanda' }) },
-      product: { findMany: jest.fn().mockResolvedValue([{ id: 'product-a', name: 'Serviço', price: 100, priceAmount: null, unit: 'SERVICO' }]) },
+      product: { findMany: jest.fn().mockResolvedValue([{ id: 'product-a', name: 'Serviço', price: 100, priceAmount: null, unit: 'SERVICO', electronicOperationType: 'SE' }]) },
       $transaction: jest.fn((callback) => callback(tx)),
     } as unknown as PrismaService;
     const fiscalSignature = {
@@ -108,6 +108,63 @@ describe('InvoiceService paged list', () => {
     expect(persisted.items.create[0]).toEqual(expect.objectContaining({
       taxType: 'IVA', taxCode: 'NOR', taxRate: expect.anything(), taxAmount: expect.anything(),
     }));
+    expect(persisted.taxCalculationStatus).toBe('STANDARD_RATE_CLASSIFIED');
+  });
+
+  it('leaves IVA undetermined instead of assuming 14% without line classification', async () => {
+    const prisma = {
+      tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', retentionRate: 0 }) },
+      client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }) },
+      product: { findMany: jest.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new InvoiceService(
+      prisma,
+      {} as any,
+      {} as any,
+      undefined,
+      { resolve: jest.fn().mockResolvedValue({ regime: FiscalRegime.GERAL }) } as any,
+    );
+
+    await expect(service.create('tenant-a', {
+      clientId: 'client-a',
+      items: [{ productName: 'Serviço sem classificação', quantity: 1, unitPrice: 100 }],
+    })).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'IVA_FISCAL_CLASSIFICATION_REQUIRED',
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      }),
+    });
+  });
+
+  it('does not reinterpret an UNKNOWN IVA enrollment as GERAL', async () => {
+    const prisma = {
+      tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', retentionRate: 0 }) },
+      client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }) },
+      product: { findMany: jest.fn().mockResolvedValue([]) },
+    } as unknown as PrismaService;
+    const service = new InvoiceService(
+      prisma,
+      {} as any,
+      {} as any,
+      undefined,
+      { resolve: jest.fn().mockResolvedValue({ regime: null, knowledgeStatus: 'UNKNOWN' }) } as any,
+    );
+
+    await expect(service.create('tenant-a', {
+      clientId: 'client-a',
+      items: [{ productName: 'Serviço classificado', quantity: 1, unitPrice: 100, electronicOperationType: 'SE' }],
+    })).rejects.toMatchObject({
+      response: expect.objectContaining({
+        code: 'IVA_ENROLLMENT_UNCONFIRMED',
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      }),
+    });
   });
 
   it('blocks fiscal issuance without a current IVA enrollment instead of using Tenant.regime', async () => {

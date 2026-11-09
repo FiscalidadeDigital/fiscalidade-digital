@@ -210,7 +210,7 @@ export class InvoiceService {
     // IVA
     //
     // REGIME GERAL:
-    //   taxa normal = 14%
+    //   taxa normal = 14%, apenas depois da classificação da linha.
     //
     // REGIME SIMPLIFICADO:
     //   o imposto não é acrescentado à factura como 14%.
@@ -229,9 +229,53 @@ export class InvoiceService {
       throw new BadRequestException({
         code: 'IVA_ENROLLMENT_REQUIRED',
         message: 'É necessário um enquadramento IVA vigente na data de emissão da factura.',
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_CONFIGURATION',
       });
     }
-    const vatPolicy = resolveInvoiceVatPolicy(ivaEnrollment?.regime ?? 'GERAL');
+    const ivaRegime = ivaEnrollment?.regime ?? null;
+    if (documentType === InvoiceDocumentType.NORMAL && !ivaRegime) {
+      throw new BadRequestException({
+        code: 'IVA_ENROLLMENT_UNCONFIRMED',
+        message:
+          'IVA por apurar: o enquadramento IVA da empresa ainda não foi confirmado.',
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      });
+    }
+    const vatPolicy = resolveInvoiceVatPolicy(
+      documentType === InvoiceDocumentType.NORMAL ? ivaRegime! : 'GERAL',
+    );
+    const hasFiscalLineClassification = normalizedItems.every((item) =>
+      Boolean(item.electronicOperationType?.trim()),
+    );
+    if (
+      documentType === InvoiceDocumentType.NORMAL &&
+      vatPolicy.requiresLineClassification &&
+      !hasFiscalLineClassification
+    ) {
+      /*
+       * Product.ivaRate has a legacy default of 14 and is not evidence that
+       * this operation is taxable at the general rate. The persisted AGT
+       * operation classification is the minimum factual input we have here.
+       */
+      throw new BadRequestException({
+        code: 'IVA_FISCAL_CLASSIFICATION_REQUIRED',
+        message:
+          'IVA por apurar: classifique a operação AGT em todas as linhas antes de emitir a factura. Nenhuma taxa de 14% foi assumida.',
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      });
+    }
     const ivaRate =
       documentType === InvoiceDocumentType.PRO_FORMA
         ? 0
