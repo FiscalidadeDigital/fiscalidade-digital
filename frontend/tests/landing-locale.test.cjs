@@ -31,12 +31,17 @@ test('a landing identifica o idioma apresentado e mantém os documentos legais e
   assert.match(source, /function Team\(\{ locale \}: \{ locale: LandingLocale \}\)/);
 });
 
-test('a landing mantém a experiência de soluções sem restaurar o Ecossistema', () => {
+test('a landing mantém a experiência de soluções e recupera o carrossel de parceiros', () => {
   assert.match(source, /\['Funcionalidades', '#funcionalidades'\]/);
   assert.match(source, /<WhyChooseSection locale=\{locale\} \/>/);
+  assert.match(source, /const partnerLogos = \[/);
+  assert.match(source, /function PartnerMarquee/);
+  assert.match(source, /<PartnerMarquee locale=\{locale\} \/>/);
+  assert.match(source, /className="partners-track"/);
+  assert.match(source, /data-how-path/);
+  assert.match(source, /data-how-step/);
   assert.doesNotMatch(source, /<section id="ecossistema"/);
   assert.doesNotMatch(source, /ecosystemPartners/);
-  assert.doesNotMatch(source, /image: '\/(yas\.jpg|yashhublogo\.jpg|aceleralogo\.jpg|Ignitionlogo\.png)'/);
   assert.doesNotMatch(source, /landing-logo-marquee/);
   assert.doesNotMatch(source, /id="assistente"/);
   assert.doesNotMatch(source, /id="documentos"/);

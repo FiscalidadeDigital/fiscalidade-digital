@@ -5,11 +5,15 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
+  Building2,
   ChevronDown,
   ChevronRight,
   Linkedin,
+  LogIn,
   Mail,
+  MailCheck,
   Menu,
+  UserPlus,
   X,
 } from 'lucide-react';
 import MissionVisionValues from '@/components/landing/MissionVisionValues';
@@ -42,19 +46,36 @@ const onboardingSteps = [
   {
     title: ['Criar a conta', 'Create an account'],
     detail: ['Comece por aqui.', 'Start here.'],
+    Icon: UserPlus,
   },
   {
     title: ['Confirmar o e-mail', 'Confirm your email'],
     detail: ['Confirme o e-mail que indicou.', 'Confirm the email address you provided.'],
+    Icon: MailCheck,
   },
   {
     title: ['Indicar nome, NIF e situação fiscal', 'Add the company name, NIF and tax situation'],
     detail: ['Registe os dados da empresa.', 'Record the company details.'],
+    Icon: Building2,
   },
   {
     title: ['Iniciar sessão', 'Log in'],
     detail: ['Entre na plataforma.', 'Access the platform.'],
+    Icon: LogIn,
   },
+] as const;
+
+const partnerLogos = [
+  { name: 'YAS', image: '/yas.jpg' },
+  { name: 'Mabak', image: '/mabak.jpg' },
+  { name: 'ENSA', image: '/Ensalogo.png' },
+  { name: 'Yash Hub', image: '/yashhublogo.jpg' },
+  { name: 'Rede Canais', image: '/imageslogo.jfif' },
+  { name: 'Banco Nacional de Angola', image: '/Bnalogo.png' },
+  { name: 'Acelera', image: '/aceleralogo.jpg' },
+  { name: 'Ignition', image: '/Ignitionlogo.png' },
+  { name: 'Catoca', image: '/catocalogo.png' },
+  { name: 'BAI', image: '/bailogo.png' },
 ] as const;
 
 const members = [
@@ -253,6 +274,29 @@ function Mockup({ locale }: { locale: LandingLocale }) {
   );
 }
 
+function PartnerMarquee({ locale }: { locale: LandingLocale }) {
+  return (
+    <section className="partners-section" aria-labelledby="partners-title">
+      <div className="mx-auto max-w-7xl px-5 lg:px-8">
+        <p id="partners-title" className="partners-title text-xs font-bold uppercase text-slate-500">{tr(locale, 'Parceiros e ecossistema', 'Partners and ecosystem')}</p>
+      </div>
+      <div className="partners-window">
+        <div className="partners-track">
+          {[0, 1].map((groupIndex) => (
+            <div className="partners-group" key={`partner-group-${groupIndex}`} aria-hidden={groupIndex === 1}>
+              {partnerLogos.map((partner) => (
+                <div className="partner-item" key={`${groupIndex}-${partner.name}`} title={partner.name}>
+                  <Image src={partner.image} alt={groupIndex === 0 ? partner.name : ''} width={142} height={66} sizes="142px" loading={groupIndex === 0 ? 'eager' : 'lazy'} />
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [locale, setLocale] = useState<LandingLocale>('pt-AO');
@@ -274,6 +318,48 @@ export default function HomePage() {
     } catch {
       // Portuguese (Angola) remains the default when storage is unavailable.
     }
+  }, []);
+
+  useEffect(() => {
+    const page = pageRef.current;
+    if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const howPath = page.querySelector<HTMLElement>('[data-how-path]');
+    const pathSteps = Array.from(howPath?.querySelectorAll<HTMLElement>('[data-how-step]') ?? []);
+    if (!howPath || !pathSteps.length) return;
+
+    const updateHowPath = () => {
+      const bounds = howPath.getBoundingClientRect();
+      const progress = Math.min(1, Math.max(0, (window.innerHeight * 0.78 - bounds.top) / Math.max(bounds.height + window.innerHeight * 0.35, 1)));
+      howPath.style.setProperty('--how-path-progress', progress.toFixed(3));
+      howPath.classList.toggle('is-path-active', progress > 0.01);
+
+      pathSteps.forEach((step, index) => {
+        const threshold = 0.08 + (index / Math.max(pathSteps.length - 1, 1)) * 0.82;
+        step.classList.toggle('is-path-reached', progress >= threshold);
+      });
+    };
+
+    let frame = 0;
+    const scheduleUpdate = () => {
+      if (frame) return;
+      frame = window.requestAnimationFrame(() => {
+        updateHowPath();
+        frame = 0;
+      });
+    };
+
+    page.dataset.motion = 'ready';
+    scheduleUpdate();
+    window.addEventListener('scroll', scheduleUpdate, { passive: true });
+    window.addEventListener('resize', scheduleUpdate);
+
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.removeEventListener('scroll', scheduleUpdate);
+      window.removeEventListener('resize', scheduleUpdate);
+      delete page.dataset.motion;
+    };
   }, []);
 
   return (
@@ -323,6 +409,8 @@ export default function HomePage() {
         </div>
       </section>
 
+      <PartnerMarquee locale={locale} />
+
       <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
@@ -341,17 +429,27 @@ export default function HomePage() {
       <section id="como-funciona" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <Title eyebrow={tr(locale, 'Como funciona', 'How it works')}>{tr(locale, 'Comece pela conta e pelas informações da empresa.', 'Start with the account and your company information.')}</Title>
-          <ol className="mt-10 grid gap-x-10 gap-y-8 border-y border-slate-200 py-6 sm:grid-cols-2 lg:grid-cols-4">
-              {onboardingSteps.map(({ title, detail }) => {
+          <div className="how-path mt-10" data-how-path>
+            <div aria-hidden="true" className="how-path-line"><span /></div>
+            <ol className="how-path-steps">
+              {onboardingSteps.map(({ title, detail, Icon }) => {
                 const copyIndex = locale === 'en' ? 1 : 0;
                 return (
-                  <li key={title[0]} className="border-t border-slate-200 pt-4">
-                    <p className="text-base font-bold leading-6 text-fd-text">{title[copyIndex]}</p>
-                    <p className="mt-2 text-sm leading-6 text-slate-600">{detail[copyIndex]}</p>
+                  <li
+                    key={title[0]}
+                    data-how-step
+                    className="how-path-step"
+                  >
+                    <span aria-hidden="true" className="how-path-node"><Icon size={18} /></span>
+                    <div className="how-path-copy">
+                      <p className="text-base font-bold leading-6 text-fd-text">{title[copyIndex]}</p>
+                      <p className="mt-2 text-sm leading-6 text-slate-600">{detail[copyIndex]}</p>
+                    </div>
                   </li>
                 );
               })}
-          </ol>
+            </ol>
+          </div>
         </div>
       </section>
 
