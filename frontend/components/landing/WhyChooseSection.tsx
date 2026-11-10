@@ -20,7 +20,6 @@ type SolutionGroup = {
   description: string;
   benefits: readonly string[];
   previewTitle: string;
-  previewLabel: string;
   previewItems: readonly string[];
   cta: string;
   ctaHref: string;
@@ -36,7 +35,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Registe facturas, pró-formas, compras, clientes, fornecedores e produtos para acompanhar o dia a dia da empresa.',
       benefits: ['Facturas e pró-formas', 'Compras e facturas recebidas', 'Clientes, fornecedores e produtos'],
       previewTitle: 'Operação da empresa',
-      previewLabel: 'Demonstração com dados fictícios',
       previewItems: ['Facturas', 'Compras recebidas', 'Clientes e fornecedores'],
       cta: 'Criar conta',
       ctaHref: '/register',
@@ -49,7 +47,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Consulte obrigações, calendário por imposto e período, situação fiscal, pagamentos registados e simulações quando precisar de preparar a próxima decisão.',
       benefits: ['Calendário com contagem de dias', 'Obrigações e Central Fiscal', 'Alertas na plataforma'],
       previewTitle: 'Agenda fiscal',
-      previewLabel: 'Demonstração com dados fictícios',
       previewItems: ['Calendário fiscal', 'Obrigações a acompanhar', 'Situação fiscal'],
       cta: 'Criar conta',
       ctaHref: '/register',
@@ -62,7 +59,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Organize documentos e relatórios, acompanhe a facturação e gere e exporte o ficheiro SAF-T a partir dos dados registados.',
       benefits: ['Documentos da empresa', 'Relatórios e exportação CSV', 'Geração e exportação de SAF-T'],
       previewTitle: 'Informação da empresa',
-      previewLabel: 'Demonstração com dados fictícios',
       previewItems: ['Documentos', 'Relatórios', 'Ficheiro SAF-T'],
       cta: 'Criar conta',
       ctaHref: '/register',
@@ -75,7 +71,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Pesquise a biblioteca de legislação fiscal disponível na plataforma.',
       benefits: ['Legislação fiscal', 'Pesquisa na biblioteca', 'Educação Fiscal'],
       previewTitle: 'Biblioteca fiscal',
-      previewLabel: 'Demonstração com dados fictícios',
       previewItems: ['Legislação fiscal', 'Pesquisa na biblioteca', 'Educação Fiscal'],
       cta: 'Falar com a equipa',
       ctaHref: '#contacto',
@@ -88,7 +83,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Fale connosco sobre consultoria fiscal e contabilística para enquadrar os próximos passos da sua empresa.',
       benefits: ['Orientação fiscal ajustada ao contexto', 'Apoio contabilístico para decisões informadas', 'Canal directo para falar com a equipa'],
       previewTitle: 'Pedido de apoio',
-      previewLabel: 'Demonstração com dados fictícios',
       previewItems: ['Consultoria fiscal', 'Apoio contabilístico', 'Contexto da empresa'],
       cta: 'Falar com a equipa',
       ctaHref: '#contacto',
@@ -103,7 +97,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Record invoices, pro formas, purchases, customers, suppliers and products to follow the company’s daily activity.',
       benefits: ['Invoices and pro formas', 'Purchases and received invoices', 'Customers, suppliers and products'],
       previewTitle: 'Company operations',
-      previewLabel: 'Demonstration with fictional data',
       previewItems: ['Invoices', 'Received purchases', 'Customers and suppliers'],
       cta: 'Create account',
       ctaHref: '/register',
@@ -116,7 +109,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Consult obligations, the tax calendar by tax and period, tax situation, recorded payments and simulations when preparing the next decision.',
       benefits: ['Calendar with day counts', 'Obligations and Central Fiscal', 'Platform alerts'],
       previewTitle: 'Tax agenda',
-      previewLabel: 'Demonstration with fictional data',
       previewItems: ['Tax calendar', 'Obligations to follow', 'Tax situation'],
       cta: 'Create account',
       ctaHref: '/register',
@@ -129,7 +121,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Organise documents and reports, follow invoicing and generate and export the SAF-T file from recorded data.',
       benefits: ['Company documents', 'Reports and CSV export', 'SAF-T generation and export'],
       previewTitle: 'Company information',
-      previewLabel: 'Demonstration with fictional data',
       previewItems: ['Documents', 'Reports', 'SAF-T file'],
       cta: 'Create account',
       ctaHref: '/register',
@@ -142,7 +133,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Search the tax legislation library available in the platform.',
       benefits: ['Tax legislation', 'Library search', 'Tax Education'],
       previewTitle: 'Tax library',
-      previewLabel: 'Demonstration with fictional data',
       previewItems: ['Tax legislation', 'Library search', 'Tax Education'],
       cta: 'Talk to the team',
       ctaHref: '#contacto',
@@ -155,7 +145,6 @@ const solutionGroups: Record<LandingLocale, readonly SolutionGroup[]> = {
       description: 'Talk to us about tax and accounting consulting to frame the next steps for your company.',
       benefits: ['Tax guidance tailored to your context', 'Accounting support for informed decisions', 'A direct channel to talk to the team'],
       previewTitle: 'Support request',
-      previewLabel: 'Demonstration with fictional data',
       previewItems: ['Tax consulting', 'Accounting support', 'Company context'],
       cta: 'Talk to the team',
       ctaHref: '#contacto',
@@ -281,8 +270,7 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
 function ProductPreview({ group, locale }: { group: SolutionGroup; locale: LandingLocale }) {
   return (
     <aside className="border-t border-slate-200 bg-[var(--fd-surface-muted)] p-6 sm:p-8 lg:border-l lg:border-t-0 lg:p-10">
-      <p className="text-sm font-medium text-fd-accent">{group.previewLabel}</p>
-      <div className="mt-4 border border-slate-200 bg-white">
+      <div className="border border-slate-200 bg-white">
         <div className="border-b border-slate-200 px-4 py-4">
           <p className="text-sm font-bold text-fd-text">{group.previewTitle}</p>
         </div>
@@ -296,9 +284,6 @@ function ProductPreview({ group, locale }: { group: SolutionGroup; locale: Landi
           ))}
         </ul>
       </div>
-      <p className="mt-5 max-w-sm text-xs leading-5 text-slate-500">
-        {copy(locale, 'Os dados apresentados são fictícios e servem apenas para mostrar a organização da informação.', 'The displayed data is fictional and only illustrates how information is organised.')}
-      </p>
     </aside>
   );
 }

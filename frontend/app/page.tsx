@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
+  ChevronDown,
   ChevronRight,
   Linkedin,
   Mail,
@@ -186,9 +187,9 @@ function tr(locale: LandingLocale, pt: string, en: string) {
 function LanguageSelector({ locale, onChange, mobile = false }: { locale: LandingLocale; onChange: (locale: LandingLocale) => void; mobile?: boolean }) {
   return (
     <label className={`inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-bold text-fd-text shadow-sm ${mobile ? 'w-full justify-between px-3 py-2.5 text-sm' : ''}`}>
-      <span className={mobile ? '' : 'sr-only'}>{tr(locale, 'Idioma da landing', 'Landing page language')}</span>
+      <span className={mobile ? '' : 'sr-only'}>{tr(locale, 'Idioma', 'Language')}</span>
       <select
-        aria-label={tr(locale, 'Idioma da landing', 'Landing page language')}
+        aria-label={tr(locale, 'Selecionar idioma', 'Select language')}
         value={locale}
         onChange={(event) => onChange(event.target.value === 'en' ? 'en' : 'pt-AO')}
         className="min-w-0 bg-transparent font-bold text-fd-text outline-none"
@@ -211,9 +212,9 @@ function Brand({ locale }: { locale: LandingLocale }) {
 function Mockup({ locale }: { locale: LandingLocale }) {
   return (
     <div className="mx-auto max-w-[660px] border border-slate-200 bg-white text-left">
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-5">
+      <div className="flex items-center gap-3 border-b border-slate-200 px-4 py-3 sm:px-5">
+        <span aria-hidden="true" className="h-2.5 w-2.5 rounded-full bg-fd-accent motion-safe:animate-pulse motion-reduce:animate-none" />
         <p className="text-sm font-bold text-fd-text">Fiscalidade Digital</p>
-        <p className="text-xs text-slate-500">{tr(locale, 'Demonstração com dados fictícios', 'Demonstration with fictional data')}</p>
       </div>
       <div className="grid sm:grid-cols-[10rem_minmax(0,1fr)]">
         <aside className="hidden border-r border-slate-200 bg-slate-50 p-4 sm:block">
@@ -226,12 +227,11 @@ function Mockup({ locale }: { locale: LandingLocale }) {
           </nav>
         </aside>
         <div className="p-5 sm:p-6">
-          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-200 pb-4">
+          <div className="border-b border-slate-200 pb-4">
             <div>
               <p className="text-sm font-medium text-fd-accent">{tr(locale, 'Resumo fiscal', 'Tax summary')}</p>
               <p className="mt-1 text-lg font-bold text-fd-text">{tr(locale, 'Informação da empresa', 'Company information')}</p>
             </div>
-            <span className="text-xs text-slate-500">{tr(locale, 'Dados fictícios', 'Fictional data')}</span>
           </div>
           <dl className="divide-y divide-slate-100 text-sm">
             <div className="flex items-center justify-between gap-4 py-4">
@@ -256,6 +256,7 @@ function Mockup({ locale }: { locale: LandingLocale }) {
 export default function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [locale, setLocale] = useState<LandingLocale>('pt-AO');
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
   const pageRef = useRef<HTMLElement>(null);
   const selectLocale = useCallback((nextLocale: LandingLocale) => {
     setLocale(nextLocale);
@@ -341,12 +342,11 @@ export default function HomePage() {
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <Title eyebrow={tr(locale, 'Como funciona', 'How it works')}>{tr(locale, 'Comece pela conta e pelas informações da empresa.', 'Start with the account and your company information.')}</Title>
           <ol className="mt-10 grid gap-x-10 gap-y-8 border-y border-slate-200 py-6 sm:grid-cols-2 lg:grid-cols-4">
-              {onboardingSteps.map(({ title, detail }, index) => {
+              {onboardingSteps.map(({ title, detail }) => {
                 const copyIndex = locale === 'en' ? 1 : 0;
                 return (
                   <li key={title[0]} className="border-t border-slate-200 pt-4">
-                    <p className="text-sm text-fd-accent">0{index + 1}</p>
-                    <p className="mt-2 text-base font-bold leading-6 text-fd-text">{title[copyIndex]}</p>
+                    <p className="text-base font-bold leading-6 text-fd-text">{title[copyIndex]}</p>
                     <p className="mt-2 text-sm leading-6 text-slate-600">{detail[copyIndex]}</p>
                   </li>
                 );
@@ -369,9 +369,20 @@ export default function HomePage() {
               [tr(locale, 'Posso pagar impostos pela plataforma?', 'Can I pay taxes through the platform?'), tr(locale, 'Não. A plataforma ajuda a organizar obrigações e a consultar pagamentos registados, mas não executa pagamentos junto de bancos ou autoridades.', 'No. The platform helps organise obligations and consult recorded payments, but it does not execute payments with banks or authorities.')],
               [tr(locale, 'A minha equipa pode ter acesso?', 'Can my team have access?'), tr(locale, 'Sim. Pode dar acesso a outros utilizadores da empresa e definir o que cada um pode fazer na plataforma.', 'Yes. You can give access to other company users and define what each person can do on the platform.')],
             ].map(([question, answer], index) => (
-              <div key={question} className={`border-t border-slate-300 pt-5 ${index === 4 ? 'md:col-span-2' : ''}`}>
-                <dt className="text-lg font-bold text-fd-text">{question}</dt>
-                <dd className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">{answer}</dd>
+              <div key={question} className={`border-t border-slate-300 ${index === 4 ? 'md:col-span-2' : ''}`}>
+                <dt>
+                  <button
+                    type="button"
+                    aria-expanded={openFaq === index}
+                    aria-controls={`faq-answer-${index}`}
+                    onClick={() => setOpenFaq((open) => open === index ? null : index)}
+                    className="flex w-full items-center justify-between gap-4 py-5 text-left text-lg font-bold text-fd-text transition-colors hover:text-fd-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
+                  >
+                    <span>{question}</span>
+                    <ChevronDown aria-hidden="true" className={`h-5 w-5 shrink-0 transition-transform ${openFaq === index ? 'rotate-180' : ''}`} />
+                  </button>
+                </dt>
+                {openFaq === index && <dd id={`faq-answer-${index}`} className="-mt-1 max-w-3xl pb-5 text-sm leading-6 text-slate-600">{answer}</dd>}
               </div>
             ))}
           </dl>
