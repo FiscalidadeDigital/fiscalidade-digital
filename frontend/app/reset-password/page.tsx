@@ -59,7 +59,7 @@ function ResetPasswordContent() {
   }
 
   return (
-    <AuthFrame eyebrow="RECUPERAR ACESSO" title="Definir nova palavra-passe" description="Utilize o código recebido e escolha uma palavra-passe exclusiva com pelo menos 12 caracteres." backHref="/forgot-password" backLabel="Voltar à recuperação">
+    <AuthFrame eyebrow="Recuperar acesso" title="Definir nova palavra-passe" description="Utilize o código recebido e escolha uma palavra-passe exclusiva com pelo menos 12 caracteres." backHref="/forgot-password" backLabel="Voltar à recuperação">
       {completed ? (
         <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
           <CheckCircle2 className="h-6 w-6 text-emerald-700" />

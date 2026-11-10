@@ -5,16 +5,10 @@ import Link from 'next/link';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
   ArrowRight,
-  Building2,
-  Check,
   ChevronRight,
-  FileText,
   Linkedin,
-  LogIn,
   Mail,
-  MailCheck,
   Menu,
-  UserPlus,
   X,
 } from 'lucide-react';
 import MissionVisionValues from '@/components/landing/MissionVisionValues';
@@ -47,22 +41,18 @@ const onboardingSteps = [
   {
     title: ['Criar a conta', 'Create an account'],
     detail: ['Comece por aqui.', 'Start here.'],
-    Icon: UserPlus,
   },
   {
     title: ['Confirmar o e-mail', 'Confirm your email'],
     detail: ['Confirme o e-mail que indicou.', 'Confirm the email address you provided.'],
-    Icon: MailCheck,
   },
   {
     title: ['Indicar nome, NIF e situação fiscal', 'Add the company name, NIF and tax situation'],
     detail: ['Registe os dados da empresa.', 'Record the company details.'],
-    Icon: Building2,
   },
   {
     title: ['Iniciar sessão', 'Log in'],
     detail: ['Entre na plataforma.', 'Access the platform.'],
-    Icon: LogIn,
   },
 ] as const;
 
@@ -218,50 +208,45 @@ function Brand({ locale }: { locale: LandingLocale }) {
   );
 }
 
-function WhatsAppIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg aria-hidden="true" width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <path
-        fill="currentColor"
-        d="M19.2 4.77A9.59 9.59 0 0 0 12.42 2C7.14 2 2.86 6.28 2.86 11.56c0 1.69.44 3.34 1.27 4.79L2.78 22l5.81-1.32a9.5 9.5 0 0 0 3.82.8h.01c5.27 0 9.56-4.28 9.56-9.56a9.49 9.49 0 0 0-2.78-6.75Zm-6.78 15.1a7.88 7.88 0 0 1-3.57-.86l-.26-.12-3.45.79.74-3.36-.14-.27a7.9 7.9 0 0 1-1.22-4.2c0-4.36 3.55-7.91 7.92-7.91a7.86 7.86 0 0 1 5.6 2.31 7.88 7.88 0 0 1 2.31 5.61c0 4.36-3.55 7.91-7.91 7.91Zm4.34-5.92c-.24-.12-1.42-.7-1.64-.78-.22-.08-.38-.12-.54.12-.16.23-.62.77-.76.93-.14.16-.28.18-.52.06a6.39 6.39 0 0 1-1.93-1.19 7.2 7.2 0 0 1-1.33-1.65c-.14-.24-.02-.37.1-.49.1-.1.24-.28.36-.42.12-.14.16-.24.24-.4.08-.16.04-.3-.02-.42-.06-.12-.54-1.3-.74-1.78-.2-.47-.4-.4-.54-.4h-.46c-.16 0-.42.06-.64.3-.22.24-.84.82-.84 2s.86 2.32.98 2.48c.12.16 1.7 2.59 4.11 3.63.57.25 1.02.4 1.37.52.58.18 1.1.15 1.52.09.46-.07 1.42-.58 1.62-1.14.2-.56.2-1.04.14-1.14-.06-.1-.22-.16-.46-.28Z"
-      />
-    </svg>
-  );
-}
-
 function Mockup({ locale }: { locale: LandingLocale }) {
   return (
-    <div className="hero-mockup relative mx-auto max-w-[700px] py-4 min-[1280px]:py-20">
-      <aside aria-hidden="true" className="hero-floating-card hero-floating-card--obligations hidden min-[1280px]:block">
-        <div className="hero-floating-card__float w-36 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)]">
-          <p className="text-xs font-bold text-fd-text">{tr(locale, 'Obrigações', 'Obligations')}</p>
-          <p className="mt-1 text-xs text-slate-500">{tr(locale, 'Prazos organizados', 'Organised deadlines')}</p>
-        </div>
-      </aside>
-      <aside aria-hidden="true" className="hero-floating-card hero-floating-card--taxes hidden min-[1280px]:block">
-        <div className="hero-floating-card__float w-36 rounded-2xl border border-slate-100 bg-white p-3 shadow-[0_18px_35px_rgba(15,41,79,.11)]">
-          <p className="text-xs font-bold text-fd-text">{tr(locale, 'Impostos', 'Taxes')}</p>
-          <p className="mt-1 text-xs text-slate-500">{tr(locale, 'Fiscalidade num só lugar', 'Tax management in one place')}</p>
-        </div>
-      </aside>
-      <div className="hero-main-card relative z-10 mx-auto max-w-[400px] rounded-[28px] border border-white bg-white p-5 shadow-[0_30px_70px_rgba(15,41,79,.16)]">
-        <div className="flex gap-1.5">
-          <i className="h-2 w-2 rounded-full bg-cyan-400" />
-          <i className="h-2 w-2 rounded-full bg-slate-200" />
-          <i className="h-2 w-2 rounded-full bg-slate-200" />
-        </div>
-        <div className="mt-12 rounded-2xl bg-[#f2f9fb] p-5">
-          <p className="inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-wider text-fd-accent">
-            <FileText size={13} /> {tr(locale, 'Gestão fiscal', 'Tax management')}
-          </p>
-          <p className="mt-4 text-3xl font-extrabold leading-[1.05] tracking-tight text-fd-text">
-            {locale === 'en' ? <>Simplify your<br />company’s tax<br />management.</> : <>Simplifique<br />a gestão da<br />sua empresa.</>}
-          </p>
-        </div>
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center text-xs font-bold">
-          <span className="rounded-xl bg-fd-accent-soft px-2 py-3 text-fd-primary">{tr(locale, 'Facturação', 'Invoicing')}</span>
-          <span className="rounded-xl bg-slate-50 px-2 py-3 text-fd-text">{tr(locale, 'Obrigações', 'Obligations')}</span>
-          <span className="rounded-xl bg-slate-50 px-2 py-3 text-fd-text">{tr(locale, 'Folha salarial', 'Payroll')}</span>
+    <div className="mx-auto max-w-[660px] border border-slate-200 bg-white text-left">
+      <div className="flex items-center justify-between gap-4 border-b border-slate-200 px-4 py-3 sm:px-5">
+        <p className="text-sm font-bold text-fd-text">Fiscalidade Digital</p>
+        <p className="text-xs text-slate-500">{tr(locale, 'Demonstração com dados fictícios', 'Demonstration with fictional data')}</p>
+      </div>
+      <div className="grid sm:grid-cols-[10rem_minmax(0,1fr)]">
+        <aside className="hidden border-r border-slate-200 bg-slate-50 p-4 sm:block">
+          <p className="text-xs font-medium text-slate-500">{tr(locale, 'Área da empresa', 'Company area')}</p>
+          <nav aria-label={tr(locale, 'Navegação de demonstração', 'Demonstration navigation')} className="mt-5 grid gap-3 text-sm text-slate-700">
+            <span className="font-semibold text-fd-primary">{tr(locale, 'Resumo', 'Overview')}</span>
+            <span>{tr(locale, 'Obrigações', 'Obligations')}</span>
+            <span>{tr(locale, 'Facturas', 'Invoices')}</span>
+            <span>{tr(locale, 'Documentos', 'Documents')}</span>
+          </nav>
+        </aside>
+        <div className="p-5 sm:p-6">
+          <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-slate-200 pb-4">
+            <div>
+              <p className="text-sm font-medium text-fd-accent">{tr(locale, 'Resumo fiscal', 'Tax summary')}</p>
+              <p className="mt-1 text-lg font-bold text-fd-text">{tr(locale, 'Informação da empresa', 'Company information')}</p>
+            </div>
+            <span className="text-xs text-slate-500">{tr(locale, 'Dados fictícios', 'Fictional data')}</span>
+          </div>
+          <dl className="divide-y divide-slate-100 text-sm">
+            <div className="flex items-center justify-between gap-4 py-4">
+              <dt className="text-slate-600">{tr(locale, 'Obrigações', 'Obligations')}</dt>
+              <dd className="font-semibold text-fd-text">{tr(locale, 'Consultar calendário', 'Check calendar')}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 py-4">
+              <dt className="text-slate-600">{tr(locale, 'Facturas', 'Invoices')}</dt>
+              <dd className="font-semibold text-fd-text">{tr(locale, 'Registos organizados', 'Organised records')}</dd>
+            </div>
+            <div className="flex items-center justify-between gap-4 py-4">
+              <dt className="text-slate-600">{tr(locale, 'Documentos', 'Documents')}</dt>
+              <dd className="font-semibold text-fd-text">{tr(locale, 'Ficheiros da empresa', 'Company files')}</dd>
+            </div>
+          </dl>
         </div>
       </div>
     </div>
@@ -290,85 +275,9 @@ export default function HomePage() {
     }
   }, []);
 
-  useEffect(() => {
-    const page = pageRef.current;
-    if (!page || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !('IntersectionObserver' in window)) return;
-
-    const elements = Array.from(page.querySelectorAll<HTMLElement>('[data-reveal]'));
-    const howPath = page.querySelector<HTMLElement>('[data-how-path]');
-    const pathSteps = Array.from(howPath?.querySelectorAll<HTMLElement>('[data-how-step]') ?? []);
-    if (!elements.length) return;
-
-    const revealInViewport = () => {
-      elements.forEach((element) => {
-        const bounds = element.getBoundingClientRect();
-        if (bounds.top < window.innerHeight * 1.15 && bounds.bottom > -64) element.classList.add('is-visible');
-      });
-    };
-
-    const updateHowPath = () => {
-      if (!howPath || !pathSteps.length) return;
-
-      const bounds = howPath.getBoundingClientRect();
-      const progress = Math.min(1, Math.max(0, (window.innerHeight * 0.78 - bounds.top) / Math.max(bounds.height + window.innerHeight * 0.35, 1)));
-      howPath.style.setProperty('--how-path-progress', progress.toFixed(3));
-      howPath.classList.toggle('is-path-active', progress > 0.01);
-
-      pathSteps.forEach((step, index) => {
-        const threshold = 0.08 + (index / Math.max(pathSteps.length - 1, 1)) * 0.82;
-        step.classList.toggle('is-path-reached', progress >= threshold);
-      });
-    };
-
-    let observer: IntersectionObserver | null = null;
-    let initialFrame = 0;
-    let scrollFrame = 0;
-    const handleScroll = () => {
-      if (scrollFrame) return;
-      scrollFrame = window.requestAnimationFrame(() => {
-        revealInViewport();
-        updateHowPath();
-        scrollFrame = 0;
-      });
-    };
-    try {
-      page.dataset.motion = 'ready';
-      observer = new IntersectionObserver(
-        (entries) => {
-          entries.forEach((entry) => {
-            if (!entry.isIntersecting) return;
-            entry.target.classList.add('is-visible');
-            observer?.unobserve(entry.target);
-          });
-        },
-        { rootMargin: '0px 0px -8%', threshold: 0.12 },
-      );
-      elements.forEach((element) => observer?.observe(element));
-      initialFrame = window.requestAnimationFrame(() => {
-        revealInViewport();
-        updateHowPath();
-      });
-      window.addEventListener('scroll', handleScroll, { passive: true });
-      window.addEventListener('resize', handleScroll);
-    } catch {
-      delete page.dataset.motion;
-      elements.forEach((element) => element.classList.add('is-visible'));
-      return;
-    }
-
-    return () => {
-      window.cancelAnimationFrame(initialFrame);
-      window.cancelAnimationFrame(scrollFrame);
-      window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('resize', handleScroll);
-      observer?.disconnect();
-      delete page.dataset.motion;
-    };
-  }, []);
-
   return (
     <main ref={pageRef} lang={locale} className="site min-h-screen overflow-x-hidden bg-white text-slate-800">
-      <header className="sticky top-0 z-50 border-b border-slate-100 bg-white/95 backdrop-blur">
+      <header className="sticky top-0 z-50 border-b border-slate-200 bg-white">
         <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 lg:px-8">
           <Brand locale={locale} />
           <nav aria-label={tr(locale, 'Navegação principal', 'Main navigation')} className="hidden gap-5 xl:flex">
@@ -377,7 +286,7 @@ export default function HomePage() {
           <div className="hidden items-center gap-3 sm:flex">
             <LanguageSelector locale={locale} onChange={selectLocale} />
             <Link href="/login" className="inline-flex min-h-11 items-center text-sm font-bold text-fd-text transition-colors hover:text-fd-accent">{tr(locale, 'Entrar', 'Log in')}</Link>
-            <Link href="/register" className="inline-flex min-h-11 items-center rounded-xl bg-fd-primary px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:bg-fd-primary-hover">{tr(locale, 'Criar conta', 'Create account')}</Link>
+            <Link href="/register" className="inline-flex min-h-11 items-center rounded-lg bg-fd-primary px-4 py-2.5 text-sm font-bold text-white transition-colors hover:bg-fd-primary-hover">{tr(locale, 'Criar conta', 'Create account')}</Link>
           </div>
           <button type="button" className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg p-2 transition-colors hover:bg-slate-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 xl:hidden" aria-label={menuOpen ? tr(locale, 'Fechar menu', 'Close menu') : tr(locale, 'Abrir menu', 'Open menu')} aria-controls="menu-principal-mobile" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
             {menuOpen ? <X /> : <Menu />}
@@ -397,32 +306,29 @@ export default function HomePage() {
         )}
       </header>
 
-      <section id="inicio" className="relative overflow-hidden bg-white py-16 sm:py-20">
-        <svg aria-hidden="true" className="absolute right-0 top-0 h-full w-2/3 opacity-70" viewBox="0 0 800 600" fill="none"><path d="M110 50c220 0 120 185 330 185S555 430 820 420" stroke="#A5F3FC" strokeDasharray="5 8" /><circle cx="610" cy="120" r="180" fill="#EEF9FC" /></svg>
-        <div className="relative mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[minmax(0,.8fr)_minmax(0,1.2fr)] lg:items-center lg:px-8">
+      <section id="inicio" className="border-b border-slate-200 bg-[var(--fd-surface-muted)] py-14 sm:py-20">
+        <div className="mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[minmax(0,.82fr)_minmax(0,1.18fr)] lg:items-center lg:px-8">
           <div>
-            <p className="hero-reveal r1 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[.17em] text-fd-accent"><i className="h-2 w-2 rounded-full bg-fd-primary" />Fiscalidade Digital</p>
-            <h1 className="mt-5 text-5xl font-extrabold leading-[.98] tracking-[-.06em] text-fd-text sm:text-6xl xl:text-[3.35rem] 2xl:text-6xl">{locale === 'en' ? <><span className="hero-reveal r2 block xl:whitespace-nowrap">Tax deadlines under control.</span><span className="hero-reveal r3 block text-fd-accent xl:whitespace-nowrap">An organised company.</span></> : <><span className="hero-reveal r2 block xl:whitespace-nowrap">Prazos fiscais sob controlo.</span><span className="hero-reveal r3 block text-fd-accent xl:whitespace-nowrap">Empresa organizada.</span></>}</h1>
-            <p className="hero-reveal r5 mt-7 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">{tr(locale, 'Acompanhe obrigações, facturas, salários e documentos numa plataforma feita para empresas em Angola.', 'Follow obligations, invoices, payroll and documents in a platform made for companies in Angola.')}</p>
-            <div className="hero-reveal r6 mt-8 flex flex-col gap-3 sm:flex-row">
-              <Link href="/register" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-fd-primary px-5 py-3.5 text-sm font-extrabold text-white shadow-[0_12px_25px_rgba(8,169,209,.2)] transition hover:-translate-y-0.5 hover:bg-fd-primary-hover">{tr(locale, 'Criar conta', 'Create account')} <ArrowRight size={17} /></Link>
-              <a href="#funcionalidades" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-5 py-3.5 text-sm font-extrabold text-fd-text transition hover:border-fd-accent hover:text-fd-primary">{tr(locale, 'Conhecer as soluções', 'Explore the solutions')} <ChevronRight size={17} /></a>
+            <p className="text-sm font-medium text-fd-accent">Fiscalidade Digital</p>
+            <h1 className="mt-4 text-4xl font-bold leading-[1.06] tracking-normal text-fd-text sm:text-5xl xl:text-[3.35rem]">{locale === 'en' ? <>Tax deadlines under control.<br /><span className="text-fd-accent">An organised company.</span></> : <>Prazos fiscais sob controlo.<br /><span className="text-fd-accent">Empresa organizada.</span></>}</h1>
+            <p className="mt-6 max-w-xl text-base leading-7 text-slate-600 sm:text-lg">{tr(locale, 'Acompanhe obrigações, facturas, salários e documentos numa plataforma feita para empresas em Angola.', 'Follow obligations, invoices, payroll and documents in a platform made for companies in Angola.')}</p>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Link href="/register" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg bg-fd-primary px-5 py-3.5 text-sm font-semibold text-white transition-colors hover:bg-fd-primary-hover">{tr(locale, 'Criar conta', 'Create account')} <ArrowRight size={17} /></Link>
+              <a href="#funcionalidades" className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-5 py-3.5 text-sm font-semibold text-fd-text transition-colors hover:border-fd-accent hover:text-fd-primary">{tr(locale, 'Conhecer a plataforma', 'Explore the platform')} <ChevronRight size={17} /></a>
             </div>
-            <div className="hero-reveal r7 mt-7 flex flex-wrap gap-x-5 gap-y-2 text-xs font-semibold text-slate-500">
-              {(locale === 'en' ? ['Calendar with day counts', 'Obligations and platform alerts', 'Invoices, payroll and documents'] : ['Calendário com contagem de dias', 'Obrigações e alertas na plataforma', 'Facturas, salários e documentos']).map((text) => <span key={text} className="inline-flex items-center gap-1.5"><Check size={14} className="text-fd-accent" />{text}</span>)}
-            </div>
+            <p className="mt-7 max-w-xl border-l-2 border-fd-accent pl-4 text-sm leading-6 text-slate-600">{tr(locale, 'Organize os registos da empresa e consulte a informação quando precisar.', 'Organise company records and review information when you need it.')}</p>
           </div>
-          <div className="hero-reveal r6"><Mockup locale={locale} /></div>
+          <Mockup locale={locale} />
         </div>
       </section>
 
       <section className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
-            <Title eyebrow={tr(locale, 'Sobre a Fiscalidade Digital', 'About Fiscalidade Digital')}>{locale === 'en' ? <>Technology to<br /><span className="text-fd-accent">organise</span><br />tax operations.</> : <>Tecnologia para<br /><span className="text-fd-accent">organizar</span><br />a operação fiscal.</>}</Title>
-            <div data-reveal className="landing-reveal landing-reveal--d1 max-w-2xl space-y-5 self-center text-base leading-7 text-slate-600">
+            <Title eyebrow={tr(locale, 'Sobre a Fiscalidade Digital', 'About Fiscalidade Digital')}>{locale === 'en' ? <>Information to follow<br />your <span className="text-fd-accent">company.</span></> : <>Informação para<br />acompanhar a <span className="text-fd-accent">empresa.</span></>}</Title>
+            <div className="max-w-2xl space-y-5 self-center text-base leading-7 text-slate-600">
               <p>{tr(locale, 'Reúna facturação, obrigações e dados administrativos num ambiente de trabalho claro.', 'Bring invoicing, obligations and administrative data together in a clear workspace.')}</p>
-              <p className="border-l-2 border-cyan-500 pl-4 font-bold text-fd-text">{tr(locale, 'Menos informação espalhada. Mais contexto para acompanhar a empresa.', 'Less scattered information. More context to follow your company.')}</p>
+              <p className="border-l-2 border-fd-accent pl-4 font-semibold text-fd-text">{tr(locale, 'Consulte a informação por área e mantenha os registos organizados.', 'Review information by area and keep records organised.')}</p>
             </div>
           </div>
           <MissionVisionValues locale={locale} />
@@ -434,31 +340,26 @@ export default function HomePage() {
       <section id="como-funciona" className="py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <Title eyebrow={tr(locale, 'Como funciona', 'How it works')}>{tr(locale, 'Comece pela conta e pelas informações da empresa.', 'Start with the account and your company information.')}</Title>
-          <div data-how-path className="how-path mt-10">
-            <div aria-hidden="true" className="how-path-line"><span /></div>
-            <ol className="how-path-steps">
-              {onboardingSteps.map(({ title, detail, Icon }) => {
+          <ol className="mt-10 grid gap-x-10 gap-y-8 border-y border-slate-200 py-6 sm:grid-cols-2 lg:grid-cols-4">
+              {onboardingSteps.map(({ title, detail }, index) => {
                 const copyIndex = locale === 'en' ? 1 : 0;
                 return (
-                  <li data-how-step key={title[0]} className="how-path-step">
-                    <span aria-hidden="true" className="how-path-node"><Icon size={20} /></span>
-                    <div className="how-path-copy">
-                      <p className="text-base font-extrabold leading-6 text-fd-text">{title[copyIndex]}</p>
-                      <p className="mt-2 text-sm leading-6 text-slate-600">{detail[copyIndex]}</p>
-                    </div>
+                  <li key={title[0]} className="border-t border-slate-200 pt-4">
+                    <p className="text-sm text-fd-accent">0{index + 1}</p>
+                    <p className="mt-2 text-base font-bold leading-6 text-fd-text">{title[copyIndex]}</p>
+                    <p className="mt-2 text-sm leading-6 text-slate-600">{detail[copyIndex]}</p>
                   </li>
                 );
               })}
-            </ol>
-          </div>
+          </ol>
         </div>
       </section>
 
       <section id="perguntas" aria-labelledby="perguntas-title" className="border-y border-slate-100 bg-[#f7fafc] py-16 sm:py-20">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
-          <div data-reveal className="landing-reveal">
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-fd-accent">{tr(locale, 'Perguntas frequentes', 'Frequently asked questions')}</p>
-            <h2 id="perguntas-title" className="mt-3 max-w-3xl text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-fd-text sm:text-4xl">{tr(locale, 'Antes de começar, esclareça o essencial.', 'Clarify the essentials before you start.')}</h2>
+          <div>
+            <p className="text-sm font-medium text-fd-accent">{tr(locale, 'Perguntas frequentes', 'Frequently asked questions')}</p>
+            <h2 id="perguntas-title" className="mt-3 max-w-3xl text-3xl font-bold leading-tight text-fd-text sm:text-4xl">{tr(locale, 'Antes de começar, esclareça o essencial.', 'Clarify the essentials before you start.')}</h2>
           </div>
           <dl className="mt-10 grid gap-x-10 gap-y-7 md:grid-cols-2">
             {[
@@ -468,8 +369,8 @@ export default function HomePage() {
               [tr(locale, 'Posso pagar impostos pela plataforma?', 'Can I pay taxes through the platform?'), tr(locale, 'Não. A plataforma ajuda a organizar obrigações e a consultar pagamentos registados, mas não executa pagamentos junto de bancos ou autoridades.', 'No. The platform helps organise obligations and consult recorded payments, but it does not execute payments with banks or authorities.')],
               [tr(locale, 'A minha equipa pode ter acesso?', 'Can my team have access?'), tr(locale, 'Sim. Pode dar acesso a outros utilizadores da empresa e definir o que cada um pode fazer na plataforma.', 'Yes. You can give access to other company users and define what each person can do on the platform.')],
             ].map(([question, answer], index) => (
-              <div key={question} data-reveal className={`landing-reveal border-t border-slate-300 pt-5 ${index === 4 ? 'md:col-span-2' : ''} ${index > 0 ? 'landing-reveal--d1' : ''}`}>
-                <dt className="text-lg font-extrabold tracking-[-.02em] text-fd-text">{question}</dt>
+              <div key={question} className={`border-t border-slate-300 pt-5 ${index === 4 ? 'md:col-span-2' : ''}`}>
+                <dt className="text-lg font-bold text-fd-text">{question}</dt>
                 <dd className="mt-3 max-w-3xl text-sm leading-6 text-slate-600">{answer}</dd>
               </div>
             ))}
@@ -479,24 +380,23 @@ export default function HomePage() {
 
       <Team locale={locale} />
 
-      <section id="contacto" className="relative overflow-hidden bg-fd-primary py-11 text-white sm:py-14">
-        <svg aria-hidden="true" className="absolute inset-0 h-full w-full opacity-25" viewBox="0 0 1200 400" fill="none"><path d="M0 300c280-20 290-220 550-220s320 190 650 120" stroke="#67E8F9" strokeDasharray="5 8" /></svg>
-        <div className="relative mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,.7fr)] lg:items-center lg:px-8">
-          <div data-reveal className="landing-reveal">
-            <p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</p>
-            <h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Tem dúvidas antes de começar?', 'Have questions before getting started?')}</h2>
+      <section id="contacto" className="bg-fd-primary py-12 text-white sm:py-16">
+        <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,.7fr)] lg:items-center lg:px-8">
+          <div>
+            <p className="text-sm font-medium text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</p>
+            <h2 className="mt-3 max-w-2xl text-3xl font-bold leading-tight sm:text-4xl">{tr(locale, 'Tem dúvidas antes de começar?', 'Have questions before getting started?')}</h2>
             <p className="mt-3 max-w-xl text-sm leading-6 text-slate-200 sm:text-base sm:leading-7">{tr(locale, 'Fale connosco no WhatsApp ou por e-mail. Se já decidiu, crie a conta.', 'Talk to us on WhatsApp or by email. If you have decided, create an account.')}</p>
           </div>
-          <div data-reveal className="landing-reveal landing-reveal--d1 overflow-hidden rounded-2xl border border-white/15 bg-white/[0.055] shadow-[0_18px_42px_rgba(3,16,38,.18)]">
-            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="group flex min-h-[104px] items-center gap-4 border-b border-white/15 p-5 transition-[background-color,transform] duration-200 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-cyan-200">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#25D366] text-[#06351b] transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5"><WhatsAppIcon size={22} /></span>
-              <span className="min-w-0 flex-1"><span className="block text-xs font-bold uppercase tracking-[.14em] text-cyan-200">WhatsApp</span><span className="mt-1 block text-base font-extrabold text-white">{tr(locale, 'Falar com a equipa', 'Talk to the team')}</span><span className="mt-1 block text-xs leading-5 text-slate-300">{tr(locale, 'Uma conversa directa para conhecer melhor a sua necessidade.', 'A direct conversation to better understand your needs.')}</span></span>
-              <ChevronRight size={19} className="shrink-0 text-cyan-200 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+          <div className="border-y border-white/20">
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')} className="block min-h-[104px] border-b border-white/20 py-5 transition-colors hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-200">
+              <span className="block text-sm font-medium text-cyan-200">WhatsApp</span>
+              <span className="mt-2 block text-base font-bold text-white">{tr(locale, 'Falar com a equipa', 'Talk to the team')}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-300">{tr(locale, 'Uma conversa directa para conhecer melhor a sua necessidade.', 'A direct conversation to better understand your needs.')}</span>
             </a>
-            <a href={`mailto:${contactEmail}`} className="group flex min-h-[104px] items-center gap-4 p-5 transition-[background-color,transform] duration-200 hover:bg-white/[0.06] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-cyan-200">
-              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/10 text-cyan-200 transition-transform duration-200 motion-safe:group-hover:-translate-y-0.5"><Mail size={21} aria-hidden="true" /></span>
-              <span className="min-w-0 flex-1"><span className="block text-xs font-bold uppercase tracking-[.14em] text-cyan-200">{tr(locale, 'E-mail', 'Email')}</span><span className="mt-1 block break-all text-sm font-extrabold text-white sm:text-base">{contactEmail}</span><span className="mt-1 block text-xs leading-5 text-slate-300">{tr(locale, 'Use este canal para nos enviar o contexto da sua empresa.', 'Use this channel to send us your company context.')}</span></span>
-              <ChevronRight size={19} className="shrink-0 text-cyan-200 transition-transform duration-200 motion-safe:group-hover:translate-x-0.5" aria-hidden="true" />
+            <a href={`mailto:${contactEmail}`} className="block min-h-[104px] py-5 transition-colors hover:text-cyan-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-cyan-200">
+              <span className="block text-sm font-medium text-cyan-200">{tr(locale, 'E-mail', 'Email')}</span>
+              <span className="mt-2 block break-all text-base font-bold text-white">{contactEmail}</span>
+              <span className="mt-1 block text-xs leading-5 text-slate-300">{tr(locale, 'Use este canal para nos enviar o contexto da sua empresa.', 'Use this channel to send us your company context.')}</span>
             </a>
           </div>
         </div>
@@ -504,8 +404,8 @@ export default function HomePage() {
 
       <section className="bg-fd-primary py-11 text-white sm:py-14">
         <div className="mx-auto flex max-w-7xl flex-col justify-between gap-8 px-5 lg:flex-row lg:items-end lg:px-8">
-          <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-extrabold tracking-[-.04em] sm:text-4xl">{tr(locale, 'Crie a conta e registe a sua empresa.', 'Create an account and register your company.')}</h2></div>
-          <div data-reveal className="landing-reveal landing-reveal--d1 flex flex-wrap items-center gap-3"><Link href="/register" className="inline-flex min-h-11 items-center justify-center rounded-xl bg-cyan-300 px-5 py-3.5 text-center text-sm font-extrabold text-fd-text transition hover:-translate-y-0.5 hover:bg-cyan-200">{tr(locale, 'Criar conta', 'Create account')}</Link><a href="#plataforma" className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/35 px-5 py-3.5 text-center text-sm font-bold transition hover:bg-white/10">{tr(locale, 'Conhecer a plataforma', 'Explore the platform')}</a><Link href="/login" className="inline-flex min-h-11 items-center px-1 py-2 text-sm font-semibold text-cyan-100 underline underline-offset-4 transition hover:text-white">{tr(locale, 'Já tenho conta', 'I already have an account')}</Link></div>
+          <div><p className="text-sm font-medium text-cyan-200">Fiscalidade Digital</p><h2 className="mt-3 max-w-2xl text-3xl font-bold leading-tight sm:text-4xl">{tr(locale, 'Crie a conta e registe a sua empresa.', 'Create an account and register your company.')}</h2></div>
+          <div className="flex flex-wrap items-center gap-3"><Link href="/register" className="inline-flex min-h-11 items-center justify-center rounded-lg bg-cyan-300 px-5 py-3.5 text-center text-sm font-semibold text-fd-text transition-colors hover:bg-cyan-200">{tr(locale, 'Criar conta', 'Create account')}</Link><a href="#funcionalidades" className="inline-flex min-h-11 items-center justify-center rounded-lg border border-white/35 px-5 py-3.5 text-center text-sm font-semibold transition-colors hover:bg-white/10">{tr(locale, 'Conhecer a plataforma', 'Explore the platform')}</a><Link href="/login" className="inline-flex min-h-11 items-center px-1 py-2 text-sm font-semibold text-cyan-100 underline underline-offset-4 transition hover:text-white">{tr(locale, 'Já tenho conta', 'I already have an account')}</Link></div>
         </div>
       </section>
 
@@ -515,23 +415,23 @@ export default function HomePage() {
             <div><Brand locale={locale} /><p className="mt-4 text-sm leading-6 text-slate-400">{tr(locale, 'Gestão fiscal e empresarial para empresas em Angola.', 'Tax and business management for companies in Angola.')}</p></div>
             <Footer title={tr(locale, 'Plataforma', 'Platform')} links={locale === 'en' ? [['Features', '#funcionalidades'], ['How it works', '#como-funciona']] : [['Funcionalidades', '#funcionalidades'], ['Como funciona', '#como-funciona']]} />
             <div>
-              <p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">{tr(locale, 'Empresa', 'Company')}</p>
+              <p className="text-sm font-medium text-slate-400">{tr(locale, 'Empresa', 'Company')}</p>
               <div className="mt-4 grid gap-3 text-sm">
                 <a href="#equipa" className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{tr(locale, 'Equipa', 'Team')}</a>
                 <a href="#contacto" className="inline-flex min-h-[40px] items-center transition hover:text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</a>
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-11 w-fit items-center gap-2 rounded-lg bg-[#25D366] px-3 py-2 font-extrabold text-[#06351b] transition hover:-translate-y-0.5 hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200"><WhatsAppIcon size={16} />{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</a>
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-1 inline-flex min-h-11 w-fit items-center rounded-lg bg-[#25D366] px-3 py-2 font-semibold text-[#06351b] transition-colors hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-200">{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</a>
               </div>
             </div>
             <Footer title={tr(locale, 'Conta', 'Account')} links={locale === 'en' ? [['Log in', '/login'], ['Create account', '/register'], [contactEmail, `mailto:${contactEmail}`]] : [['Entrar', '/login'], ['Criar conta', '/register'], [contactEmail, `mailto:${contactEmail}`]]} />
             <Footer title={tr(locale, 'Legal', 'Legal')} links={locale === 'en' ? [['Terms of Use (Portuguese)', '/terms'], ['Privacy Policy (Portuguese)', '/privacy']] : [['Termos de Utilização', '/terms'], ['Política de Privacidade', '/privacy']]} />
           </div>
-          <p className="pt-6 text-xs text-slate-500">© {new Date().getFullYear()} Fiscalidade Digital · Angola</p>
+          <p className="pt-6 text-xs text-slate-300">© {new Date().getFullYear()} Fiscalidade Digital · Angola</p>
         </div>
       </footer>
 
       <Link
         href="/register"
-        className="fixed bottom-4 right-4 z-40 inline-flex min-h-[48px] items-center justify-center rounded-full bg-fd-primary px-4 py-3 text-sm font-extrabold text-white shadow-[0_12px_28px_rgba(15,41,79,.22)] transition-[background-color,transform] duration-200 hover:bg-fd-primary-hover motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:hidden"
+        className="fixed bottom-4 right-4 z-40 inline-flex min-h-[48px] items-center justify-center rounded-lg bg-fd-primary px-4 py-3 text-sm font-semibold text-white shadow-[0_8px_18px_rgba(15,41,79,.18)] transition-colors hover:bg-fd-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700 sm:hidden"
         style={{
           bottom: 'max(1rem, env(safe-area-inset-bottom))',
           right: 'max(1rem, env(safe-area-inset-right))',
@@ -545,34 +445,19 @@ export default function HomePage() {
         target="_blank"
         rel="noopener noreferrer"
         aria-label={tr(locale, 'Falar no WhatsApp da Fiscalidade Digital', 'Talk to Fiscalidade Digital on WhatsApp')}
-        className="whatsapp-fab group fixed z-40 inline-flex h-12 w-12 items-center justify-center rounded-full bg-[#25D366] p-0 text-[#06351b] shadow-[0_12px_28px_rgba(15,41,79,.22)] transition-[background-color,transform] duration-200 hover:bg-[#53e589] motion-safe:hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
+        className="whatsapp-fab fixed z-40 inline-flex min-h-11 items-center justify-center rounded-lg bg-[#25D366] px-3 py-2 text-sm font-semibold text-[#06351b] shadow-[0_8px_18px_rgba(15,41,79,.18)] transition-colors hover:bg-[#53e589] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
         style={{
           right: 'max(1rem, env(safe-area-inset-right))',
         }}
       >
-        <WhatsAppIcon size={20} />
-        <span className="whatsapp-fab__label">{tr(locale, 'Falar no WhatsApp', 'Talk on WhatsApp')}</span>
+        {tr(locale, 'WhatsApp', 'WhatsApp')}
       </a>
-
-      <style jsx global>{`
-        @keyframes reveal { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
-        .site .hero-reveal { animation: reveal .62s both cubic-bezier(.2, .7, .2, 1); }
-        .site .r1 { animation-delay: 60ms; } .site .r2 { animation-delay: 140ms; } .site .r3 { animation-delay: 220ms; } .site .r4 { animation-delay: 300ms; } .site .r5 { animation-delay: 380ms; }
-        [data-motion='ready'] .landing-reveal { opacity: 0; transform: translateY(20px); }
-        [data-motion='ready'] .landing-reveal.is-visible { opacity: 1; transform: none; animation: reveal .7s both cubic-bezier(.2, .7, .2, 1); }
-        [data-motion='ready'] .landing-reveal--d1.is-visible { animation-delay: 100ms; }
-        [data-motion='ready'] .landing-reveal--d2.is-visible { animation-delay: 180ms; }
-        @media (prefers-reduced-motion: reduce) {
-          .site *, .site *::before, .site *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; scroll-behavior: auto !important; }
-          [data-motion='ready'] .landing-reveal { opacity: 1 !important; transform: none !important; }
-        }
-      `}</style>
     </main>
   );
 }
 
 function Title({ eyebrow, children }: { eyebrow: string; children: ReactNode }) {
-  return <div data-reveal className="landing-reveal"><p className="text-xs font-bold uppercase tracking-[.16em] text-fd-accent">{eyebrow}</p><h2 className="mt-3 text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-fd-text sm:text-4xl">{children}</h2></div>;
+  return <div><p className="text-sm font-medium text-fd-accent">{eyebrow}</p><h2 className="mt-3 text-3xl font-bold leading-tight text-fd-text sm:text-4xl">{children}</h2></div>;
 }
 
 type TeamMember = {
@@ -644,20 +529,21 @@ function Team({ locale }: { locale: LandingLocale }) {
   return (
     <section id="equipa" aria-label={tr(locale, 'Equipa', 'Team')} className="bg-[#f7fafc] py-16 sm:py-20">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
-        <div data-reveal className="landing-reveal max-w-3xl">
-          <h2 className="text-3xl font-extrabold leading-[1.08] tracking-[-.045em] text-fd-text sm:text-4xl">{tr(locale, 'A equipa por trás da Fiscalidade Digital', 'The team behind Fiscalidade Digital')}</h2>
+        <div className="max-w-3xl">
+          <p className="text-sm font-medium text-fd-accent">{tr(locale, 'Equipa', 'Team')}</p>
+          <h2 className="mt-3 text-3xl font-bold leading-tight text-fd-text sm:text-4xl">{tr(locale, 'A equipa por trás da Fiscalidade Digital', 'The team behind Fiscalidade Digital')}</h2>
         </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
-          {teamMembers.map((member, index) => (
-            <figure data-reveal key={member.name} className={`landing-reveal group overflow-hidden rounded-2xl border border-slate-200 bg-white ${index % 2 ? 'landing-reveal--d1' : ''}`}>
+          {teamMembers.map((member) => (
+            <figure key={member.name} className="overflow-hidden rounded-lg border border-slate-200 bg-white">
               <div className="relative aspect-[4/5] bg-slate-100">
-                <Image src={member.image} alt={tr(locale, `Fotografia de ${member.name}`, `Portrait of ${member.name}`)} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-contain transition-transform duration-500 motion-reduce:transform-none group-hover:scale-[1.025] ${member.position}`} />
+                <Image src={member.image} alt={tr(locale, `Fotografia de ${member.name}`, `Portrait of ${member.name}`)} fill sizes="(min-width:1024px) 25vw, (min-width:640px) 50vw, 100vw" className={`object-contain ${member.position}`} />
               </div>
               <figcaption className="p-5">
-                <p className="text-lg font-extrabold text-fd-text">{member.name}</p>
+                <p className="text-lg font-bold text-fd-text">{member.name}</p>
                 <p className="mt-2 text-xs font-semibold leading-5 text-fd-primary">{member.area}</p>
                 <p className="mt-4 text-sm leading-6 text-slate-600">{member.summary}</p>
-                <a href={`mailto:${member.email}`} className="mt-4 flex min-h-10 w-full items-center gap-2 rounded-lg bg-slate-50 px-2.5 py-2 text-fd-primary transition hover:bg-fd-accent-soft hover:text-fd-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Mail size={16} className="shrink-0" aria-hidden="true" /><span className="min-w-0 whitespace-nowrap text-[11px] font-bold tracking-[-0.01em] sm:text-xs">{member.email}</span></a>
+                <a href={`mailto:${member.email}`} className="mt-4 block min-h-10 border-t border-slate-200 pt-3 text-xs font-semibold text-fd-primary underline-offset-2 hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700">{member.email}</a>
                 <div className="mt-5 flex items-center justify-between gap-3">
                   <button
                     type="button"
@@ -666,11 +552,11 @@ function Team({ locale }: { locale: LandingLocale }) {
                       lastTriggerRef.current = event.currentTarget;
                       setSelectedMember(member);
                     }}
-                    className="inline-flex min-h-11 items-center rounded-lg bg-fd-primary px-3 py-2 text-sm font-bold text-white transition hover:bg-fd-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
+                    className="inline-flex min-h-11 items-center rounded-lg bg-fd-primary px-3 py-2 text-sm font-semibold text-white transition-colors hover:bg-fd-primary-hover focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"
                   >
                     {tr(locale, 'Ver biografia', 'View biography')}
                   </button>
-                  <a href={member.link} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, `Abrir LinkedIn de ${member.name}`, `Open ${member.name}'s LinkedIn`)} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 text-fd-accent transition hover:border-fd-accent hover:bg-fd-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={18} /></a>
+                  <a href={member.link} target="_blank" rel="noopener noreferrer" aria-label={tr(locale, `Abrir LinkedIn de ${member.name}`, `Open ${member.name}'s LinkedIn`)} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 text-fd-accent transition-colors hover:border-fd-accent hover:bg-fd-accent-soft focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700"><Linkedin size={18} /></a>
                 </div>
               </figcaption>
             </figure>
@@ -686,21 +572,21 @@ function Team({ locale }: { locale: LandingLocale }) {
               <button ref={closeButtonRef} type="button" onClick={closeBiography} className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-600 transition hover:bg-slate-100 hover:text-fd-text focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-700" aria-label={tr(locale, 'Fechar biografia', 'Close biography')}><X size={20} /></button>
             </div>
             <div className="grid gap-7 p-5 sm:grid-cols-[180px_1fr] sm:p-7">
-              <div className="relative mx-auto aspect-[4/5] w-full max-w-[180px] overflow-hidden rounded-2xl bg-slate-100 sm:mx-0">
+              <div className="relative mx-auto aspect-[4/5] w-full max-w-[180px] overflow-hidden rounded-lg bg-slate-100 sm:mx-0">
                 <Image src={selectedMember.image} alt={tr(locale, `Fotografia de ${selectedMember.name}`, `Portrait of ${selectedMember.name}`)} fill sizes="180px" className={`object-contain ${selectedMember.position}`} />
               </div>
               <div>
-                <p className="text-xs font-bold uppercase tracking-[.14em] text-fd-accent">{selectedMember.area}</p>
-                <h3 id="team-biography-title" className="mt-3 text-3xl font-extrabold tracking-tight text-fd-text">{selectedMember.name}</h3>
+                <p className="text-sm font-medium text-fd-accent">{selectedMember.area}</p>
+                <h3 id="team-biography-title" className="mt-3 text-3xl font-bold tracking-normal text-fd-text">{selectedMember.name}</h3>
                 <p id="team-biography-summary" className="mt-4 text-base leading-7 text-slate-600">{selectedMember.bio}</p>
                 <div className="mt-7 grid gap-6 sm:grid-cols-2">
                   <section aria-labelledby="team-education-title">
-                    <h4 id="team-education-title" className="text-sm font-extrabold text-fd-text">{tr(locale, 'Formação e competências', 'Education and skills')}</h4>
-                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.education.map((item) => <li key={item} className="flex gap-2"><Check size={16} className="mt-1 shrink-0 text-fd-accent" />{item}</li>)}</ul>
+                    <h4 id="team-education-title" className="text-sm font-bold text-fd-text">{tr(locale, 'Formação e competências', 'Education and skills')}</h4>
+                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.education.map((item) => <li key={item} className="border-l-2 border-slate-200 pl-3">{item}</li>)}</ul>
                   </section>
                   <section aria-labelledby="team-highlights-title">
-                    <h4 id="team-highlights-title" className="text-sm font-extrabold text-fd-text">{tr(locale, 'Destaques', 'Highlights')}</h4>
-                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.highlights.map((item) => <li key={item} className="flex gap-2"><Check size={16} className="mt-1 shrink-0 text-fd-accent" />{item}</li>)}</ul>
+                    <h4 id="team-highlights-title" className="text-sm font-bold text-fd-text">{tr(locale, 'Destaques', 'Highlights')}</h4>
+                    <ul className="mt-3 space-y-3 text-sm leading-6 text-slate-600">{selectedMember.highlights.map((item) => <li key={item} className="border-l-2 border-slate-200 pl-3">{item}</li>)}</ul>
                   </section>
                 </div>
                 <div className="mt-7 flex flex-wrap gap-3">
@@ -717,5 +603,5 @@ function Team({ locale }: { locale: LandingLocale }) {
 }
 
 function Footer({ title, links }: { title: string; links: readonly (readonly [string, string])[] }) {
-  return <div><p className="text-xs font-bold uppercase tracking-[.14em] text-slate-500">{title}</p><div className="mt-4 grid gap-3 text-sm">{links.map(([name, href]) => href.startsWith('/') ? <Link key={href} href={href} className="inline-flex min-h-11 items-center transition hover:text-cyan-200">{name}</Link> : <a key={href} href={href} target={href === whatsappUrl ? '_blank' : undefined} rel={href === whatsappUrl ? 'noopener noreferrer' : undefined} className={`inline-flex min-h-11 items-center transition hover:text-cyan-200 ${href.startsWith('mailto:') ? 'normal-case' : ''}`}>{name}</a>)}</div></div>;
+  return <div><p className="text-sm font-medium text-slate-400">{title}</p><div className="mt-4 grid gap-3 text-sm">{links.map(([name, href]) => href.startsWith('/') ? <Link key={href} href={href} className="inline-flex min-h-11 items-center transition hover:text-cyan-200">{name}</Link> : <a key={href} href={href} target={href === whatsappUrl ? '_blank' : undefined} rel={href === whatsappUrl ? 'noopener noreferrer' : undefined} className={`inline-flex min-h-11 items-center transition hover:text-cyan-200 ${href.startsWith('mailto:') ? 'normal-case' : ''}`}>{name}</a>)}</div></div>;
 }

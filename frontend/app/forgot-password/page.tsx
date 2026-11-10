@@ -46,7 +46,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <AuthFrame eyebrow="RECUPERAR ACESSO" title="Recuperar acesso" description="Receba um código temporário para definir uma nova palavra-passe." backHref="/login" backLabel="Voltar ao início de sessão">
+    <AuthFrame eyebrow="Recuperar acesso" title="Recuperar acesso" description="Receba um código temporário para definir uma nova palavra-passe." backHref="/login" backLabel="Voltar ao início de sessão">
       {sent ? (
         <div role="status" className="rounded-xl border border-emerald-200 bg-emerald-50 p-5">
           <CheckCircle2 className="h-6 w-6 text-emerald-700" />

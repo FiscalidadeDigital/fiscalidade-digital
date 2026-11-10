@@ -132,7 +132,7 @@ export default function OnboardingPage() {
 
   return (
     <AuthFrame
-      eyebrow="CONFIGURAÇÃO DA EMPRESA"
+      eyebrow="Configuração da empresa"
       title="Configure a empresa"
       description="Indique a empresa e a situação fiscal declarada. Poderá rever estes dados mais tarde na área Situação Fiscal."
       backHref="/verify-email"
@@ -208,7 +208,7 @@ export default function OnboardingPage() {
             const checkboxId = `onboarding-${item.taxType.toLowerCase()}`;
 
             return (
-              <div key={item.taxType} className="rounded-xl border border-slate-200 bg-white p-4">
+              <div key={item.taxType} className="border-t border-slate-200 py-4">
                 <label htmlFor={checkboxId} className="flex min-h-11 items-center gap-3 text-sm font-semibold text-slate-800">
                   <input
                     id={checkboxId}
@@ -264,7 +264,7 @@ export default function OnboardingPage() {
           ) : null}
         </fieldset>
 
-        <p className="rounded-lg bg-slate-50 p-3 text-xs leading-5 text-slate-600">
+        <p className="border-l-2 border-fd-accent pl-3 text-xs leading-5 text-slate-600">
           Registe somente enquadramentos conhecidos. A aplicação não presume um regime fiscal universal para a empresa.
         </p>
 

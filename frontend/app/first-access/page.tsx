@@ -125,7 +125,7 @@ function FirstAccessContent() {
 
   return (
     <AuthFrame
-      eyebrow="ACESSO POR CONVITE"
+      eyebrow="Acesso por convite"
       title="Primeiro acesso"
       description="Complete o perfil associado ao convite e defina uma palavra-passe pessoal."
       backHref="/login"
@@ -180,12 +180,12 @@ function FirstAccessContent() {
               ? 'first-access-consent-errors'
               : undefined
           }
-          className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4"
+          className="space-y-3 border-y border-[var(--fd-border)] py-5"
         >
-          <legend className="px-1 text-sm font-semibold text-slate-800">
+          <legend className="px-1 text-sm font-semibold text-[var(--fd-text-primary)]">
             Consentimentos obrigatórios
           </legend>
-          <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-slate-700">
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-[var(--fd-text-secondary)]">
             <input
               required
               type="checkbox"
@@ -202,7 +202,7 @@ function FirstAccessContent() {
               </Link>.
             </span>
           </label>
-          <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-slate-700">
+          <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-[var(--fd-text-secondary)]">
             <input
               required
               type="checkbox"

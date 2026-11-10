@@ -82,7 +82,7 @@ export default function RegisterPage() {
 
   return (
     <AuthFrame
-      eyebrow="CRIAR CONTA"
+      eyebrow="Criar conta"
       title="Criar conta"
       description="Crie a conta para começar a organizar a informação da sua empresa."
       backHref="/"
@@ -119,7 +119,7 @@ export default function RegisterPage() {
           <PasswordInput id="register-confirm-password" label="Confirmar palavra-passe" value={form.confirmPassword} onChange={(value) => updateField('confirmPassword', value)} onBlur={() => validateField('confirmPassword')} autoComplete="new-password" error={fieldErrors.confirmPassword} disabled={loading} />
         </section>
 
-        <fieldset aria-describedby={fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy ? 'registration-consent-errors' : undefined} className="space-y-3 rounded-fd-card border border-[var(--fd-border)] bg-[var(--fd-surface-muted)] p-4">
+        <fieldset aria-describedby={fieldErrors.acceptTerms || fieldErrors.acceptPrivacyPolicy ? 'registration-consent-errors' : undefined} className="space-y-3 border-y border-[var(--fd-border)] py-5">
           <legend className="px-1 text-sm font-semibold text-[var(--fd-text-primary)]">Termos e privacidade</legend>
           <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-[var(--fd-text-secondary)]"><input required type="checkbox" checked={form.acceptTerms} disabled={loading} aria-invalid={Boolean(fieldErrors.acceptTerms)} onChange={(event) => updateField('acceptTerms', event.target.checked)} onBlur={() => validateField('acceptTerms')} className="mt-1 h-5 w-5 shrink-0 accent-fd-primary" /><span>Li e aceito os <Link href="/terms" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Termos de Utilização</Link>.</span></label>
           <label className="flex min-h-11 items-start gap-3 text-sm leading-6 text-[var(--fd-text-secondary)]"><input required type="checkbox" checked={form.acceptPrivacyPolicy} disabled={loading} aria-invalid={Boolean(fieldErrors.acceptPrivacyPolicy)} onChange={(event) => updateField('acceptPrivacyPolicy', event.target.checked)} onBlur={() => validateField('acceptPrivacyPolicy')} className="mt-1 h-5 w-5 shrink-0 accent-fd-primary" /><span>Li e aceito a <Link href="/privacy" target="_blank" rel="noopener noreferrer" className="font-semibold text-fd-accent underline underline-offset-2">Política de Privacidade</Link>.</span></label>
@@ -128,9 +128,9 @@ export default function RegisterPage() {
 
         {formError && <p role="alert" className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
         <button disabled={loading} aria-busy={loading} className="fd-button-primary w-full">{loading ? 'A criar conta…' : 'Criar conta'}</button>
-        <p className="text-center text-xs leading-5 text-[var(--fd-text-muted)]">No passo seguinte, confirme o email para ativar a conta.</p>
+        <p className="text-xs leading-5 text-[var(--fd-text-muted)]">No passo seguinte, confirme o email para ativar a conta.</p>
       </form>
-      <p className="mt-6 text-center text-sm text-[var(--fd-text-muted)]">Já tem conta? <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/login">Entrar</Link></p>
+      <p className="mt-6 text-sm text-[var(--fd-text-muted)]">Já tem conta? <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/login">Entrar</Link></p>
     </AuthFrame>
   );
 }

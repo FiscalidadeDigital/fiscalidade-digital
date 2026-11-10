@@ -114,8 +114,8 @@ export default function LoginPage() {
 
   return (
     <AuthFrame
-      eyebrow="INICIAR SESSÃO"
-      title="Entrar na plataforma"
+      eyebrow="Entrar"
+      title="Entre na plataforma"
       description="Aceda à informação fiscal e empresarial da sua empresa."
       backHref="/"
       backLabel="Voltar ao site"
@@ -184,7 +184,7 @@ export default function LoginPage() {
         </button>
       </form>
 
-      <p className="mt-6 text-center text-sm text-[var(--fd-text-muted)]">
+      <p className="mt-6 text-sm text-[var(--fd-text-muted)]">
         Ainda não tem conta?{' '}
         <Link className="font-semibold text-fd-accent underline-offset-2 hover:underline" href="/register">
           Criar conta

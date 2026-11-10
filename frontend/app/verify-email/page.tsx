@@ -133,7 +133,7 @@ function VerifyEmailContent() {
 
   return (
     <AuthFrame
-      eyebrow="CONFIRMAR EMAIL"
+      eyebrow="Confirmar email"
       title="Confirme o email"
       description="Introduza o código de seis dígitos enviado para o seu email. O código é temporário e só pode ser utilizado uma vez."
       backHref="/register"
