@@ -68,17 +68,6 @@ const nextConfig = {
   async redirects() {
     return [
       {
-        source: '/:path*',
-        has: [
-          {
-            type: 'host',
-            value: 'www.fiscalidadedigital.ao',
-          },
-        ],
-        destination: 'https://fiscalidadedigital.ao/:path*',
-        permanent: true,
-      },
-      {
         source: '/invoice',
         destination: '/invoices',
         permanent: false,

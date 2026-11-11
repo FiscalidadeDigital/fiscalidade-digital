@@ -13,7 +13,7 @@ import {
   ToastProvider,
 } from '@/components/ui/enterprise';
 
-const siteUrl = 'https://fiscalidadedigital.ao';
+const siteUrl = 'https://www.fiscalidadedigital.ao';
 const siteTitle = 'Fiscalidade Digital | Gestão fiscal para empresas em Angola';
 const siteDescription = 'Acompanhe obrigações, prazos, facturas, salários e documentos da sua empresa numa plataforma feita para Angola.';
 

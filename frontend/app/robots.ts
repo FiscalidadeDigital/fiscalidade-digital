@@ -1,6 +1,6 @@
 import type { MetadataRoute } from 'next';
 
-const siteUrl = 'https://fiscalidadedigital.ao';
+const siteUrl = 'https://www.fiscalidadedigital.ao';
 
 const privatePaths = [
   '/accounting',

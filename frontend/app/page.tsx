@@ -71,7 +71,6 @@ const partnerLogos = [
   { name: 'Rede Canais', image: '/imageslogo.jfif' },
   { name: 'Acelera', image: '/aceleralogo.jpg' },
   { name: 'Ignition', image: '/Ignitionlogo.png' },
-  { name: 'BAI', image: '/bailogo.png' },
 ] as const;
 
 const members = [
