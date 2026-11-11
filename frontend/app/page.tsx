@@ -68,7 +68,6 @@ const onboardingSteps = [
 const partnerLogos = [
   { name: 'YAS', image: '/yas.jpg' },
   { name: 'Yash Hub', image: '/yashhublogo.jpg' },
-  { name: 'Rede Canais', image: '/imageslogo.jfif' },
   { name: 'Acelera', image: '/aceleralogo.jpg' },
   { name: 'Ignition', image: '/Ignitionlogo.png' },
 ] as const;

@@ -30,7 +30,6 @@ const ecosystem = [
   { name: 'yas', image: '/yas.jpg' },
   { name: 'mabak', image: '/mabak.jpg' },
   { name: 'Yash Hub', image: '/yashhublogo.jpg' },
-  { name: 'Rede Canais', image: '/imageslogo.jfif' },
   { name: 'Acelera', image: '/aceleralogo.jpg' },
   { name: 'Ignition', image: '/Ignitionlogo.png' },
 ];
