@@ -40,6 +40,7 @@ test('a landing mantém a experiência de soluções e recupera o carrossel de p
   assert.match(source, /className="partners-track"/);
   assert.match(source, /data-how-path/);
   assert.match(source, /data-how-step/);
+  assert.doesNotMatch(source, /\/(mabak\.jpg|Ensalogo\.png|Bnalogo\.png|catocalogo\.png)/);
   assert.doesNotMatch(source, /<section id="ecossistema"/);
   assert.doesNotMatch(source, /ecosystemPartners/);
   assert.doesNotMatch(source, /landing-logo-marquee/);

@@ -75,7 +75,7 @@ export default function MissionVisionValues({ locale }: { locale: LandingLocale 
   const reduceMotion = useReducedMotion();
 
   return (
-    <section id="missao-visao-valores" aria-labelledby="mission-vision-values-title" data-motion={reduceMotion ? 'reduced' : 'standard'} className="mt-16 border-y border-slate-200 py-10 sm:py-12">
+    <section id="missao-visao-valores" aria-labelledby="mission-vision-values-title" data-motion={reduceMotion ? 'reduced' : 'standard'} className="mt-16 border-y border-slate-200 py-10 sm:py-12 lg:mt-12">
       <div className="grid gap-6 lg:grid-cols-[minmax(0,.82fr)_minmax(18rem,.58fr)] lg:items-end">
         <div>
           <p className="text-sm font-medium text-fd-accent">{content.eyebrow}</p>

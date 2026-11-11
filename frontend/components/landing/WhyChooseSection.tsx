@@ -205,7 +205,7 @@ export default function WhyChooseSection({ locale }: { locale: LandingLocale }) 
   };
 
   return (
-    <section id="funcionalidades" aria-labelledby="why-choose-title" data-motion={reduceMotion ? 'reduced' : 'standard'} className="border-y border-slate-200 bg-[var(--fd-surface-muted)] py-16 sm:py-20 lg:py-24">
+    <section id="funcionalidades" aria-labelledby="why-choose-title" data-motion={reduceMotion ? 'reduced' : 'standard'} className="border-y border-slate-200 bg-[var(--fd-surface-muted)] py-16 sm:py-20 lg:py-16">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="grid gap-6 border-b border-slate-200 pb-9 lg:grid-cols-[minmax(0,.82fr)_minmax(20rem,.58fr)] lg:items-end">
           <div>

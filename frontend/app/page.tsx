@@ -67,14 +67,10 @@ const onboardingSteps = [
 
 const partnerLogos = [
   { name: 'YAS', image: '/yas.jpg' },
-  { name: 'Mabak', image: '/mabak.jpg' },
-  { name: 'ENSA', image: '/Ensalogo.png' },
   { name: 'Yash Hub', image: '/yashhublogo.jpg' },
   { name: 'Rede Canais', image: '/imageslogo.jfif' },
-  { name: 'Banco Nacional de Angola', image: '/Bnalogo.png' },
   { name: 'Acelera', image: '/aceleralogo.jpg' },
   { name: 'Ignition', image: '/Ignitionlogo.png' },
-  { name: 'Catoca', image: '/catocalogo.png' },
   { name: 'BAI', image: '/bailogo.png' },
 ] as const;
 
@@ -393,8 +389,8 @@ export default function HomePage() {
         )}
       </header>
 
-      <section id="inicio" className="border-b border-slate-200 bg-[var(--fd-surface-muted)] py-14 sm:py-20">
-        <div className="mx-auto grid max-w-7xl gap-12 px-5 lg:grid-cols-[minmax(0,.82fr)_minmax(0,1.18fr)] lg:items-center lg:px-8">
+      <section id="inicio" className="border-b border-slate-200 bg-[var(--fd-surface-muted)] py-14 sm:py-20 lg:py-16">
+        <div className="mx-auto grid max-w-7xl gap-12 px-5 lg:gap-10 lg:grid-cols-[minmax(0,.82fr)_minmax(0,1.18fr)] lg:items-center lg:px-8">
           <div>
             <p className="text-sm font-medium text-fd-accent">Fiscalidade Digital</p>
             <h1 className="mt-4 text-4xl font-bold leading-[1.06] tracking-normal text-fd-text sm:text-5xl xl:text-[3.35rem]">{locale === 'en' ? <>Tax deadlines under control.<br /><span className="text-fd-accent">An organised company.</span></> : <>Prazos fiscais sob controlo.<br /><span className="text-fd-accent">Empresa organizada.</span></>}</h1>
@@ -411,7 +407,7 @@ export default function HomePage() {
 
       <PartnerMarquee locale={locale} />
 
-      <section className="py-16 sm:py-20">
+      <section className="py-16 sm:py-20 lg:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div className="grid gap-10 lg:grid-cols-[.85fr_1.15fr] lg:items-start">
             <Title eyebrow={tr(locale, 'Sobre a Fiscalidade Digital', 'About Fiscalidade Digital')}>{locale === 'en' ? <>Information to follow<br />your <span className="text-fd-accent">company.</span></> : <>Informação para<br />acompanhar a <span className="text-fd-accent">empresa.</span></>}</Title>
@@ -426,7 +422,7 @@ export default function HomePage() {
 
       <WhyChooseSection locale={locale} />
 
-      <section id="como-funciona" className="py-16 sm:py-20">
+      <section id="como-funciona" className="py-16 sm:py-20 lg:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <Title eyebrow={tr(locale, 'Como funciona', 'How it works')}>{tr(locale, 'Comece pela conta e pelas informações da empresa.', 'Start with the account and your company information.')}</Title>
           <div className="how-path mt-10" data-how-path>
@@ -453,7 +449,7 @@ export default function HomePage() {
         </div>
       </section>
 
-      <section id="perguntas" aria-labelledby="perguntas-title" className="border-y border-slate-100 bg-[#f7fafc] py-16 sm:py-20">
+      <section id="perguntas" aria-labelledby="perguntas-title" className="border-y border-slate-100 bg-[#f7fafc] py-16 sm:py-20 lg:py-16">
         <div className="mx-auto max-w-7xl px-5 lg:px-8">
           <div>
             <p className="text-sm font-medium text-fd-accent">{tr(locale, 'Perguntas frequentes', 'Frequently asked questions')}</p>
@@ -489,7 +485,7 @@ export default function HomePage() {
 
       <Team locale={locale} />
 
-      <section id="contacto" className="bg-fd-primary py-12 text-white sm:py-16">
+      <section id="contacto" className="bg-fd-primary py-12 text-white sm:py-16 lg:py-14">
         <div className="mx-auto grid max-w-7xl gap-10 px-5 lg:grid-cols-[minmax(0,1fr)_minmax(22rem,.7fr)] lg:items-center lg:px-8">
           <div>
             <p className="text-sm font-medium text-cyan-200">{tr(locale, 'Contacto', 'Contact')}</p>
@@ -636,7 +632,7 @@ function Team({ locale }: { locale: LandingLocale }) {
   }, [selectedMember, closeBiography]);
 
   return (
-    <section id="equipa" aria-label={tr(locale, 'Equipa', 'Team')} className="bg-[#f7fafc] py-16 sm:py-20">
+    <section id="equipa" aria-label={tr(locale, 'Equipa', 'Team')} className="bg-[#f7fafc] py-16 sm:py-20 lg:py-16">
       <div className="mx-auto max-w-7xl px-5 lg:px-8">
         <div className="max-w-3xl">
           <p className="text-sm font-medium text-fd-accent">{tr(locale, 'Equipa', 'Team')}</p>
