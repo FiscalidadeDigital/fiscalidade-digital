@@ -23,7 +23,16 @@ model Tenant {
   settings               Json?
   createdAt              DateTime     @default(now())
   updatedAt              DateTime     @updatedAt
-  regime                 FiscalRegime @default(GERAL)
+  /// Campo legado de compatibilidade. O enquadramento por imposto e período
+  /// em TaxRegimeAssignment é a fonte de verdade; novos tenants não recebem
+  /// um regime presumido.
+  regime                 FiscalRegime?
+  /// Data declarada de início de actividade. Não é inferida a partir da data
+  /// de criação da conta para evitar gerar períodos fiscais anteriores.
+  activityStartedAt      DateTime?
+  /// Declaração explícita de que existem obrigações anteriores a confirmar.
+  /// Não equivale a dívida, nem cria valores fiscais automaticamente.
+  hasPriorUnregularizedObligations Boolean @default(false)
   companyType            String?
   employeeCount          Int?
   retentionRate          Float        @default(0)
@@ -490,6 +499,9 @@ model FiscalObligation {
   alertDaysBefore  Int                     @default(7)
   alertEnabled     Boolean                 @default(true)
   fiscalCalendarId String?
+  /// Ano do período fiscal publicado no calendário. Mantém a consulta anual
+  /// ancorada no período de referência, e não no ano da data de vencimento.
+  referenceYear    Int?
   lastReminderAt   DateTime?
   period           String?
   reminderSent     Boolean                 @default(false)
@@ -504,6 +516,7 @@ model FiscalObligation {
   @@index([status])
   @@index([tenantId, dueDate])
   @@index([tenantId, status])
+  @@index([tenantId, referenceYear])
 }
 
 model FiscalAlert {
@@ -1198,7 +1211,10 @@ model TaxRegimeAssignment {
   id                String                    @id @default(uuid())
   tenantId          String
   taxType           TaxType
-  regime            FiscalRegime
+  /// Null apenas quando a empresa declarou que ainda não conhece o regime.
+  /// Nunca é substituído silenciosamente por Tenant.regime.
+  regime            FiscalRegime?
+  knowledgeStatus   TaxRegimeKnowledgeStatus @default(CONFIRMED)
   status            TaxRegimeAssignmentStatus @default(ACTIVE)
   validFrom         DateTime
   validUntil        DateTime?
@@ -1347,6 +1363,13 @@ enum ObligationStatus {
   PENDING
   PAID
   LATE
+  FUTURE
+  DUE_SOON
+  IN_DEADLINE
+  OVERDUE
+  FULFILLED
+  TO_DETERMINE
+  HISTORICAL_CONFIRMATION
 }
 
 enum InvoiceStatus {
@@ -1489,6 +1512,13 @@ enum TaxRegimeAssignmentStatus {
   ACTIVE
   INACTIVE
   REVIEW_REQUIRED
+}
+
+/// Separado do ciclo de vigência para que “não sei” não seja tratado como
+/// um regime ou como ausência de histórico.
+enum TaxRegimeKnowledgeStatus {
+  CONFIRMED
+  UNKNOWN
 }
 
 enum SocialSecurityCategory {

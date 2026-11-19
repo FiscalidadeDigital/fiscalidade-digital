@@ -17,6 +17,10 @@ export class InvoiceQueryDto {
   documentType?: InvoiceDocumentType;
 
   @IsOptional()
+  @IsIn(['FT', 'NC', 'ND'])
+  fiscalDocumentType?: 'FT' | 'NC' | 'ND';
+
+  @IsOptional()
   @Transform(({ value }: { value: unknown }) =>
     typeof value === 'string' ? value.trim() : value,
   )

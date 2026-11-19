@@ -1,5 +1,10 @@
 import { Injectable, ServiceUnavailableException } from '@nestjs/common';
-import { createPrivateKey, createPublicKey, createSign, createVerify } from 'node:crypto';
+import {
+  createPrivateKey,
+  createPublicKey,
+  createSign,
+  createVerify,
+} from 'node:crypto';
 
 import {
   FiscalSignatureConfiguration,
@@ -10,12 +15,22 @@ import {
 
 const OFFICIAL_HASH_LENGTH = 172;
 
-const angolaParts = (value: Date) => Object.fromEntries(
-  new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Africa/Luanda', year: 'numeric', month: '2-digit', day: '2-digit',
-    hour: '2-digit', minute: '2-digit', second: '2-digit', hourCycle: 'h23',
-  }).formatToParts(value).filter((part) => part.type !== 'literal').map((part) => [part.type, part.value]),
-);
+const angolaParts = (value: Date) =>
+  Object.fromEntries(
+    new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Africa/Luanda',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hourCycle: 'h23',
+    })
+      .formatToParts(value)
+      .filter((part) => part.type !== 'literal')
+      .map((part) => [part.type, part.value]),
+  );
 
 export const formatSaftDate = (value: Date) => {
   const part = angolaParts(value);
@@ -27,7 +42,9 @@ export const formatSaftDateTime = (value: Date) => {
   return `${part.year}-${part.month}-${part.day}T${part.hour}:${part.minute}:${part.second}`;
 };
 
-export function buildFiscalSignatureCanonicalText(payload: FiscalSignaturePayload): string {
+export function buildFiscalSignatureCanonicalText(
+  payload: FiscalSignaturePayload,
+): string {
   return [
     formatSaftDate(payload.invoiceDate),
     formatSaftDateTime(payload.systemEntryDate),
@@ -47,7 +64,8 @@ export class FiscalSignatureService implements FiscalSignatureProvider {
         configured: false,
         blocker: {
           code: 'FISCAL_SIGNATURE_NOT_CONFIGURED',
-          message: 'Configure FISCAL_SIGNATURE_PRIVATE_KEY e FISCAL_SIGNATURE_KEY_VERSION no backend.',
+          message:
+            'A assinatura fiscal ainda não está preparada para este serviço.',
         },
       };
     }
@@ -62,10 +80,14 @@ export class FiscalSignatureService implements FiscalSignatureProvider {
     }
 
     const keyObject = createPrivateKey(privateKey);
-    if (keyObject.asymmetricKeyType !== 'rsa' || keyObject.asymmetricKeyDetails?.modulusLength !== 1024) {
+    if (
+      keyObject.asymmetricKeyType !== 'rsa' ||
+      keyObject.asymmetricKeyDetails?.modulusLength !== 1024
+    ) {
       throw new ServiceUnavailableException({
         code: 'FISCAL_SIGNATURE_INVALID_KEY',
-        message: 'A chave fiscal deve ser RSA PEM de 1024 bits conforme o Decreto Executivo n.º 74/19.',
+        message:
+          'A assinatura fiscal necessita de validação antes de poder ser utilizada.',
       });
     }
 
@@ -88,11 +110,18 @@ export class FiscalSignatureService implements FiscalSignatureProvider {
     };
   }
 
-  verify(payload: FiscalSignaturePayload, hash: string, publicKey: string): boolean {
+  verify(
+    payload: FiscalSignaturePayload,
+    hash: string,
+    publicKey: string,
+  ): boolean {
     const verifier = createVerify('RSA-SHA1');
     verifier.update(buildFiscalSignatureCanonicalText(payload), 'utf8');
     verifier.end();
-    return verifier.verify(createPublicKey(publicKey), Buffer.from(hash, 'base64'));
+    return verifier.verify(
+      createPublicKey(publicKey),
+      Buffer.from(hash, 'base64'),
+    );
   }
 
   private privateKey(): string | null {

@@ -30,10 +30,30 @@ export class FiscalWatchService {
         : referenceDate.getUTCFullYear();
       const period = String(fiscalYear);
       const invoices = await this.prisma.invoice.findMany({
-        where: { tenantId, documentType: 'NORMAL', status: { not: 'CANCELLED' }, issuedAt: { gte: new Date(Date.UTC(fiscalYear, 0, 1)), lt: new Date(Date.UTC(fiscalYear + 1, 0, 1)) } },
-        select: { totalAmount: true, total: true },
+        where: {
+          tenantId,
+          documentType: 'NORMAL',
+          OR: [
+            { fiscalDocumentType: { in: ['FT', 'NC', 'ND'] } },
+            { fiscalDocumentType: null },
+          ],
+          status: { not: 'CANCELLED' },
+          issuedAt: {
+            gte: new Date(Date.UTC(fiscalYear, 0, 1)),
+            lt: new Date(Date.UTC(fiscalYear + 1, 0, 1)),
+          },
+        },
+        select: { totalAmount: true, total: true, fiscalDocumentType: true },
       });
-      const amount = invoices.reduce((sum, invoice) => sum.add(invoice.totalAmount ?? new Prisma.Decimal(invoice.total)), new Prisma.Decimal(0));
+      const amount = invoices.reduce(
+        (sum, invoice) =>
+          sum.add(
+            (invoice.totalAmount ?? new Prisma.Decimal(invoice.total)).mul(
+              invoice.fiscalDocumentType === 'NC' ? -1 : 1,
+            ),
+          ),
+        new Prisma.Decimal(0),
+      );
       if (!this.matches(rule.operator, amount, rule.threshold)) continue;
       results.push(await this.createEvent(tenantId, rule, period, amount));
     }

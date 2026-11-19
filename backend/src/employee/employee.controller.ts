@@ -23,7 +23,7 @@ import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { CreateEmployeeSalaryDto } from './dto/create-employee-salary.dto';
 import { CreateEmployeeDependentDto } from './dto/create-employee-dependent.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
-  import { CreateRemunerationComponentDto } from './dto/create-remuneration-component.dto';
+import { CreateRemunerationComponentDto } from './dto/create-remuneration-component.dto';
 import { EndRemunerationComponentDto } from './dto/end-remuneration-component.dto';
 
 const EMPLOYEE_WRITE_ROLES = [
@@ -32,14 +32,12 @@ const EMPLOYEE_WRITE_ROLES = [
   UserRole.ACCOUNTANT,
 ];
 
-const EMPLOYEE_READ_ROLES = [...EMPLOYEE_WRITE_ROLES, UserRole.VIEWER];
+const EMPLOYEE_READ_ROLES = EMPLOYEE_WRITE_ROLES;
 
 @Controller('employees')
 @UseGuards(JwtAuthGuard)
 export class EmployeeController {
-  constructor(
-    private readonly employeeService: EmployeeService,
-  ) {}
+  constructor(private readonly employeeService: EmployeeService) {}
 
   // =========================================================
   // FUNCIONÁRIOS
@@ -51,30 +49,19 @@ export class EmployeeController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateEmployeeDto,
   ) {
-    return this.employeeService.create(
-      user.tenantId,
-      dto,
-    );
+    return this.employeeService.create(user.tenantId, dto);
   }
 
   @Get()
   @Roles(...EMPLOYEE_READ_ROLES)
   findAll(@CurrentUser() user: CurrentUserPayload) {
-    return this.employeeService.findAll(
-      user.tenantId,
-    );
+    return this.employeeService.findAll(user.tenantId);
   }
 
   @Get(':id')
   @Roles(...EMPLOYEE_READ_ROLES)
-  findOne(
-    @CurrentUser() user: CurrentUserPayload,
-    @Param('id') id: string,
-  ) {
-    return this.employeeService.findOne(
-      user.tenantId,
-      id,
-    );
+  findOne(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.employeeService.findOne(user.tenantId, id);
   }
 
   @Patch(':id')
@@ -84,23 +71,13 @@ export class EmployeeController {
     @Param('id') id: string,
     @Body() dto: UpdateEmployeeDto,
   ) {
-    return this.employeeService.update(
-      user.tenantId,
-      id,
-      dto,
-    );
+    return this.employeeService.update(user.tenantId, id, dto);
   }
 
   @Delete(':id')
   @Roles(UserRole.OWNER, UserRole.ADMIN)
-  remove(
-    @CurrentUser() user: CurrentUserPayload,
-    @Param('id') id: string,
-  ) {
-    return this.employeeService.remove(
-      user.tenantId,
-      id,
-    );
+  remove(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.employeeService.remove(user.tenantId, id);
   }
 
   // =========================================================
@@ -114,11 +91,7 @@ export class EmployeeController {
     @Param('id') id: string,
     @Body() dto: CreateEmployeeSalaryDto,
   ) {
-    return this.employeeService.addSalary(
-      user.tenantId,
-      id,
-      dto,
-    );
+    return this.employeeService.addSalary(user.tenantId, id, dto);
   }
 
   @Get(':id/salaries')
@@ -127,28 +100,46 @@ export class EmployeeController {
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
-    return this.employeeService.getSalaries(
-      user.tenantId,
-      id,
-    );
+    return this.employeeService.getSalaries(user.tenantId, id);
   }
 
   @Post(':id/remuneration-components')
   @Roles(...EMPLOYEE_WRITE_ROLES)
-  addRemunerationComponent(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Body() dto: CreateRemunerationComponentDto) {
-    return this.employeeService.addRemunerationComponent(user.tenantId, id, dto);
+  addRemunerationComponent(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Body() dto: CreateRemunerationComponentDto,
+  ) {
+    return this.employeeService.addRemunerationComponent(
+      user.tenantId,
+      id,
+      dto,
+    );
   }
 
   @Get(':id/remuneration-components')
   @Roles(...EMPLOYEE_READ_ROLES)
-  getRemunerationComponents(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+  getRemunerationComponents(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+  ) {
     return this.employeeService.getRemunerationComponents(user.tenantId, id);
   }
 
   @Patch(':id/remuneration-components/:componentId/end')
   @Roles(...EMPLOYEE_WRITE_ROLES)
-  endRemunerationComponent(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string, @Param('componentId') componentId: string, @Body() dto: EndRemunerationComponentDto) {
-    return this.employeeService.endRemunerationComponent(user.tenantId, id, componentId, dto.effectiveTo);
+  endRemunerationComponent(
+    @CurrentUser() user: CurrentUserPayload,
+    @Param('id') id: string,
+    @Param('componentId') componentId: string,
+    @Body() dto: EndRemunerationComponentDto,
+  ) {
+    return this.employeeService.endRemunerationComponent(
+      user.tenantId,
+      id,
+      componentId,
+      dto.effectiveTo,
+    );
   }
 
   // =========================================================
@@ -162,11 +153,7 @@ export class EmployeeController {
     @Param('id') id: string,
     @Body() dto: CreateEmployeeDependentDto,
   ) {
-    return this.employeeService.addDependent(
-      user.tenantId,
-      id,
-      dto,
-    );
+    return this.employeeService.addDependent(user.tenantId, id, dto);
   }
 
   @Get(':id/dependents')
@@ -175,9 +162,6 @@ export class EmployeeController {
     @CurrentUser() user: CurrentUserPayload,
     @Param('id') id: string,
   ) {
-    return this.employeeService.getDependents(
-      user.tenantId,
-      id,
-    );
+    return this.employeeService.getDependents(user.tenantId, id);
   }
 }

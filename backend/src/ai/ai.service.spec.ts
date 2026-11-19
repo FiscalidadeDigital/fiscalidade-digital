@@ -724,7 +724,7 @@ describe('AiService public research and tenant privacy', () => {
 
     expect(create).toHaveBeenCalledTimes(1);
     expect(result.warnings).toContain(
-      'A pesquisa pública oficial está temporariamente indisponível; a resposta não a apresenta como consultada.',
+      'A consulta a fontes oficiais não está disponível neste momento; a resposta não a apresenta como consultada.',
     );
     expect(result.sources).toEqual([]);
     expect(result.publicResearch).toEqual({ status: 'UNAVAILABLE' });
@@ -739,7 +739,7 @@ describe('AiService public research and tenant privacy', () => {
 
     expect(create).not.toHaveBeenCalled();
     expect(result.warnings).toContain(
-      'A pesquisa pública oficial não está disponível neste ambiente; a resposta não a apresenta como consultada.',
+      'A consulta a fontes oficiais não está disponível neste momento; a resposta não a apresenta como consultada.',
     );
   });
 
@@ -781,6 +781,21 @@ describe('AiService public research and tenant privacy', () => {
     await expect(
       service.chat(tenantA, 'user-a', 'Como organizo documentos fiscais?'),
     ).resolves.toMatchObject({ answer: 'Resposta segura.' });
+  });
+
+  it('does not return provider or implementation details in an assistant answer', async () => {
+    const prisma = createPrisma();
+    const service = createService(prisma);
+    attachOpenAi(
+      service,
+      jest.fn().mockResolvedValue({
+        output_text: 'A resposta foi produzida pela OpenAI API.',
+      }),
+    );
+
+    await expect(
+      service.chat(tenantA, 'user-a', 'Como organizo documentos fiscais?'),
+    ).rejects.toThrow('Não foi possível obter uma resposta neste momento.');
   });
 
   it('removes citation identifiers that do not correspond to a returned source', async () => {

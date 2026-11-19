@@ -17,7 +17,6 @@ import { PrismaService } from '../prisma/prisma.service';
 import { calculateTrialEnd } from '../common/config/trial-policy';
 import { MailService } from '../mail/mail.service';
 import { AuthChallengePurpose, LegalDocumentType, Prisma, TaxRegimeAssignmentStatus, UserRole } from '@prisma/client';
-import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 import { ObligationGenerationService } from '../obligation-generation/obligation-generation.service';
 import { LoginDto } from './dto/login.dto';
 
@@ -30,7 +29,6 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
     private readonly mailService: MailService,
-    private readonly fiscalEnrollmentService: FiscalEnrollmentService,
     @Optional() private readonly obligationGeneration?: ObligationGenerationService,
   ) {}
 

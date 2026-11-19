@@ -18,7 +18,20 @@ describe('ObligationGenerationService', () => {
   function setup(domains: any[], rules: any[] = [rule()]) {
     const applicability = { assess: jest.fn().mockResolvedValue({ period: '2026-10', domains }) };
     const persistence = { persistCalendarDerived: jest.fn().mockResolvedValue({ outcome: 'CREATED', obligation: { id: 'obligation-1' } }) };
-    const prisma = { fiscalCalendar: { findMany: jest.fn().mockResolvedValue(rules) }, fiscalObligation: { create: jest.fn(), update: jest.fn(), upsert: jest.fn() } };
+    const prisma = {
+      fiscalCalendar: { findMany: jest.fn().mockResolvedValue(rules) },
+      fiscalObligation: {
+        create: jest.fn(),
+        update: jest.fn(),
+        upsert: jest.fn(),
+      },
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({
+          activityStartedAt: null,
+          hasPriorUnregularizedObligations: false,
+        }),
+      },
+    };
     return { service: new ObligationGenerationService(applicability as any, persistence as any, prisma as any), applicability, persistence, prisma };
   }
 
@@ -98,6 +111,45 @@ describe('ObligationGenerationService', () => {
     const result = await service.generate('tenant-a', new Date('2027-01-01'));
     expect(prisma.fiscalCalendar.findMany).toHaveBeenCalledWith(expect.objectContaining({ where: expect.objectContaining({ referenceYear: 2027 }) }));
     expect(result.results[0]).toEqual(expect.objectContaining({ outcome: 'SKIPPED', reasonCode: 'OFFICIAL_CALENDAR_PENDING' }));
+    expect(persistence.persistCalendarDerived).not.toHaveBeenCalled();
+  });
+
+  it('does not create an overdue ordinary obligation when activity start is missing', async () => {
+    const overdueRule = {
+      id: 'overdue-calendar-rule',
+      taxType: 'IVA',
+      obligationType: 'IVA',
+      title: 'IVA mensal',
+      description: null,
+      period: '2026-10',
+      dueDate: new Date('2026-01-15'),
+      officialReference: 'AGT-2026',
+      source: 'AGT',
+      sourceUrl: null,
+    };
+    const { service, persistence } = setup(
+      [
+        domain('IVA', {
+          applicabilityStatus: 'APPLICABLE',
+          calculationReady: true,
+          calendarStatus: 'AVAILABLE',
+          regime: 'GERAL',
+        }),
+      ],
+      [overdueRule],
+    );
+
+    const result = await service.generate('tenant-a', new Date('2026-01-01'));
+
+    expect(result).toEqual(
+      expect.objectContaining({ requiresActivityStartDate: true }),
+    );
+    expect(result.results[0]).toEqual(
+      expect.objectContaining({
+        outcome: 'SKIPPED',
+        reasonCode: 'ACTIVITY_START_DATE_REQUIRED',
+      }),
+    );
     expect(persistence.persistCalendarDerived).not.toHaveBeenCalled();
   });
 

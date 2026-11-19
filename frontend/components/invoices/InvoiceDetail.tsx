@@ -1,6 +1,14 @@
 'use client';
 
-import { AlertTriangle, ArrowLeft, Download, FileText, Loader2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  Download,
+  FileMinus2,
+  FilePlus2,
+  FileText,
+  Loader2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
@@ -87,21 +95,36 @@ export default function InvoiceDetail({ proForma = false }: { proForma?: boolean
   if (!document) return <DashboardLayout><main className="mx-auto max-w-3xl"><Link href={collectionHref} className="text-sm font-semibold text-fd-accent">Voltar</Link><p role="alert" className="mt-6 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error || 'Documento não encontrado.'}</p></main></DashboardLayout>;
 
   const converted = document.convertedInvoice;
+  const fiscalDocumentType = document.fiscalDocumentType ?? 'FT';
+  const documentLabel =
+    fiscalDocumentType === 'NC'
+      ? 'Nota de crédito'
+      : fiscalDocumentType === 'ND'
+        ? 'Nota de débito'
+        : 'Factura';
+  const isAdjustment =
+    fiscalDocumentType === 'NC' || fiscalDocumentType === 'ND';
+  const canCreateAdjustment =
+    !proForma &&
+    fiscalDocumentType === 'FT' &&
+    document.status !== 'CANCELLED' &&
+    canConvert;
   return (
     <DashboardLayout>
       <main className="mx-auto w-full max-w-6xl pb-12">
         <header className="flex flex-col gap-4 border-b border-[var(--fd-border)] pb-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="flex items-start gap-3"><button type="button" onClick={() => router.push(collectionHref)} className="mt-1 grid h-10 w-10 place-items-center rounded-lg border border-[var(--fd-border)] text-[var(--fd-text-secondary)] hover:bg-slate-50" aria-label="Voltar"><ArrowLeft className="h-4 w-4" /></button><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-fd-accent">{proForma ? 'Pro Forma' : 'Facturação'}</p><h1 className="mt-2 text-2xl font-semibold text-[var(--fd-text-primary)]">{document.invoiceNumber}</h1><p className="mt-1 text-sm text-[var(--fd-text-secondary)]">Emitida em {new Date(document.issuedAt).toLocaleDateString('pt-AO')}</p></div></div>
-          <div className="flex flex-wrap gap-2"><button type="button" disabled={pdfBusy} onClick={() => void downloadPdf()} className="inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--fd-border)] px-4 text-xs font-semibold text-[var(--fd-text-primary)] hover:border-fd-accent hover:text-fd-primary disabled:opacity-50">{pdfBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Abrir PDF</button>{proForma && !converted && canConvert && <button type="button" onClick={() => setConfirming(true)} className="h-10 rounded-lg bg-fd-primary px-4 text-xs font-semibold text-white hover:bg-fd-primary-hover">Converter em factura</button>}</div>
+          <div className="flex items-start gap-3"><button type="button" onClick={() => router.push(collectionHref)} className="mt-1 grid h-10 w-10 place-items-center rounded-lg border border-[var(--fd-border)] text-[var(--fd-text-secondary)] hover:bg-slate-50" aria-label="Voltar"><ArrowLeft className="h-4 w-4" /></button><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-fd-accent">{proForma ? 'Pro Forma' : documentLabel}</p><h1 className="mt-2 text-2xl font-semibold text-[var(--fd-text-primary)]">{document.invoiceNumber}</h1><p className="mt-1 text-sm text-[var(--fd-text-secondary)]">Emitida em {new Date(document.issuedAt).toLocaleDateString('pt-AO')}</p></div></div>
+          <div className="flex flex-wrap gap-2">{canCreateAdjustment && <><Link href={`/invoices/${document.id}/credit-note`} className="inline-flex h-10 items-center gap-2 rounded-lg border border-amber-300 px-4 text-xs font-semibold text-amber-800 hover:bg-amber-50"><FileMinus2 className="h-4 w-4" />Nota de crédito</Link><Link href={`/invoices/${document.id}/debit-note`} className="inline-flex h-10 items-center gap-2 rounded-lg border border-sky-300 px-4 text-xs font-semibold text-sky-800 hover:bg-sky-50"><FilePlus2 className="h-4 w-4" />Nota de débito</Link></>}<button type="button" disabled={pdfBusy} onClick={() => void downloadPdf()} className="inline-flex h-10 items-center gap-2 rounded-lg border border-[var(--fd-border)] px-4 text-xs font-semibold text-[var(--fd-text-primary)] hover:border-fd-accent hover:text-fd-primary disabled:opacity-50">{pdfBusy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Abrir PDF</button>{proForma && !converted && canConvert && <button type="button" onClick={() => setConfirming(true)} className="h-10 rounded-lg bg-fd-primary px-4 text-xs font-semibold text-white hover:bg-fd-primary-hover">Converter em factura</button>}</div>
         </header>
 
         {proForma && <aside className="mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /><p>Documento preliminar — não constitui factura fiscal definitiva. O IVA fiscal final e a retenção fiscal final deste documento são zero; qualquer referência a imposto é apenas preview da futura factura.</p></aside>}
         {converted && <section className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><p className="font-semibold">Pro Forma convertida</p><p className="mt-1">{document.invoiceNumber} <span aria-hidden="true">â†’</span> <Link href={`/invoices/${converted.id}`} className="font-semibold underline underline-offset-2">Factura {converted.invoiceNumber}</Link></p></section>}
+        {isAdjustment && document.rectifiedInvoice && <section className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900"><p className="font-semibold">Documento de origem</p><p className="mt-1">Esta {documentLabel.toLowerCase()} corrige <Link href={`/invoices/${document.rectifiedInvoice.id}`} className="font-semibold underline underline-offset-2">{document.rectifiedInvoice.invoiceNumber}</Link>.</p></section>}
         {error && <p role="alert" className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</p>}
 
         <section className="mt-6 grid gap-5 lg:grid-cols-[1.35fr_.65fr]"><div className="overflow-hidden rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] shadow-sm"><div className="border-b border-[var(--fd-border)] p-5"><h2 className="font-semibold text-[var(--fd-text-primary)]">Linhas do documento</h2><p className="mt-1 text-sm text-[var(--fd-text-secondary)]">Cliente: {document.client.name}{document.client.nif ? ` · NIF ${document.client.nif}` : ''}</p></div><div className="overflow-x-auto"><table className="w-full min-w-[620px] text-left text-sm"><thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]"><tr><th className="px-5 py-3">Descrição</th><th className="px-3 py-3">Unidade</th><th className="px-3 py-3 text-right">Quantidade</th><th className="px-3 py-3 text-right">Preço</th><th className="px-5 py-3 text-right">Total</th></tr></thead><tbody className="divide-y divide-[var(--fd-border)]">{document.items.map((item) => <tr key={item.id}><td className="px-5 py-4 font-medium text-[var(--fd-text-primary)]">{item.productName}</td><td className="px-3 py-4 text-[var(--fd-text-secondary)]">{item.unit}</td><td className="px-3 py-4 text-right tabular-nums">{item.quantityAmount ?? item.quantity}</td><td className="px-3 py-4 text-right tabular-nums">{money.format(Number(item.unitPriceAmount ?? item.unitPrice))}</td><td className="px-5 py-4 text-right font-semibold tabular-nums">{money.format(Number(item.totalAmount ?? item.total))}</td></tr>)}</tbody></table></div></div>
-          <aside className="h-fit rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent"><FileText className="h-4 w-4" /></span><div><p className="font-semibold text-[var(--fd-text-primary)]">Resumo</p><p className="text-xs text-[var(--fd-muted)]">AOA</p></div></div><dl className="mt-5 space-y-3 text-sm"><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Tipo de documento</dt><dd className="font-medium">{proForma ? 'Pro Forma' : 'FT — Factura'}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Estado de pagamento</dt><dd className="font-medium">{{ PENDING: 'Pendente', PAID: 'Paga', CANCELLED: 'Cancelada' }[document.status]}</dd></div><div className="flex justify-between gap-4 border-t border-[var(--fd-border)] pt-3"><dt className="text-[var(--fd-text-secondary)]">Subtotal</dt><dd className="tabular-nums">{money.format(Number(document.subtotalAmount ?? document.subtotal))}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">{proForma ? 'IVA fiscal final' : 'IVA'}</dt><dd className="tabular-nums">{money.format(Number(document.ivaAmount ?? document.iva))}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Retenção fiscal final</dt><dd className="tabular-nums">{money.format(Number(document.withholdingTaxAmount ?? document.withholdingTax))}</dd></div><div className="flex justify-between gap-4 border-t border-[var(--fd-border)] pt-3 text-base font-semibold"><dt>{proForma ? 'Total estimado' : 'Total'}</dt><dd className="tabular-nums">{money.format(Number(document.totalAmount ?? document.total))}</dd></div></dl>{document.notes && <p className="mt-5 border-t border-[var(--fd-border)] pt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">{document.notes}</p>}</aside></section>
-        {!proForma && <ElectronicInvoicePanel invoiceId={document.id} />}
+          <aside className="h-fit rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-sm"><div className="flex items-center gap-3"><span className="rounded-lg bg-fd-accent-soft p-2 text-fd-accent"><FileText className="h-4 w-4" /></span><div><p className="font-semibold text-[var(--fd-text-primary)]">Resumo</p><p className="text-xs text-[var(--fd-muted)]">AOA</p></div></div><dl className="mt-5 space-y-3 text-sm"><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Tipo de documento</dt><dd className="font-medium">{proForma ? 'Pro Forma' : documentLabel}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">{isAdjustment ? 'Estado do documento' : 'Estado de pagamento'}</dt><dd className="font-medium">{isAdjustment ? 'Ajuste registado' : { PENDING: 'Pendente', PAID: 'Paga', CANCELLED: 'Cancelada' }[document.status]}</dd></div><div className="flex justify-between gap-4 border-t border-[var(--fd-border)] pt-3"><dt className="text-[var(--fd-text-secondary)]">Subtotal</dt><dd className="tabular-nums">{money.format(Number(document.subtotalAmount ?? document.subtotal))}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">{proForma ? 'IVA fiscal final' : 'IVA'}</dt><dd className="tabular-nums">{money.format(Number(document.ivaAmount ?? document.iva))}</dd></div><div className="flex justify-between gap-4"><dt className="text-[var(--fd-text-secondary)]">Retenção fiscal final</dt><dd className="tabular-nums">{money.format(Number(document.withholdingTaxAmount ?? document.withholdingTax))}</dd></div><div className="flex justify-between gap-4 border-t border-[var(--fd-border)] pt-3 text-base font-semibold"><dt>{proForma ? 'Total estimado' : 'Total'}</dt><dd className="tabular-nums">{money.format(Number(document.totalAmount ?? document.total))}</dd></div></dl>{document.notes && <p className="mt-5 border-t border-[var(--fd-border)] pt-4 text-sm leading-6 text-[var(--fd-text-secondary)]">{document.notes}</p>}</aside></section>
+        {!proForma && fiscalDocumentType === 'FT' && <ElectronicInvoicePanel invoiceId={document.id} />}
       </main>
       <ConfirmDialog
         open={confirming}
@@ -110,7 +133,7 @@ export default function InvoiceDetail({ proForma = false }: { proForma?: boolean
         }}
         onConfirm={convert}
         title="Converter em factura?"
-        description="Será criada uma factura normal com nova numeração FT. O backend recalculará IVA e retenção com as regras aplicáveis no momento da conversão."
+        description="Será criada uma factura normal com nova numeração. O sistema recalculará o IVA e a retenção com as regras aplicáveis no momento da conversão."
         confirmLabel="Confirmar conversão"
         cancelLabel="Voltar"
         loading={converting}

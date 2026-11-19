@@ -28,8 +28,23 @@ import {
   CreateInvoiceItemDto,
 } from './dto/create-invoice.dto';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
+import { CreateAdjustmentNoteDto } from './dto/create-adjustment-note.dto';
 import { calculateInvoiceAmounts } from './invoice-calculator';
 import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
+
+type FiscalDocumentCode = 'FT' | 'PF' | 'NC' | 'ND';
+type AdjustmentDocumentCode = 'NC' | 'ND';
+type FiscalDocumentIdentity = {
+  invoiceNumber: string;
+  fiscalSeries: string;
+  fiscalSequence: number;
+};
+
+// The SAF-T AO code list associates M00 with the invoice mention required for
+// the simplified IVA regime. OUT distinguishes that treatment from a normal
+// IVA rate without inventing a taxable rate on the commercial document.
+const SIMPLIFIED_IVA_SAFT_TAX_CODE = 'OUT';
+const SIMPLIFIED_IVA_SAFT_EXEMPTION_CODE = 'M00';
 
 @Injectable()
 export class InvoiceService {
@@ -57,6 +72,292 @@ export class InvoiceService {
 
   async createProForma(tenantId: string, dto: CreateInvoiceDto) {
     return this.createDocument(tenantId, dto, InvoiceDocumentType.PRO_FORMA);
+  }
+
+  async createCreditNote(
+    tenantId: string,
+    dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.createAdjustmentNote(tenantId, dto, 'NC');
+  }
+
+  async createDebitNote(
+    tenantId: string,
+    dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.createAdjustmentNote(tenantId, dto, 'ND');
+  }
+
+  private async createAdjustmentNote(
+    tenantId: string,
+    dto: CreateAdjustmentNoteDto,
+    documentCode: AdjustmentDocumentCode,
+  ) {
+    const sourceInvoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: dto.sourceInvoiceId,
+        tenantId,
+        documentType: InvoiceDocumentType.NORMAL,
+        fiscalDocumentType: 'FT',
+        status: { not: 'CANCELLED' },
+      },
+      include: { items: true },
+    });
+
+    if (!sourceInvoice) {
+      throw new NotFoundException(
+        'A factura de origem não está disponível para rectificação.',
+      );
+    }
+
+    const requestedLineIds = dto.items.map((item) => item.sourceInvoiceItemId);
+    if (new Set(requestedLineIds).size !== requestedLineIds.length) {
+      throw new BadRequestException(
+        'Cada linha da factura de origem só pode ser indicada uma vez.',
+      );
+    }
+
+    const sourceItemsById = new Map(
+      sourceInvoice.items.map((item) => [item.id, item]),
+    );
+    const noteLines = dto.items.map((requested) => {
+      const source = sourceItemsById.get(requested.sourceInvoiceItemId);
+      if (!source) {
+        throw new BadRequestException(
+          'Uma das linhas indicadas não pertence à factura de origem.',
+        );
+      }
+
+      if (
+        !source.taxType ||
+        !source.taxCode ||
+        source.taxRate === null ||
+        source.taxAmount === null ||
+        !source.electronicOperationType
+      ) {
+        throw new BadRequestException(
+          'A factura de origem não possui informação fiscal suficiente para emitir esta nota.',
+        );
+      }
+
+      if (
+        source.taxRate.isZero() &&
+        (!source.taxExemptionCode || !source.taxExemptionReason)
+      ) {
+        throw new BadRequestException(
+          'A factura de origem precisa de revisão fiscal antes de emitir esta nota.',
+        );
+      }
+
+      const quantity = new Prisma.Decimal(String(requested.quantity)).toDecimalPlaces(
+        4,
+        Prisma.Decimal.ROUND_HALF_UP,
+      );
+      const sourceQuantity = this.decimal(
+        source.quantityAmount,
+        source.quantity,
+      ).toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP);
+      if (quantity.lessThanOrEqualTo(0) || quantity.greaterThan(sourceQuantity)) {
+        throw new BadRequestException(
+          'A quantidade da nota deve ser positiva e não pode exceder a linha de origem.',
+        );
+      }
+
+      const unitPrice = this.decimal(
+        source.unitPriceAmount,
+        source.unitPrice,
+      ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      const total = quantity
+        .mul(unitPrice)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      const taxRate = new Prisma.Decimal(source.taxRate.toString()).toDecimalPlaces(
+        6,
+        Prisma.Decimal.ROUND_HALF_UP,
+      );
+      const taxAmount = total
+        .mul(taxRate)
+        .div(100)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+      return {
+        source,
+        quantity,
+        unitPrice,
+        total,
+        taxRate,
+        taxAmount,
+      };
+    });
+
+    const subtotal = noteLines
+      .reduce((sum, line) => sum.add(line.total), new Prisma.Decimal(0))
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const iva = noteLines
+      .reduce((sum, line) => sum.add(line.taxAmount), new Prisma.Decimal(0))
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const sourceSubtotal = this.decimal(
+      sourceInvoice.subtotalAmount,
+      sourceInvoice.subtotal,
+    );
+    const sourceWithholding = this.decimal(
+      sourceInvoice.withholdingTaxAmount,
+      sourceInvoice.withholdingTax,
+    );
+    const withholdingRate = sourceSubtotal.greaterThan(0)
+      ? sourceWithholding.div(sourceSubtotal)
+      : new Prisma.Decimal(0);
+    const withholdingTax = subtotal
+      .mul(withholdingRate)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const total = subtotal
+      .add(iva)
+      .sub(withholdingTax)
+      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+    const issuedAt = new Date();
+    const year = Number(
+      new Intl.DateTimeFormat('en-US', {
+        timeZone: 'Africa/Luanda',
+        year: 'numeric',
+      }).format(issuedAt),
+    );
+    const fiscalSeries = this.fiscalSeriesFor(documentCode, year);
+
+    try {
+      const note = await this.prisma.$transaction(async (tx) => {
+        // The next number and the fiscal hash chain are shared by every
+        // document in this tenant/type/year series. Serialise at that scope,
+        // not only per source invoice, so concurrent notes cannot reuse a
+        // number or sign from the same previous hash.
+        const lockKey = `${tenantId}:${documentCode}:${year}`;
+        await tx.$queryRaw`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(${lockKey}, 0)
+          )::text AS lock
+        `;
+
+        if (documentCode === 'NC') {
+          const existingCreditNote = await tx.invoice.findFirst({
+            where: {
+              tenantId,
+              rectifiesInvoiceId: sourceInvoice.id,
+              fiscalDocumentType: 'NC',
+              status: { not: 'CANCELLED' },
+            },
+            select: { id: true },
+          });
+          if (existingCreditNote) {
+            throw new ConflictException(
+              'Já existe uma nota de crédito activa para esta factura. Anule-a antes de criar outra.',
+            );
+          }
+        }
+
+        const fiscalIdentity = await this.getNextFiscalDocumentIdentity(
+          tx,
+          tenantId,
+          year,
+          documentCode,
+        );
+        if (!this.fiscalSignatureService) {
+          throw new ServiceUnavailableException({
+            code: 'FISCAL_SIGNATURE_NOT_CONFIGURED',
+            message: 'Não foi possível emitir o documento neste momento.',
+          });
+        }
+
+        const previous = await tx.invoice.findFirst({
+          where: {
+            tenantId,
+            fiscalDocumentType: documentCode,
+            fiscalSeries,
+            fiscalYear: year,
+          },
+          orderBy: { fiscalSequence: 'desc' },
+          select: { fiscalHash: true },
+        });
+        if (previous && !previous.fiscalHash) {
+          throw new ConflictException({
+            code: 'LEGACY_UNSIGNED_DOCUMENT',
+            message: 'A série contém um documento anterior que precisa de revisão antes de continuar.',
+          });
+        }
+
+        const signed = this.fiscalSignatureService.sign({
+          invoiceDate: issuedAt,
+          systemEntryDate: issuedAt,
+          invoiceNo: fiscalIdentity.invoiceNumber,
+          grossTotal: total.toFixed(2),
+          previousHash: previous?.fiscalHash ?? null,
+        });
+
+        return tx.invoice.create({
+          data: {
+            tenantId,
+            clientId: sourceInvoice.clientId,
+            invoiceNumber: fiscalIdentity.invoiceNumber,
+            subtotal: subtotal.toNumber(),
+            subtotalAmount: subtotal,
+            iva: iva.toNumber(),
+            ivaAmount: iva,
+            withholdingTax: withholdingTax.toNumber(),
+            withholdingTaxAmount: withholdingTax,
+            total: total.toNumber(),
+            totalAmount: total,
+            taxRuleVersion: sourceInvoice.taxRuleVersion,
+            taxCalculationStatus: 'RECTIFICATION_FROM_ORIGINAL_DOCUMENT',
+            documentType: InvoiceDocumentType.NORMAL,
+            fiscalDocumentType: documentCode,
+            fiscalSeries: fiscalIdentity.fiscalSeries,
+            fiscalYear: year,
+            fiscalSequence: fiscalIdentity.fiscalSequence,
+            rectifiesInvoiceId: sourceInvoice.id,
+            fiscalHash: signed.hash,
+            fiscalHashControl: signed.hashControl,
+            signatureKeyVersion: signed.keyVersion,
+            previousFiscalHash: previous?.fiscalHash ?? null,
+            notes: dto.reason.trim(),
+            status: 'PENDING',
+            issuedAt,
+            createdAt: issuedAt,
+            items: {
+              create: noteLines.map((line) => ({
+                productId: line.source.productId,
+                productName: line.source.productName,
+                quantity: line.quantity.toNumber(),
+                quantityAmount: line.quantity,
+                unitPrice: line.unitPrice.toNumber(),
+                unitPriceAmount: line.unitPrice,
+                total: line.total.toNumber(),
+                totalAmount: line.total,
+                unit: line.source.unit,
+                taxType: line.source.taxType,
+                taxCode: line.source.taxCode,
+                taxRate: line.taxRate,
+                taxAmount: line.taxAmount,
+                taxExemptionCode: line.source.taxExemptionCode,
+                taxExemptionReason: line.source.taxExemptionReason,
+                electronicOperationType: line.source.electronicOperationType,
+              })),
+            },
+          },
+          include: { client: true, items: true },
+        });
+      });
+
+      await this.syncFiscalObligations(tenantId);
+      return note;
+    } catch (error: unknown) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Não foi possível gerar uma numeração única para o documento. Tente novamente.',
+        );
+      }
+
+      throw error;
+    }
   }
 
   async convertProForma(tenantId: string, proFormaId: string) {
@@ -106,6 +407,8 @@ export class InvoiceService {
     documentType: InvoiceDocumentType,
     sourceProFormaId?: string,
   ) {
+    const fiscalDocumentCode: FiscalDocumentCode =
+      documentType === InvoiceDocumentType.PRO_FORMA ? 'PF' : 'FT';
     const tenant =
       await this.prisma.tenant.findUnique({
         where: {
@@ -210,7 +513,7 @@ export class InvoiceService {
     // IVA
     //
     // REGIME GERAL:
-    //   taxa normal = 14%
+    //   taxa normal = 14%, apenas depois da classificação da linha.
     //
     // REGIME SIMPLIFICADO:
     //   o imposto não é acrescentado à factura como 14%.
@@ -229,9 +532,53 @@ export class InvoiceService {
       throw new BadRequestException({
         code: 'IVA_ENROLLMENT_REQUIRED',
         message: 'É necessário um enquadramento IVA vigente na data de emissão da factura.',
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_CONFIGURATION',
       });
     }
-    const vatPolicy = resolveInvoiceVatPolicy(ivaEnrollment?.regime ?? 'GERAL');
+    const ivaRegime = ivaEnrollment?.regime ?? null;
+    if (documentType === InvoiceDocumentType.NORMAL && !ivaRegime) {
+      throw new BadRequestException({
+        code: 'IVA_ENROLLMENT_UNCONFIRMED',
+        message:
+          'IVA por apurar: o enquadramento IVA da empresa ainda não foi confirmado.',
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      });
+    }
+    const vatPolicy = resolveInvoiceVatPolicy(
+      documentType === InvoiceDocumentType.NORMAL ? ivaRegime : 'GERAL',
+    );
+    const hasFiscalLineClassification = normalizedItems.every((item) =>
+      Boolean(item.electronicOperationType?.trim()),
+    );
+    if (
+      documentType === InvoiceDocumentType.NORMAL &&
+      vatPolicy.requiresLineClassification &&
+      !hasFiscalLineClassification
+    ) {
+      /*
+       * Product.ivaRate has a legacy default of 14 and is not evidence that
+       * this operation is taxable at the general rate. The persisted AGT
+       * operation classification is the minimum factual input we have here.
+       */
+      throw new BadRequestException({
+        code: 'IVA_FISCAL_CLASSIFICATION_REQUIRED',
+        message:
+          'IVA por apurar: classifique a operação AGT em todas as linhas antes de emitir a factura. Nenhuma taxa de 14% foi assumida.',
+        rate: null,
+        ratePercent: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      });
+    }
     const ivaRate =
       documentType === InvoiceDocumentType.PRO_FORMA
         ? 0
@@ -291,6 +638,19 @@ export class InvoiceService {
         year: 'numeric',
       }).format(issuedAt),
     );
+    const fiscalSeries = this.fiscalSeriesFor(fiscalDocumentCode, year);
+    const simplifiedInvoice =
+      documentType === InvoiceDocumentType.NORMAL &&
+      vatPolicy.requiredInvoiceMention === SIMPLIFIED_IVA_INVOICE_MENTION;
+    const requestedNotes = dto.notes?.trim() || null;
+    const documentNotes = simplifiedInvoice
+      ? [SIMPLIFIED_IVA_INVOICE_MENTION, requestedNotes]
+          .filter(
+            (value, index, values): value is string =>
+              Boolean(value) && values.indexOf(value) === index,
+          )
+          .join('\n')
+      : requestedNotes;
 
     const data = {
       tenantId,
@@ -329,10 +689,11 @@ export class InvoiceService {
       documentType,
 
       fiscalDocumentType:
-        documentType === InvoiceDocumentType.PRO_FORMA ? null : 'FT',
+        documentType === InvoiceDocumentType.PRO_FORMA
+          ? null
+          : fiscalDocumentCode,
 
-      fiscalSeries:
-        documentType === InvoiceDocumentType.PRO_FORMA ? 'PF' : 'FT',
+      fiscalSeries,
 
       fiscalYear:
         year,
@@ -345,9 +706,7 @@ export class InvoiceService {
 
       createdAt: issuedAt,
 
-      notes:
-        dto.notes?.trim() ||
-        null,
+      notes: documentNotes || null,
 
       status:
         'PENDING' as const,
@@ -390,9 +749,11 @@ export class InvoiceService {
                 documentType === InvoiceDocumentType.NORMAL ? 'IVA' : null,
 
               taxCode:
-                documentType === InvoiceDocumentType.NORMAL && ivaRate > 0
-                  ? 'NOR'
-                  : null,
+                documentType !== InvoiceDocumentType.NORMAL
+                  ? null
+                  : simplifiedInvoice
+                    ? SIMPLIFIED_IVA_SAFT_TAX_CODE
+                    : 'NOR',
 
               taxRate:
                 documentType === InvoiceDocumentType.NORMAL
@@ -404,6 +765,16 @@ export class InvoiceService {
                   ? calculation.lines[index].total
                       .mul(new Prisma.Decimal(String(ivaRate)))
                       .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+                  : null,
+
+              taxExemptionCode:
+                simplifiedInvoice
+                  ? SIMPLIFIED_IVA_SAFT_EXEMPTION_CODE
+                  : null,
+
+              taxExemptionReason:
+                simplifiedInvoice
+                  ? SIMPLIFIED_IVA_INVOICE_MENTION
                   : null,
             }),
           ),
@@ -425,13 +796,12 @@ export class InvoiceService {
             )::text AS lock
           `;
 
-          const invoiceNumber =
-            await this.getNextInvoiceNumber(
-              tx,
-              tenantId,
-              year,
-              documentType,
-            );
+          const fiscalIdentity = await this.getNextFiscalDocumentIdentity(
+            tx,
+            tenantId,
+            year,
+            fiscalDocumentCode,
+          );
 
           let signature:
             | {
@@ -452,8 +822,8 @@ export class InvoiceService {
             const previous = await tx.invoice.findFirst({
               where: {
                 tenantId,
-                fiscalDocumentType: 'FT',
-                fiscalSeries: 'FT',
+                fiscalDocumentType: fiscalDocumentCode,
+                fiscalSeries,
                 fiscalYear: year,
               },
               orderBy: { fiscalSequence: 'desc' },
@@ -468,7 +838,7 @@ export class InvoiceService {
             const signed = this.fiscalSignatureService.sign({
               invoiceDate: issuedAt,
               systemEntryDate: issuedAt,
-              invoiceNo: invoiceNumber,
+              invoiceNo: fiscalIdentity.invoiceNumber,
               grossTotal: calculation.total.toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP).toFixed(2),
               previousHash: previous?.fiscalHash ?? null,
             });
@@ -483,8 +853,9 @@ export class InvoiceService {
           return tx.invoice.create({
             data: {
               ...data,
-              invoiceNumber,
-              fiscalSequence: Number(invoiceNumber.split('-').at(-1)),
+              invoiceNumber: fiscalIdentity.invoiceNumber,
+              fiscalSeries: fiscalIdentity.fiscalSeries,
+              fiscalSequence: fiscalIdentity.fiscalSequence,
               ...signature,
             },
 
@@ -573,76 +944,95 @@ export class InvoiceService {
   // PRÓXIMO NÚMERO
   // ============================================================
 
-  private async getNextInvoiceNumber(
+  private fiscalSeriesFor(
+    documentCode: FiscalDocumentCode,
+    year: number,
+  ): string {
+    // The document code is unique per type and the year gives every annual
+    // series its own identifier, so a sequence may restart without reusing an
+    // InvoiceNo from a prior year.
+    return `${documentCode}${year}`;
+  }
+
+  private async getNextFiscalDocumentIdentity(
     tx: Prisma.TransactionClient,
     tenantId: string,
     year: number,
-    documentType: InvoiceDocumentType,
-  ): Promise<string> {
-    const prefix =
-      `${documentType === InvoiceDocumentType.PRO_FORMA ? 'PF' : 'FT'}-${year}-`;
-
-    const invoices =
-      await tx.invoice.findMany({
-        where: {
-          tenantId,
-
-          invoiceNumber: {
-            startsWith:
-              prefix,
-          },
-        },
-
-        select: {
-          invoiceNumber:
-            true,
-        },
-      });
+    documentCode: FiscalDocumentCode,
+  ): Promise<FiscalDocumentIdentity> {
+    const fiscalSeries = this.fiscalSeriesFor(documentCode, year);
+    const invoices = await tx.invoice.findMany({
+      where: {
+        tenantId,
+        fiscalSeries,
+        fiscalYear: year,
+      },
+      select: {
+        fiscalSequence: true,
+        invoiceNumber: true,
+      },
+    });
 
     let highest = 0;
 
-    for (
-      const invoice of invoices
-    ) {
-      const sequence =
-        Number(
-          invoice.invoiceNumber.slice(
-            prefix.length,
-          ),
-        );
+    for (const invoice of invoices) {
+      const persistedSequence = invoice.fiscalSequence;
+      const numberMatch = new RegExp(
+        `^${documentCode} ${fiscalSeries}/(\\d+)$`,
+      ).exec(invoice.invoiceNumber);
+      const sequence = Number.isInteger(persistedSequence)
+        ? persistedSequence
+        : Number(numberMatch?.[1]);
 
-      if (
-        Number.isInteger(
-          sequence,
-        ) &&
-        sequence >
-          highest
-      ) {
-        highest =
-          sequence;
+      if (Number.isInteger(sequence) && sequence > highest) {
+        highest = sequence;
       }
     }
 
-    return (
-      `${prefix}` +
-      `${String(
-        highest + 1,
-      ).padStart(5, '0')}`
-    );
+    const fiscalSequence = highest + 1;
+    return {
+      fiscalSeries,
+      fiscalSequence,
+      invoiceNumber: `${documentCode} ${fiscalSeries}/${String(
+        fiscalSequence,
+      ).padStart(5, '0')}`,
+    };
   }
 
   // ============================================================
   // LISTAR
   // ============================================================
 
+  private documentFilter(
+    documentType: InvoiceDocumentType,
+    fiscalDocumentType?: 'FT' | 'NC' | 'ND',
+  ): Prisma.InvoiceWhereInput {
+    if (fiscalDocumentType) {
+      return { fiscalDocumentType };
+    }
+
+    if (documentType === InvoiceDocumentType.PRO_FORMA) {
+      return { fiscalDocumentType: null };
+    }
+
+    return {
+      OR: [
+        { fiscalDocumentType: 'FT' },
+        { fiscalDocumentType: null },
+      ],
+    };
+  }
+
   async findAll(
     tenantId: string,
     documentType: InvoiceDocumentType = InvoiceDocumentType.NORMAL,
+    fiscalDocumentType?: 'FT' | 'NC' | 'ND',
   ) {
     return this.prisma.invoice.findMany({
       where: {
         tenantId,
         documentType,
+        ...this.documentFilter(documentType, fiscalDocumentType),
       },
 
       include: {
@@ -667,19 +1057,32 @@ export class InvoiceService {
     const page = query.page ?? 1;
     const pageSize = query.pageSize ?? 20;
     const search = query.search?.trim();
+    const documentType = query.documentType ?? InvoiceDocumentType.NORMAL;
+    const documentFilter = this.documentFilter(
+      documentType,
+      query.fiscalDocumentType,
+    );
     const where: Prisma.InvoiceWhereInput = {
       tenantId,
-      documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+      documentType,
       ...(query.status ? { status: query.status } : {}),
-      ...(search
-        ? {
-            OR: [
-              { invoiceNumber: { contains: search, mode: 'insensitive' } },
-              { client: { name: { contains: search, mode: 'insensitive' } } },
-              { client: { nif: { contains: search, mode: 'insensitive' } } },
-            ],
-          }
-        : {}),
+      AND: [
+        documentFilter,
+        ...(search
+          ? [{
+              OR: [
+              { invoiceNumber: { contains: search, mode: 'insensitive' as const } },
+              { client: { name: { contains: search, mode: 'insensitive' as const } } },
+              { client: { nif: { contains: search, mode: 'insensitive' as const } } },
+              ],
+            }]
+          : []),
+      ],
+    };
+    const summaryWhere: Prisma.InvoiceWhereInput = {
+      tenantId,
+      documentType,
+      AND: [documentFilter],
     };
     const orderBy = {
       [query.sortBy ?? 'issuedAt']: query.sortDirection ?? 'desc',
@@ -697,29 +1100,25 @@ export class InvoiceService {
         }),
         this.prisma.invoice.count({
           where: {
-            tenantId,
-            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            ...summaryWhere,
             status: 'PENDING',
           },
         }),
         this.prisma.invoice.count({
           where: {
-            tenantId,
-            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            ...summaryWhere,
             status: 'PAID',
           },
         }),
         this.prisma.invoice.count({
           where: {
-            tenantId,
-            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            ...summaryWhere,
             status: 'CANCELLED',
           },
         }),
         this.prisma.invoice.aggregate({
           where: {
-            tenantId,
-            documentType: query.documentType ?? InvoiceDocumentType.NORMAL,
+            ...summaryWhere,
             status: { not: 'CANCELLED' },
           },
           _sum: {
@@ -794,7 +1193,24 @@ export class InvoiceService {
       );
     }
 
-    return invoice;
+    const rectifiedInvoice = invoice.rectifiesInvoiceId
+      ? await this.prisma.invoice.findFirst({
+          where: {
+            id: invoice.rectifiesInvoiceId,
+            tenantId,
+          },
+          select: {
+            id: true,
+            invoiceNumber: true,
+            fiscalDocumentType: true,
+          },
+        })
+      : null;
+
+    return {
+      ...invoice,
+      rectifiedInvoice,
+    };
   }
 
   // ============================================================
@@ -816,6 +1232,21 @@ export class InvoiceService {
     if (!invoice) {
       throw new NotFoundException(
         'Factura não encontrada.',
+      );
+    }
+
+    if (invoice.documentType === InvoiceDocumentType.PRO_FORMA) {
+      throw new BadRequestException(
+        'Uma Pro Forma nao pode ser marcada como paga. Converta-a primeiro em factura.',
+      );
+    }
+
+    if (
+      invoice.fiscalDocumentType === 'NC' ||
+      invoice.fiscalDocumentType === 'ND'
+    ) {
+      throw new BadRequestException(
+        'O pagamento desta nota deve ser registado no fluxo financeiro apropriado.',
       );
     }
 
@@ -864,12 +1295,6 @@ export class InvoiceService {
       }
 
       return current;
-    }
-
-    if (invoice.documentType === InvoiceDocumentType.PRO_FORMA) {
-      throw new BadRequestException(
-        'Uma Pro Forma nÃ£o pode ser marcada como paga. Converta-a primeiro em factura.',
-      );
     }
 
     /*
@@ -988,48 +1413,60 @@ export class InvoiceService {
         },
 
         select: {
+          id: true,
           status: true,
+          fiscalDocumentType: true,
           total: true,
           totalAmount: true,
         },
       });
 
-    const totalInvoices =
-      invoices.length;
+    const commercialInvoices = invoices.filter(
+      (invoice) =>
+        invoice.fiscalDocumentType === 'FT' ||
+        invoice.fiscalDocumentType === null,
+    );
+    const totalInvoices = commercialInvoices.length;
 
     const paid =
-      invoices.filter(
+      commercialInvoices.filter(
         (invoice) =>
           invoice.status ===
           'PAID',
       );
 
     const pending =
-      invoices.filter(
+      commercialInvoices.filter(
         (invoice) =>
           invoice.status ===
           'PENDING',
       );
 
     const cancelled =
-      invoices.filter(
+      commercialInvoices.filter(
         (invoice) =>
           invoice.status ===
           'CANCELLED',
       );
 
-    const sumInvoices = (
+    const sumDocuments = (
       entries: typeof invoices,
     ) => entries.reduce(
-      (sum, invoice) => sum.add(
-        this.decimal(invoice.totalAmount, invoice.total),
-      ),
+      (sum, invoice) => {
+        const sign = invoice.fiscalDocumentType === 'NC' ? -1 : 1;
+        return sum.add(
+          this.decimal(invoice.totalAmount, invoice.total).mul(sign),
+        );
+      },
       new Prisma.Decimal(0),
     ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
-    const revenueReceivedAmount = sumInvoices(paid);
-    const revenuePendingAmount = sumInvoices(pending);
-    const totalInvoicedAmount = sumInvoices(
+    // Uma nota fiscal ajusta o total emitido, mas não representa por si só
+    // uma entrada ou saída de dinheiro. Os valores de recebimento permanecem
+    // vinculados exclusivamente ao estado de pagamento da fatura comercial.
+    const revenueReceivedAmount = sumDocuments(paid);
+    const revenuePendingAmount = sumDocuments(pending);
+    const totalInvoicedAmount = sumDocuments(
       invoices.filter((invoice) => invoice.status !== 'CANCELLED'),
     );
 
@@ -1098,6 +1535,16 @@ export class InvoiceService {
       );
     }
 
+    const rectifiedInvoice = invoice.rectifiesInvoiceId
+      ? await this.prisma.invoice.findFirst({
+          where: {
+            id: invoice.rectifiesInvoiceId,
+            tenantId,
+          },
+          select: { invoiceNumber: true },
+        })
+      : null;
+
     const doc = new PDFDocument({ size: 'A4', margin: 38, bufferPages: true });
 
     res.setHeader(
@@ -1112,7 +1559,10 @@ export class InvoiceService {
 
     doc.pipe(res);
 
-    renderInvoicePdf(doc, invoice);
+    renderInvoicePdf(doc, {
+      ...invoice,
+      rectifiedInvoiceNumber: rectifiedInvoice?.invoiceNumber ?? null,
+    });
 
     doc.end();
   }

@@ -41,7 +41,7 @@ describe('fiscal assessment safeguards', () => {
   it('does not call a revenue-only industrial result definitive', () => {
     expect(industrialAssessmentRequiresReview()).toMatchObject({
       calculationStatus: 'REVIEW_REQUIRED',
-      finalAmount: '0.00',
+      finalAmount: null,
     });
   });
 });

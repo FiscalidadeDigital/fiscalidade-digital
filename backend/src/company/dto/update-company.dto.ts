@@ -1,6 +1,7 @@
 import {
   IsEmail,
-  IsEnum,
+  IsBoolean,
+  IsDateString,
   IsIn,
   IsInt,
   IsNotEmpty,
@@ -10,7 +11,6 @@ import {
   MaxLength,
   Min,
 } from 'class-validator';
-import { FiscalRegime } from '@prisma/client';
 
 const COMPANY_TYPES = [
   'COMERCIANTE_NOME_INDIVIDUAL',
@@ -73,7 +73,12 @@ export class UpdateCompanyDto {
   @Max(1_000_000)
   employeeCount?: number;
 
+  /** The date is explicit because the account creation date is not fiscal evidence. */
   @IsOptional()
-  @IsEnum(FiscalRegime)
-  regime?: FiscalRegime;
+  @IsDateString()
+  activityStartedAt?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  hasPriorUnregularizedObligations?: boolean;
 }

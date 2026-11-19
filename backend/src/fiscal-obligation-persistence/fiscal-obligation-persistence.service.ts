@@ -12,6 +12,8 @@ type CommonObligationInput = {
   type: ObligationType;
   title: string;
   dueDate: Date;
+  /** Calendar/reference year, which may differ from the due-date year. */
+  referenceYear?: number | null;
   description?: string | null;
   amount?: number | null;
   amountValue?: Prisma.Decimal | null;
@@ -63,6 +65,7 @@ export class FiscalObligationPersistenceService {
       tenantId: input.tenantId,
       fiscalCalendarId: input.fiscalCalendarId,
       period: input.period,
+      referenceYear: input.referenceYear,
       type: input.type,
       title: input.title,
       dueDate,
@@ -77,13 +80,18 @@ export class FiscalObligationPersistenceService {
     };
 
     try {
-      return { outcome: 'CREATED', obligation: await prisma.fiscalObligation.create({ data }) };
+      return {
+        outcome: 'CREATED',
+        obligation: await prisma.fiscalObligation.create({ data }),
+      };
     } catch (error) {
-      if (!this.isExpectedUniqueConflict(error, CALENDAR_IDENTITY_INDEX, [
-        'tenantId',
-        'fiscalCalendarId',
-        'period',
-      ])) {
+      if (
+        !this.isExpectedUniqueConflict(error, CALENDAR_IDENTITY_INDEX, [
+          'tenantId',
+          'fiscalCalendarId',
+          'period',
+        ])
+      ) {
         throw error;
       }
 
@@ -106,7 +114,10 @@ export class FiscalObligationPersistenceService {
     this.assertTenant(input.tenantId);
     this.assertNewOrigin(input.origin);
     this.assertNonBlank(input.idempotencyKey, 'idempotencyKey');
-    if (input.fiscalCalendarId !== undefined && input.fiscalCalendarId !== null) {
+    if (
+      input.fiscalCalendarId !== undefined &&
+      input.fiscalCalendarId !== null
+    ) {
       throw new BadRequestException(
         'Non-calendar obligations cannot include fiscalCalendarId.',
       );
@@ -116,6 +127,7 @@ export class FiscalObligationPersistenceService {
       tenantId: input.tenantId,
       fiscalCalendarId: null,
       period: input.period,
+      referenceYear: input.referenceYear,
       type: input.type,
       title: input.title,
       dueDate: input.dueDate,
@@ -131,13 +143,18 @@ export class FiscalObligationPersistenceService {
     };
 
     try {
-      return { outcome: 'CREATED', obligation: await prisma.fiscalObligation.create({ data }) };
+      return {
+        outcome: 'CREATED',
+        obligation: await prisma.fiscalObligation.create({ data }),
+      };
     } catch (error) {
-      if (!this.isExpectedUniqueConflict(error, NON_CALENDAR_IDENTITY_INDEX, [
-        'tenantId',
-        'origin',
-        'idempotencyKey',
-      ])) {
+      if (
+        !this.isExpectedUniqueConflict(error, NON_CALENDAR_IDENTITY_INDEX, [
+          'tenantId',
+          'origin',
+          'idempotencyKey',
+        ])
+      ) {
         throw error;
       }
 
@@ -164,14 +181,16 @@ export class FiscalObligationPersistenceService {
    * obligations; it never rewrites an existing obligation or the source row.
    */
   private async resolveOperationalDueDate(input: CalendarObligationInput) {
-    const overrideModel = (this.prisma as unknown as {
-      fiscalDeadlineOverride?: {
-        findUnique: (args: {
-          where: { fiscalCalendarId: string };
-          select: { active: boolean; operationalDueDate: boolean };
-        }) => Promise<{ active: boolean; operationalDueDate: Date } | null>;
-      };
-    }).fiscalDeadlineOverride;
+    const overrideModel = (
+      this.prisma as unknown as {
+        fiscalDeadlineOverride?: {
+          findUnique: (args: {
+            where: { fiscalCalendarId: string };
+            select: { active: boolean; operationalDueDate: boolean };
+          }) => Promise<{ active: boolean; operationalDueDate: Date } | null>;
+        };
+      }
+    ).fiscalDeadlineOverride;
 
     // Keeps isolated unit tests and databases predating the additive migration
     // on the legal calendar date. A production deployment must apply the
@@ -214,6 +233,10 @@ export class FiscalObligationPersistenceService {
     if (candidate?.code !== 'P2002') return false;
     const target = candidate.meta?.target;
     if (typeof target === 'string') return target.includes(indexName);
-    return Array.isArray(target) && target.length === fields.length && fields.every((field) => target.includes(field));
+    return (
+      Array.isArray(target) &&
+      target.length === fields.length &&
+      fields.every((field) => target.includes(field))
+    );
   }
 }

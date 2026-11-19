@@ -2,19 +2,26 @@ import { FiscalRegime, InvoiceDocumentType, InvoiceStatus, TaxRuleOperation, Tax
 import { Test, TestingModule } from '@nestjs/testing';
 
 import { FiscalEngineService } from '../src/fiscal-engine/fiscal-engine.service';
+import { FiscalEnrollmentModule } from '../src/fiscal-enrollment/fiscal-enrollment.module';
+import { FiscalObligationPersistenceModule } from '../src/fiscal-obligation-persistence/fiscal-obligation-persistence.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
 import { assertIsolatedTestDatabaseEnvironment } from './helpers/test-database';
 
 describe('Fiscal engine VAT document eligibility', () => {
+  let module: TestingModule;
   let prisma: PrismaService;
   let service: FiscalEngineService;
   let tenantId: string;
 
   beforeAll(async () => {
     assertIsolatedTestDatabaseEnvironment();
-    const module: TestingModule = await Test.createTestingModule({
-      imports: [PrismaModule],
+    module = await Test.createTestingModule({
+      imports: [
+        PrismaModule,
+        FiscalObligationPersistenceModule,
+        FiscalEnrollmentModule,
+      ],
       providers: [FiscalEngineService],
     }).compile();
     prisma = module.get(PrismaService);
@@ -31,6 +38,14 @@ describe('Fiscal engine VAT document eligibility', () => {
       },
     });
     tenantId = tenant.id;
+    await prisma.taxRegimeAssignment.create({
+      data: {
+        tenantId,
+        taxType: TaxType.IVA,
+        regime: FiscalRegime.GERAL,
+        validFrom: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
     const [client, supplier] = await Promise.all([
       prisma.client.create({ data: { tenantId, name: 'Cliente IVA' } }),
       prisma.supplier.create({ data: { tenantId, name: 'Fornecedor IVA' } }),
@@ -80,6 +95,7 @@ describe('Fiscal engine VAT document eligibility', () => {
         total: 342.03,
         totalAmount: '342.03',
         issuedAt,
+        documentStatus: 'VALIDATED',
       },
     });
   });
@@ -93,6 +109,9 @@ describe('Fiscal engine VAT document eligibility', () => {
       await prisma.supplier.deleteMany({ where: { tenantId } });
       await prisma.client.deleteMany({ where: { tenantId } });
       await prisma.tenant.delete({ where: { id: tenantId } });
+    }
+    if (module) {
+      await module.close();
     }
   });
 

@@ -5,6 +5,7 @@ import Link from "next/link";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import InvoiceManagementNav from "@/components/invoices/InvoiceManagementNav";
 import { useAuth } from "@/context/AuthContext";
+import { getSafeErrorMessage } from "@/lib/safe-error";
 import {
   Plus,
   Search,
@@ -241,15 +242,12 @@ export default function PurchaseInvoicesPage() {
       resetForm();
       setShowModal(false);
     } catch (error: unknown) {
-      const message =
-        typeof error === "object" && error !== null &&
-        "response" in error && typeof error.response === "object" &&
-        error.response !== null && "data" in error.response &&
-        typeof error.response.data === "object" && error.response.data !== null &&
-        "message" in error.response.data && typeof error.response.data.message === "string"
-          ? error.response.data.message
-          : "Não foi possível registar a factura. Verifique os dados e tente novamente.";
-      setSaveError(message);
+      setSaveError(
+        getSafeErrorMessage(
+          error,
+          "Não foi possível registar a factura. Verifique os dados e tente novamente.",
+        ),
+      );
     } finally {
       setIsSaving(false);
     }
@@ -831,7 +829,7 @@ export default function PurchaseInvoicesPage() {
 
               <section aria-label="Totais e impostos" className="rounded-xl border border-[#e6e9f0] bg-[#fafbfe] p-4 text-sm text-[#56627e]">
                 <h3 className="font-bold text-[#0f1b3d]">Totais, IVA e retenção</h3>
-                <p className="mt-1">O subtotal e o total definitivos são calculados pela API. IVA e retenção são os valores indicados no documento do fornecedor.</p>
+                <p className="mt-1">O subtotal e o total definitivos são calculados automaticamente. IVA e retenção são os valores indicados no documento do fornecedor.</p>
               </section>
 
               <div>

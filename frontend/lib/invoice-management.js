@@ -27,7 +27,7 @@ const invoiceManagementItems = Object.freeze([
     id: 'electronic',
     href: '/electronic-invoicing',
     label: 'Facturação electrónica',
-    description: 'Preparação e acompanhamento técnico de submissões',
+    description: 'Acompanhe os documentos electrónicos',
   },
 ]);
 

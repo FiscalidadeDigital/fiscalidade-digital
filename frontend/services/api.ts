@@ -3,6 +3,7 @@
   type InternalAxiosRequestConfig,
 } from 'axios';
 import { API_BASE_URL, getApiBaseUrl } from './api-base-url';
+import { sanitizeApiError } from '@/lib/safe-error';
 import { notifySessionExpired } from '@/lib/session-lifecycle';
 
 const api = axios.create({
@@ -50,7 +51,7 @@ api.interceptors.request.use(
   },
 
   (error) => {
-    return Promise.reject(error);
+    return Promise.reject(sanitizeApiError(error));
   },
 );
 
@@ -69,7 +70,7 @@ api.interceptors.response.use(
       notifySessionExpired();
     }
 
-    return Promise.reject(error);
+    return Promise.reject(sanitizeApiError(error));
   },
 );
 

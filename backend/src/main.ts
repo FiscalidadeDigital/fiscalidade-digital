@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
+import { SafeHttpExceptionFilter } from './common/filters/safe-http-exception.filter';
 
 import helmet from 'helmet';
 import { createCorsConfig } from './common/config/cors.config';
@@ -40,6 +41,7 @@ async function bootstrap() {
       },
     }),
   );
+  app.useGlobalFilters(new SafeHttpExceptionFilter());
 
   // =========================================================
   // CORS

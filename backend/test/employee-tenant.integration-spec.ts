@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { FiscalRegime, UserRole } from '@prisma/client';
+import { FiscalRegime, TaxType, UserRole } from '@prisma/client';
 import request from 'supertest';
 import { AuthModule } from '../src/auth/auth.module';
 import { ClientModule } from '../src/client/client.module';
@@ -28,6 +28,17 @@ describe('Core records HTTP tenant isolation', () => {
   let supplierId: string;
 
   const bearer = (token: string) => `Bearer ${token}`;
+
+  const removeTenantFiscalRecords = async (tenantIds: string[]) => {
+    if (tenantIds.length === 0) {
+      return;
+    }
+
+    const tenantId = { in: tenantIds };
+    await prisma.taxTransaction.deleteMany({ where: { tenantId } });
+    await prisma.taxAssessment.deleteMany({ where: { tenantId } });
+    await prisma.fiscalObligation.deleteMany({ where: { tenantId } });
+  };
 
   beforeAll(async () => {
     assertIsolatedTestDatabaseEnvironment();
@@ -64,10 +75,15 @@ describe('Core records HTTP tenant isolation', () => {
     prisma = app.get(PrismaService);
     jwtService = app.get(JwtService);
 
-    await prisma.tenant.deleteMany({
+    const existingTenants = await prisma.tenant.findMany({
       where: {
         name: { in: ['Tenant A E2E', 'Tenant B E2E'] },
       },
+      select: { id: true },
+    });
+    await removeTenantFiscalRecords(existingTenants.map((tenant) => tenant.id));
+    await prisma.tenant.deleteMany({
+      where: { id: { in: existingTenants.map((tenant) => tenant.id) } },
     });
 
     const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -91,6 +107,15 @@ describe('Core records HTTP tenant isolation', () => {
     });
     tenantAId = tenantA.id;
     tenantBId = tenantB.id;
+
+    await prisma.taxRegimeAssignment.create({
+      data: {
+        tenantId: tenantA.id,
+        taxType: TaxType.IVA,
+        regime: FiscalRegime.GERAL,
+        validFrom: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
 
     const [ownerA, ownerB, viewerA] = await Promise.all([
       prisma.user.create({
@@ -139,6 +164,7 @@ describe('Core records HTTP tenant isolation', () => {
           tenantId: { in: [tenantAId, tenantBId] },
         },
       });
+      await removeTenantFiscalRecords([tenantAId, tenantBId]);
       await prisma.tenant.deleteMany({
         where: {
           id: { in: [tenantAId, tenantBId] },
@@ -414,6 +440,7 @@ describe('Core records HTTP tenant isolation', () => {
         priceAmount: '1000.05',
         ivaRate: 14,
         unit: 'HORA',
+        electronicOperationType: 'SE',
       },
     });
     const otherTenantProduct = await prisma.product.create({
@@ -475,6 +502,23 @@ describe('Core records HTTP tenant isolation', () => {
         items: [{ productName: 'Teste', quantity: 1, unitPrice: 10.999 }],
       })
       .expect(400);
+    const unclassified = await request(app.getHttpServer())
+      .post('/invoice')
+      .set('Authorization', bearer(ownerAToken))
+      .send({
+        clientId,
+        items: [{ productName: 'Operação sem classificação', quantity: 1, unitPrice: 10 }],
+      })
+      .expect(400);
+    expect(unclassified.body).toEqual(
+      expect.objectContaining({
+        code: 'IVA_FISCAL_CLASSIFICATION_REQUIRED',
+        rate: null,
+        iva: null,
+        total: null,
+        calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
+      }),
+    );
     await request(app.getHttpServer())
       .post('/invoice')
       .set('Authorization', bearer(viewerAToken))
@@ -497,6 +541,7 @@ describe('Core records HTTP tenant isolation', () => {
               productName: 'Revisão contabilística',
               quantity: 2,
               unitPrice: 750,
+              electronicOperationType: 'SE',
             },
           ],
         })
@@ -545,8 +590,7 @@ describe('Core records HTTP tenant isolation', () => {
         total: 3420.17,
         totalAmount: '3420.17',
         taxRuleVersion: 'AO-CIVA-LEI-14-23-ART19-A',
-        taxCalculationStatus:
-          'STANDARD_RATE_ASSUMED_PENDING_ITEM_CLASSIFICATION',
+        taxCalculationStatus: 'STANDARD_RATE_CLASSIFIED',
       }),
     );
     expect(firstInvoice.items).toEqual([

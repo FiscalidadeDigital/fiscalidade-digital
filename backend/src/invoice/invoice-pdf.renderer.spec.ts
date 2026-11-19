@@ -1,5 +1,5 @@
 import PDFDocument from 'pdfkit';
-import { formatLineVatRate, formatPaymentStatus, InvoicePdfData, renderInvoicePdf, resolveLineVatRate } from './invoice-pdf.renderer';
+import { documentPresentation, formatLineVatRate, formatPaymentStatus, InvoicePdfData, renderInvoicePdf, resolveLineVatRate } from './invoice-pdf.renderer';
 
 const fixture = (overrides: Partial<InvoicePdfData> = {}): InvoicePdfData => ({
   invoiceNumber: 'FT-2026-00001',
@@ -81,6 +81,28 @@ describe('invoice PDF renderer', () => {
     expect(formatPaymentStatus('PAID')).toBe('Paga');
     expect(formatPaymentStatus('PENDING')).toBe('Pendente');
     expect(formatPaymentStatus('CANCELLED')).toBe('Cancelada');
+  });
+
+  it('labels adjustment documents and preserves the persisted line VAT rate', () => {
+    const creditNote = fixture({
+      fiscalDocumentType: 'NC',
+      rectifiedInvoiceNumber: 'FT-2026-00001',
+      items: [{
+        productName: 'Linha rectificada',
+        quantity: '1',
+        unitPrice: '100',
+        total: '100',
+        taxRate: '14',
+        unit: 'UN',
+        product: { code: 'L-1', ivaRate: 0 },
+      }],
+    });
+
+    expect(documentPresentation(creditNote)).toMatchObject({
+      code: 'NC',
+      title: 'NOTA DE CRÉDITO',
+    });
+    expect(resolveLineVatRate(creditNote, creditNote.items[0])).toBe(14);
   });
 
   it.each([

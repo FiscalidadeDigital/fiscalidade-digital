@@ -34,9 +34,22 @@
 
 ### Persistência implementada
 
-`InvoiceItem` passa a preservar `taxType`, `taxCode`, `taxRate`, `taxAmount`, `taxExemptionCode` e `taxExemptionReason`. Os campos são opcionais para manter compatibilidade com documentos históricos. Novas facturas normais com taxa positiva guardam explicitamente `IVA`, código `NOR`, taxa e montante por linha. Uma taxa zero não recebe automaticamente `ISE`, `NS` ou fundamento; o preflight deve bloquear a exportação até existir classificação explícita.
+`InvoiceItem` passa a preservar `taxType`, `taxCode`, `taxRate`, `taxAmount`, `taxExemptionCode` e `taxExemptionReason`. Os campos são opcionais para manter compatibilidade com documentos históricos. Novas facturas normais com taxa positiva guardam explicitamente `IVA`, código `NOR`, taxa e montante por linha. Para documentos no regime simplificado, a taxa zero passa a guardar `IVA`, código `OUT`, isenção `M00`, respectivo fundamento e a menção obrigatória do regime. Uma taxa zero fora desse caso não recebe automaticamente `ISE`, `NS` ou fundamento; o preflight deve bloquear a exportação até existir classificação explícita.
 
 `Invoice` passa a preservar tipo fiscal, série, sequência, exercício, motivo de anulação e referência de rectificação. A migration é aditiva e não renumera documentos existentes.
+
+## Regra: documentos rectificativos e numeração
+
+- **Implementação:** NC e ND conservam a verdade fiscal da FT de origem, não
+  alteram essa origem e exigem referência e motivo. No ficheiro estrutural, NC
+  usa `DebitAmount`; FT e ND usam `CreditAmount`.
+- **Porta de segurança:** números e referências têm de seguir
+  `Tipo Série/Sequência`. A emissão nova usa séries anuais por tipo, como
+  `FT FT2026/00001`, `NC NC2026/00001` e `ND ND2026/00001`. O preflight
+  bloqueia formatos legados incompatíveis, sem conversão ou renumeração
+  retroactiva.
+- **Teste exigido:** uma NC, uma ND e a FT de origem devem preservar o sinal,
+  os totais e a referência no ficheiro validado estruturalmente.
 
 ## Regra: certificação
 

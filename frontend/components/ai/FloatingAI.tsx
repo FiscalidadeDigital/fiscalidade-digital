@@ -4,6 +4,7 @@ import { createPortal } from 'react-dom';
 import { useEffect, useRef, useState } from 'react';
 import { Bot, ExternalLink, Send, X } from 'lucide-react';
 import {
+  assistantAnswer,
   assistantErrorMessage,
   assistantWarnings,
   parseAssistantContent,
@@ -311,10 +312,7 @@ export default function FloatingAI() {
     setLoading(true);
     try {
       const { data } = await api.post('/ai/chat', { message: text });
-      const answer =
-        typeof data?.answer === 'string' && data.answer.trim()
-          ? data.answer
-          : 'O serviço não devolveu uma resposta utilizável. Tente novamente.';
+      const answer = assistantAnswer(data?.answer);
       setMessages((previous) => [
         ...previous,
         {

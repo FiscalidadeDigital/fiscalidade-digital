@@ -23,6 +23,7 @@ import {
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 import api from '@/services/api';
 
@@ -302,37 +303,8 @@ function getRegimeLabel(
   }
 }
 
-function getErrorMessage(
-  error: any,
-): string {
-  if (
-    error?.response?.status === 401
-  ) {
-    return 'A sua sessão expirou. Faça login novamente.';
-  }
-
-  if (
-    error?.response?.status === 403
-  ) {
-    return 'Não tem autorização para consultar o calendário fiscal.';
-  }
-
-  const message =
-    error?.response?.data?.message;
-
-  if (Array.isArray(message)) {
-    return message.join(', ');
-  }
-
-  if (message) {
-    return String(message);
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Não foi possível carregar o calendário fiscal.';
+function getErrorMessage(error: unknown): string {
+  return getSafeErrorMessage(error, 'Não foi possível carregar o calendário fiscal.');
 }
 
 // =====================================================

@@ -2,7 +2,6 @@ import { UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 
-import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 import { MailService } from '../mail/mail.service';
 import type { PrismaService } from '../prisma/prisma.service';
 import { AuthService } from './auth.service';
@@ -62,7 +61,7 @@ describe('AuthService login', () => {
         prisma as unknown as PrismaService,
         jwtService as unknown as JwtService,
         {} as MailService,
-        {} as FiscalEnrollmentService,
+        undefined,
       ),
       prisma,
       jwtService,

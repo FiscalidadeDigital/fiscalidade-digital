@@ -19,38 +19,163 @@ describe('SaftExportService technical fixture', () => {
     const signature = new FiscalSignatureService().sign({
       invoiceDate: issuedAt,
       systemEntryDate: issuedAt,
-      invoiceNo: 'FT 2026/1',
+      invoiceNo: 'FT FT2026/00001',
       grossTotal: '114.00',
       previousHash: null,
     });
     const invoice = {
-      id: 'invoice-1', tenantId: 'tenant-1', clientId: 'customer-1', invoiceNumber: 'FT 2026/1',
-      fiscalDocumentType: 'FT', fiscalSeries: '2026', fiscalSequence: 1, fiscalYear: 2026,
-      status: 'PENDING', cancellationReason: null, issuedAt, createdAt: issuedAt,
-      fiscalHash: signature.hash, fiscalHashControl: signature.hashControl,
-      subtotal: 100, subtotalAmount: new Prisma.Decimal('100.00'), iva: 14,
-      ivaAmount: new Prisma.Decimal('14.00'), total: 114, totalAmount: new Prisma.Decimal('114.00'),
-      client: { id: 'customer-1', nif: '5000000000', name: 'Cliente Teste', address: 'Rua de Teste', city: 'Luanda', country: 'AO', email: null },
-      items: [{ productId: 'product-1', productName: 'Serviço técnico', unit: 'UN', quantity: 1,
-        quantityAmount: new Prisma.Decimal('1'), unitPrice: 100, unitPriceAmount: new Prisma.Decimal('100.00'),
-        total: 100, totalAmount: new Prisma.Decimal('100.00'), taxType: 'IVA', taxCode: 'NOR',
-        taxRate: new Prisma.Decimal('14'), taxAmount: new Prisma.Decimal('14'), taxExemptionCode: null,
-        taxExemptionReason: null, product: { code: 'SERV-001' } }],
+      id: 'invoice-1',
+      tenantId: 'tenant-1',
+      clientId: 'customer-1',
+      invoiceNumber: 'FT FT2026/00001',
+      fiscalDocumentType: 'FT',
+      fiscalSeries: 'FT2026',
+      fiscalSequence: 1,
+      fiscalYear: 2026,
+      status: 'PENDING',
+      cancellationReason: null,
+      issuedAt,
+      createdAt: issuedAt,
+      fiscalHash: signature.hash,
+      fiscalHashControl: signature.hashControl,
+      subtotal: 100,
+      subtotalAmount: new Prisma.Decimal('100.00'),
+      iva: 14,
+      ivaAmount: new Prisma.Decimal('14.00'),
+      total: 114,
+      totalAmount: new Prisma.Decimal('114.00'),
+      client: {
+        id: 'customer-1',
+        nif: '5000000000',
+        name: 'Cliente Teste',
+        address: 'Rua de Teste',
+        city: 'Luanda',
+        country: 'AO',
+        email: null,
+      },
+      items: [
+        {
+          productId: 'product-1',
+          productName: 'Serviço técnico',
+          unit: 'UN',
+          quantity: 1,
+          quantityAmount: new Prisma.Decimal('1'),
+          unitPrice: 100,
+          unitPriceAmount: new Prisma.Decimal('100.00'),
+          total: 100,
+          totalAmount: new Prisma.Decimal('100.00'),
+          taxType: 'IVA',
+          taxCode: 'NOR',
+          taxRate: new Prisma.Decimal('14'),
+          taxAmount: new Prisma.Decimal('14'),
+          taxExemptionCode: null,
+          taxExemptionReason: null,
+          product: { code: 'SERV-001' },
+        },
+      ],
+    };
+    const creditNote = {
+      ...invoice,
+      id: 'invoice-2',
+      invoiceNumber: 'NC NC2026/00001',
+      fiscalDocumentType: 'NC',
+      fiscalSeries: 'NC2026',
+      fiscalSequence: 1,
+      rectifiedInvoiceNumber: invoice.invoiceNumber,
+      notes: 'Devolução parcial',
+      subtotal: 20,
+      subtotalAmount: new Prisma.Decimal('20.00'),
+      iva: 2.8,
+      ivaAmount: new Prisma.Decimal('2.80'),
+      total: 22.8,
+      totalAmount: new Prisma.Decimal('22.80'),
+      items: [
+        {
+          ...invoice.items[0],
+          quantity: 0.2,
+          quantityAmount: new Prisma.Decimal('0.2'),
+          total: 20,
+          totalAmount: new Prisma.Decimal('20.00'),
+          taxAmount: new Prisma.Decimal('2.80'),
+        },
+      ],
+    };
+    const simplifiedSignature = new FiscalSignatureService().sign({
+      invoiceDate: issuedAt,
+      systemEntryDate: issuedAt,
+      invoiceNo: 'FT FT2026/00002',
+      grossTotal: '100.00',
+      previousHash: signature.hash,
+    });
+    const simplifiedInvoice = {
+      ...invoice,
+      id: 'invoice-3',
+      invoiceNumber: 'FT FT2026/00002',
+      fiscalSeries: 'FT2026',
+      fiscalSequence: 2,
+      fiscalHash: simplifiedSignature.hash,
+      fiscalHashControl: simplifiedSignature.hashControl,
+      subtotal: 100,
+      subtotalAmount: new Prisma.Decimal('100.00'),
+      iva: 0,
+      ivaAmount: new Prisma.Decimal('0.00'),
+      total: 100,
+      totalAmount: new Prisma.Decimal('100.00'),
+      notes: 'IVA - Regime Simplificado',
+      items: [
+        {
+          ...invoice.items[0],
+          taxCode: 'OUT',
+          taxRate: new Prisma.Decimal('0'),
+          taxAmount: new Prisma.Decimal('0'),
+          taxExemptionCode: 'M00',
+          taxExemptionReason: 'IVA - Regime Simplificado',
+        },
+      ],
     };
     const serializer = new SaftXmlSerializer();
     const validator = new SaftXsdValidator();
-    const service = new SaftExportService({} as any, serializer, validator, new FiscalSignatureService());
+    const service = new SaftExportService(
+      {} as any,
+      serializer,
+      validator,
+      new FiscalSignatureService(),
+    );
     const model = service.compose({
-      tenant: { id: 'tenant-1', nif: '5000000001', name: 'Empresa Teste', address: 'Avenida de Teste', city: 'Luanda', country: 'AO', email: 'teste@example.ao' },
-      invoices: [invoice], start: new Date('2026-01-01T00:00:00Z'), end: new Date('2026-12-31T00:00:00Z'),
-      software: { productCompanyTaxId: '5000000002', softwareValidationNumber: '999/AGT/2026', productId: 'Fiscalidade Digital / TEST_KEY_ONLY', productVersion: 'test' },
+      tenant: {
+        id: 'tenant-1',
+        nif: '5000000001',
+        name: 'Empresa Teste',
+        address: 'Avenida de Teste',
+        city: 'Luanda',
+        country: 'AO',
+        email: 'teste@example.ao',
+      },
+      invoices: [invoice, creditNote, simplifiedInvoice],
+      start: new Date('2026-01-01T00:00:00Z'),
+      end: new Date('2026-12-31T00:00:00Z'),
+      software: {
+        productCompanyTaxId: '5000000002',
+        softwareValidationNumber: '999/AGT/2026',
+        productId: 'Fiscalidade Digital / TEST_KEY_ONLY',
+        productVersion: 'test',
+      },
       sourceId: 'user-1',
     });
     const xml = serializer.serialize(model);
     expect(xml).toContain(signature.hash);
+    expect(xml).toContain('<DebitAmount>20.00</DebitAmount>');
+    expect(xml).toContain('<Reference>FT FT2026/00001</Reference>');
+    expect(xml).toContain('<TaxExemptionCode>M00</TaxExemptionCode>');
+    expect(model.totalCredit).toBe('200.00');
+    expect(model.totalDebit).toBe('20.00');
     expect(xml).not.toMatch(/undefined|null|NaN|Infinity/);
     const result = await validator.validate(xml);
-    expect(result).toEqual({ valid: true, kind: 'TECHNICAL_XSD_VALIDATION', errors: [] });
+    expect(result).toEqual({
+      valid: true,
+      kind: 'TECHNICAL_XSD_VALIDATION',
+      errors: [],
+    });
   });
 });
 
@@ -59,14 +184,26 @@ describe('SaftExportService company city preflight', () => {
     const prisma = {
       tenant: {
         findUnique: jest.fn().mockResolvedValue({
-          id: 'tenant-1', nif: '5000000001', name: 'Empresa Teste',
-          address: 'Avenida de Teste', city, country: 'AO', email: null,
+          id: 'tenant-1',
+          nif: '5000000001',
+          name: 'Empresa Teste',
+          address: 'Avenida de Teste',
+          city,
+          country: 'AO',
+          email: null,
         }),
       },
       invoice: { findMany: jest.fn().mockResolvedValue([]) },
     };
-    const signature = { configuration: jest.fn().mockReturnValue({ configured: true }) };
-    const service = new SaftExportService(prisma as any, {} as any, {} as any, signature as any);
+    const signature = {
+      configuration: jest.fn().mockReturnValue({ configured: true }),
+    };
+    const service = new SaftExportService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      signature as any,
+    );
     return { prisma, service };
   }
 
@@ -82,9 +219,15 @@ describe('SaftExportService company city preflight', () => {
 
     const result = await service.preflight('tenant-1', 2026);
 
-    expect(result.issues).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 'COMPANY_DATA_MISSING', severity: 'BLOCKING' }),
-    ]));
+    expect(result.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'BLOCKING',
+          message:
+            'Complete os dados obrigatórios da empresa antes de continuar.',
+        }),
+      ]),
+    );
   });
 
   it('não produz COMPANY_DATA_MISSING quando os dados obrigatórios existem', async () => {
@@ -92,21 +235,43 @@ describe('SaftExportService company city preflight', () => {
 
     const result = await service.preflight('tenant-1', 2026);
 
-    expect(result.issues).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: 'COMPANY_DATA_MISSING' }),
-    ]));
+    expect(result.issues).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          message:
+            'Complete os dados obrigatórios da empresa antes de continuar.',
+        }),
+      ]),
+    );
   });
 
   it('usa a city persistida no Header sem fallback', () => {
     const { service } = setup('Lubango');
 
     const model = service.compose({
-      tenant: { id: 'tenant-1', nif: '5000000001', name: 'Empresa Teste', address: 'Rua 1', city: 'Lubango', country: 'AO', email: null },
-      invoices: [], start: new Date('2026-01-01T00:00:00Z'), end: new Date('2026-12-31T23:59:59Z'),
-      software: { productCompanyTaxId: '5000000002', softwareValidationNumber: 'TEST-ONLY', productId: 'TEST-ONLY', productVersion: 'test' },
+      tenant: {
+        id: 'tenant-1',
+        nif: '5000000001',
+        name: 'Empresa Teste',
+        address: 'Rua 1',
+        city: 'Lubango',
+        country: 'AO',
+        email: null,
+      },
+      invoices: [],
+      start: new Date('2026-01-01T00:00:00Z'),
+      end: new Date('2026-12-31T23:59:59Z'),
+      software: {
+        productCompanyTaxId: '5000000002',
+        softwareValidationNumber: 'TEST-ONLY',
+        productId: 'TEST-ONLY',
+        productVersion: 'test',
+      },
       sourceId: 'user-1',
     });
 
-    expect(model.header.CompanyAddress).toEqual(expect.objectContaining({ City: 'Lubango' }));
+    expect(model.header.CompanyAddress).toEqual(
+      expect.objectContaining({ City: 'Lubango' }),
+    );
   });
 });

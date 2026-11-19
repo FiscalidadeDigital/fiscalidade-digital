@@ -1,11 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Query,
-  Req,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 
 import { Request } from 'express';
 
@@ -22,9 +15,7 @@ interface AuthenticatedRequest extends Request {
 @Controller('fiscal-engine')
 @UseGuards(JwtAuthGuard)
 export class FiscalEngineController {
-  constructor(
-    private readonly fiscalEngineService: FiscalEngineService,
-  ) {}
+  constructor(private readonly fiscalEngineService: FiscalEngineService) {}
 
   // =========================================================
   // SINCRONIZAR MOTOR FISCAL
@@ -46,20 +37,12 @@ export class FiscalEngineController {
   // =========================================================
 
   @Post('sync')
-  async sync(
-    @Req() req: AuthenticatedRequest,
-    @Query('year') year?: string,
-  ) {
-    const tenantId =
-      req.user.tenantId;
+  async sync(@Req() req: AuthenticatedRequest, @Query('year') year?: string) {
+    const tenantId = req.user.tenantId;
 
-    const referenceYear =
-      this.parseYear(year);
+    const referenceYear = this.parseYear(year);
 
-    return this.fiscalEngineService.syncTenant(
-      tenantId,
-      referenceYear,
-    );
+    return this.fiscalEngineService.syncTenant(tenantId, referenceYear);
   }
 
   // =========================================================
@@ -77,84 +60,25 @@ export class FiscalEngineController {
     @Req() req: AuthenticatedRequest,
     @Query('year') year?: string,
   ) {
-    const tenantId =
-      req.user.tenantId;
+    const tenantId = req.user.tenantId;
 
-    const referenceYear =
-      this.parseYear(year);
+    const referenceYear = this.parseYear(year);
 
-    return this.fiscalEngineService.summary(
-      tenantId,
-      referenceYear,
-    );
-  }
-
-  // =========================================================
-  // ESTADO DO MOTOR
-  // =========================================================
-  //
-  // GET /fiscal-engine/status
-  //
-  // Usado pelo Dashboard para saber se o motor fiscal
-  // está sincronizado e obter os últimos resultados.
-  // =========================================================
-
-  @Get('status')
-  async status(
-    @Req() req: AuthenticatedRequest,
-    @Query('year') year?: string,
-  ) {
-    const tenantId =
-      req.user.tenantId;
-
-    const referenceYear =
-      this.parseYear(year);
-
-    const fiscal =
-      await this.fiscalEngineService.summary(
-        tenantId,
-        referenceYear,
-      );
-
-    return {
-      success: true,
-
-      tenantId,
-
-      year:
-        referenceYear ??
-        new Date().getFullYear(),
-
-      fiscal,
-
-      checkedAt:
-        new Date(),
-    };
+    return this.fiscalEngineService.summary(tenantId, referenceYear);
   }
 
   // =========================================================
   // VALIDAR ANO
   // =========================================================
 
-  private parseYear(
-    value?: string,
-  ): number | undefined {
-    if (
-      value === undefined ||
-      value === null ||
-      value.trim() === ''
-    ) {
+  private parseYear(value?: string): number | undefined {
+    if (value === undefined || value === null || value.trim() === '') {
       return undefined;
     }
 
-    const year =
-      Number(value);
+    const year = Number(value);
 
-    if (
-      !Number.isInteger(year) ||
-      year < 2000 ||
-      year > 2100
-    ) {
+    if (!Number.isInteger(year) || year < 2000 || year > 2100) {
       return undefined;
     }
 

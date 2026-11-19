@@ -1,5 +1,6 @@
 const path = require('path');
 const { spawnSync } = require('child_process');
+const { generateKeyPairSync } = require('crypto');
 const dotenv = require('dotenv');
 
 const backendRoot = path.resolve(__dirname, '..');
@@ -28,11 +29,22 @@ if (!/^[a-zA-Z0-9_]*test[a-zA-Z0-9_]*$/i.test(testDatabaseName)) {
 
 databaseUrl.pathname = `/${testDatabaseName}`;
 
+// Normal invoices must be signed.  Generate an ephemeral key for this local
+// test process so integration tests never depend on a developer or production
+// signing key from the environment.
+const { privateKey } = generateKeyPairSync('rsa', {
+  modulusLength: 1024,
+});
+
 const childEnvironment = {
   ...process.env,
   DATABASE_URL: databaseUrl.toString(),
   NODE_ENV: 'test',
   JWT_SECRET: 'local-integration-only-secret-with-32-bytes-minimum',
+  FISCAL_SIGNATURE_PRIVATE_KEY: privateKey
+    .export({ type: 'pkcs1', format: 'pem' })
+    .toString(),
+  FISCAL_SIGNATURE_KEY_VERSION: '1',
 };
 
 const run = (entrypoint, args) => {

@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useState } from 'react';
+import { assistantAnswer } from '@/lib/assistant-presentation';
 import api from '@/services/api';
 
 export default function FiscalAssistant() {
@@ -36,7 +37,7 @@ export default function FiscalAssistant() {
       ...prev,
       {
         role: 'assistant',
-        content: data.answer,
+        content: assistantAnswer(data?.answer),
       },
     ]);
 
@@ -49,7 +50,7 @@ export default function FiscalAssistant() {
 
       <div className="p-4 border-b">
         <h2 className="font-bold text-xl">
-          Assistente Fiscal IA
+          Assistente Fiscal
         </h2>
       </div>
 

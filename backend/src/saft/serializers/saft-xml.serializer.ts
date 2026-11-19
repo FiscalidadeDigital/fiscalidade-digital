@@ -48,8 +48,20 @@ export class SaftXmlSerializer {
         item.ele('UnitOfMeasure').txt(line.unitOfMeasure);
         item.ele('UnitPrice').txt(line.unitPrice);
         item.ele('TaxPointDate').txt(line.taxPointDate);
+        line.references?.forEach((reference) => {
+          const references = item.ele('References');
+          references.ele('Reference').txt(reference.reference);
+          if (reference.reason) references.ele('Reason').txt(reference.reason);
+        });
         item.ele('Description').txt(line.description);
-        item.ele('CreditAmount').txt(line.creditAmount);
+        if (line.debitAmount !== undefined && line.creditAmount === undefined)
+          item.ele('DebitAmount').txt(line.debitAmount);
+        else if (line.creditAmount !== undefined && line.debitAmount === undefined)
+          item.ele('CreditAmount').txt(line.creditAmount);
+        else
+          throw new Error(
+            'Cada linha do SAF-T deve conter apenas um valor a débito ou a crédito.',
+          );
         this.object(item.ele('Tax'), { TaxType: line.tax.taxType, TaxCountryRegion: 'AO', TaxCode: line.tax.taxCode, TaxPercentage: line.tax.taxPercentage });
         if (line.taxExemptionReason && line.taxExemptionCode) {
           item.ele('TaxExemptionReason').txt(line.taxExemptionReason);

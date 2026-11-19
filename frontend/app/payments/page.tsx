@@ -28,6 +28,7 @@ import {
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 
+import { getSafeErrorMessage } from '@/lib/safe-error';
 import { getCompany } from '@/services/company';
 import api from '@/services/api';
 
@@ -142,31 +143,8 @@ function formatDate(value: string): string {
   );
 }
 
-function getMessage(error: any): string {
-  if (error?.response?.status === 401) {
-    return 'Sessão expirada. Faça login novamente.';
-  }
-
-  if (error?.response?.status === 403) {
-    return 'Não tem autorização para consultar os pagamentos.';
-  }
-
-  const serverMessage =
-    error?.response?.data?.message;
-
-  if (Array.isArray(serverMessage)) {
-    return serverMessage.join(', ');
-  }
-
-  if (serverMessage) {
-    return String(serverMessage);
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return 'Não foi possível carregar os pagamentos.';
+function getMessage(error: unknown): string {
+  return getSafeErrorMessage(error, 'Não foi possível carregar os pagamentos.');
 }
 
 function normalizeStatus(

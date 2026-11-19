@@ -1,6 +1,7 @@
 import {
   Injectable,
 } from '@nestjs/common';
+import { InvoiceDocumentType } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -26,6 +27,13 @@ export class HistoryService {
       this.prisma.invoice.findMany({
         where: {
           tenantId,
+          documentType: InvoiceDocumentType.NORMAL,
+          OR: [
+            { fiscalDocumentType: 'FT' },
+            { fiscalDocumentType: 'NC' },
+            { fiscalDocumentType: 'ND' },
+            { fiscalDocumentType: null },
+          ],
         },
         orderBy: {
           issuedAt: 'desc',
@@ -113,31 +121,34 @@ export class HistoryService {
     ]);
 
     const history = [
-      ...invoices.map(
-        (invoice) => ({
+      ...invoices.map((invoice) => {
+        const fiscalDocumentType = invoice.fiscalDocumentType ?? 'FT';
+        const isCreditNote = fiscalDocumentType === 'NC';
+        const isAdjustment =
+          fiscalDocumentType === 'NC' || fiscalDocumentType === 'ND';
+        const sign = isCreditNote ? -1 : 1;
+        const description =
+          fiscalDocumentType === 'NC'
+            ? `Nota de crédito emitida ${invoice.invoiceNumber}`
+            : fiscalDocumentType === 'ND'
+              ? `Nota de débito emitida ${invoice.invoiceNumber}`
+              : `Factura emitida ${invoice.invoiceNumber}`;
+        return {
           id: invoice.id,
-          type: 'SALE',
-          category: 'INVOICE',
+          type: isAdjustment ? 'FISCAL_ADJUSTMENT' : 'SALE',
+          category: isAdjustment ? 'ADJUSTMENT_NOTE' : 'INVOICE',
           date: invoice.issuedAt,
           reference: invoice.invoiceNumber,
-          description:
-            `Factura emitida ${invoice.invoiceNumber}`,
-          amount: Number(
-            invoice.total,
-          ),
-          taxAmount: Number(
-            invoice.iva,
-          ),
-          withholdingAmount:
-            Number(
-              invoice.withholdingTax,
-            ),
-          status:
-            invoice.status,
-          sourceId:
-            invoice.id,
-        }),
-      ),
+          description,
+          amount: Number(invoice.total) * sign,
+          taxAmount: Number(invoice.iva) * sign,
+          withholdingAmount: Number(invoice.withholdingTax) * sign,
+          status: invoice.status,
+          sourceId: invoice.id,
+          fiscalDocumentType,
+          rectifiesInvoiceId: invoice.rectifiesInvoiceId,
+        };
+      }),
 
       ...purchases.map(
         (purchase) => ({
@@ -389,6 +400,10 @@ export class HistoryService {
           0,
         );
 
+    const totalFiscalAdjustments = history
+      .filter((item) => item.type === 'FISCAL_ADJUSTMENT')
+      .reduce((sum, item) => sum + item.amount, 0);
+
     const totalTaxes =
       taxAssessments.reduce(
         (sum, item) =>
@@ -418,6 +433,10 @@ export class HistoryService {
       totals: {
         income:
           totalIncome,
+
+        fiscalAdjustments: totalFiscalAdjustments,
+
+        netFiscalDocuments: totalIncome + totalFiscalAdjustments,
 
         purchases:
           totalPurchases,

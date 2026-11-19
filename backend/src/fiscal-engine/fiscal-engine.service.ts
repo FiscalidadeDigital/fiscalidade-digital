@@ -117,6 +117,11 @@ export class FiscalEngineService {
 
           documentType: InvoiceDocumentType.NORMAL,
 
+          OR: [
+            { fiscalDocumentType: { in: ['FT', 'NC', 'ND'] } },
+            { fiscalDocumentType: null },
+          ],
+
           status: {
             not: 'CANCELLED',
           },
@@ -132,6 +137,7 @@ export class FiscalEngineService {
           subtotal: true,
           iva: true,
           withholdingTax: true,
+          fiscalDocumentType: true,
           issuedAt: true,
           invoiceNumber: true,
           status: true,
@@ -257,13 +263,21 @@ export class FiscalEngineService {
     for (
       const invoice of invoices
     ) {
+      const fiscalDocumentType = invoice.fiscalDocumentType ?? 'FT';
+      const adjustmentSign = fiscalDocumentType === 'NC' ? -1 : 1;
+      const documentLabel =
+        fiscalDocumentType === 'NC'
+          ? 'nota de crédito'
+          : fiscalDocumentType === 'ND'
+            ? 'nota de débito'
+            : 'factura';
       const subtotal =
-        this.number(
+        adjustmentSign * this.number(
           invoice.subtotal,
         );
 
       const iva =
-        this.number(
+        adjustmentSign * this.number(
           invoice.iva,
         );
 
@@ -318,7 +332,7 @@ export class FiscalEngineService {
             0,
 
           description:
-            `IVA da venda ${invoice.invoiceNumber}`,
+            `IVA da ${documentLabel} ${invoice.invoiceNumber}`,
         });
       }
 
@@ -1204,10 +1218,22 @@ export class FiscalEngineService {
           0,
 
         finalAmount:
-          0,
+          taxType === TaxType.INDUSTRIAL ? null : 0,
 
         status:
           'DRAFT',
+      };
+    }
+
+    if (
+      taxType === TaxType.INDUSTRIAL &&
+      assessment.calculationStatus === 'REVIEW_REQUIRED'
+    ) {
+      return {
+        ...assessment,
+        finalAmount: null,
+        finalAmountValue: null,
+        payableAmountValue: null,
       };
     }
 
@@ -1270,10 +1296,24 @@ export class FiscalEngineService {
 
     const isSale = (item: any) =>
       taxType !== TaxType.IVA || item.operation === TaxRuleOperation.SALE;
-    const taxableAmount = sum('baseAmountValue', 'baseAmount', isSale);
-    const taxDueAmount = sum('taxAmountValue', 'taxAmount', isSale);
-    const deductibleAmount = sum('deductibleAmountValue', 'deductibleAmount');
-    const withheldAmount = sum('withheldAmountValue', 'withheldAmount');
+    const taxableAmount = sum(
+      'baseAmountValue',
+      'baseAmount',
+      isSale,
+    ) as Prisma.Decimal;
+    const taxDueAmount = sum(
+      'taxAmountValue',
+      'taxAmount',
+      isSale,
+    ) as Prisma.Decimal;
+    const deductibleAmount = sum(
+      'deductibleAmountValue',
+      'deductibleAmount',
+    ) as Prisma.Decimal;
+    const withheldAmount = sum(
+      'withheldAmountValue',
+      'withheldAmount',
+    ) as Prisma.Decimal;
     const pendingVat = taxType === TaxType.IVA && transactions.some(
       (item: any) => item.sourceType === 'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
     );
@@ -1283,9 +1323,14 @@ export class FiscalEngineService {
       : taxType === TaxType.IRT
         ? taxDueAmount.minus(deductibleAmount)
         : taxDueAmount.minus(deductibleAmount).minus(withheldAmount);
-    const finalAmount = Prisma.Decimal.max(position, new Prisma.Decimal(0))
-      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-    const creditAmount = position.isNegative()
+    const finalAmount: Prisma.Decimal | null = industrialReview
+      ? null
+      : Prisma.Decimal.max(position, new Prisma.Decimal(0)).toDecimalPlaces(
+          2,
+          Prisma.Decimal.ROUND_HALF_UP,
+        );
+    const creditAmount: Prisma.Decimal =
+      !industrialReview && position.isNegative()
       ? position.negated().toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
       : new Prisma.Decimal(0);
     const calculationStatus = industrialReview
@@ -1303,10 +1348,17 @@ export class FiscalEngineService {
       taxBase: taxableAmount.toFixed(2),
       taxDue: taxDueAmount.toFixed(2),
       taxCredit: creditAmount.toFixed(2),
-      taxPayable: finalAmount.toFixed(2),
+      taxPayable: finalAmount?.toFixed(2) ?? null,
       sourceCount: transactions.length,
       pendingVat,
     };
+    /*
+     * TaxAssessment.finalAmount is a legacy non-null Float column. The
+     * nullable decimal fields are the fiscal source of truth; retaining zero
+     * in the legacy column keeps old rows readable without presenting it as
+     * a calculated Industrial tax amount.
+     */
+    const legacyFinalAmount = finalAmount ?? new Prisma.Decimal(0);
 
     await tx.taxAssessment.upsert({
       where: {
@@ -1339,7 +1391,7 @@ export class FiscalEngineService {
         adjustmentsAmount:
           0,
 
-        finalAmount: finalAmount.toNumber(),
+        finalAmount: legacyFinalAmount.toNumber(),
         taxableAmountValue: taxableAmount,
         taxDueAmountValue: taxDueAmount,
         deductibleAmountValue: deductibleAmount,
@@ -1367,7 +1419,7 @@ export class FiscalEngineService {
         adjustmentsAmount:
           0,
 
-        finalAmount: finalAmount.toNumber(),
+        finalAmount: legacyFinalAmount.toNumber(),
         taxableAmountValue: taxableAmount,
         taxDueAmountValue: taxDueAmount,
         deductibleAmountValue: deductibleAmount,
@@ -1394,7 +1446,7 @@ export class FiscalEngineService {
       period,
       year,
       regime,
-      finalAmount.toNumber(),
+      finalAmount?.toNumber() ?? null,
     );
   }
 
@@ -1409,7 +1461,7 @@ export class FiscalEngineService {
     period: string,
     year: number,
     regime: FiscalRegime | null,
-    finalAmount: number,
+    finalAmount: number | null,
   ) {
     /*
      * IRT e SS são especiais:
@@ -1647,6 +1699,10 @@ export class FiscalEngineService {
       dueDate < now
         ? ObligationStatus.LATE
         : ObligationStatus.PENDING;
+    const obligationAmount =
+      finalAmount === null ? null : this.round(finalAmount);
+    const obligationAmountValue =
+      finalAmount === null ? null : this.decimal(finalAmount);
 
     // =======================================================
     // ACTUALIZAR OBRIGAÇÃO
@@ -1679,12 +1735,10 @@ export class FiscalEngineService {
             obligationPeriod,
 
           amount:
-            this.round(
-              finalAmount,
-            ),
+            obligationAmount,
 
           amountValue:
-            this.decimal(finalAmount),
+            obligationAmountValue,
 
           status,
 
@@ -1714,8 +1768,8 @@ export class FiscalEngineService {
         title: rule.title,
         description: rule.description,
         dueDate: rule.dueDate,
-        amount: this.round(finalAmount),
-        amountValue: this.decimal(finalAmount),
+        amount: obligationAmount,
+        amountValue: obligationAmountValue,
         status,
         alertEnabled: true,
         alertDaysBefore: 7,

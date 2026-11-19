@@ -92,7 +92,7 @@ function lineTotalCents(item: DraftItem) {
 }
 
 function formatCents(cents: number | null) {
-  if (cents === null) return 'Calculado no servidor';
+  if (cents === null) return 'A calcular';
   return `${(cents / 100).toLocaleString('pt-AO', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
@@ -239,6 +239,9 @@ export default function InvoiceComposer({
       if (toScaledInteger(item.quantity, 4) === null || toScaledInteger(item.unitPrice, 2) === null) {
         return setError('Use até quatro casas na quantidade e duas casas no preço.');
       }
+      if (!isProForma && !item.electronicOperationType) {
+        return setError('Classifique a operação AGT em todas as linhas antes de emitir a factura; sem essa classificação o IVA fica por apurar.');
+      }
     }
 
     setSaving(true);
@@ -283,14 +286,14 @@ export default function InvoiceComposer({
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.16em] text-fd-accent">Facturação</p>
               <h1 className="mt-1 text-2xl font-bold tracking-tight text-slate-950">{isProForma ? 'Criar Pro Forma' : 'Emitir factura'}</h1>
-              <p className="mt-1 max-w-2xl text-sm text-slate-500">{isProForma ? 'Registe uma proposta comercial. O documento será numerado na série PF e não produz efeito fiscal definitivo.' : 'Ambiente de testes: registe o cliente e as linhas. Numeração, impostos e total são determinados pelo servidor.'}</p>
+              <p className="mt-1 max-w-2xl text-sm text-slate-500">{isProForma ? 'Registe uma proposta comercial. O documento será numerado na série PF e não produz efeito fiscal definitivo.' : 'Registe o cliente e as linhas. A numeração, os impostos e o total são calculados automaticamente.'}</p>
             </div>
           </div>
         </header>
 
         {created && (
           <section className="flex flex-col gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-950 sm:flex-row sm:items-center sm:justify-between" role="status">
-            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">{isProForma ? 'Pro Forma' : 'Factura'} {created.invoiceNumber} registada</p><p className="mt-1 text-sm opacity-80">{isProForma ? 'Documento preliminar guardado sem efeito fiscal definitivo.' : `Documento de teste guardado. Total calculado pelo servidor: ${formatCents(toScaledInteger(String(created.totalAmount ?? created.total), 2))}.`}</p></div></div>
+            <div className="flex gap-3"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">{isProForma ? 'Pro Forma' : 'Factura'} {created.invoiceNumber} registada</p><p className="mt-1 text-sm opacity-80">{isProForma ? 'Documento preliminar guardado sem efeito fiscal definitivo.' : `Documento guardado. Total calculado automaticamente: ${formatCents(toScaledInteger(String(created.totalAmount ?? created.total), 2))}.`}</p></div></div>
             <button type="button" onClick={() => router.push(isProForma ? `/pro-formas/${created.id}` : '/invoices')} className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800">{isProForma ? 'Abrir Pro Forma' : 'Ver facturas'}</button>
           </section>
         )}
@@ -298,7 +301,7 @@ export default function InvoiceComposer({
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">{error}</div>}
 
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
-          <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><p className="text-sm font-semibold text-amber-950">{isProForma ? 'Documento preliminar — não constitui factura fiscal definitiva' : 'Ambiente de testes — documento sem validade fiscal oficial'}</p><p className="mt-1 text-sm text-amber-800">{isProForma ? 'O total é comercial. Qualquer IVA apresentado antes da conversão é apenas estimativa; não é IVA liquidado, obrigação, declaração nem pagamento.' : 'A integração electrónica com a AGT ainda não está activa. O IVA Simplificado, quando aplicável, permanece sem fórmula oficial de liquidação e é apresentado sem IVA de factura.'}</p></div></div>
+          <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><p className="text-sm font-semibold text-amber-950">{isProForma ? 'Documento preliminar — não constitui factura fiscal definitiva' : 'Documento sem validade fiscal oficial'}</p><p className="mt-1 text-sm text-amber-800">{isProForma ? 'O total é comercial. Qualquer IVA apresentado antes da conversão é apenas estimativa; não é IVA liquidado, obrigação, declaração nem pagamento.' : 'Confirme a disponibilidade oficial antes de utilizar este documento para fins fiscais. O IVA Simplificado, quando aplicável, é apresentado sem IVA de factura até existir confirmação oficial.'}</p></div></div>
         </section>
 
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
@@ -311,7 +314,7 @@ export default function InvoiceComposer({
               </select>
               {clients.length === 0 && <span className="mt-2 block text-xs text-amber-700">Crie primeiro um cliente no directório.</span>}
             </label>
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Número</p><p className="mt-2 text-sm font-semibold text-slate-900">Gerado no servidor</p><p className="mt-1 text-xs text-slate-500">A sequência é protegida contra emissões concorrentes.</p></div>
+            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Número</p><p className="mt-2 text-sm font-semibold text-slate-900">Gerado automaticamente</p><p className="mt-1 text-xs text-slate-500">A numeração é atribuída por ordem de emissão.</p></div>
           </div>
         </section>
 
@@ -341,7 +344,7 @@ export default function InvoiceComposer({
                     <label className="text-xs font-medium text-slate-600">Preço unitário<input value={item.unitPrice} onChange={(event) => updateItem(item.id, { unitPrice: event.target.value })} readOnly={Boolean(item.productId)} inputMode="decimal" placeholder="0,00" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50" /></label>
                     <div><p className="text-xs font-medium text-slate-600">Subtotal da linha</p><div className="mt-1.5 flex min-h-[42px] items-center rounded-lg bg-slate-50 px-3 text-sm font-semibold text-slate-900">{formatCents(lineCents)}</div></div>
                   </div>
-                  {item.productId && <p className="mt-2 text-xs text-slate-500">Descrição, unidade e preço serão novamente obtidos do catálogo da empresa pelo servidor.</p>}
+                  {item.productId && <p className="mt-2 text-xs text-slate-500">Descrição, unidade e preço serão confirmados a partir do catálogo da empresa.</p>}
                 </div>
               );
             })}
@@ -350,7 +353,7 @@ export default function InvoiceComposer({
 
         <section className="grid gap-6 lg:grid-cols-[1.4fr_.6fr]">
           <label className="rounded-xl border border-slate-200 bg-white p-5 text-sm font-medium text-slate-700 shadow-sm">Observaçõeses<textarea value={notes} onChange={(event) => setNotes(event.target.value)} maxLength={2000} rows={6} placeholder="Informação adicional para este documento" className="mt-2 w-full resize-none rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm font-normal text-slate-950 outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus" /></label>
-          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-fd-accent-soft text-fd-accent"><Calculator className="h-4 w-4" /></span><div><h2 className="font-semibold text-slate-950">Pré-visualização</h2><p className="text-xs text-slate-500">{isProForma ? 'Total comercial estimado' : 'Subtotal das linhas'}</p></div></div><p className="mt-6 text-2xl font-bold text-slate-950">{formatCents(subtotalCents)}</p><p className="mt-3 text-xs leading-5 text-slate-500">{isProForma ? 'IVA fiscal final e retenção fiscal final permanecem em zero nesta Pro Forma. A conversão recalcula os impostos no backend.' : 'IVA, retenção e total final são calculados no backend. Esta pré-visualização não é uma liquidação fiscal.'}</p></div>
+          <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-fd-accent-soft text-fd-accent"><Calculator className="h-4 w-4" /></span><div><h2 className="font-semibold text-slate-950">Pré-visualização</h2><p className="text-xs text-slate-500">{isProForma ? 'Total comercial estimado' : 'Subtotal das linhas'}</p></div></div><p className="mt-6 text-2xl font-bold text-slate-950">{formatCents(subtotalCents)}</p><p className="mt-3 text-xs leading-5 text-slate-500">{isProForma ? 'IVA fiscal final e retenção fiscal final permanecem em zero nesta Pro Forma. A conversão recalcula os impostos quando for confirmada.' : 'IVA, retenção e total final são calculados automaticamente. Esta pré-visualização não é uma liquidação fiscal.'}</p></div>
         </section>
 
         <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => router.push(collectionHref)} disabled={saving} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancelar</button><button type="button" onClick={() => void submit()} disabled={saving || clients.length === 0 || Boolean(created)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-fd-primary-hover disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{saving ? 'A registar…' : `Registar ${documentLabel}`}</button></div>

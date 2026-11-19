@@ -5,7 +5,11 @@
 
 const citationPattern = /\[([WL]\d+)\]/g;
 const inlinePattern = /(\*\*([^*\n]+)\*\*|\[([WL]\d+)\])/g;
-const internalWarningPattern = /(?:openai|api[_ -]?key|authorization|bearer|token|password|database_url|jwt)/i;
+const privateDisclosurePattern = /\b(?:openai|chatgpt|gpt(?:[-_.\w]+)?|api|endpoint|backend|servidor|prompt|credencial(?:is)?|chave(?:s)?(?:\s+de\s+(?:api|acesso))?|token(?:s)?|modelo\s+(?:de\s+)?(?:linguagem|ia)|intelig[eê]ncia\s+artificial|\bia\b|prisma|sql|stack\s*trace|exception|econn\w+)\b/i;
+const genericAssistantWarning =
+  'Algumas fontes de consulta estão temporariamente indisponíveis.';
+const genericAssistantAnswer =
+  'Não foi possível apresentar uma resposta neste momento. Tente novamente.';
 
 function textToken(value) {
   return { type: 'text', value: String(value || '').replace(/\*\*/g, '') };
@@ -136,26 +140,30 @@ function assistantErrorMessage(error) {
   return 'Não foi possível obter uma resposta neste momento. Tente novamente.';
 }
 
-function assistantWarnings(values) {
-  const seen = new Set();
+function assistantAnswer(value) {
+  const answer = String(value || '')
+    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 
-  return (Array.isArray(values) ? values : [])
+  if (!answer || privateDisclosurePattern.test(answer)) {
+    return genericAssistantAnswer;
+  }
+
+  return answer.slice(0, 6000);
+}
+
+function assistantWarnings(values) {
+  const hasWarning = (Array.isArray(values) ? values : [])
     .filter((value) => typeof value === 'string')
     .map((value) => value.replace(/[\u0000-\u001F\u007F]/g, ' ').trim())
-    .filter(Boolean)
-    .map((value) =>
-      internalWarningPattern.test(value)
-        ? 'Algumas fontes de consulta estão temporariamente indisponíveis.'
-        : value.slice(0, 500),
-    )
-    .filter((value) => {
-      if (seen.has(value)) return false;
-      seen.add(value);
-      return true;
-    });
+    .some(Boolean);
+
+  return hasWarning ? [genericAssistantWarning] : [];
 }
 
 module.exports = {
+  assistantAnswer,
   assistantErrorMessage,
   assistantWarnings,
   citationIds,

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 
-import { ObligationStatus } from '@prisma/client';
+import { InvoiceDocumentType, ObligationStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { FiscalObligationEligibilityService } from '../fiscal-obligation-eligibility/fiscal-obligation-eligibility.service';
@@ -26,6 +26,14 @@ export class DashboardService {
     const currentYear = today.getFullYear();
 
     const currentMonth = today.getMonth() + 1;
+    const commercialInvoiceWhere = {
+      tenantId,
+      documentType: InvoiceDocumentType.NORMAL,
+      OR: [
+        { fiscalDocumentType: 'FT' },
+        { fiscalDocumentType: null },
+      ],
+    };
 
     // ==========================================================
     // INTERVALO DO ANO
@@ -80,7 +88,7 @@ export class DashboardService {
 
       this.prisma.invoice.count({
         where: {
-          tenantId,
+          ...commercialInvoiceWhere,
         },
       }),
 
@@ -90,7 +98,7 @@ export class DashboardService {
 
       this.prisma.invoice.count({
         where: {
-          tenantId,
+          ...commercialInvoiceWhere,
 
           status: 'PENDING',
         },
@@ -122,7 +130,7 @@ export class DashboardService {
 
       this.prisma.invoice.aggregate({
         where: {
-          tenantId,
+          ...commercialInvoiceWhere,
 
           status: 'PAID',
         },
@@ -776,6 +784,9 @@ export class DashboardService {
       select: {
         id: true,
         invoiceNumber: true,
+        documentType: true,
+        fiscalDocumentType: true,
+        rectifiesInvoiceId: true,
         status: true,
         total: true,
         iva: true,

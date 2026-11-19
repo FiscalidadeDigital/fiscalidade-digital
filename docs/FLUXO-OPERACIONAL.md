@@ -33,6 +33,18 @@ O calendário fiscal indica prazos e tipos de obrigação. Não prova que o cál
 | Alertas | Scheduler e fornecedores configuráveis | Parcial | Idempotência concorrente, confirmação/retry, consentimento e teste por tenant |
 | Subscrição/trial | Campos e modelo Prisma | Incompleto | Regras de acesso, trial configurável e estados do fornecedor; planos/preços requerem decisão comercial |
 
+## Adenda de 11 de Novembro de 2026 — notas de crédito e débito
+
+Uma nota de crédito (NC) ou nota de débito (ND) é emitida a partir de uma FT
+normal, da mesma empresa, sem alterar a factura original. A nota conserva os
+valores e a classificação fiscal das linhas rectificadas, referencia a origem
+e exige um motivo. A quantidade rectificada não pode exceder a quantidade da
+linha de origem; a NC reduz o resultado fiscal do documento e a ND aumenta-o.
+
+Estes ajustes são mostrados separadamente dos recebimentos e pagamentos. A sua
+emissão não representa, por si, reembolso, cobrança nem confirmação de
+pagamento. A acção de pagamento é bloqueada para Pro Forma, NC e ND.
+
 ## Ambiente e salvaguardas
 
 Não houve ligação à Neon, leitura de dados da base de produção, migrações, deploy ou chamadas de pagamento. Os testes HTTP com PostgreSQL isolado não foram executados porque não foi identificada uma configuração de BD de testes isolada nesta ronda. Os módulos de calendário ou ficheiros locais não devem ser tratados como API oficial da AGT.

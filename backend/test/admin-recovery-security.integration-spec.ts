@@ -10,7 +10,6 @@ import { AdminPlatformService } from '../src/admin/admin-platform.service';
 import { PlatformAdminRecoveryService } from '../src/admin/platform-admin-recovery.service';
 import { AuthService } from '../src/auth/auth.service';
 import { JwtStrategy } from '../src/auth/strategies/jwt.strategy';
-import { FiscalEnrollmentService } from '../src/fiscal-enrollment/fiscal-enrollment.service';
 import { MailService } from '../src/mail/mail.service';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -69,7 +68,7 @@ describe('Admin recovery and suspended tenant security', () => {
       prisma,
       tenantJwtService,
       {} as MailService,
-      {} as FiscalEnrollmentService,
+      undefined,
     );
     tenantJwtStrategy = new JwtStrategy(app.get(ConfigService), prisma);
 

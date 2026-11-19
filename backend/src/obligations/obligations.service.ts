@@ -8,6 +8,7 @@
 
 import {
   FiscalRegime,
+  InvoiceDocumentType,
   ObligationStatus,
   ObligationType,
   NotificationType,
@@ -764,6 +765,13 @@ export class ObligationsService {
         where: {
           tenantId: tenant.id,
 
+          documentType: InvoiceDocumentType.NORMAL,
+
+          OR: [
+            { fiscalDocumentType: { in: ['FT', 'NC', 'ND'] } },
+            { fiscalDocumentType: null },
+          ],
+
           issuedAt: {
             gte: start,
 
@@ -777,11 +785,15 @@ export class ObligationsService {
 
         select: {
           withholdingTax: true,
+          fiscalDocumentType: true,
         },
       });
 
       const amount = invoices.reduce(
-        (sum, invoice) => sum + this.number(invoice.withholdingTax),
+        (sum, invoice) =>
+          sum +
+          (invoice.fiscalDocumentType === 'NC' ? -1 : 1) *
+            this.number(invoice.withholdingTax),
         0,
       );
 
@@ -1651,7 +1663,9 @@ export class ObligationsService {
                 assessment.adjustmentsAmountValue ??
                 assessment.adjustmentsAmount,
               finalAmount:
-                assessment.finalAmountValue ?? assessment.finalAmount,
+                taxType === TaxType.INDUSTRIAL
+                  ? null
+                  : (assessment.finalAmountValue ?? assessment.finalAmount),
             }
           : null,
         origin: {

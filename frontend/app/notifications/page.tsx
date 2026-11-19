@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 import { getCompany } from '@/services/company';
 
@@ -103,11 +104,7 @@ export default function NotificationsPage() {
         await getCompany();
 
       setCompany(data);
-    } catch (error) {
-      console.error(
-        'Erro ao carregar empresa:',
-        error,
-      );
+    } catch {
     } finally {
       setCompanyLoading(false);
     }
@@ -130,21 +127,9 @@ export default function NotificationsPage() {
           ? data
           : [],
       );
-    } catch (error: any) {
-      console.error(
-        'Erro ao carregar notificações:',
-        error,
-      );
-
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Não foi possível carregar as notificações.';
-
+    } catch (error: unknown) {
       setNotificationError(
-        Array.isArray(message)
-          ? message.join(', ')
-          : message,
+        getSafeErrorMessage(error, 'Não foi possível carregar as notificações.'),
       );
 
       setNotifications([]);

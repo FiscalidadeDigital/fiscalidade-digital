@@ -16,7 +16,12 @@ export type SaftLine = {
   unitPrice: string;
   taxPointDate: string;
   description: string;
-  creditAmount: string;
+  creditAmount?: string;
+  debitAmount?: string;
+  references?: Array<{
+    reference: string;
+    reason?: string;
+  }>;
   tax: SaftTax;
   taxExemptionReason?: string;
   taxExemptionCode?: string;

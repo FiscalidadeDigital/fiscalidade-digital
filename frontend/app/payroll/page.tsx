@@ -26,6 +26,7 @@ import {
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { getSafeErrorMessage } from '@/lib/safe-error';
 
 import {
   approvePayroll,
@@ -118,16 +119,7 @@ function statusClasses(status: string): string {
 }
 
 function getErrorMessage(error: unknown): string {
-  const candidate = error as {
-    response?: { data?: { message?: string } };
-    message?: string;
-  };
-
-  return (
-    candidate?.response?.data?.message ||
-    candidate?.message ||
-    'Não foi possível concluir a operação.'
-  );
+  return getSafeErrorMessage(error, 'Não foi possível concluir a operação.');
 }
 
 export default function PayrollPage() {

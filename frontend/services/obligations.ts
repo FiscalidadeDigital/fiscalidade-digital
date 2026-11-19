@@ -35,7 +35,14 @@ export type ObligationType =
 export type ObligationStatus =
   | 'PENDING'
   | 'PAID'
-  | 'LATE';
+  | 'LATE'
+  | 'FUTURE'
+  | 'DUE_SOON'
+  | 'IN_DEADLINE'
+  | 'OVERDUE'
+  | 'FULFILLED'
+  | 'TO_DETERMINE'
+  | 'HISTORICAL_CONFIRMATION';
 
 export type ObligationCalculationQuality =
   | 'CALCULATED'
@@ -138,6 +145,10 @@ export type Obligation = {
   period?: string | null;
 
   status: ObligationStatus;
+
+  lifecycleStatus?: ObligationStatus;
+
+  amountState?: 'CALCULATED' | 'CALCULATED_ZERO' | 'TO_DETERMINE';
 
   alertEnabled: boolean;
 
@@ -323,13 +334,15 @@ export const isObligationOverdue = (
   obligation: Obligation,
 ): boolean => {
   if (
-    obligation.status === 'LATE'
+    obligation.status === 'LATE' ||
+    obligation.status === 'OVERDUE'
   ) {
     return true;
   }
 
   if (
-    obligation.status === 'PAID'
+    obligation.status === 'PAID' ||
+    obligation.status === 'FULFILLED'
   ) {
     return false;
   }
@@ -361,8 +374,8 @@ export const isObligationPending = (
   obligation: Obligation,
 ): boolean => {
   return (
-    obligation.status ===
-    'PENDING'
+    !isObligationPaid(obligation) &&
+    !isObligationOverdue(obligation)
   );
 };
 
@@ -374,8 +387,8 @@ export const isObligationPaid = (
   obligation: Obligation,
 ): boolean => {
   return (
-    obligation.status ===
-    'PAID'
+    obligation.status === 'PAID' ||
+    obligation.status === 'FULFILLED'
   );
 };
 
@@ -385,10 +398,11 @@ export const isObligationPaid = (
 
 export const getObligationAmount = (
   obligation: Obligation,
-): number => {
-  return toNumber(
-    obligation.amount,
-  );
+): number | null => {
+  if (obligation.amount === null || obligation.amount === undefined) {
+    return null;
+  }
+  return toNumber(obligation.amount);
 };
 
 // ============================================================
@@ -398,6 +412,9 @@ export const getObligationAmount = (
 export const formatObligationAmount = (
   value: unknown,
 ): string => {
+  if (value === null || value === undefined) {
+    return 'Por apurar';
+  }
   return toNumber(
     value,
   ).toLocaleString(
@@ -468,10 +485,27 @@ export const getObligationStatusLabel = (
 ): string => {
   switch (status) {
     case 'PAID':
+    case 'FULFILLED':
       return 'Paga';
 
     case 'LATE':
+    case 'OVERDUE':
       return 'Em atraso';
+
+    case 'FUTURE':
+      return 'Futura';
+
+    case 'DUE_SOON':
+      return 'A vencer';
+
+    case 'IN_DEADLINE':
+      return 'Em prazo';
+
+    case 'TO_DETERMINE':
+      return 'Por apurar';
+
+    case 'HISTORICAL_CONFIRMATION':
+      return 'Confirmação necessária';
 
     case 'PENDING':
       return 'Pendente';

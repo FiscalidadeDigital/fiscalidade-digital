@@ -24,12 +24,12 @@ export default function SaftPage() {
     } catch { setError('Não foi possível avaliar o SAF-T deste período.'); }
     finally { setLoading(false); }
   }, []);
-  useEffect(() => { void load(year); }, [load]);
+  useEffect(() => { void load(year); }, [load, year]);
 
   const download = async () => {
     setDownloading(true); setError('');
     try { await downloadSaft(year); }
-    catch { setError('O ficheiro não foi gerado. Reveja os bloqueios técnicos apresentados.'); }
+    catch { setError('O ficheiro não foi gerado. Reveja os itens que precisam de atenção.'); }
     finally { setDownloading(false); }
   };
 
@@ -47,8 +47,33 @@ export default function SaftPage() {
           {[['Documentos', summary.documentCount], ['Assinados', summary.signedDocumentCount], ['Sem assinatura', summary.unsignedDocumentCount], ['Clientes', summary.customerCount], ['Produtos/Serviços', summary.productCount], ['Anulados', summary.cancelledCount], ['Base tributável', money(summary.taxableBase)], ['IVA', money(summary.taxAmount)], ['Total', money(summary.grossTotal)]].map(([label, value]) => <article key={String(label)} className="min-w-0 rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-4"><p className="truncate text-xs text-[var(--fd-muted)]">{label}</p><p className="mt-2 break-words text-lg font-semibold tabular-nums">{value}</p></article>)}
         </section>
         <section className="mt-6 grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-          <div className="overflow-hidden rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)]"><div className="border-b border-[var(--fd-border)] px-5 py-4"><h2 className="font-semibold">Validação técnica</h2><p className="mt-1 text-xs text-[var(--fd-muted)]">Problemas detectados nos dados reais da empresa e do período seleccionados.</p></div><div className="divide-y divide-[var(--fd-border)]">{preflight.issues.length ? preflight.issues.map((issue) => <div key={issue.code} className="flex gap-3 px-5 py-4">{issue.severity === 'BLOCKING' ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" /> : <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />}<div className="min-w-0"><p className="text-sm font-medium">{issue.message}</p><p className="mt-1 break-all font-mono text-xs text-[var(--fd-muted)]">{issue.code}{issue.count ? ` · ${issue.count}` : ''}</p></div></div>) : <div className="flex gap-3 p-5 text-sm"><CheckCircle2 className="h-5 w-5 text-emerald-600" />Dados técnicos prontos.</div>}</div></div>
-          <aside className="space-y-4"><div className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5"><div className="flex items-center gap-2"><FileCode2 className="h-5 w-5 text-teal-700" /><h2 className="font-semibold">Ficheiro técnico</h2></div><p className="mt-3 text-sm leading-6 text-[var(--fd-muted)]">O XML é gerado apenas após preflight e validação contra o XSD técnico versionado.</p><button onClick={() => void download()} disabled={!preflight.technicalReadiness || downloading} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-fd-primary px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Gerar ficheiro técnico SAF-T</button></div><div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-950"><p className="text-sm font-semibold">Certificação AGT · Pendente</p><p className="mt-2 text-xs leading-5">Ficheiro destinado à validação técnica. A certificação oficial do software junto da AGT permanece pendente.</p></div></aside>
+          <div className="overflow-hidden rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)]">
+            <div className="border-b border-[var(--fd-border)] px-5 py-4">
+              <h2 className="font-semibold">Revisão do período</h2>
+              <p className="mt-1 text-xs text-[var(--fd-muted)]">
+                Confirme as informações da empresa e dos documentos deste período.
+              </p>
+            </div>
+            <div className="divide-y divide-[var(--fd-border)]">
+              {preflight.issues.length ? preflight.issues.map((issue) => (
+                <div key={`${issue.severity}-${issue.message}-${issue.count ?? 0}`} className="flex gap-3 px-5 py-4">
+                  {issue.severity === 'BLOCKING' ? <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-600" /> : <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />}
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">{issue.message}</p>
+                    <p className="mt-1 text-xs text-[var(--fd-muted)]">{issue.count ? `${issue.count} registo(s) a rever` : 'Revisão necessária'}</p>
+                  </div>
+                </div>
+              )) : <div className="flex gap-3 p-5 text-sm"><CheckCircle2 className="h-5 w-5 text-emerald-600" />Os dados estão prontos para gerar o ficheiro.</div>}
+            </div>
+          </div>
+          <aside className="space-y-4">
+            <div className="rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5">
+              <div className="flex items-center gap-2"><FileCode2 className="h-5 w-5 text-teal-700" /><h2 className="font-semibold">Ficheiro SAF-T</h2></div>
+              <p className="mt-3 text-sm leading-6 text-[var(--fd-muted)]">O ficheiro é disponibilizado depois de confirmar todas as informações necessárias.</p>
+              <button onClick={() => void download()} disabled={!preflight.ready || downloading} className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-fd-primary px-4 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-45">{downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}Gerar ficheiro SAF-T</button>
+            </div>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-amber-950"><p className="text-sm font-semibold">Disponibilidade pendente</p><p className="mt-2 text-xs leading-5">A geração do ficheiro será disponibilizada depois de todas as confirmações necessárias.</p></div>
+          </aside>
         </section>
       </> : null}
     </div>
