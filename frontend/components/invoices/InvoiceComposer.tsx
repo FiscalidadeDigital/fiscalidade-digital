@@ -17,9 +17,11 @@ import {
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { getSafeError } from '@/lib/safe-error';
 import type { Tenant } from '@/services/auth';
 import { getClients, type Client } from '@/services/client';
 import { getCompany } from '@/services/company';
+import { getFiscalSituation } from '@/services/fiscal-situation';
 import {
   createInvoice,
   createProForma,
@@ -116,6 +118,8 @@ export default function InvoiceComposer({
   const [company, setCompany] = useState<Tenant | null>(null);
   const [clients, setClients] = useState<Client[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
+  const [ivaConfirmationRequired, setIvaConfirmationRequired] =
+    useState(false);
   const [clientId, setClientId] = useState('');
   const [items, setItems] = useState<DraftItem[]>([newItem()]);
   const [notes, setNotes] = useState('');
@@ -135,11 +139,23 @@ export default function InvoiceComposer({
   useEffect(() => {
     let active = true;
     setLoading(true);
-    Promise.all([getCompany(), getClients()])
-      .then(([companyData, clientData]) => {
+    Promise.all([
+      getCompany(),
+      getClients(),
+      isProForma ? Promise.resolve(null) : getFiscalSituation().catch(() => null),
+    ])
+      .then(([companyData, clientData, fiscalSituationData]) => {
         if (!active) return;
         setCompany(companyData);
         setClients(Array.isArray(clientData) ? clientData : []);
+        setIvaConfirmationRequired(
+          !isProForma &&
+            Boolean(fiscalSituationData) &&
+            !fiscalSituationData?.taxes.some(
+              (tax) =>
+                tax.taxType === 'IVA' && Boolean(tax.enrollment?.regime),
+            ),
+        );
       })
       .catch((loadError: unknown) => {
         if (active) {
@@ -157,7 +173,7 @@ export default function InvoiceComposer({
     return () => {
       active = false;
     };
-  }, []);
+  }, [isProForma]);
 
   useEffect(() => {
     let active = true;
@@ -226,6 +242,12 @@ export default function InvoiceComposer({
   async function submit() {
     setError('');
     setCreated(null);
+    if (!isProForma && ivaConfirmationRequired) {
+      setError(
+        'Antes de emitir uma factura, confirme a situação de IVA da empresa.',
+      );
+      return;
+    }
     if (!clientId) return setError('Seleccione um cliente.');
     if (items.length === 0) return setError('Adicione pelo menos um item.');
 
@@ -261,7 +283,14 @@ export default function InvoiceComposer({
       setCreated(invoice);
       window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (submitError: unknown) {
-      setError(getInvoiceApiError(submitError, `Não foi possível registar ${isProForma ? 'a Pro Forma' : 'a factura'}.`));
+      const safeError = getSafeError(
+        submitError,
+        `Não foi possível registar ${isProForma ? 'a Pro Forma' : 'a factura'}.`,
+      );
+      setError(safeError.message);
+      if (safeError.nextStep === 'CONFIRM_IVA') {
+        setIvaConfirmationRequired(true);
+      }
     } finally {
       setSaving(false);
     }
@@ -300,6 +329,33 @@ export default function InvoiceComposer({
 
         {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800" role="alert">{error}</div>}
 
+        {!isProForma && ivaConfirmationRequired && (
+          <section
+            className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 sm:flex-row sm:items-center sm:justify-between"
+            role="alert"
+          >
+            <div className="flex gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" />
+              <div>
+                <p className="text-sm font-semibold">
+                  Confirme a situação de IVA antes de emitir a primeira factura.
+                </p>
+                <p className="mt-1 text-sm text-amber-800">
+                  Indique o regime aplicável e a data de efeito. A emissão fica
+                  disponível assim que a confirmação for guardada.
+                </p>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => router.push('/fiscal-situation')}
+              className="shrink-0 rounded-lg border border-amber-300 bg-white px-4 py-2 text-sm font-semibold text-amber-900 hover:bg-amber-100"
+            >
+              Confirmar situação de IVA
+            </button>
+          </section>
+        )}
+
         <section className="rounded-xl border border-amber-200 bg-amber-50 p-4">
           <div className="flex gap-3"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700" /><div><p className="text-sm font-semibold text-amber-950">{isProForma ? 'Documento preliminar — não constitui factura fiscal definitiva' : 'Documento sem validade fiscal oficial'}</p><p className="mt-1 text-sm text-amber-800">{isProForma ? 'O total é comercial. Qualquer IVA apresentado antes da conversão é apenas estimativa; não é IVA liquidado, obrigação, declaração nem pagamento.' : 'Confirme a disponibilidade oficial antes de utilizar este documento para fins fiscais. O IVA Simplificado, quando aplicável, é apresentado sem IVA de factura até existir confirmação oficial.'}</p></div></div>
         </section>
@@ -332,6 +388,12 @@ export default function InvoiceComposer({
           <div className="divide-y divide-slate-200">
             {items.map((item, index) => {
               const lineCents = lineTotalCents(item);
+              const selectedProduct = products.find(
+                (product) => product.id === item.productId,
+              );
+              const catalogOperationIsSet = Boolean(
+                selectedProduct?.electronicOperationType,
+              );
               return (
                 <div key={item.id} className="p-5">
                   <div className="mb-3 flex items-center justify-between"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Linha {index + 1}</p><button type="button" onClick={() => setItems((current) => current.filter((entry) => entry.id !== item.id))} disabled={saving || items.length === 1} className="rounded-md p-2 text-rose-600 hover:bg-rose-50 disabled:opacity-30" aria-label={`Remover linha ${index + 1}`}><Trash2 className="h-4 w-4" /></button></div>
@@ -340,11 +402,12 @@ export default function InvoiceComposer({
                     <label className="text-xs font-medium text-slate-600">Descrição<input value={item.productName} onChange={(event) => updateItem(item.id, { productName: event.target.value })} readOnly={Boolean(item.productId)} maxLength={200} placeholder="Ex.: Serviço de consultoria" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50" /></label>
                     <label className="text-xs font-medium text-slate-600">Quantidade<input value={item.quantity} onChange={(event) => updateItem(item.id, { quantity: event.target.value })} inputMode="decimal" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950" /></label>
                     <label className="text-xs font-medium text-slate-600">Unidade<select value={item.unit} onChange={(event) => updateItem(item.id, { unit: event.target.value as ProductUnit })} disabled={Boolean(item.productId)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50">{Object.entries(unitLabels).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></label>
-                    <label className="text-xs font-medium text-slate-600">Operação AGT<select value={item.electronicOperationType} onChange={(event) => updateItem(item.id, { electronicOperationType: event.target.value as ElectronicOperationType | '' })} disabled={Boolean(item.productId)} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50"><option value="">Por classificar</option>{operationTypes.map(([value, label]) => <option key={value} value={value}>{value} — {label}</option>)}</select></label>
+                    <label className="text-xs font-medium text-slate-600">Operação AGT<select value={item.electronicOperationType} onChange={(event) => updateItem(item.id, { electronicOperationType: event.target.value as ElectronicOperationType | '' })} disabled={saving || catalogOperationIsSet} className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 disabled:bg-slate-50"><option value="">Por classificar</option>{operationTypes.map(([value, label]) => <option key={value} value={value}>{value} — {label}</option>)}</select></label>
                     <label className="text-xs font-medium text-slate-600">Preço unitário<input value={item.unitPrice} onChange={(event) => updateItem(item.id, { unitPrice: event.target.value })} readOnly={Boolean(item.productId)} inputMode="decimal" placeholder="0,00" className="mt-1.5 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 read-only:bg-slate-50" /></label>
                     <div><p className="text-xs font-medium text-slate-600">Subtotal da linha</p><div className="mt-1.5 flex min-h-[42px] items-center rounded-lg bg-slate-50 px-3 text-sm font-semibold text-slate-900">{formatCents(lineCents)}</div></div>
                   </div>
                   {item.productId && <p className="mt-2 text-xs text-slate-500">Descrição, unidade e preço serão confirmados a partir do catálogo da empresa.</p>}
+                  {item.productId && !catalogOperationIsSet && <p className="mt-1 text-xs text-amber-700">Seleccione o tipo de operação para esta linha antes de emitir a factura.</p>}
                 </div>
               );
             })}
@@ -356,7 +419,7 @@ export default function InvoiceComposer({
           <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm"><div className="flex items-center gap-3"><span className="grid h-9 w-9 place-items-center rounded-lg bg-fd-accent-soft text-fd-accent"><Calculator className="h-4 w-4" /></span><div><h2 className="font-semibold text-slate-950">Pré-visualização</h2><p className="text-xs text-slate-500">{isProForma ? 'Total comercial estimado' : 'Subtotal das linhas'}</p></div></div><p className="mt-6 text-2xl font-bold text-slate-950">{formatCents(subtotalCents)}</p><p className="mt-3 text-xs leading-5 text-slate-500">{isProForma ? 'IVA fiscal final e retenção fiscal final permanecem em zero nesta Pro Forma. A conversão recalcula os impostos quando for confirmada.' : 'IVA, retenção e total final são calculados automaticamente. Esta pré-visualização não é uma liquidação fiscal.'}</p></div>
         </section>
 
-        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => router.push(collectionHref)} disabled={saving} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancelar</button><button type="button" onClick={() => void submit()} disabled={saving || clients.length === 0 || Boolean(created)} className="inline-flex items-center justify-center gap-2 rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-fd-primary-hover disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{saving ? 'A registar…' : `Registar ${documentLabel}`}</button></div>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end"><button type="button" onClick={() => router.push(collectionHref)} disabled={saving} className="rounded-lg border border-slate-300 bg-white px-5 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-50">Cancelar</button><button type="button" onClick={() => void submit()} disabled={saving || clients.length === 0 || Boolean(created) || ivaConfirmationRequired} className="inline-flex items-center justify-center gap-2 rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-fd-primary-hover disabled:opacity-50">{saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <FileText className="h-4 w-4" />}{saving ? 'A registar…' : `Registar ${documentLabel}`}</button></div>
       </main>
     </DashboardLayout>
   );

@@ -13,6 +13,15 @@ type PublicErrorBody = {
   statusCode: number;
   message: string;
   referenceCode: string;
+  nextStep?: PublicNextStep;
+};
+
+type PublicNextStep = 'CONFIRM_IVA' | 'COMPLETE_INVOICE_CLASSIFICATION';
+
+const publicNextSteps: Readonly<Record<string, PublicNextStep>> = {
+  IVA_ENROLLMENT_REQUIRED: 'CONFIRM_IVA',
+  IVA_ENROLLMENT_UNCONFIRMED: 'CONFIRM_IVA',
+  IVA_FISCAL_CLASSIFICATION_REQUIRED: 'COMPLETE_INVOICE_CLASSIFICATION',
 };
 
 /**
@@ -36,12 +45,14 @@ export class SafeHttpExceptionFilter implements ExceptionFilter {
 
     const status = this.statusFor(exception);
     const referenceCode = `FD-${randomUUID().slice(0, 8).toUpperCase()}`;
+    const nextStep = this.nextStepFor(exception);
     this.logFailure(exception, status, referenceCode, request);
 
     const body: PublicErrorBody = {
       statusCode: status,
       message: this.messageFor(status),
       referenceCode,
+      ...(nextStep ? { nextStep } : {}),
     };
 
     response.status(status).json(body);
@@ -75,6 +86,20 @@ export class SafeHttpExceptionFilter implements ExceptionFilter {
       messages[status] ??
       'Não foi possível concluir o pedido neste momento. Tente novamente. Se persistir, indique o código de referência ao apoio.'
     );
+  }
+
+  private nextStepFor(exception: unknown): PublicNextStep | undefined {
+    if (!(exception instanceof HttpException)) {
+      return undefined;
+    }
+
+    const response = exception.getResponse();
+    if (!response || typeof response !== 'object' || Array.isArray(response)) {
+      return undefined;
+    }
+
+    const code = (response as Record<string, unknown>).code;
+    return typeof code === 'string' ? publicNextSteps[code] : undefined;
   }
 
   private logFailure(

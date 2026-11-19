@@ -8,7 +8,12 @@ import { isAxiosError } from 'axios';
 export type SafeError = {
   message: string;
   reference?: string;
+  nextStep?: SafeNextStep;
 };
+
+export type SafeNextStep =
+  | 'CONFIRM_IVA'
+  | 'COMPLETE_INVOICE_CLASSIFICATION';
 
 const DEFAULT_MESSAGE = 'Não foi possível concluir esta ação. Tente novamente.';
 
@@ -26,10 +31,18 @@ const STATUS_MESSAGES: Record<number, string> = {
   504: 'Ocorreu uma indisponibilidade temporária. Tente novamente mais tarde.',
 };
 
+const NEXT_STEP_MESSAGES: Record<SafeNextStep, string> = {
+  CONFIRM_IVA:
+    'Antes de emitir uma factura, confirme a situação de IVA da empresa.',
+  COMPLETE_INVOICE_CLASSIFICATION:
+    'Antes de emitir a factura, indique o tipo de operação em todas as linhas.',
+};
+
 type ErrorPayload = {
   message?: unknown;
   reference?: unknown;
   referenceCode?: unknown;
+  nextStep?: unknown;
 };
 
 function safeReference(payload: ErrorPayload | undefined): string | undefined {
@@ -42,6 +55,17 @@ function safeReference(payload: ErrorPayload | undefined): string | undefined {
   // A support reference must be short and opaque.  UUIDs, database ids,
   // paths and arbitrary provider values are intentionally not displayed.
   return /^FD-[A-Z0-9]{8}$/i.test(reference) ? reference : undefined;
+}
+
+function safeNextStep(
+  payload: ErrorPayload | undefined,
+): SafeNextStep | undefined {
+  const nextStep = payload?.nextStep;
+
+  return nextStep === 'CONFIRM_IVA' ||
+    nextStep === 'COMPLETE_INVOICE_CLASSIFICATION'
+    ? nextStep
+    : undefined;
 }
 
 /** Returns a customer-safe message without exposing a server error body. */
@@ -60,9 +84,15 @@ export function getSafeError(
     };
   }
 
+  const nextStep = safeNextStep(error.response.data);
+
   return {
-    message: STATUS_MESSAGES[error.response.status] ?? fallback,
+    message:
+      (nextStep && NEXT_STEP_MESSAGES[nextStep]) ??
+      STATUS_MESSAGES[error.response.status] ??
+      fallback,
     reference: safeReference(error.response.data),
+    ...(nextStep ? { nextStep } : {}),
   };
 }
 
@@ -89,6 +119,7 @@ export function sanitizeApiError(error: unknown): unknown {
   error.response.data = {
     message: safe.message,
     ...(safe.reference ? { referenceCode: safe.reference } : {}),
+    ...(safe.nextStep ? { nextStep: safe.nextStep } : {}),
   };
   return error;
 }

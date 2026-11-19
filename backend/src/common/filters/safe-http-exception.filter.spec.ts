@@ -5,6 +5,7 @@ type PublicErrorBody = {
   statusCode: number;
   message: string;
   referenceCode: string;
+  nextStep?: 'CONFIRM_IVA' | 'COMPLETE_INVOICE_CLASSIFICATION';
 };
 
 type MockResponse = {
@@ -85,5 +86,22 @@ describe('SafeHttpExceptionFilter', () => {
       throw new Error('Expected a public error response body.');
     }
     expect(body.message).toMatch(/Não foi possível concluir/i);
+  });
+  it('publishes only a safe next step for known fiscal validation states', () => {
+    const { response, capturedBody } = responseFor();
+    const filter = new SafeHttpExceptionFilter();
+
+    filter.catch(
+      new BadRequestException({
+        code: 'IVA_ENROLLMENT_REQUIRED',
+        message: 'Internal fiscal rule detail must remain private.',
+      }),
+      hostFor(response),
+    );
+
+    const body = capturedBody();
+    expect(body).toEqual(expect.objectContaining({ nextStep: 'CONFIRM_IVA' }));
+    expect(JSON.stringify(body)).not.toContain('IVA_ENROLLMENT_REQUIRED');
+    expect(JSON.stringify(body)).not.toContain('Internal fiscal rule detail');
   });
 });
