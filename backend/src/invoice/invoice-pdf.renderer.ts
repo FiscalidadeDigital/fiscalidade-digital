@@ -6,6 +6,8 @@ type Money = { toString(): string } | number | string | null | undefined;
 export interface InvoicePdfData {
   invoiceNumber: string;
   documentType: string;
+  fiscalDocumentType?: string | null;
+  rectifiedInvoiceNumber?: string | null;
   status: string;
   issuedAt: Date;
   dueDate?: Date | null;
@@ -29,6 +31,7 @@ export interface InvoicePdfData {
     unitPriceAmount?: Money;
     total: Money;
     totalAmount?: Money;
+    taxRate?: Money;
     unit?: string | null;
     product?: { code?: string | null; ivaRate?: number | null } | null;
   }>;
@@ -61,10 +64,47 @@ export const formatPaymentStatus = (status: string) => ({ PAID: 'Paga', PENDING:
 
 export const formatLineVatRate = (rate: number | null | undefined) => rate == null ? '—' : `${quantity(rate)}%`;
 
+export function documentPresentation(invoice: InvoicePdfData) {
+  if (invoice.documentType === 'PRO_FORMA') {
+    return {
+      code: 'PF',
+      title: 'PRO FORMA',
+      detail: 'Pro Forma · documento preliminar',
+    };
+  }
+
+  if (invoice.fiscalDocumentType === 'NC') {
+    return {
+      code: 'NC',
+      title: 'NOTA DE CRÉDITO',
+      detail: 'NC — Nota de crédito',
+    };
+  }
+
+  if (invoice.fiscalDocumentType === 'ND') {
+    return {
+      code: 'ND',
+      title: 'NOTA DE DÉBITO',
+      detail: 'ND — Nota de débito',
+    };
+  }
+
+  return {
+    code: 'FT',
+    title: 'FACTURA',
+    detail: 'FT — Factura',
+  };
+}
+
 export function resolveLineVatRate(
   invoice: InvoicePdfData,
   item: InvoicePdfData['items'][number],
 ): number | null {
+  const persistedRate = Number(item.taxRate?.toString() ?? Number.NaN);
+  if (Number.isFinite(persistedRate)) {
+    return persistedRate;
+  }
+
   if (item.product?.ivaRate != null && Number.isFinite(item.product.ivaRate)) {
     return item.product.ivaRate;
   }
@@ -95,10 +135,11 @@ function value(doc: PDFKit.PDFDocument, text: string, x: number, y: number, widt
 }
 
 function addPageHeader(doc: PDFKit.PDFDocument, invoice: InvoicePdfData, continued = false) {
+  const presentation = documentPresentation(invoice);
   doc.fillColor(BLUE).rect(0, 0, 7, PAGE_HEIGHT).fill();
   doc.font('Helvetica-Bold').fontSize(9).fillColor(BLUE).text(invoice.tenant.name, MARGIN, 30, { width: 300 });
   doc.font('Helvetica').fontSize(8).fillColor(MUTED).text(`NIF ${invoice.tenant.nif}`, MARGIN, 44);
-  doc.font('Helvetica-Bold').fontSize(10).fillColor(BLUE).text(continued ? `${invoice.invoiceNumber} · continuação` : 'FT · FACTURA', 350, 34, { width: 207, align: 'right' });
+  doc.font('Helvetica-Bold').fontSize(10).fillColor(BLUE).text(continued ? `${invoice.invoiceNumber} · continuação` : `${presentation.code} · ${presentation.title}`, 350, 34, { width: 207, align: 'right' });
   doc.moveTo(MARGIN, 63).lineTo(PAGE_WIDTH - MARGIN, 63).lineWidth(0.7).strokeColor(LINE).stroke();
 }
 
@@ -115,14 +156,20 @@ function tableHeader(doc: PDFKit.PDFDocument, y: number) {
 }
 
 export function renderInvoicePdf(doc: PDFKit.PDFDocument, invoice: InvoicePdfData) {
-  const isProForma = invoice.documentType === 'PRO_FORMA';
+  const presentation = documentPresentation(invoice);
+  const isAdjustment = presentation.code === 'NC' || presentation.code === 'ND';
   addPageHeader(doc, invoice);
 
-  doc.font('Helvetica-Bold').fontSize(25).fillColor(TEXT).text(isProForma ? 'PRO FORMA' : 'FACTURA', MARGIN, 82);
+  doc.font('Helvetica-Bold').fontSize(25).fillColor(TEXT).text(presentation.title, MARGIN, 82);
   label(doc, 'Tipo de documento', MARGIN, 119);
-  value(doc, isProForma ? 'Pro Forma · documento preliminar' : 'FT — Factura', MARGIN, 131, 180);
-  label(doc, 'Estado de pagamento', 225, 119);
-  value(doc, formatPaymentStatus(invoice.status), 225, 131, 105);
+  value(doc, presentation.detail, MARGIN, 131, 180);
+  if (isAdjustment && invoice.rectifiedInvoiceNumber) {
+    label(doc, 'Documento rectificado', 225, 119);
+    value(doc, invoice.rectifiedInvoiceNumber, 225, 131, 150);
+  }
+  const statusX = isAdjustment && invoice.rectifiedInvoiceNumber ? 400 : 225;
+  label(doc, 'Estado de pagamento', statusX, 119);
+  value(doc, formatPaymentStatus(invoice.status), statusX, 131, 105);
 
   label(doc, 'Número do documento', 355, 86);
   value(doc, invoice.invoiceNumber, 355, 98, 202);

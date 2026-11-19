@@ -23,6 +23,7 @@ type FiscalLine = ProductLineInput & {
 export type SalesInvoiceInput = {
   invoiceNumber: string;
   fiscalDocumentType?: string | null;
+  rectifiedInvoiceNumber?: string | null;
   fiscalSeries?: string | null;
   status: string;
   cancellationReason?: string | null;
@@ -38,6 +39,7 @@ export type SalesInvoiceInput = {
   iva: number;
   totalAmount?: Prisma.Decimal | null;
   total: number;
+  notes?: string | null;
   items: FiscalLine[];
 };
 const decimal = (exact: Prisma.Decimal | null | undefined, legacy: number) =>
@@ -53,6 +55,27 @@ export function buildSalesInvoices(
   return invoices.map((invoice) => {
     if (!invoice.fiscalHash || !invoice.fiscalHashControl)
       throw new Error(`${invoice.invoiceNumber}: assinatura fiscal em falta.`);
+    if (!/^[^ ]+ [^/ ]+\/[0-9]+$/.test(invoice.invoiceNumber))
+      throw new Error(
+        `${invoice.invoiceNumber}: numeração incompatível com a exportação SAF-T.`,
+      );
+    const documentType = invoice.fiscalDocumentType ?? 'FT';
+    const isAdjustment = documentType === 'NC' || documentType === 'ND';
+    if (isAdjustment && !invoice.rectifiedInvoiceNumber)
+      throw new Error(
+        `${invoice.invoiceNumber}: documento de origem em falta para a nota de crédito ou débito.`,
+      );
+    if (
+      isAdjustment &&
+      !/^[^ ]+ [^/ ]+\/[0-9]+$/.test(invoice.rectifiedInvoiceNumber!)
+    )
+      throw new Error(
+        `${invoice.invoiceNumber}: a referência ao documento de origem não pode ser exportada.`,
+      );
+    if (isAdjustment && (invoice.notes?.trim().length ?? 0) > 50)
+      throw new Error(
+        `${invoice.invoiceNumber}: o motivo da nota excede o limite de exportação.`,
+      );
     return {
       invoiceNo: invoice.invoiceNumber,
       status: invoice.status === 'CANCELLED' ? 'A' : 'N',
@@ -63,7 +86,7 @@ export function buildSalesInvoices(
       hash: invoice.fiscalHash,
       hashControl: invoice.fiscalHashControl,
       invoiceDate: formatSaftDate(invoice.issuedAt),
-      invoiceType: invoice.fiscalDocumentType ?? 'FT',
+      invoiceType: documentType,
       sourceId,
       systemEntryDate: stamp(invoice.createdAt),
       customerId: invoice.customerId ?? invoice.clientId,
@@ -87,8 +110,20 @@ export function buildSalesInvoices(
           unitOfMeasure: line.unit ?? 'UN',
           unitPrice: money(decimal(line.unitPriceAmount, line.unitPrice)),
           taxPointDate: formatSaftDate(invoice.issuedAt),
+          ...(isAdjustment
+            ? {
+                references: [
+                  {
+                    reference: invoice.rectifiedInvoiceNumber!,
+                    ...(invoice.notes ? { reason: invoice.notes } : {}),
+                  },
+                ],
+              }
+            : {}),
           description: line.productName,
-          creditAmount: money(decimal(line.totalAmount, line.total)),
+          ...(documentType === 'NC'
+            ? { debitAmount: money(decimal(line.totalAmount, line.total)) }
+            : { creditAmount: money(decimal(line.totalAmount, line.total)) }),
           tax: {
             taxType: line.taxType,
             taxCode: line.taxCode,

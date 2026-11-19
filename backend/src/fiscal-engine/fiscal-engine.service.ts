@@ -117,6 +117,11 @@ export class FiscalEngineService {
 
           documentType: InvoiceDocumentType.NORMAL,
 
+          OR: [
+            { fiscalDocumentType: { in: ['FT', 'NC', 'ND'] } },
+            { fiscalDocumentType: null },
+          ],
+
           status: {
             not: 'CANCELLED',
           },
@@ -132,6 +137,7 @@ export class FiscalEngineService {
           subtotal: true,
           iva: true,
           withholdingTax: true,
+          fiscalDocumentType: true,
           issuedAt: true,
           invoiceNumber: true,
           status: true,
@@ -257,13 +263,21 @@ export class FiscalEngineService {
     for (
       const invoice of invoices
     ) {
+      const fiscalDocumentType = invoice.fiscalDocumentType ?? 'FT';
+      const adjustmentSign = fiscalDocumentType === 'NC' ? -1 : 1;
+      const documentLabel =
+        fiscalDocumentType === 'NC'
+          ? 'nota de crédito'
+          : fiscalDocumentType === 'ND'
+            ? 'nota de débito'
+            : 'factura';
       const subtotal =
-        this.number(
+        adjustmentSign * this.number(
           invoice.subtotal,
         );
 
       const iva =
-        this.number(
+        adjustmentSign * this.number(
           invoice.iva,
         );
 
@@ -318,7 +332,7 @@ export class FiscalEngineService {
             0,
 
           description:
-            `IVA da venda ${invoice.invoiceNumber}`,
+            `IVA da ${documentLabel} ${invoice.invoiceNumber}`,
         });
       }
 
@@ -1282,10 +1296,24 @@ export class FiscalEngineService {
 
     const isSale = (item: any) =>
       taxType !== TaxType.IVA || item.operation === TaxRuleOperation.SALE;
-    const taxableAmount = sum('baseAmountValue', 'baseAmount', isSale);
-    const taxDueAmount = sum('taxAmountValue', 'taxAmount', isSale);
-    const deductibleAmount = sum('deductibleAmountValue', 'deductibleAmount');
-    const withheldAmount = sum('withheldAmountValue', 'withheldAmount');
+    const taxableAmount = sum(
+      'baseAmountValue',
+      'baseAmount',
+      isSale,
+    ) as Prisma.Decimal;
+    const taxDueAmount = sum(
+      'taxAmountValue',
+      'taxAmount',
+      isSale,
+    ) as Prisma.Decimal;
+    const deductibleAmount = sum(
+      'deductibleAmountValue',
+      'deductibleAmount',
+    ) as Prisma.Decimal;
+    const withheldAmount = sum(
+      'withheldAmountValue',
+      'withheldAmount',
+    ) as Prisma.Decimal;
     const pendingVat = taxType === TaxType.IVA && transactions.some(
       (item: any) => item.sourceType === 'PURCHASE_INVOICE_IVA_SUPPORTED_PENDING_REVIEW',
     );
@@ -1295,11 +1323,14 @@ export class FiscalEngineService {
       : taxType === TaxType.IRT
         ? taxDueAmount.minus(deductibleAmount)
         : taxDueAmount.minus(deductibleAmount).minus(withheldAmount);
-    const finalAmount = industrialReview
+    const finalAmount: Prisma.Decimal | null = industrialReview
       ? null
-      : Prisma.Decimal.max(position, new Prisma.Decimal(0))
-          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-    const creditAmount = !industrialReview && position.isNegative()
+      : Prisma.Decimal.max(position, new Prisma.Decimal(0)).toDecimalPlaces(
+          2,
+          Prisma.Decimal.ROUND_HALF_UP,
+        );
+    const creditAmount: Prisma.Decimal =
+      !industrialReview && position.isNegative()
       ? position.negated().toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
       : new Prisma.Decimal(0);
     const calculationStatus = industrialReview

@@ -30,6 +30,7 @@ import {
   getInvoiceApiError,
   getInvoicePage,
   Invoice,
+  FiscalDocumentType,
   InvoicePage,
   InvoiceStatus,
   markInvoicePaid,
@@ -54,6 +55,12 @@ const statusStyles: Record<InvoiceStatus, string> = {
   CANCELLED: 'border-rose-200 bg-rose-50 text-rose-800',
 };
 
+const documentLabels: Record<FiscalDocumentType, string> = {
+  FT: 'Factura',
+  NC: 'Nota de crédito',
+  ND: 'Nota de débito',
+};
+
 type PendingAction = { invoice: Invoice; action: 'pay' | 'cancel' };
 
 export default function InvoicesPage() {
@@ -61,6 +68,8 @@ export default function InvoicesPage() {
   const [result, setResult] = useState<InvoicePage | null>(null);
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<InvoiceStatus | ''>('');
+  const [fiscalDocumentType, setFiscalDocumentType] =
+    useState<FiscalDocumentType>('FT');
   const [sort, setSort] = useState('issuedAt:desc');
   const [page, setPage] = useState(1);
   const [reload, setReload] = useState(0);
@@ -82,6 +91,7 @@ export default function InvoicesPage() {
       setLoading(true);
       setError('');
       getInvoicePage({
+        fiscalDocumentType,
         search: search || undefined,
         status,
         page,
@@ -106,7 +116,7 @@ export default function InvoicesPage() {
       active = false;
       window.clearTimeout(timeout);
     };
-  }, [page, reload, search, sortBy, sortDirection, status]);
+  }, [fiscalDocumentType, page, reload, search, sortBy, sortDirection, status]);
 
   function resetPage() {
     setPage(1);
@@ -194,8 +204,8 @@ export default function InvoicesPage() {
         <aside className="mt-5 flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-5 text-amber-900">
           <ShieldAlert className="mt-0.5 h-4 w-4 shrink-0" />
           <p>
-            Emissão em preparação — os documentos ainda não têm validade fiscal
-            oficial. A integração electrónica com a AGT ainda não está activa.
+            Emissão em preparação — confirme a disponibilidade oficial antes de
+            utilizar estes documentos para fins fiscais.
           </p>
         </aside>
 
@@ -206,7 +216,7 @@ export default function InvoicesPage() {
         </section>
 
         <section className="fd-panel mt-6">
-          <div className="grid gap-3 border-b border-[var(--fd-border)] p-4 lg:grid-cols-[minmax(260px,1fr)_180px_210px]">
+          <div className="grid gap-3 border-b border-[var(--fd-border)] p-4 lg:grid-cols-[minmax(220px,1fr)_165px_165px_190px]">
             <label className="relative block">
               <span className="sr-only">Pesquisar facturas</span>
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--fd-muted)]" />
@@ -234,6 +244,23 @@ export default function InvoicesPage() {
                 <option value="PENDING">Pendentes</option>
                 <option value="PAID">Pagas</option>
                 <option value="CANCELLED">Canceladas</option>
+              </select>
+            </label>
+            <label>
+              <span className="sr-only">Filtrar por tipo de documento</span>
+              <select
+                value={fiscalDocumentType}
+                onChange={(event) => {
+                  setFiscalDocumentType(
+                    event.target.value as FiscalDocumentType,
+                  );
+                  resetPage();
+                }}
+                className="h-10 w-full rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 text-sm outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
+              >
+                <option value="FT">Facturas</option>
+                <option value="NC">Notas de crédito</option>
+                <option value="ND">Notas de débito</option>
               </select>
             </label>
             <label>
@@ -275,7 +302,7 @@ export default function InvoicesPage() {
             <table className="w-full min-w-[980px] border-collapse text-left">
               <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
-                  <th className="px-5 py-3 font-semibold">Factura</th>
+                  <th className="px-5 py-3 font-semibold">Documento</th>
                   <th className="px-4 py-3 font-semibold">Cliente</th>
                   <th className="px-4 py-3 text-right font-semibold">
                     Subtotal
@@ -312,6 +339,7 @@ export default function InvoicesPage() {
                               {invoice.invoiceNumber}
                             </Link>
                             <p className="mt-1 text-xs text-[var(--fd-muted)]">
+                              {documentLabels[invoice.fiscalDocumentType ?? 'FT']} ·{' '}
                               {new Date(invoice.issuedAt).toLocaleDateString(
                                 'pt-AO',
                               )}
@@ -374,7 +402,9 @@ export default function InvoicesPage() {
                               <Download className="h-4 w-4" />
                             )}
                           </button>
-                          {invoice.status === 'PENDING' && canWrite && (
+                          {invoice.status === 'PENDING' &&
+                            (invoice.fiscalDocumentType ?? 'FT') === 'FT' &&
+                            canWrite && (
                             <button
                               type="button"
                               onClick={() =>

@@ -1,5 +1,7 @@
 import { FiscalEngineService } from './fiscal-engine.service';
 import { TaxType } from '@prisma/client';
+import type { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
+import type { PrismaService } from '../prisma/prisma.service';
 
 type Scenario = {
   invoices?: any[];
@@ -7,6 +9,19 @@ type Scenario = {
   payrolls?: any[];
   enrollments?: any[];
   legacyRegime?: string;
+};
+
+type AssessmentLookupKey = {
+  tenantId: string;
+  taxType: string;
+  period: string;
+  year: number;
+};
+
+type TaxAssessmentFindUniqueArgs = {
+  where: {
+    tenantId_taxType_period_year: AssessmentLookupKey;
+  };
 };
 
 function fiscalPrisma(scenarios: Record<string, Scenario>) {
@@ -41,14 +56,17 @@ function fiscalPrisma(scenarios: Record<string, Scenario>) {
         if (index < 0) assessments.push(create);
         else assessments[index] = { ...assessments[index], ...update };
       }),
-      findUnique: jest.fn(async ({ where }: any) => {
+      findUnique: jest.fn(({ where }: TaxAssessmentFindUniqueArgs) => {
         const key = where.tenantId_taxType_period_year;
-        return assessments.find((item) =>
-          item.tenantId === key.tenantId &&
-          item.taxType === key.taxType &&
-          item.period === key.period &&
-          item.year === key.year,
-        ) ?? null;
+        return (
+          (assessments as AssessmentLookupKey[]).find(
+            (item) =>
+              item.tenantId === key.tenantId &&
+              item.taxType === key.taxType &&
+              item.period === key.period &&
+              item.year === key.year,
+          ) ?? null
+        );
       }),
     },
     fiscalCalendar: {
@@ -163,28 +181,97 @@ describe('FiscalEngineService integration', () => {
     expect(obligations.find((item) => item.type === 'SS').amountValue.toFixed(2)).toBe('110.00');
   });
 
-  it('keeps Industrial Tax undetermined instead of creating a zero payable amount', async () => {
-    const { prisma, assessments, obligations, enrollments } = fiscalPrisma({
+  it('subtracts credit notes and adds debit notes to the IVA assessment', async () => {
+    const { prisma, ledger, assessments, enrollments } = fiscalPrisma({
       A: {
-        enrollments: [{
-          taxType: TaxType.INDUSTRIAL,
-          regime: 'GERAL',
-          validFrom: '2026-01-01',
-        }],
+        invoices: [
+          {
+            id: 'ft-a',
+            subtotal: 100,
+            iva: 14,
+            withholdingTax: 0,
+            issuedAt,
+            invoiceNumber: 'FT-1',
+            fiscalDocumentType: 'FT',
+            status: 'PENDING',
+          },
+          {
+            id: 'nc-a',
+            subtotal: 20,
+            iva: 2.8,
+            withholdingTax: 0,
+            issuedAt,
+            invoiceNumber: 'NC-1',
+            fiscalDocumentType: 'NC',
+            status: 'PENDING',
+          },
+          {
+            id: 'nd-a',
+            subtotal: 10,
+            iva: 1.4,
+            withholdingTax: 0,
+            issuedAt,
+            invoiceNumber: 'ND-1',
+            fiscalDocumentType: 'ND',
+            status: 'PENDING',
+          },
+        ],
+        enrollments: [{ taxType: 'IVA', regime: 'GERAL', validFrom: '2026-01-01' }],
       },
     });
     const service = new FiscalEngineService(prisma as any, undefined, enrollments as any);
 
     await service.syncTenant('A', 2026);
 
-    const industrial = assessments.find((item) => item.taxType === TaxType.INDUSTRIAL);
-    expect(industrial).toEqual(expect.objectContaining({
-      calculationStatus: 'REVIEW_REQUIRED',
-      finalAmountValue: null,
-      payableAmountValue: null,
-      calculationSnapshot: expect.objectContaining({ taxPayable: null }),
-    }));
-    expect(obligations.find((item) => item.type === TaxType.INDUSTRIAL)).toEqual(
+    const vat = assessments.find((item) => item.taxType === 'IVA');
+    expect(vat.taxDueAmountValue.toFixed(2)).toBe('12.60');
+    expect(ledger.find((item) => item.sourceId === 'nc-a')).toMatchObject({
+      baseAmount: -20,
+      taxAmount: -2.8,
+    });
+    expect(ledger.find((item) => item.sourceId === 'nd-a')).toMatchObject({
+      baseAmount: 10,
+      taxAmount: 1.4,
+    });
+  });
+
+  it('keeps Industrial Tax undetermined instead of creating a zero payable amount', async () => {
+    const { prisma, assessments, obligations, enrollments } = fiscalPrisma({
+      A: {
+        enrollments: [
+          {
+            taxType: TaxType.INDUSTRIAL,
+            regime: 'GERAL',
+            validFrom: '2026-01-01',
+          },
+        ],
+      },
+    });
+    const service = new FiscalEngineService(
+      prisma as unknown as PrismaService,
+      undefined,
+      enrollments as unknown as FiscalEnrollmentService,
+    );
+
+    await service.syncTenant('A', 2026);
+
+    const industrial = (assessments as Array<Record<string, unknown>>).find(
+      (item) => item.taxType === TaxType.INDUSTRIAL,
+    );
+    expect(industrial).toEqual(
+      expect.objectContaining({
+        calculationStatus: 'REVIEW_REQUIRED',
+        finalAmountValue: null,
+        payableAmountValue: null,
+      }),
+    );
+    expect(industrial?.calculationSnapshot).toEqual(
+      expect.objectContaining({ taxPayable: null }),
+    );
+    const industrialObligation = (
+      obligations as Array<Record<string, unknown>>
+    ).find((item) => item.type === TaxType.INDUSTRIAL);
+    expect(industrialObligation).toEqual(
       expect.objectContaining({ amount: null, amountValue: null }),
     );
 

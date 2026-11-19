@@ -133,22 +133,22 @@ const members = [
   },
   {
     name: 'Anildo Manuel João',
-    area: 'Tecnologia · Desenvolvimento · Automação',
+    area: 'Tecnologia · Soluções digitais · Automação',
     image: '/team-anildo.webp',
     position: 'object-[center_15%]',
     link: 'https://www.linkedin.com/in/anildo-jo%C3%A3o-85643330b',
     email: 'anildomanuel@fiscalidadedigital.com',
-    summary: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação e desenvolvedor Full Stack.',
-    bio: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação, desenvolvedor Full Stack e técnico com formação nas áreas de Automação Industrial, Instrumentação e Controlo. O seu percurso está na intersecção entre software, sistemas, infraestrutura tecnológica e tecnologia industrial.',
+    summary: 'Profissional angolano dedicado a soluções digitais, comunicação e automação.',
+    bio: 'Profissional angolano de tecnologia, estudante de Engenharia Informática e Comunicação e técnico com formação nas áreas de Automação Industrial, Instrumentação e Controlo. O seu percurso une soluções digitais, infraestrutura e tecnologia industrial.',
     education: [
       'Técnico Médio de Informática de Gestão pelo Instituto Médio de Economia de Luanda — IMEL',
       'Engenharia Informática e Comunicação — Universidade Óscar Ribas',
-      'Full Stack, APIs, Bases de Dados, Redes, IoT, Inteligência Artificial e Gestão de Projectos',
+      'Soluções digitais, dados, redes, conectividade e Gestão de Projectos',
     ],
     highlights: [
-      'Desenvolvimento tecnológico da Fiscalidade Digital',
+      'Soluções digitais para a Fiscalidade Digital',
       'CEO e Fundador da Yash Hub5',
-      'Software + Automação Industrial + Instrumentação + Control Systems',
+      'Automação Industrial + Instrumentação + Controlo',
     ],
   },
 ] as const;
@@ -176,11 +176,11 @@ const englishMemberContent = [
     highlights: ['BAI merit scholarship holder', 'Co-founder of Respirando Contabilidade', 'President of ISAF’s Tax Club', 'Researcher in ISAF’s Scientific Initiation Programme'],
   },
   {
-    area: 'Technology · Development · Automation',
-    summary: 'Angolan technology professional, Computer Engineering and Communications student, and Full Stack developer.',
-    bio: 'Angolan technology professional, Computer Engineering and Communications student, Full Stack developer and technician trained in Industrial Automation, Instrumentation and Control. His work sits at the intersection of software, systems, technology infrastructure and industrial technology.',
-    education: ['IT Management technician from Instituto Médio de Economia de Luanda — IMEL', 'Computer Engineering and Communications — Universidade Óscar Ribas', 'Full Stack, APIs, Databases, Networks, IoT, Artificial Intelligence and Project Management'],
-    highlights: ['Fiscalidade Digital technology development', 'CEO and founder of Yash Hub5', 'Software + Industrial Automation + Instrumentation + Control Systems'],
+    area: 'Technology · Digital solutions · Automation',
+    summary: 'Angolan professional focused on digital solutions, communications and automation.',
+    bio: 'Angolan technology professional, Computer Engineering and Communications student, and technician trained in Industrial Automation, Instrumentation and Control. His work brings together digital solutions, infrastructure and industrial technology.',
+    education: ['IT Management technician from Instituto Médio de Economia de Luanda — IMEL', 'Computer Engineering and Communications — Universidade Óscar Ribas', 'Digital solutions, data, networks, connectivity and project management'],
+    highlights: ['Digital solutions for Fiscalidade Digital', 'CEO and founder of Yash Hub5', 'Industrial Automation + Instrumentation + Control'],
   },
 ] as const;
 

@@ -103,14 +103,11 @@ describe('FiscalEnrollmentLifecycleService', () => {
       validFrom: '2026-07-01',
     });
 
-    expect(assignment.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          regime: null,
-          knowledgeStatus: TaxRegimeKnowledgeStatus.UNKNOWN,
-        }),
-      }),
-    );
+    const createInput = assignment.create.mock.calls[0]?.[0];
+    expect(createInput?.data).toMatchObject({
+      regime: null,
+      knowledgeStatus: TaxRegimeKnowledgeStatus.UNKNOWN,
+    });
   });
 
   it('closes a validity range without changing the historical enrollment status or obligations', async () => {

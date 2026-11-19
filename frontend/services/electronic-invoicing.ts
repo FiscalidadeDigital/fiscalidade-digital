@@ -10,6 +10,7 @@ export type ElectronicReadiness = {
 export type ElectronicSubmission = {
   documentNumber?: string | null;
   status: string;
+  message?: string | null;
   submittedAt?: string | null;
   lastUpdatedAt?: string | null;
 };
@@ -30,6 +31,7 @@ type RemoteSubmission = {
   documentNumber?: unknown;
   agtDocumentNo?: unknown;
   status?: unknown;
+  message?: unknown;
   submittedAt?: unknown;
   lastUpdatedAt?: unknown;
   lastCheckedAt?: unknown;
@@ -37,6 +39,40 @@ type RemoteSubmission = {
 
 function text(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim() ? value.trim() : undefined;
+}
+
+const ELECTRONIC_STATUS_LABELS: Record<string, string> = {
+  READY: 'Pronta',
+  PREPARATION_COMPLETE: 'Preparada',
+  PREPARATION_REQUIRED: 'Em preparação',
+  UNAVAILABLE: 'Indisponível',
+  SUBMITTING: 'A preparar',
+  SUBMITTED: 'Registada',
+  PROCESSING: 'Em análise',
+  VALID: 'Validada',
+  INVALID: 'Requer revisão',
+  REJECTED: 'Requer revisão',
+  ERROR: 'Indisponível',
+};
+
+export function electronicStatusLabel(status: unknown): string {
+  const value = text(status);
+  return value ? ELECTRONIC_STATUS_LABELS[value] ?? 'Em análise' : 'Em análise';
+}
+
+function publicSubmissionMessage(status: string): string | undefined {
+  const messages: Record<string, string> = {
+    READY: 'O documento está pronto para acompanhamento.',
+    SUBMITTING: 'O pedido está a ser preparado.',
+    SUBMITTED: 'O documento foi registado para acompanhamento.',
+    PROCESSING: 'O documento está em processamento.',
+    VALID: 'O documento foi validado.',
+    INVALID: 'O documento requer revisão antes de continuar.',
+    REJECTED: 'O documento requer revisão antes de continuar.',
+    ERROR: 'Não foi possível concluir esta acção. Tente novamente mais tarde.',
+  };
+
+  return messages[status] ?? 'O documento está em análise.';
 }
 
 function toSubmission(value: unknown): ElectronicSubmission | null {
@@ -50,6 +86,9 @@ function toSubmission(value: unknown): ElectronicSubmission | null {
   return {
     documentNumber: text(remote.documentNumber) ?? text(remote.agtDocumentNo) ?? null,
     status,
+    // A message returned by another service can contain internal details.
+    // Only present a fixed, customer-safe explanation for known states.
+    message: publicSubmissionMessage(status) ?? null,
     submittedAt: text(remote.submittedAt) ?? null,
     lastUpdatedAt:
       text(remote.lastUpdatedAt) ?? text(remote.lastCheckedAt) ?? null,

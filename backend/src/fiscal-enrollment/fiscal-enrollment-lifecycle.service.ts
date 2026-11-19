@@ -210,12 +210,9 @@ export class FiscalEnrollmentLifecycleService {
     const regime =
       knowledgeStatus === TaxRegimeKnowledgeStatus.UNKNOWN
         ? null
-        : input.regime ?? null;
+        : (input.regime ?? null);
 
-    if (
-      knowledgeStatus === TaxRegimeKnowledgeStatus.CONFIRMED &&
-      !regime
-    ) {
+    if (knowledgeStatus === TaxRegimeKnowledgeStatus.CONFIRMED && !regime) {
       throw new BadRequestException(
         'Indique o regime confirmado ou seleccione UNKNOWN.',
       );

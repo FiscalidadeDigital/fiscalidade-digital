@@ -58,7 +58,7 @@ export class IvaEngine {
     if (isSimplified) {
       return { success: true, tenantId, company: { id: tenant.id, name: tenant.name, nif: tenant.nif }, regime: enrollment.regime, operation: dto.operation, referenceDate: referenceDate.toISOString().slice(0, 10), amount: asDisplayNumber(amount), taxableBase: asDisplayNumber(amount), rate: 0, ratePercent: 0, iva: 0, supportedIva: 0, deductibleIva: 0, total: asDisplayNumber(amount), currency: 'AOA', productType: dto.productType || null, description: dto.description || null, calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION', ruleVersion: enrollment.legalReference || null, legalSource: enrollment.officialSourceUrl || null, message: 'O enquadramento IVA Simplificado foi reconhecido, mas a fórmula definitiva não está automatizada sem confirmação oficial.' };
     }
-    const hasLineClassification = Boolean(dto.productType?.trim());
+    const hasLineClassification = (dto.productType?.trim().length ?? 0) > 0;
     if (!hasLineClassification) {
       return {
         success: true,

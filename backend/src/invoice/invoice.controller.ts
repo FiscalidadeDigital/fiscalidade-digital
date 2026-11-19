@@ -22,6 +22,7 @@ import {
 } from '../common/decorators/current-user.decorator';
 import { Roles } from '../common/decorators/roles.decorator';
 import { InvoiceQueryDto } from './dto/invoice-query.dto';
+import { CreateAdjustmentNoteDto } from './dto/create-adjustment-note.dto';
 
 const INVOICE_READ_ROLES = [
   UserRole.OWNER,
@@ -64,6 +65,24 @@ export class InvoiceController {
     return this.invoiceService.createProForma(user.tenantId, dto);
   }
 
+  @Post('credit-note')
+  @Roles(...INVOICE_WRITE_ROLES)
+  createCreditNote(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.invoiceService.createCreditNote(user.tenantId, dto);
+  }
+
+  @Post('debit-note')
+  @Roles(...INVOICE_WRITE_ROLES)
+  createDebitNote(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.invoiceService.createDebitNote(user.tenantId, dto);
+  }
+
   @Post(':id/convert')
   @Roles(...INVOICE_WRITE_ROLES)
   convertProForma(
@@ -86,6 +105,7 @@ export class InvoiceController {
     return this.invoiceService.findAll(
       user.tenantId,
       query.documentType,
+      query.fiscalDocumentType,
     );
   }
 

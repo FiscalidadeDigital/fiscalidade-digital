@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 
 const {
+  assistantAnswer,
   assistantErrorMessage,
   assistantWarnings,
   citationIds,
@@ -75,16 +76,19 @@ test('distingue os estados de falha sem expor detalhes técnicos ao utilizador',
   assert.match(assistantErrorMessage({ response: { status: 500 } }), /Não foi possível obter/i);
 });
 
-test('não expõe detalhes de configuração em avisos da resposta', () => {
+test('não expõe detalhes internos em avisos ou respostas do assistente', () => {
   assert.deepEqual(
     assistantWarnings([
-      'OPENAI_API_KEY: REQUIRES_CONFIGURATION',
-      'A pesquisa pública está indisponível.',
-      'A pesquisa pública está indisponível.',
+      'Configuração interna indisponível.',
+      'OpenAI API indisponível para o modelo.',
     ]),
     [
       'Algumas fontes de consulta estão temporariamente indisponíveis.',
-      'A pesquisa pública está indisponível.',
     ],
   );
+  assert.equal(
+    assistantAnswer('A resposta foi produzida pela OpenAI API.'),
+    'Não foi possível apresentar uma resposta neste momento. Tente novamente.',
+  );
+  assert.equal(assistantAnswer('Organize os documentos por período.'), 'Organize os documentos por período.');
 });

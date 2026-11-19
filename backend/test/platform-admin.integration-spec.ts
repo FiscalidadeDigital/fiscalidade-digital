@@ -125,7 +125,7 @@ describe('Platform admin HTTP isolation', () => {
         operations: expect.objectContaining({
           employees: expect.any(Number),
           documents: expect.any(Number),
-          storageBytes: expect.any(Number),
+          storageBytes: expect.stringMatching(/^\d+$/) as unknown,
         }),
       }),
     );

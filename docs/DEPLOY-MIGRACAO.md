@@ -98,3 +98,17 @@ remota nesta tarefa.
 4. Registar a decisão, os IDs das branches Neon e a validação pós-reversão.
 
 Não foi aplicada qualquer migração na produção por esta tarefa.
+
+## Porta adicional para a numeração fiscal
+
+O formato aceite pelo preflight fiscal é `Tipo Série/Sequência`, como
+`FT FT2026/00001`. A emissão nova cria prospectivamente uma série anual por
+tipo (`FT2026`, `NC2026` e `ND2026`), com sequência e cadeia de assinatura
+separadas. Confirme essa convenção com a política de séries aprovada para cada
+empresa antes da activação operacional.
+
+Não é permitido renumerar documentos já emitidos para satisfazer esta porta.
+Documentos legados com hífens continuam bloqueados na exportação até serem
+tratados por um procedimento fiscalmente autorizado; a transição deve ser
+prospectiva, ensaiada numa base isolada e acompanhada por validação estrutural
+do ficheiro.

@@ -27,16 +27,10 @@ export class AccountingSaftController {
     @CurrentUser() user: CurrentUserPayload,
     @Query() query: SaftReadinessQueryDto,
   ) {
-    return this.accountingSaftService
-      .getReadiness(user.tenantId, query.fiscalYear)
-      .then((result) => ({
-        fiscalYear: result.fiscalYear,
-        period: result.period,
-        ready: result.canExport,
-        message: result.canExport
-          ? 'A preparação do ficheiro está concluída.'
-          : 'Existem informações a rever antes de preparar o ficheiro.',
-      }));
+    return this.accountingSaftService.getReadiness(
+      user.tenantId,
+      query.fiscalYear,
+    );
   }
 
   @Get('preflight')

@@ -4,6 +4,7 @@ import {
   FiscalRegime,
   InvoiceDocumentType,
   Prisma,
+  TaxType,
   UserRole,
 } from '@prisma/client';
 import { JwtService } from '@nestjs/jwt';
@@ -33,6 +34,17 @@ describe('Pro Forma HTTP lifecycle', () => {
   const bearer = (token: string) => `Bearer ${token}`;
   const decimal = (value: string | number) => new Prisma.Decimal(value);
 
+  const removeTenantFiscalRecords = async (tenantIds: string[]) => {
+    if (tenantIds.length === 0) {
+      return;
+    }
+
+    const tenantId = { in: tenantIds };
+    await prisma.taxTransaction.deleteMany({ where: { tenantId } });
+    await prisma.taxAssessment.deleteMany({ where: { tenantId } });
+    await prisma.fiscalObligation.deleteMany({ where: { tenantId } });
+  };
+
   beforeAll(async () => {
     assertIsolatedTestDatabaseEnvironment();
 
@@ -61,8 +73,13 @@ describe('Pro Forma HTTP lifecycle', () => {
     prisma = app.get(PrismaService);
     jwtService = app.get(JwtService);
 
-    await prisma.tenant.deleteMany({
+    const existingTenants = await prisma.tenant.findMany({
       where: { name: { in: ['Pro Forma Tenant A', 'Pro Forma Tenant B'] } },
+      select: { id: true },
+    });
+    await removeTenantFiscalRecords(existingTenants.map((tenant) => tenant.id));
+    await prisma.tenant.deleteMany({
+      where: { id: { in: existingTenants.map((tenant) => tenant.id) } },
     });
 
     const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -89,6 +106,15 @@ describe('Pro Forma HTTP lifecycle', () => {
     ]);
     tenantAId = tenantA.id;
     tenantBId = tenantB.id;
+
+    await prisma.taxRegimeAssignment.create({
+      data: {
+        tenantId: tenantA.id,
+        taxType: TaxType.IVA,
+        regime: FiscalRegime.GERAL,
+        validFrom: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
 
     const [ownerA, ownerB, viewerA, clientA, productA] = await Promise.all([
       prisma.user.create({
@@ -133,6 +159,7 @@ describe('Pro Forma HTTP lifecycle', () => {
           priceAmount: '1250.50',
           ivaRate: 14,
           unit: 'SERVICO',
+          electronicOperationType: 'SE',
         },
       }),
     ]);
@@ -146,6 +173,7 @@ describe('Pro Forma HTTP lifecycle', () => {
 
   afterAll(async () => {
     if (prisma && tenantAId && tenantBId) {
+      await removeTenantFiscalRecords([tenantAId, tenantBId]);
       await prisma.tenant.deleteMany({
         where: { id: { in: [tenantAId, tenantBId] } },
       });
@@ -299,7 +327,14 @@ describe('Pro Forma HTTP lifecycle', () => {
       .set('Authorization', bearer(ownerAToken))
       .send({
         clientId: clientAId,
-        items: [{ productName: 'Factura normal', quantity: 1, unitPrice: 100 }],
+        items: [
+          {
+            productName: 'Factura normal',
+            quantity: 1,
+            unitPrice: 100,
+            electronicOperationType: 'SE',
+          },
+        ],
       })
       .expect(201);
 

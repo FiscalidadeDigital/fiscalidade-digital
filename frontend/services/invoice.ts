@@ -20,6 +20,16 @@ export type CreateInvoiceInput = {
 
 export type InvoiceStatus = 'PENDING' | 'PAID' | 'CANCELLED';
 export type InvoiceDocumentType = 'NORMAL' | 'PRO_FORMA';
+export type FiscalDocumentType = 'FT' | 'NC' | 'ND';
+
+export type CreateAdjustmentNoteInput = {
+  sourceInvoiceId: string;
+  reason: string;
+  items: Array<{
+    sourceInvoiceItemId: string;
+    quantity: number;
+  }>;
+};
 
 export type Invoice = {
   id: string;
@@ -37,6 +47,13 @@ export type Invoice = {
   taxRuleVersion?: string | null;
   taxCalculationStatus?: string;
   documentType: InvoiceDocumentType;
+  fiscalDocumentType?: FiscalDocumentType | null;
+  rectifiesInvoiceId?: string | null;
+  rectifiedInvoice?: {
+    id: string;
+    invoiceNumber: string;
+    fiscalDocumentType?: FiscalDocumentType | null;
+  } | null;
   sourceProFormaId?: string | null;
   convertedInvoice?: { id: string; invoiceNumber: string } | null;
   status: InvoiceStatus;
@@ -62,6 +79,7 @@ export type Invoice = {
     total: number;
     totalAmount?: string | null;
     unit: ProductUnit;
+    taxRate?: string | null;
     electronicOperationType?: ElectronicOperationType | null;
   }>;
 };
@@ -109,6 +127,20 @@ export async function createProForma(data: CreateInvoiceInput): Promise<Invoice>
   return response.data;
 }
 
+export async function createCreditNote(
+  data: CreateAdjustmentNoteInput,
+): Promise<Invoice> {
+  const response = await api.post<Invoice>('/invoice/credit-note', data);
+  return response.data;
+}
+
+export async function createDebitNote(
+  data: CreateAdjustmentNoteInput,
+): Promise<Invoice> {
+  const response = await api.post<Invoice>('/invoice/debit-note', data);
+  return response.data;
+}
+
 export async function getInvoices(): Promise<Invoice[]> {
   const response = await api.get<Invoice[]>('/invoice');
   return response.data;
@@ -116,6 +148,7 @@ export async function getInvoices(): Promise<Invoice[]> {
 
 export async function getInvoicePage(query: {
   documentType?: InvoiceDocumentType;
+  fiscalDocumentType?: FiscalDocumentType;
   search?: string;
   status?: InvoiceStatus | '';
   page: number;

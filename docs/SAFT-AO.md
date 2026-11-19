@@ -83,3 +83,25 @@ Configuração exclusiva do backend:
 A ausência destes dados produz blockers estruturados. `CERTIFICATION_STATUS` permanece `NOT_CERTIFIED`. A validação verde contra `SAFTAO1.01_01.xsd` comprova somente conformidade estrutural da fixture técnica completa; o próprio XSD versionado declara estado `Development` e não prova certificação AGT.
 
 Documentos históricos sem assinatura persistida são classificados como `LEGACY_UNSIGNED_DOCUMENT`. O sistema não oferece backfill criptográfico retroactivo.
+
+## Adenda de 11 de Novembro de 2026 — documentos de ajuste e numeração
+
+O exportador passou a tratar notas de crédito (NC) e notas de débito (ND) como
+documentos de ajuste da factura de origem. Para o ficheiro estrutural:
+
+- uma NC apresenta o valor líquido da linha em `DebitAmount`;
+- uma FT ou ND apresenta-o em `CreditAmount`;
+- cada NC/ND exige a referência da factura de origem e um motivo de até 50
+  caracteres.
+
+O preflight também bloqueia, sem converter ou renumerar silenciosamente,
+documentos cujo número ou referência não respeite `Tipo Série/Sequência` (por
+exemplo, `FT FT2026/00001`). A emissão nova usa uma série anual por tipo e
+preserva-a com a sequência no documento. Documentos legados no formato com
+hífens ficam retidos pelos bloqueadores `DOCUMENT_NUMBER_FORMAT_INVALID` e,
+quando se trata da origem de um ajuste,
+`ADJUSTMENT_SOURCE_NUMBER_FORMAT_INVALID`.
+
+A numeração de documentos já emitidos não deve ser alterada. Esta verificação
+é estrutural e não muda `CERTIFICATION_STATUS = NOT_CERTIFIED`, nem representa
+certificação ou homologação.

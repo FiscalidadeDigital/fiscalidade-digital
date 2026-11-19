@@ -2,7 +2,7 @@ import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { Test, TestingModule } from '@nestjs/testing';
-import { FiscalRegime, UserRole } from '@prisma/client';
+import { FiscalRegime, TaxType, UserRole } from '@prisma/client';
 import request from 'supertest';
 import { AuthModule } from '../src/auth/auth.module';
 import { ClientModule } from '../src/client/client.module';
@@ -28,6 +28,17 @@ describe('Core records HTTP tenant isolation', () => {
   let supplierId: string;
 
   const bearer = (token: string) => `Bearer ${token}`;
+
+  const removeTenantFiscalRecords = async (tenantIds: string[]) => {
+    if (tenantIds.length === 0) {
+      return;
+    }
+
+    const tenantId = { in: tenantIds };
+    await prisma.taxTransaction.deleteMany({ where: { tenantId } });
+    await prisma.taxAssessment.deleteMany({ where: { tenantId } });
+    await prisma.fiscalObligation.deleteMany({ where: { tenantId } });
+  };
 
   beforeAll(async () => {
     assertIsolatedTestDatabaseEnvironment();
@@ -64,10 +75,15 @@ describe('Core records HTTP tenant isolation', () => {
     prisma = app.get(PrismaService);
     jwtService = app.get(JwtService);
 
-    await prisma.tenant.deleteMany({
+    const existingTenants = await prisma.tenant.findMany({
       where: {
         name: { in: ['Tenant A E2E', 'Tenant B E2E'] },
       },
+      select: { id: true },
+    });
+    await removeTenantFiscalRecords(existingTenants.map((tenant) => tenant.id));
+    await prisma.tenant.deleteMany({
+      where: { id: { in: existingTenants.map((tenant) => tenant.id) } },
     });
 
     const runId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -91,6 +107,15 @@ describe('Core records HTTP tenant isolation', () => {
     });
     tenantAId = tenantA.id;
     tenantBId = tenantB.id;
+
+    await prisma.taxRegimeAssignment.create({
+      data: {
+        tenantId: tenantA.id,
+        taxType: TaxType.IVA,
+        regime: FiscalRegime.GERAL,
+        validFrom: new Date('2020-01-01T00:00:00.000Z'),
+      },
+    });
 
     const [ownerA, ownerB, viewerA] = await Promise.all([
       prisma.user.create({
@@ -139,6 +164,7 @@ describe('Core records HTTP tenant isolation', () => {
           tenantId: { in: [tenantAId, tenantBId] },
         },
       });
+      await removeTenantFiscalRecords([tenantAId, tenantBId]);
       await prisma.tenant.deleteMany({
         where: {
           id: { in: [tenantAId, tenantBId] },

@@ -1,6 +1,7 @@
 import api from './api';
 
 export type SaftIssue = {
+  message: string;
   severity: 'BLOCKING' | 'WARNING';
   count?: number;
 };
@@ -23,6 +24,8 @@ export type SaftSummary = {
   customerCount: number;
   productCount: number;
   cancelledCount: number;
+  signedDocumentCount: number;
+  unsignedDocumentCount: number;
   taxableBase: string;
   taxAmount: string;
   grossTotal: string;
@@ -55,6 +58,10 @@ function issues(value: unknown): SaftIssue[] {
   return value.map((issue) => {
     const item = record(issue);
     return {
+      message:
+        typeof item.message === 'string'
+          ? item.message
+          : 'É necessária uma revisão.',
       severity: item.severity === 'WARNING' ? 'WARNING' : 'BLOCKING',
       count: number(item.count) || undefined,
     };
@@ -108,6 +115,8 @@ export async function getSaftSummary(fiscalYear: number): Promise<SaftSummary> {
     customerCount: number(input.customerCount),
     productCount: number(input.productCount),
     cancelledCount: number(input.cancelledCount),
+    signedDocumentCount: number(input.signedDocumentCount),
+    unsignedDocumentCount: number(input.unsignedDocumentCount),
     taxableBase: money(input.taxableBase),
     taxAmount: money(input.taxAmount),
     grossTotal: money(input.grossTotal),

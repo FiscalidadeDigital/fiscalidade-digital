@@ -74,6 +74,12 @@ export class SaftExportService {
       where: {
         tenantId,
         documentType: InvoiceDocumentType.NORMAL,
+        OR: [
+          { fiscalDocumentType: 'FT' },
+          { fiscalDocumentType: 'NC' },
+          { fiscalDocumentType: 'ND' },
+          { fiscalDocumentType: null },
+        ],
         issuedAt: { gte: start, lt: endExclusive },
       },
       include: {
@@ -86,9 +92,30 @@ export class SaftExportService {
         { createdAt: 'asc' },
       ],
     });
+    const rectifiedInvoiceIds = [
+      ...new Set(
+        invoices
+          .map((invoice) => invoice.rectifiesInvoiceId)
+          .filter((invoiceId): invoiceId is string => Boolean(invoiceId)),
+      ),
+    ];
+    const rectifiedInvoices = rectifiedInvoiceIds.length
+      ? await this.prisma.invoice.findMany({
+          where: { tenantId, id: { in: rectifiedInvoiceIds } },
+          select: { id: true, invoiceNumber: true },
+        })
+      : [];
+    const rectifiedInvoiceNumberById = new Map(
+      rectifiedInvoices.map((invoice) => [invoice.id, invoice.invoiceNumber]),
+    );
     return {
       tenant,
-      invoices,
+      invoices: invoices.map((invoice) => ({
+        ...invoice,
+        rectifiedInvoiceNumber: invoice.rectifiesInvoiceId
+          ? rectifiedInvoiceNumberById.get(invoice.rectifiesInvoiceId) ?? null
+          : null,
+      })),
       start,
       end: new Date(endExclusive.getTime() - 1),
     };
@@ -145,6 +172,60 @@ export class SaftExportService {
         count: unsigned.length,
         message:
           'Existem documentos históricos sem assinatura fiscal persistida.',
+      });
+    const adjustmentsWithoutSource = invoices.filter(
+      (invoice) =>
+        (invoice.fiscalDocumentType === 'NC' ||
+          invoice.fiscalDocumentType === 'ND') &&
+        !invoice.rectifiedInvoiceNumber,
+    );
+    if (adjustmentsWithoutSource.length)
+      issues.push({
+        code: 'ADJUSTMENT_SOURCE_MISSING',
+        severity: 'BLOCKING',
+        count: adjustmentsWithoutSource.length,
+        message:
+          'Existem notas de crédito ou débito sem o documento de origem associado.',
+      });
+    const invalidDocumentNumbers = invoices.filter(
+      (invoice) => !/^[^ ]+ [^/ ]+\/[0-9]+$/.test(invoice.invoiceNumber),
+    );
+    if (invalidDocumentNumbers.length)
+      issues.push({
+        code: 'DOCUMENT_NUMBER_FORMAT_INVALID',
+        severity: 'BLOCKING',
+        count: invalidDocumentNumbers.length,
+        message:
+          'Existem documentos com uma numeração que precisa de revisão antes da exportação.',
+      });
+    const adjustmentsWithInvalidSourceNumber = invoices.filter(
+      (invoice) =>
+        (invoice.fiscalDocumentType === 'NC' ||
+          invoice.fiscalDocumentType === 'ND') &&
+        invoice.rectifiedInvoiceNumber &&
+        !/^[^ ]+ [^/ ]+\/[0-9]+$/.test(invoice.rectifiedInvoiceNumber),
+    );
+    if (adjustmentsWithInvalidSourceNumber.length)
+      issues.push({
+        code: 'ADJUSTMENT_SOURCE_NUMBER_FORMAT_INVALID',
+        severity: 'BLOCKING',
+        count: adjustmentsWithInvalidSourceNumber.length,
+        message:
+          'Existem notas cujo documento de origem precisa de revisão antes da exportação.',
+      });
+    const adjustmentsWithLongReason = invoices.filter(
+      (invoice) =>
+        (invoice.fiscalDocumentType === 'NC' ||
+          invoice.fiscalDocumentType === 'ND') &&
+        (invoice.notes?.trim().length ?? 0) > 50,
+    );
+    if (adjustmentsWithLongReason.length)
+      issues.push({
+        code: 'ADJUSTMENT_REASON_TOO_LONG',
+        severity: 'BLOCKING',
+        count: adjustmentsWithLongReason.length,
+        message:
+          'Existem notas com um motivo demasiado longo para a exportação.',
       });
     const invalidTax = invoices
       .flatMap((invoice) => invoice.items)
@@ -215,7 +296,12 @@ export class SaftExportService {
     ) =>
       active
         .reduce(
-          (total, invoice) => total.add(selector(invoice)),
+          (total, invoice) =>
+            total.add(
+              selector(invoice).mul(
+                invoice.fiscalDocumentType === 'NC' ? -1 : 1,
+              ),
+            ),
           new Prisma.Decimal(0),
         )
         .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
@@ -325,6 +411,14 @@ export class SaftExportService {
         return 'Complete os dados obrigatórios dos clientes usados no período.';
       case 'LEGACY_UNSIGNED_DOCUMENT':
         return 'Existem documentos históricos que precisam de revisão.';
+      case 'ADJUSTMENT_SOURCE_MISSING':
+        return 'Existem notas de crédito ou débito sem o documento de origem associado.';
+      case 'DOCUMENT_NUMBER_FORMAT_INVALID':
+        return 'Existem documentos com uma numeração que precisa de revisão antes da exportação.';
+      case 'ADJUSTMENT_SOURCE_NUMBER_FORMAT_INVALID':
+        return 'Existem notas cujo documento de origem precisa de revisão antes da exportação.';
+      case 'ADJUSTMENT_REASON_TOO_LONG':
+        return 'Existem notas com um motivo demasiado longo para a exportação.';
       case 'INVALID_TAX_METADATA':
       case 'EXEMPTION_REASON_MISSING':
         return 'Existem linhas de documento que precisam de revisão fiscal.';
@@ -354,6 +448,25 @@ export class SaftExportService {
     sourceId: string;
   }): SaftAuditFile {
     const lines = input.invoices.flatMap((invoice) => invoice.items);
+    const totalLinesByDirection = (direction: 'DEBIT' | 'CREDIT') =>
+      input.invoices
+        .filter((invoice) => {
+          if (invoice.status === 'CANCELLED') return false;
+          const isCreditNote = invoice.fiscalDocumentType === 'NC';
+          return direction === 'DEBIT' ? isCreditNote : !isCreditNote;
+        })
+        .flatMap((invoice) => invoice.items)
+        .reduce(
+          (total, line) =>
+            total.add(
+              new Prisma.Decimal(
+                line.totalAmount?.toString() ?? String(line.total),
+              ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+            ),
+          new Prisma.Decimal(0),
+        )
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP)
+        .toFixed(2);
     const customers = [
       ...new Map(
         input.invoices.map((invoice) => [invoice.client.id, invoice.client]),
@@ -387,20 +500,8 @@ export class SaftExportService {
         })),
         input.sourceId,
       ),
-      totalDebit: '0.00',
-      totalCredit: input.invoices
-        .filter((invoice) => invoice.status !== 'CANCELLED')
-        .reduce(
-          (total, invoice) =>
-            total.add(
-              new Prisma.Decimal(
-                invoice.totalAmount?.toString() ?? String(invoice.total),
-              ),
-            ),
-          new Prisma.Decimal(0),
-        )
-        .toDecimalPlaces(2)
-        .toFixed(2),
+      totalDebit: totalLinesByDirection('DEBIT'),
+      totalCredit: totalLinesByDirection('CREDIT'),
     };
   }
 }

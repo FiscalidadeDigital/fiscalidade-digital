@@ -1,7 +1,36 @@
+import { BadRequestException } from '@nestjs/common';
+import { FiscalRegime, Prisma } from '@prisma/client';
+import { FiscalEngineService } from '../fiscal-engine/fiscal-engine.service';
+import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.service';
 import { ObligationsService } from '../obligations/obligations.service';
-import { FiscalRegime } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { InvoiceService } from './invoice.service';
+
+async function expectBadRequestResponse(
+  operation: Promise<unknown>,
+  expectedResponse: Record<string, unknown>,
+): Promise<void> {
+  try {
+    await operation;
+  } catch (error) {
+    expect(error).toBeInstanceOf(BadRequestException);
+
+    if (!(error instanceof BadRequestException)) {
+      return;
+    }
+
+    const response = error.getResponse();
+
+    if (typeof response === 'string' || response === null) {
+      throw new Error('Expected a structured bad-request response.');
+    }
+
+    expect(response).toMatchObject(expectedResponse);
+    return;
+  }
+
+  throw new Error('Expected the operation to reject with BadRequestException.');
+}
 
 describe('InvoiceService paged list', () => {
   it('scopes search, statuses and totals to the authenticated tenant', async () => {
@@ -78,7 +107,18 @@ describe('InvoiceService paged list', () => {
     const prisma = {
       tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', regime: FiscalRegime.GERAL, retentionRate: 0 }) },
       client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a', city: 'Luanda' }) },
-      product: { findMany: jest.fn().mockResolvedValue([{ id: 'product-a', name: 'Serviço', price: 100, priceAmount: null, unit: 'SERVICO', electronicOperationType: 'SE' }]) },
+      product: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'product-a',
+            name: 'Serviço',
+            price: 100,
+            priceAmount: null,
+            unit: 'SERVICO',
+            electronicOperationType: 'SE',
+          },
+        ]),
+      },
       $transaction: jest.fn((callback) => callback(tx)),
     } as unknown as PrismaService;
     const fiscalSignature = {
@@ -104,67 +144,210 @@ describe('InvoiceService paged list', () => {
     expect(persisted).toEqual(expect.objectContaining({
       tenantId: 'tenant-a', fiscalHash: 'signed-hash', fiscalHashControl: '1',
       signatureKeyVersion: 1, previousFiscalHash: null,
+      invoiceNumber: expect.stringMatching(/^FT FT\d{4}\/\d{5}$/),
+      fiscalSeries: expect.stringMatching(/^FT\d{4}$/),
+      fiscalSequence: 1,
     }));
     expect(persisted.items.create[0]).toEqual(expect.objectContaining({
       taxType: 'IVA', taxCode: 'NOR', taxRate: expect.anything(), taxAmount: expect.anything(),
     }));
-    expect(persisted.taxCalculationStatus).toBe('STANDARD_RATE_CLASSIFIED');
+    expect(persisted).toMatchObject({
+      taxCalculationStatus: 'STANDARD_RATE_CLASSIFIED',
+    });
+  });
+
+  it('persists an exportable simplified IVA snapshot and required invoice mention', async () => {
+    const create = jest
+      .fn()
+      .mockImplementation(({ data }) => Promise.resolve({ id: 'invoice-simplified', ...data }));
+    const tx = {
+      $queryRaw: jest.fn().mockResolvedValue([{ lock: '1' }]),
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([]),
+        findFirst: jest.fn().mockResolvedValue(null),
+        create,
+      },
+    };
+    const prisma = {
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'tenant-a',
+          name: 'Empresa A',
+          nif: '5000000001',
+          retentionRate: 0,
+        }),
+      },
+      client: {
+        findFirst: jest.fn().mockResolvedValue({
+          id: 'client-a',
+          tenantId: 'tenant-a',
+          city: 'Luanda',
+        }),
+      },
+      product: {
+        findMany: jest.fn().mockResolvedValue([
+          {
+            id: 'product-a',
+            name: 'Serviço simplificado',
+            price: 100,
+            priceAmount: null,
+            unit: 'SERVICO',
+            electronicOperationType: null,
+          },
+        ]),
+      },
+      $transaction: jest.fn((callback) => callback(tx)),
+    } as unknown as PrismaService;
+    const fiscalSignature = {
+      sign: jest.fn().mockReturnValue({
+        hash: 'simplified-hash',
+        hashControl: '2',
+        keyVersion: 1,
+      }),
+    };
+    const service = new InvoiceService(
+      prisma,
+      { syncCompany: jest.fn() } as any,
+      { syncTenant: jest.fn() } as any,
+      fiscalSignature as any,
+      { resolve: jest.fn().mockResolvedValue({ regime: FiscalRegime.SIMPLIFICADO }) } as any,
+    );
+
+    await service.create('tenant-a', {
+      clientId: 'client-a',
+      notes: 'Condições comerciais acordadas.',
+      items: [
+        {
+          productId: 'product-a',
+          productName: 'ignorado',
+          quantity: 1,
+          unitPrice: 1,
+        },
+      ],
+    });
+
+    const persisted = create.mock.calls[0][0].data;
+    expect(persisted).toEqual(
+      expect.objectContaining({
+        invoiceNumber: expect.stringMatching(/^FT FT\d{4}\/\d{5}$/),
+        notes: 'IVA - Regime Simplificado\nCondições comerciais acordadas.',
+      }),
+    );
+    expect(persisted.items.create[0]).toEqual(
+      expect.objectContaining({
+        taxType: 'IVA',
+        taxCode: 'OUT',
+        taxRate: expect.anything(),
+        taxAmount: expect.anything(),
+        taxExemptionCode: 'M00',
+        taxExemptionReason: 'IVA - Regime Simplificado',
+      }),
+    );
   });
 
   it('leaves IVA undetermined instead of assuming 14% without line classification', async () => {
     const prisma = {
-      tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', retentionRate: 0 }) },
-      client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }) },
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'tenant-a',
+          name: 'Empresa A',
+          nif: '5000000001',
+          retentionRate: 0,
+        }),
+      },
+      client: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }),
+      },
       product: { findMany: jest.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
+    const obligations = {} as ObligationsService;
+    const fiscalEngine = {} as FiscalEngineService;
+    const enrollments = {
+      resolve: jest.fn().mockResolvedValue({ regime: FiscalRegime.GERAL }),
+    } as unknown as FiscalEnrollmentService;
     const service = new InvoiceService(
       prisma,
-      {} as any,
-      {} as any,
+      obligations,
+      fiscalEngine,
       undefined,
-      { resolve: jest.fn().mockResolvedValue({ regime: FiscalRegime.GERAL }) } as any,
+      enrollments,
     );
 
-    await expect(service.create('tenant-a', {
-      clientId: 'client-a',
-      items: [{ productName: 'Serviço sem classificação', quantity: 1, unitPrice: 100 }],
-    })).rejects.toMatchObject({
-      response: expect.objectContaining({
+    await expectBadRequestResponse(
+      service.create('tenant-a', {
+        clientId: 'client-a',
+        items: [
+          {
+            productName: 'Serviço sem classificação',
+            quantity: 1,
+            unitPrice: 100,
+          },
+        ],
+      }),
+      {
         code: 'IVA_FISCAL_CLASSIFICATION_REQUIRED',
         rate: null,
         ratePercent: null,
         iva: null,
         total: null,
         calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
-      }),
-    });
+      },
+    );
   });
 
   it('does not reinterpret an UNKNOWN IVA enrollment as GERAL', async () => {
     const prisma = {
-      tenant: { findUnique: jest.fn().mockResolvedValue({ id: 'tenant-a', name: 'Empresa A', nif: '5000000001', retentionRate: 0 }) },
-      client: { findFirst: jest.fn().mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }) },
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'tenant-a',
+          name: 'Empresa A',
+          nif: '5000000001',
+          retentionRate: 0,
+        }),
+      },
+      client: {
+        findFirst: jest
+          .fn()
+          .mockResolvedValue({ id: 'client-a', tenantId: 'tenant-a' }),
+      },
       product: { findMany: jest.fn().mockResolvedValue([]) },
     } as unknown as PrismaService;
+    const obligations = {} as ObligationsService;
+    const fiscalEngine = {} as FiscalEngineService;
+    const enrollments = {
+      resolve: jest
+        .fn()
+        .mockResolvedValue({ regime: null, knowledgeStatus: 'UNKNOWN' }),
+    } as unknown as FiscalEnrollmentService;
     const service = new InvoiceService(
       prisma,
-      {} as any,
-      {} as any,
+      obligations,
+      fiscalEngine,
       undefined,
-      { resolve: jest.fn().mockResolvedValue({ regime: null, knowledgeStatus: 'UNKNOWN' }) } as any,
+      enrollments,
     );
 
-    await expect(service.create('tenant-a', {
-      clientId: 'client-a',
-      items: [{ productName: 'Serviço classificado', quantity: 1, unitPrice: 100, electronicOperationType: 'SE' }],
-    })).rejects.toMatchObject({
-      response: expect.objectContaining({
+    await expectBadRequestResponse(
+      service.create('tenant-a', {
+        clientId: 'client-a',
+        items: [
+          {
+            productName: 'Serviço classificado',
+            quantity: 1,
+            unitPrice: 100,
+            electronicOperationType: 'SE',
+          },
+        ],
+      }),
+      {
         code: 'IVA_ENROLLMENT_UNCONFIRMED',
         iva: null,
         total: null,
         calculationStatus: 'NEEDS_OFFICIAL_CONFIRMATION',
-      }),
-    });
+      },
+    );
   });
 
   it('blocks fiscal issuance without a current IVA enrollment instead of using Tenant.regime', async () => {
@@ -180,5 +363,181 @@ describe('InvoiceService paged list', () => {
       clientId: 'client-a', items: [{ productName: 'Serviço', quantity: 1, unitPrice: 100 }],
     })).rejects.toMatchObject({ response: expect.objectContaining({ code: 'IVA_ENROLLMENT_REQUIRED' }) });
     expect(enrollments.resolve).toHaveBeenCalledWith('tenant-a', 'IVA', expect.any(Date));
+  });
+});
+
+describe('InvoiceService adjustment notes', () => {
+  const sourceInvoice = {
+    id: 'invoice-source',
+    tenantId: 'tenant-a',
+    clientId: 'client-a',
+    subtotal: 100,
+    subtotalAmount: new Prisma.Decimal('100.00'),
+    iva: 14,
+    ivaAmount: new Prisma.Decimal('14.00'),
+    withholdingTax: 0,
+    withholdingTaxAmount: new Prisma.Decimal('0.00'),
+    taxRuleVersion: 'AO-CIVA-LEI-14-23',
+    documentType: 'NORMAL',
+    fiscalDocumentType: 'FT',
+    status: 'PENDING',
+    items: [
+      {
+        id: 'line-source',
+        productId: 'product-a',
+        productName: 'Servico de origem',
+        quantity: 2,
+        quantityAmount: new Prisma.Decimal('2.0000'),
+        unitPrice: 50,
+        unitPriceAmount: new Prisma.Decimal('50.00'),
+        unit: 'SERVICO',
+        taxType: 'IVA',
+        taxCode: 'NOR',
+        taxRate: new Prisma.Decimal('14'),
+        taxAmount: new Prisma.Decimal('14.00'),
+        taxExemptionCode: null,
+        taxExemptionReason: null,
+        electronicOperationType: 'SE',
+      },
+    ],
+  };
+
+  it('creates a credit note from a same-tenant invoice and preserves its fiscal snapshot', async () => {
+    const create = jest.fn().mockImplementation(({ data }) => ({ id: 'note-a', ...data }));
+    const tx = {
+      $queryRaw: jest.fn().mockResolvedValue([{ lock: '1' }]),
+      invoice: {
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(null),
+        findMany: jest.fn().mockResolvedValue([]),
+        create,
+      },
+    };
+    const findFirst = jest.fn().mockResolvedValue(sourceInvoice);
+    const prisma = {
+      invoice: { findFirst },
+      $transaction: jest.fn((callback) => callback(tx)),
+    } as unknown as PrismaService;
+    const signature = {
+      sign: jest.fn().mockReturnValue({
+        hash: 'note-hash',
+        hashControl: '7',
+        keyVersion: 1,
+      }),
+    };
+    const service = new InvoiceService(
+      prisma,
+      { syncCompany: jest.fn() } as any,
+      { syncTenant: jest.fn() } as any,
+      signature as any,
+    );
+
+    await service.createCreditNote('tenant-a', {
+      sourceInvoiceId: 'invoice-source',
+      reason: 'Devolucao parcial',
+      items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
+    });
+
+    expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        id: 'invoice-source',
+        tenantId: 'tenant-a',
+        fiscalDocumentType: 'FT',
+      }),
+    }));
+    const persisted = create.mock.calls[0][0].data;
+    expect(persisted).toMatchObject({
+      tenantId: 'tenant-a',
+      clientId: 'client-a',
+      documentType: 'NORMAL',
+      fiscalDocumentType: 'NC',
+      fiscalSeries: expect.stringMatching(/^NC\d{4}$/),
+      invoiceNumber: expect.stringMatching(/^NC NC\d{4}\/\d{5}$/),
+      rectifiesInvoiceId: 'invoice-source',
+      subtotal: 50,
+      iva: 7,
+      total: 57,
+      fiscalHash: 'note-hash',
+    });
+    expect(persisted.items.create[0]).toEqual(expect.objectContaining({
+      productId: 'product-a',
+      quantity: 1,
+      unitPrice: 50,
+      total: 50,
+      taxRate: expect.anything(),
+      taxAmount: expect.anything(),
+      electronicOperationType: 'SE',
+    }));
+    expect(signature.sign).toHaveBeenCalledWith(expect.objectContaining({
+      invoiceNo: expect.stringMatching(/^NC NC\d{4}\/\d{5}$/),
+      grossTotal: '57.00',
+    }));
+  });
+
+  it('does not disclose or use an invoice from another tenant as a note source', async () => {
+    const findFirst = jest.fn().mockResolvedValue(null);
+    const service = new InvoiceService(
+      { invoice: { findFirst } } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(service.createDebitNote('tenant-a', {
+      sourceInvoiceId: 'invoice-b',
+      reason: 'Acerto documentado',
+      items: [{ sourceInvoiceItemId: 'line-b', quantity: 1 }],
+    })).rejects.toThrow('factura de origem');
+    expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'invoice-b', tenantId: 'tenant-a' }),
+    }));
+  });
+
+  it('blocks payment of a Pro Forma before any state transition', async () => {
+    const updateMany = jest.fn();
+    const service = new InvoiceService(
+      {
+        invoice: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'pro-forma-a',
+            documentType: 'PRO_FORMA',
+            fiscalDocumentType: null,
+            status: 'PENDING',
+          }),
+          updateMany,
+        },
+      } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(service.markAsPaid('tenant-a', 'pro-forma-a')).rejects.toThrow(
+      'Pro Forma',
+    );
+    expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it('blocks direct payment of adjustment notes before any state transition', async () => {
+    const updateMany = jest.fn();
+    const service = new InvoiceService(
+      {
+        invoice: {
+          findFirst: jest.fn().mockResolvedValue({
+            id: 'note-a',
+            documentType: 'NORMAL',
+            fiscalDocumentType: 'NC',
+            status: 'PENDING',
+          }),
+          updateMany,
+        },
+      } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(service.markAsPaid('tenant-a', 'note-a')).rejects.toThrow(
+      'fluxo financeiro',
+    );
+    expect(updateMany).not.toHaveBeenCalled();
   });
 });

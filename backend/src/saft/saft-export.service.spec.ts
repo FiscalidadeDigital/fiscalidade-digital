@@ -19,7 +19,7 @@ describe('SaftExportService technical fixture', () => {
     const signature = new FiscalSignatureService().sign({
       invoiceDate: issuedAt,
       systemEntryDate: issuedAt,
-      invoiceNo: 'FT 2026/1',
+      invoiceNo: 'FT FT2026/00001',
       grossTotal: '114.00',
       previousHash: null,
     });
@@ -27,9 +27,9 @@ describe('SaftExportService technical fixture', () => {
       id: 'invoice-1',
       tenantId: 'tenant-1',
       clientId: 'customer-1',
-      invoiceNumber: 'FT 2026/1',
+      invoiceNumber: 'FT FT2026/00001',
       fiscalDocumentType: 'FT',
-      fiscalSeries: '2026',
+      fiscalSeries: 'FT2026',
       fiscalSequence: 1,
       fiscalYear: 2026,
       status: 'PENDING',
@@ -74,6 +74,65 @@ describe('SaftExportService technical fixture', () => {
         },
       ],
     };
+    const creditNote = {
+      ...invoice,
+      id: 'invoice-2',
+      invoiceNumber: 'NC NC2026/00001',
+      fiscalDocumentType: 'NC',
+      fiscalSeries: 'NC2026',
+      fiscalSequence: 1,
+      rectifiedInvoiceNumber: invoice.invoiceNumber,
+      notes: 'Devolução parcial',
+      subtotal: 20,
+      subtotalAmount: new Prisma.Decimal('20.00'),
+      iva: 2.8,
+      ivaAmount: new Prisma.Decimal('2.80'),
+      total: 22.8,
+      totalAmount: new Prisma.Decimal('22.80'),
+      items: [
+        {
+          ...invoice.items[0],
+          quantity: 0.2,
+          quantityAmount: new Prisma.Decimal('0.2'),
+          total: 20,
+          totalAmount: new Prisma.Decimal('20.00'),
+          taxAmount: new Prisma.Decimal('2.80'),
+        },
+      ],
+    };
+    const simplifiedSignature = new FiscalSignatureService().sign({
+      invoiceDate: issuedAt,
+      systemEntryDate: issuedAt,
+      invoiceNo: 'FT FT2026/00002',
+      grossTotal: '100.00',
+      previousHash: signature.hash,
+    });
+    const simplifiedInvoice = {
+      ...invoice,
+      id: 'invoice-3',
+      invoiceNumber: 'FT FT2026/00002',
+      fiscalSeries: 'FT2026',
+      fiscalSequence: 2,
+      fiscalHash: simplifiedSignature.hash,
+      fiscalHashControl: simplifiedSignature.hashControl,
+      subtotal: 100,
+      subtotalAmount: new Prisma.Decimal('100.00'),
+      iva: 0,
+      ivaAmount: new Prisma.Decimal('0.00'),
+      total: 100,
+      totalAmount: new Prisma.Decimal('100.00'),
+      notes: 'IVA - Regime Simplificado',
+      items: [
+        {
+          ...invoice.items[0],
+          taxCode: 'OUT',
+          taxRate: new Prisma.Decimal('0'),
+          taxAmount: new Prisma.Decimal('0'),
+          taxExemptionCode: 'M00',
+          taxExemptionReason: 'IVA - Regime Simplificado',
+        },
+      ],
+    };
     const serializer = new SaftXmlSerializer();
     const validator = new SaftXsdValidator();
     const service = new SaftExportService(
@@ -92,7 +151,7 @@ describe('SaftExportService technical fixture', () => {
         country: 'AO',
         email: 'teste@example.ao',
       },
-      invoices: [invoice],
+      invoices: [invoice, creditNote, simplifiedInvoice],
       start: new Date('2026-01-01T00:00:00Z'),
       end: new Date('2026-12-31T00:00:00Z'),
       software: {
@@ -105,6 +164,11 @@ describe('SaftExportService technical fixture', () => {
     });
     const xml = serializer.serialize(model);
     expect(xml).toContain(signature.hash);
+    expect(xml).toContain('<DebitAmount>20.00</DebitAmount>');
+    expect(xml).toContain('<Reference>FT FT2026/00001</Reference>');
+    expect(xml).toContain('<TaxExemptionCode>M00</TaxExemptionCode>');
+    expect(model.totalCredit).toBe('200.00');
+    expect(model.totalDebit).toBe('20.00');
     expect(xml).not.toMatch(/undefined|null|NaN|Infinity/);
     const result = await validator.validate(xml);
     expect(result).toEqual({
