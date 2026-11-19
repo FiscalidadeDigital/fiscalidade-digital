@@ -493,6 +493,33 @@ describe('InvoiceService adjustment notes', () => {
     }));
   });
 
+  it('blocks adjustment notes when the source invoice has no recorded items', async () => {
+    const transaction = jest.fn();
+    const service = new InvoiceService(
+      {
+        invoice: {
+          findFirst: jest.fn().mockResolvedValue({
+            ...sourceInvoice,
+            items: [],
+          }),
+        },
+        $transaction: transaction,
+      } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(
+      service.createCreditNote('tenant-a', {
+        sourceInvoiceId: 'invoice-source',
+        reason: 'Correcção documentada',
+        items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
+      }),
+    ).rejects.toThrow('detalhe dos artigos ou serviços');
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
   it('blocks payment of a Pro Forma before any state transition', async () => {
     const updateMany = jest.fn();
     const service = new InvoiceService(

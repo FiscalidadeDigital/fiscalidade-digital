@@ -110,6 +110,12 @@ export class InvoiceService {
       );
     }
 
+    if (sourceInvoice.items.length === 0) {
+      throw new BadRequestException(
+        'Esta factura não contém o detalhe dos artigos ou serviços necessário para emitir uma nota.',
+      );
+    }
+
     const requestedLineIds = dto.items.map((item) => item.sourceInvoiceItemId);
     if (new Set(requestedLineIds).size !== requestedLineIds.length) {
       throw new BadRequestException(

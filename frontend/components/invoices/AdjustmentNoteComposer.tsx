@@ -1,12 +1,19 @@
 'use client';
 
-import { ArrowLeft, FileMinus2, FilePlus2, Loader2 } from 'lucide-react';
+import {
+  AlertTriangle,
+  ArrowLeft,
+  FileMinus2,
+  FilePlus2,
+  Loader2,
+} from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import { useAuth } from '@/context/AuthContext';
+import { hasInvoiceLineItems } from '@/lib/invoice-adjustments';
 import {
   createCreditNote,
   createDebitNote,
@@ -174,6 +181,37 @@ export default function AdjustmentNoteComposer({
           >
             {error || 'Factura não encontrada.'}
           </p>
+        </main>
+      </DashboardLayout>
+    );
+  }
+
+  if (!hasInvoiceLineItems(invoice)) {
+    return (
+      <DashboardLayout>
+        <main className="mx-auto max-w-3xl">
+          <Link
+            href={`/invoices/${invoice.id}`}
+            className="text-sm font-semibold text-fd-accent"
+          >
+            Voltar à factura
+          </Link>
+          <section
+            role="alert"
+            className="mt-6 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm leading-6 text-amber-900"
+          >
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            <div>
+              <h1 className="font-semibold">
+                Não é possível criar {label.toLowerCase()}
+              </h1>
+              <p className="mt-1">
+                Esta factura não contém o detalhe dos artigos ou serviços
+                necessário para emitir uma nota. Consulte o documento original
+                antes de continuar.
+              </p>
+            </div>
+          </section>
         </main>
       </DashboardLayout>
     );
