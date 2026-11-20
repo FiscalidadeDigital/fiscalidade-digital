@@ -18,6 +18,7 @@ import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import InvoiceManagementNav from '@/components/invoices/InvoiceManagementNav';
+import { invoicePageNeedsRecovery } from '@/lib/invoice-list-recovery';
 import {
   ConfirmDialog,
   EmptyState,
@@ -84,6 +85,7 @@ export default function InvoicesPage() {
   const [sortBy, sortDirection] = useMemo(() => sort.split(':'), [sort]);
   const canWrite = ['OWNER', 'ADMIN', 'ACCOUNTANT'].includes(user?.role ?? '');
   const canCancel = ['OWNER', 'ADMIN'].includes(user?.role ?? '');
+  const pageNeedsRecovery = invoicePageNeedsRecovery(result);
 
   useEffect(() => {
     let active = true;
@@ -297,6 +299,24 @@ export default function InvoicesPage() {
               {error}
             </div>
           )}
+          {pageNeedsRecovery && (
+            <div
+              role="status"
+              className="flex flex-wrap items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-5 py-3 text-xs font-medium text-amber-900"
+            >
+              <span>
+                Alguns documentos ainda não foram apresentados. Actualize a
+                lista para tentar novamente.
+              </span>
+              <button
+                type="button"
+                onClick={() => setReload((value) => value + 1)}
+                className="rounded-md border border-amber-300 bg-white px-3 py-1.5 font-semibold text-amber-900 hover:bg-amber-100"
+              >
+                Actualizar lista
+              </button>
+            </div>
+          )}
 
           <div className="overflow-x-auto">
             <table className="w-full min-w-[980px] border-collapse text-left">
@@ -339,7 +359,12 @@ export default function InvoicesPage() {
                               {invoice.invoiceNumber}
                             </Link>
                             <p className="mt-1 text-xs text-[var(--fd-muted)]">
-                              {documentLabels[invoice.fiscalDocumentType ?? 'FT']} ·{' '}
+                              {
+                                documentLabels[
+                                  invoice.fiscalDocumentType ?? 'FT'
+                                ]
+                              }{' '}
+                              ·{' '}
                               {new Date(invoice.issuedAt).toLocaleDateString(
                                 'pt-AO',
                               )}
@@ -405,17 +430,17 @@ export default function InvoicesPage() {
                           {invoice.status === 'PENDING' &&
                             (invoice.fiscalDocumentType ?? 'FT') === 'FT' &&
                             canWrite && (
-                            <button
-                              type="button"
-                              onClick={() =>
-                                setPendingAction({ invoice, action: 'pay' })
-                              }
-                              className="rounded-lg border border-emerald-200 p-2 text-emerald-700 hover:bg-emerald-50"
-                              aria-label={`Registar pagamento de ${invoice.invoiceNumber}`}
-                            >
-                              <CheckCircle2 className="h-4 w-4" />
-                            </button>
-                          )}
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setPendingAction({ invoice, action: 'pay' })
+                                }
+                                className="rounded-lg border border-emerald-200 p-2 text-emerald-700 hover:bg-emerald-50"
+                                aria-label={`Registar pagamento de ${invoice.invoiceNumber}`}
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                              </button>
+                            )}
                           {invoice.status === 'PENDING' && canCancel && (
                             <button
                               type="button"

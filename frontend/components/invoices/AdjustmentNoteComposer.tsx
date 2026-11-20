@@ -3,6 +3,7 @@
 import {
   AlertTriangle,
   ArrowLeft,
+  CheckCircle2,
   FileMinus2,
   FilePlus2,
   Loader2,
@@ -19,6 +20,10 @@ import {
   createDebitNote,
   getInvoice,
   getInvoiceApiError,
+  validateCreditNote,
+  validateDebitNote,
+  type AdjustmentValidation,
+  type CreateAdjustmentNoteInput,
   type Invoice,
 } from '@/services/invoice';
 
@@ -51,6 +56,10 @@ export default function AdjustmentNoteComposer({
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [validation, setValidation] = useState<AdjustmentValidation | null>(
+    null,
+  );
+  const [checkingValidation, setCheckingValidation] = useState(false);
   const canCreate = ['OWNER', 'ADMIN', 'ACCOUNTANT'].includes(
     user?.role ?? '',
   );
@@ -100,40 +109,79 @@ export default function AdjustmentNoteComposer({
     };
   }, [id]);
 
-  const selectedCount = useMemo(
-    () =>
-      Object.values(quantities).filter(
-        (quantity) => parseQuantity(quantity) !== null,
-      ).length,
-    [quantities],
-  );
+  const selectedItems = useMemo(() => {
+    if (!invoice) return [];
 
-  async function submit() {
-    if (!invoice) return;
+    return invoice.items.flatMap((item) => {
+      const quantity = parseQuantity(quantities[item.id] ?? '');
+      return quantity === null
+        ? []
+        : [{ sourceInvoiceItemId: item.id, quantity }];
+    });
+  }, [invoice, quantities]);
+
+  const adjustmentInput = useMemo<CreateAdjustmentNoteInput | null>(() => {
     const trimmedReason = reason.trim();
-    if (!trimmedReason) {
-      setError('Indique o motivo da nota.');
+    if (!invoice || !trimmedReason || selectedItems.length === 0) return null;
+
+    return {
+      sourceInvoiceId: invoice.id,
+      reason: trimmedReason,
+      items: selectedItems,
+    };
+  }, [invoice, reason, selectedItems]);
+
+  const selectedCount = selectedItems.length;
+
+  useEffect(() => {
+    if (!adjustmentInput) {
+      setValidation(null);
+      setCheckingValidation(false);
       return;
     }
 
-    const items = [] as Array<{
-      sourceInvoiceItemId: string;
-      quantity: number;
-    }>;
-    for (const item of invoice.items) {
-      const quantity = parseQuantity(quantities[item.id] ?? '');
-      if (quantity === null) continue;
-      const available = Number(item.quantityAmount ?? item.quantity);
-      if (quantity > available) {
-        setError(
-          `A quantidade de ${item.productName} não pode ultrapassar ${available}.`,
-        );
-        return;
-      }
-      items.push({ sourceInvoiceItemId: item.id, quantity });
+    let active = true;
+    setCheckingValidation(true);
+    const timer = window.setTimeout(() => {
+      const validate =
+        kind === 'credit' ? validateCreditNote : validateDebitNote;
+
+      validate(adjustmentInput)
+        .then((result) => {
+          if (active) setValidation(result);
+        })
+        .catch(() => {
+          if (active) {
+            setValidation({
+              status: 'REVIEW_REQUIRED',
+              canCreate: false,
+              message:
+                'Não foi possível concluir a validação automática. Tente novamente.',
+              checks: [],
+            });
+          }
+        })
+        .finally(() => {
+          if (active) setCheckingValidation(false);
+        });
+    }, 350);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [adjustmentInput, kind]);
+
+  async function submit() {
+    if (!adjustmentInput) {
+      setError('Indique o motivo e uma quantidade para pelo menos uma linha.');
+      return;
     }
-    if (!items.length) {
-      setError('Indique uma quantidade para pelo menos uma linha.');
+    if (!validation?.canCreate) {
+      setError(
+        validation?.message ??
+          'A validação automática precisa de ser concluída antes de emitir a nota.',
+      );
       return;
     }
 
@@ -141,11 +189,7 @@ export default function AdjustmentNoteComposer({
     setError('');
     try {
       const create = kind === 'credit' ? createCreditNote : createDebitNote;
-      const note = await create({
-        sourceInvoiceId: invoice.id,
-        reason: trimmedReason,
-        items,
-      });
+      const note = await create(adjustmentInput);
       router.replace(`/invoices/${note.id}`);
     } catch (requestError) {
       setError(
@@ -203,12 +247,12 @@ export default function AdjustmentNoteComposer({
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
             <div>
               <h1 className="font-semibold">
-                Não é possível criar {label.toLowerCase()}
+                Validação automática — recuperação necessária
               </h1>
               <p className="mt-1">
                 Esta factura não contém o detalhe dos artigos ou serviços
-                necessário para emitir uma nota. Consulte o documento original
-                antes de continuar.
+                necessário para emitir {label.toLowerCase()}. Recupere o
+                documento original e registe as linhas antes de continuar.
               </p>
             </div>
           </section>
@@ -253,6 +297,45 @@ export default function AdjustmentNoteComposer({
           seleccionada abaixo. Ela não representa, por si só, um pagamento ou
           reembolso.
         </aside>
+
+        <section
+          aria-live="polite"
+          className={`mt-5 rounded-xl border p-4 text-sm leading-6 ${
+            validation?.canCreate
+              ? 'border-emerald-200 bg-emerald-50 text-emerald-900'
+              : validation?.status === 'RECOVERY_REQUIRED'
+                ? 'border-amber-200 bg-amber-50 text-amber-900'
+                : 'border-slate-200 bg-slate-50 text-slate-800'
+          }`}
+        >
+          <div className="flex gap-3">
+            {checkingValidation ? (
+              <Loader2 className="mt-0.5 h-5 w-5 shrink-0 animate-spin" />
+            ) : validation?.canCreate ? (
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" />
+            ) : (
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" />
+            )}
+            <div>
+              <h2 className="font-semibold">Validação automática</h2>
+              <p className="mt-1">
+                {checkingValidation
+                  ? 'A confirmar os dados da nota…'
+                  : validation?.message ??
+                    'Indique o motivo e pelo menos uma quantidade para o sistema validar a nota.'}
+              </p>
+            </div>
+          </div>
+          {validation?.checks.length ? (
+            <ul className="mt-3 grid gap-1 border-t border-current/15 pt-3 text-xs sm:grid-cols-2">
+              {validation.checks.map((check) => (
+                <li key={check.label} className="flex items-center gap-2">
+                  {check.passed ? '✓' : '•'} {check.label}
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </section>
 
         {error && (
           <p
@@ -369,11 +452,20 @@ export default function AdjustmentNoteComposer({
           <button
             type="button"
             onClick={() => void submit()}
-            disabled={saving || selectedCount === 0 || !reason.trim()}
+            disabled={
+              saving ||
+              checkingValidation ||
+              !adjustmentInput ||
+              validation?.canCreate !== true
+            }
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-fd-primary px-5 py-2.5 text-sm font-semibold text-white hover:bg-fd-primary-hover disabled:opacity-50"
           >
             {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Icon className="h-4 w-4" />}
-            {saving ? 'A criar…' : `Criar ${label.toLowerCase()}`}
+            {saving
+              ? 'A criar…'
+              : checkingValidation
+                ? 'A validar…'
+                : `Criar ${label.toLowerCase()}`}
           </button>
         </div>
       </main>

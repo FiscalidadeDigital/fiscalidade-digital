@@ -1,4 +1,8 @@
 import { getSafeErrorMessage } from '@/lib/safe-error';
+import {
+  invoicePageNeedsRecovery,
+  recoverInvoicePage,
+} from '@/lib/invoice-list-recovery';
 
 import api from './api';
 import type { ElectronicOperationType, ProductUnit } from './product';
@@ -28,6 +32,16 @@ export type CreateAdjustmentNoteInput = {
   items: Array<{
     sourceInvoiceItemId: string;
     quantity: number;
+  }>;
+};
+
+export type AdjustmentValidation = {
+  status: 'VALIDATED' | 'RECOVERY_REQUIRED' | 'REVIEW_REQUIRED';
+  canCreate: boolean;
+  message: string;
+  checks: Array<{
+    label: string;
+    passed: boolean;
   }>;
 };
 
@@ -117,12 +131,16 @@ export type InvoicePage = {
   };
 };
 
-export async function createInvoice(data: CreateInvoiceInput): Promise<Invoice> {
+export async function createInvoice(
+  data: CreateInvoiceInput,
+): Promise<Invoice> {
   const response = await api.post<Invoice>('/invoice', data);
   return response.data;
 }
 
-export async function createProForma(data: CreateInvoiceInput): Promise<Invoice> {
+export async function createProForma(
+  data: CreateInvoiceInput,
+): Promise<Invoice> {
   const response = await api.post<Invoice>('/invoice/pro-forma', data);
   return response.data;
 }
@@ -134,10 +152,30 @@ export async function createCreditNote(
   return response.data;
 }
 
+export async function validateCreditNote(
+  data: CreateAdjustmentNoteInput,
+): Promise<AdjustmentValidation> {
+  const response = await api.post<AdjustmentValidation>(
+    '/invoice/credit-note/validation',
+    data,
+  );
+  return response.data;
+}
+
 export async function createDebitNote(
   data: CreateAdjustmentNoteInput,
 ): Promise<Invoice> {
   const response = await api.post<Invoice>('/invoice/debit-note', data);
+  return response.data;
+}
+
+export async function validateDebitNote(
+  data: CreateAdjustmentNoteInput,
+): Promise<AdjustmentValidation> {
+  const response = await api.post<AdjustmentValidation>(
+    '/invoice/debit-note/validation',
+    data,
+  );
   return response.data;
 }
 
@@ -158,10 +196,28 @@ export async function getInvoicePage(query: {
 }): Promise<InvoicePage> {
   const response = await api.get<InvoicePage>('/invoice', {
     params: Object.fromEntries(
-      Object.entries(query).filter(([, value]) => value !== '' && value !== undefined),
+      Object.entries(query).filter(
+        ([, value]) => value !== '' && value !== undefined,
+      ),
     ),
   });
-  return response.data;
+  const page = response.data;
+
+  if (!invoicePageNeedsRecovery(page)) return page;
+
+  try {
+    const collection = await api.get<Invoice[]>('/invoice', {
+      params: Object.fromEntries(
+        Object.entries({
+          documentType: query.documentType,
+          fiscalDocumentType: query.fiscalDocumentType,
+        }).filter(([, value]) => value !== undefined),
+      ),
+    });
+    return recoverInvoicePage(page, collection.data, query);
+  } catch {
+    return page;
+  }
 }
 
 export async function convertProForma(id: string): Promise<Invoice> {
@@ -185,7 +241,9 @@ export async function cancelInvoice(id: string): Promise<Invoice> {
 }
 
 export async function getInvoiceDashboardStats(): Promise<InvoiceDashboardStats> {
-  const response = await api.get<InvoiceDashboardStats>('/invoice/dashboard/stats');
+  const response = await api.get<InvoiceDashboardStats>(
+    '/invoice/dashboard/stats',
+  );
   return response.data;
 }
 
@@ -194,7 +252,9 @@ export async function openInvoicePdf(id: string) {
   if (!newWindow) throw new Error('O navegador bloqueou a abertura do PDF.');
 
   try {
-    const response = await api.get(`/invoice/${id}/pdf`, { responseType: 'blob' });
+    const response = await api.get(`/invoice/${id}/pdf`, {
+      responseType: 'blob',
+    });
     const blobUrl = URL.createObjectURL(
       new Blob([response.data], { type: 'application/pdf' }),
     );

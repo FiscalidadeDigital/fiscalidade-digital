@@ -8,6 +8,8 @@ describe('InvoiceController tenant paging', () => {
   const service = {
     findPage: jest.fn(),
     findAll: jest.fn(),
+    validateCreditNote: jest.fn(),
+    validateDebitNote: jest.fn(),
   } as unknown as InvoiceService;
   const controller = new InvoiceController(service);
   const user: CurrentUserPayload = {
@@ -33,5 +35,24 @@ describe('InvoiceController tenant paging', () => {
       'tenant-a',
       expect.objectContaining({ page: 1, status: 'PENDING' }),
     );
+  });
+
+  it('runs note validation in the authenticated tenant', () => {
+    const dto = {
+      sourceInvoiceId: 'd0e5f8f5-3d89-43b1-ad30-cdc11fc26f0c',
+      reason: 'Devolução parcial',
+      items: [
+        {
+          sourceInvoiceItemId: 'e9a2f6a1-50cb-4c71-87cb-4199f4a058bc',
+          quantity: 1,
+        },
+      ],
+    };
+
+    controller.validateCreditNote(user, dto);
+    controller.validateDebitNote(user, dto);
+
+    expect(service.validateCreditNote).toHaveBeenCalledWith('tenant-a', dto);
+    expect(service.validateDebitNote).toHaveBeenCalledWith('tenant-a', dto);
   });
 });

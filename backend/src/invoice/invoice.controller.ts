@@ -74,6 +74,15 @@ export class InvoiceController {
     return this.invoiceService.createCreditNote(user.tenantId, dto);
   }
 
+  @Post('credit-note/validation')
+  @Roles(...INVOICE_WRITE_ROLES)
+  validateCreditNote(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.invoiceService.validateCreditNote(user.tenantId, dto);
+  }
+
   @Post('debit-note')
   @Roles(...INVOICE_WRITE_ROLES)
   createDebitNote(
@@ -81,6 +90,15 @@ export class InvoiceController {
     @Body() dto: CreateAdjustmentNoteDto,
   ) {
     return this.invoiceService.createDebitNote(user.tenantId, dto);
+  }
+
+  @Post('debit-note/validation')
+  @Roles(...INVOICE_WRITE_ROLES)
+  validateDebitNote(
+    @CurrentUser() user: CurrentUserPayload,
+    @Body() dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.invoiceService.validateDebitNote(user.tenantId, dto);
   }
 
   @Post(':id/convert')

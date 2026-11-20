@@ -377,6 +377,8 @@ describe('InvoiceService adjustment notes', () => {
     ivaAmount: new Prisma.Decimal('14.00'),
     withholdingTax: 0,
     withholdingTaxAmount: new Prisma.Decimal('0.00'),
+    total: 114,
+    totalAmount: new Prisma.Decimal('114.00'),
     taxRuleVersion: 'AO-CIVA-LEI-14-23',
     documentType: 'NORMAL',
     fiscalDocumentType: 'FT',
@@ -390,6 +392,8 @@ describe('InvoiceService adjustment notes', () => {
         quantityAmount: new Prisma.Decimal('2.0000'),
         unitPrice: 50,
         unitPriceAmount: new Prisma.Decimal('50.00'),
+        total: 100,
+        totalAmount: new Prisma.Decimal('100.00'),
         unit: 'SERVICO',
         taxType: 'IVA',
         taxCode: 'NOR',
@@ -473,6 +477,64 @@ describe('InvoiceService adjustment notes', () => {
       invoiceNo: expect.stringMatching(/^NC NC\d{4}\/\d{5}$/),
       grossTotal: '57.00',
     }));
+  });
+
+  it('approves a complete note automatically before it is issued', async () => {
+    const findFirst = jest.fn().mockResolvedValue(sourceInvoice);
+    const service = new InvoiceService(
+      { invoice: { findFirst } } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(
+      service.validateCreditNote('tenant-a', {
+        sourceInvoiceId: 'invoice-source',
+        reason: 'Devolução parcial',
+        items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
+      }),
+    ).resolves.toEqual(
+      expect.objectContaining({
+        status: 'VALIDATED',
+        canCreate: true,
+        checks: expect.arrayContaining([
+          expect.objectContaining({
+            label: 'Valores e impostos confirmados',
+            passed: true,
+          }),
+        ]),
+      }),
+    );
+  });
+
+  it('requires recovery instead of issuing a note without source lines', async () => {
+    const transaction = jest.fn();
+    const service = new InvoiceService(
+      {
+        invoice: {
+          findFirst: jest.fn().mockResolvedValue({
+            ...sourceInvoice,
+            items: [],
+          }),
+        },
+        $transaction: transaction,
+      } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(
+      service.validateDebitNote('tenant-a', {
+        sourceInvoiceId: 'invoice-source',
+        reason: 'Acerto documentado',
+        items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
+      }),
+    ).resolves.toMatchObject({
+      status: 'RECOVERY_REQUIRED',
+      canCreate: false,
+      message: expect.stringContaining('detalhe dos artigos ou serviços'),
+    });
+    expect(transaction).not.toHaveBeenCalled();
   });
 
   it('does not disclose or use an invoice from another tenant as a note source', async () => {

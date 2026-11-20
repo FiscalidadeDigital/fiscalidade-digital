@@ -39,6 +39,35 @@ type FiscalDocumentIdentity = {
   fiscalSeries: string;
   fiscalSequence: number;
 };
+type AdjustmentValidationStatus =
+  | 'VALIDATED'
+  | 'RECOVERY_REQUIRED'
+  | 'REVIEW_REQUIRED';
+type AdjustmentValidation = {
+  status: AdjustmentValidationStatus;
+  canCreate: boolean;
+  message: string;
+  checks: Array<{
+    label: string;
+    passed: boolean;
+  }>;
+};
+type AdjustmentSourceInvoice = Prisma.InvoiceGetPayload<{
+  include: { items: true };
+}>;
+type AdjustmentNoteLine = {
+  source: AdjustmentSourceInvoice['items'][number];
+  quantity: Prisma.Decimal;
+  unitPrice: Prisma.Decimal;
+  total: Prisma.Decimal;
+  taxRate: Prisma.Decimal;
+  taxAmount: Prisma.Decimal;
+};
+type AdjustmentPreparation = {
+  validation: AdjustmentValidation;
+  sourceInvoice?: AdjustmentSourceInvoice;
+  noteLines?: AdjustmentNoteLine[];
+};
 
 // The SAF-T AO code list associates M00 with the invoice mention required for
 // the simplified IVA regime. OUT distinguishes that treatment from a normal
@@ -81,6 +110,13 @@ export class InvoiceService {
     return this.createAdjustmentNote(tenantId, dto, 'NC');
   }
 
+  async validateCreditNote(
+    tenantId: string,
+    dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.validateAdjustmentNote(tenantId, dto);
+  }
+
   async createDebitNote(
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
@@ -88,112 +124,44 @@ export class InvoiceService {
     return this.createAdjustmentNote(tenantId, dto, 'ND');
   }
 
+  async validateDebitNote(
+    tenantId: string,
+    dto: CreateAdjustmentNoteDto,
+  ) {
+    return this.validateAdjustmentNote(tenantId, dto);
+  }
+
+  private async validateAdjustmentNote(
+    tenantId: string,
+    dto: CreateAdjustmentNoteDto,
+  ): Promise<AdjustmentValidation> {
+    const preparation = await this.prepareAdjustmentNote(
+      tenantId,
+      dto,
+    );
+
+    return preparation.validation;
+  }
+
   private async createAdjustmentNote(
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
     documentCode: AdjustmentDocumentCode,
   ) {
-    const sourceInvoice = await this.prisma.invoice.findFirst({
-      where: {
-        id: dto.sourceInvoiceId,
-        tenantId,
-        documentType: InvoiceDocumentType.NORMAL,
-        fiscalDocumentType: 'FT',
-        status: { not: 'CANCELLED' },
-      },
-      include: { items: true },
-    });
-
-    if (!sourceInvoice) {
-      throw new NotFoundException(
-        'A factura de origem não está disponível para rectificação.',
-      );
-    }
-
-    if (sourceInvoice.items.length === 0) {
-      throw new BadRequestException(
-        'Esta factura não contém o detalhe dos artigos ou serviços necessário para emitir uma nota.',
-      );
-    }
-
-    const requestedLineIds = dto.items.map((item) => item.sourceInvoiceItemId);
-    if (new Set(requestedLineIds).size !== requestedLineIds.length) {
-      throw new BadRequestException(
-        'Cada linha da factura de origem só pode ser indicada uma vez.',
-      );
-    }
-
-    const sourceItemsById = new Map(
-      sourceInvoice.items.map((item) => [item.id, item]),
+    const preparation = await this.prepareAdjustmentNote(
+      tenantId,
+      dto,
     );
-    const noteLines = dto.items.map((requested) => {
-      const source = sourceItemsById.get(requested.sourceInvoiceItemId);
-      if (!source) {
-        throw new BadRequestException(
-          'Uma das linhas indicadas não pertence à factura de origem.',
-        );
-      }
+    if (!preparation.validation.canCreate) {
+      throw new BadRequestException(preparation.validation.message);
+    }
 
-      if (
-        !source.taxType ||
-        !source.taxCode ||
-        source.taxRate === null ||
-        source.taxAmount === null ||
-        !source.electronicOperationType
-      ) {
-        throw new BadRequestException(
-          'A factura de origem não possui informação fiscal suficiente para emitir esta nota.',
-        );
-      }
-
-      if (
-        source.taxRate.isZero() &&
-        (!source.taxExemptionCode || !source.taxExemptionReason)
-      ) {
-        throw new BadRequestException(
-          'A factura de origem precisa de revisão fiscal antes de emitir esta nota.',
-        );
-      }
-
-      const quantity = new Prisma.Decimal(String(requested.quantity)).toDecimalPlaces(
-        4,
-        Prisma.Decimal.ROUND_HALF_UP,
+    const { sourceInvoice, noteLines } = preparation;
+    if (!sourceInvoice || !noteLines) {
+      throw new BadRequestException(
+        'A validação automática precisa de ser concluída antes de emitir a nota.',
       );
-      const sourceQuantity = this.decimal(
-        source.quantityAmount,
-        source.quantity,
-      ).toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP);
-      if (quantity.lessThanOrEqualTo(0) || quantity.greaterThan(sourceQuantity)) {
-        throw new BadRequestException(
-          'A quantidade da nota deve ser positiva e não pode exceder a linha de origem.',
-        );
-      }
-
-      const unitPrice = this.decimal(
-        source.unitPriceAmount,
-        source.unitPrice,
-      ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-      const total = quantity
-        .mul(unitPrice)
-        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-      const taxRate = new Prisma.Decimal(source.taxRate.toString()).toDecimalPlaces(
-        6,
-        Prisma.Decimal.ROUND_HALF_UP,
-      );
-      const taxAmount = total
-        .mul(taxRate)
-        .div(100)
-        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-
-      return {
-        source,
-        quantity,
-        unitPrice,
-        total,
-        taxRate,
-        taxAmount,
-      };
-    });
+    }
 
     const subtotal = noteLines
       .reduce((sum, line) => sum.add(line.total), new Prisma.Decimal(0))
@@ -364,6 +332,331 @@ export class InvoiceService {
 
       throw error;
     }
+  }
+
+  private async prepareAdjustmentNote(
+    tenantId: string,
+    dto: CreateAdjustmentNoteDto,
+  ): Promise<AdjustmentPreparation> {
+    const sourceInvoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: dto.sourceInvoiceId,
+        tenantId,
+        documentType: InvoiceDocumentType.NORMAL,
+        fiscalDocumentType: 'FT',
+        status: { not: 'CANCELLED' },
+      },
+      include: { items: true },
+    });
+
+    if (!sourceInvoice) {
+      throw new NotFoundException(
+        'A factura de origem não está disponível para rectificação.',
+      );
+    }
+
+    if (sourceInvoice.items.length === 0) {
+      return this.adjustmentRecoveryRequired(
+        sourceInvoice,
+        'Esta factura não contém o detalhe dos artigos ou serviços necessário. Recupere o documento original antes de emitir uma nota.',
+        false,
+        false,
+      );
+    }
+
+    const sourceDetailsComplete = sourceInvoice.items.every((item) =>
+      this.hasCompleteAdjustmentLineDetails(item),
+    );
+    const sourceValuesComplete =
+      sourceDetailsComplete && this.hasConsistentAdjustmentSourceAmounts(sourceInvoice);
+
+    if (!sourceValuesComplete) {
+      return this.adjustmentRecoveryRequired(
+        sourceInvoice,
+        'A validação automática identificou dados incompletos na factura de origem. Recupere o documento original antes de emitir a nota.',
+        sourceDetailsComplete,
+        sourceValuesComplete,
+      );
+    }
+
+    const requestedItems = Array.isArray(dto.items) ? dto.items : [];
+    const requestedLineIds = requestedItems.map(
+      (item) => item.sourceInvoiceItemId,
+    );
+    if (new Set(requestedLineIds).size !== requestedLineIds.length) {
+      return this.adjustmentReviewRequired(
+        sourceInvoice,
+        'A validação automática não aprovou a nota porque uma linha foi indicada mais de uma vez.',
+        sourceDetailsComplete,
+        sourceValuesComplete,
+        false,
+        Boolean(dto.reason?.trim()),
+      );
+    }
+
+    const sourceItemsById = new Map(
+      sourceInvoice.items.map((item) => [item.id, item]),
+    );
+    const noteLines: AdjustmentNoteLine[] = [];
+    let quantitiesValid = requestedItems.length > 0;
+    for (const requested of requestedItems) {
+      const source = sourceItemsById.get(requested.sourceInvoiceItemId);
+      if (!source) {
+        quantitiesValid = false;
+        continue;
+      }
+
+      const requestedQuantity = Number(requested.quantity);
+      if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
+        quantitiesValid = false;
+        continue;
+      }
+
+      const quantity = new Prisma.Decimal(String(requestedQuantity)).toDecimalPlaces(
+        4,
+        Prisma.Decimal.ROUND_HALF_UP,
+      );
+      const sourceQuantity = this.decimal(
+        source.quantityAmount,
+        source.quantity,
+      ).toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP);
+      if (quantity.greaterThan(sourceQuantity)) {
+        quantitiesValid = false;
+        continue;
+      }
+
+      const unitPrice = this.decimal(
+        source.unitPriceAmount,
+        source.unitPrice,
+      ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      const total = quantity
+        .mul(unitPrice)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      const taxRate = new Prisma.Decimal(source.taxRate!.toString()).toDecimalPlaces(
+        6,
+        Prisma.Decimal.ROUND_HALF_UP,
+      );
+      const taxAmount = total
+        .mul(taxRate)
+        .div(100)
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+      noteLines.push({
+        source,
+        quantity,
+        unitPrice,
+        total,
+        taxRate,
+        taxAmount,
+      });
+    }
+
+    const reasonProvided = Boolean(dto.reason?.trim());
+    if (!quantitiesValid || !reasonProvided) {
+      return this.adjustmentReviewRequired(
+        sourceInvoice,
+        'A validação automática não aprovou a nota. Revise as quantidades e o motivo indicado.',
+        sourceDetailsComplete,
+        sourceValuesComplete,
+        quantitiesValid,
+        reasonProvided,
+      );
+    }
+
+    return {
+      sourceInvoice,
+      noteLines,
+      validation: this.adjustmentValidation(
+        'VALIDATED',
+        'Validação automática concluída. A nota pode ser emitida.',
+        true,
+        sourceDetailsComplete,
+        sourceValuesComplete,
+        true,
+        true,
+      ),
+    };
+  }
+
+  private adjustmentRecoveryRequired(
+    sourceInvoice: AdjustmentSourceInvoice,
+    message: string,
+    sourceDetailsComplete: boolean,
+    sourceValuesComplete: boolean,
+  ): AdjustmentPreparation {
+    return {
+      sourceInvoice,
+      validation: this.adjustmentValidation(
+        'RECOVERY_REQUIRED',
+        message,
+        false,
+        sourceDetailsComplete,
+        sourceValuesComplete,
+        false,
+        false,
+      ),
+    };
+  }
+
+  private adjustmentReviewRequired(
+    sourceInvoice: AdjustmentSourceInvoice,
+    message: string,
+    sourceDetailsComplete: boolean,
+    sourceValuesComplete: boolean,
+    quantitiesValid: boolean,
+    reasonProvided: boolean,
+  ): AdjustmentPreparation {
+    return {
+      sourceInvoice,
+      validation: this.adjustmentValidation(
+        'REVIEW_REQUIRED',
+        message,
+        false,
+        sourceDetailsComplete,
+        sourceValuesComplete,
+        quantitiesValid,
+        reasonProvided,
+      ),
+    };
+  }
+
+  private adjustmentValidation(
+    status: AdjustmentValidationStatus,
+    message: string,
+    canCreate: boolean,
+    sourceDetailsComplete: boolean,
+    sourceValuesComplete: boolean,
+    quantitiesValid: boolean,
+    reasonProvided: boolean,
+  ): AdjustmentValidation {
+    return {
+      status,
+      canCreate,
+      message,
+      checks: [
+        { label: 'Factura de origem confirmada', passed: true },
+        {
+          label: 'Detalhe de artigos e serviços confirmado',
+          passed: sourceDetailsComplete,
+        },
+        {
+          label: 'Valores e impostos confirmados',
+          passed: sourceValuesComplete,
+        },
+        { label: 'Quantidades confirmadas', passed: quantitiesValid },
+        { label: 'Motivo da rectificação informado', passed: reasonProvided },
+      ],
+    };
+  }
+
+  private hasCompleteAdjustmentLineDetails(
+    item: AdjustmentSourceInvoice['items'][number],
+  ): boolean {
+    if (
+      !item.productName?.trim() ||
+      !item.unit?.trim() ||
+      !item.taxType ||
+      !item.taxCode ||
+      item.taxRate === null ||
+      item.taxAmount === null ||
+      !item.electronicOperationType?.trim() ||
+      !this.hasRecordedAmount(item.quantityAmount, item.quantity) ||
+      !this.hasRecordedAmount(item.unitPriceAmount, item.unitPrice) ||
+      !this.hasRecordedAmount(item.totalAmount, item.total)
+    ) {
+      return false;
+    }
+
+    const quantity = this.decimal(item.quantityAmount, item.quantity);
+    const unitPrice = this.decimal(item.unitPriceAmount, item.unitPrice);
+    const total = this.decimal(item.totalAmount, item.total);
+    const taxRate = new Prisma.Decimal(item.taxRate.toString());
+    const taxAmount = new Prisma.Decimal(item.taxAmount.toString());
+
+    if (quantity.lessThanOrEqualTo(0) || unitPrice.lessThan(0)) {
+      return false;
+    }
+
+    if (
+      !this.sameMoney(
+        quantity.mul(unitPrice).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+        total,
+      ) ||
+      !this.sameMoney(
+        total
+          .mul(taxRate)
+          .div(100)
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP),
+        taxAmount,
+      )
+    ) {
+      return false;
+    }
+
+    return !(
+      taxRate.isZero() &&
+      (!item.taxExemptionCode?.trim() || !item.taxExemptionReason?.trim())
+    );
+  }
+
+  private hasConsistentAdjustmentSourceAmounts(
+    sourceInvoice: AdjustmentSourceInvoice,
+  ): boolean {
+    if (
+      !this.hasRecordedAmount(sourceInvoice.subtotalAmount, sourceInvoice.subtotal) ||
+      !this.hasRecordedAmount(sourceInvoice.ivaAmount, sourceInvoice.iva) ||
+      !this.hasRecordedAmount(
+        sourceInvoice.withholdingTaxAmount,
+        sourceInvoice.withholdingTax,
+      ) ||
+      !this.hasRecordedAmount(sourceInvoice.totalAmount, sourceInvoice.total)
+    ) {
+      return false;
+    }
+
+    const linesSubtotal = sourceInvoice.items.reduce(
+      (sum, item) => sum.add(this.decimal(item.totalAmount, item.total)),
+      new Prisma.Decimal(0),
+    );
+    const linesIva = sourceInvoice.items.reduce(
+      (sum, item) =>
+        sum.add(new Prisma.Decimal(item.taxAmount?.toString() ?? '0')),
+      new Prisma.Decimal(0),
+    );
+    const subtotal = this.decimal(
+      sourceInvoice.subtotalAmount,
+      sourceInvoice.subtotal,
+    );
+    const iva = this.decimal(sourceInvoice.ivaAmount, sourceInvoice.iva);
+    const withholding = this.decimal(
+      sourceInvoice.withholdingTaxAmount,
+      sourceInvoice.withholdingTax,
+    );
+    const total = this.decimal(sourceInvoice.totalAmount, sourceInvoice.total);
+
+    return (
+      this.sameMoney(linesSubtotal, subtotal) &&
+      this.sameMoney(linesIva, iva) &&
+      this.sameMoney(subtotal.add(iva).sub(withholding), total)
+    );
+  }
+
+  private hasRecordedAmount(
+    exactValue: Prisma.Decimal | null | undefined,
+    legacyValue: number | null | undefined,
+  ): boolean {
+    if (exactValue !== null && exactValue !== undefined) {
+      return exactValue.isFinite();
+    }
+
+    return typeof legacyValue === 'number' && Number.isFinite(legacyValue);
+  }
+
+  private sameMoney(left: Prisma.Decimal, right: Prisma.Decimal): boolean {
+    return left
+      .sub(right)
+      .abs()
+      .lessThanOrEqualTo(new Prisma.Decimal('0.01'));
   }
 
   async convertProForma(tenantId: string, proFormaId: string) {
