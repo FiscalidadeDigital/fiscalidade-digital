@@ -65,6 +65,7 @@ As regras fiscais que não podem ser confirmadas com os dados existentes não se
 ## Estado do Git e deploy
 
 - Commit local preparado: `1dc01e8` (`fix(fiscal): strengthen invoice adjustments`).
-- A pré-publicação autorizada será solicitada a partir da branch `codex/fiscal-publication-20261119` após esta validação final.
+- A branch `codex/fiscal-publication-20261119` foi enviada para solicitar a pré-publicação autorizada.
+- A confirmação do estado no painel de publicação não ficou disponível nesta sessão; a pré-publicação não é declarada concluída sem essa confirmação.
 - A migração não foi aplicada a qualquer base de dados.
 - Produção exige nova autorização explícita para este conjunto de alterações e confirmação do plano de reversão.
