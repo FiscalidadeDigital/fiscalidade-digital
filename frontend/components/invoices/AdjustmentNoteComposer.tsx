@@ -42,6 +42,28 @@ function parseQuantity(value: string) {
   return Number.isFinite(quantity) && quantity > 0 ? quantity : null;
 }
 
+function parseUnitPrice(value: string) {
+  const normalized = value.trim().replace(',', '.');
+  if (!/^\d+(?:\.\d{1,2})?$/.test(normalized)) return null;
+  const unitPrice = Number(normalized);
+  return Number.isFinite(unitPrice) && unitPrice > 0 ? unitPrice : null;
+}
+
+function createOperationId() {
+  if (typeof globalThis.crypto?.randomUUID === 'function') {
+    return globalThis.crypto.randomUUID();
+  }
+
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(
+    /[xy]/g,
+    (character) => {
+      const random = Math.floor(Math.random() * 16);
+      const value = character === 'x' ? random : (random & 0x3) | 0x8;
+      return value.toString(16);
+    },
+  );
+}
+
 export default function AdjustmentNoteComposer({
   kind,
 }: {
@@ -52,6 +74,8 @@ export default function AdjustmentNoteComposer({
   const { user, initialized } = useAuth();
   const [invoice, setInvoice] = useState<Invoice | null>(null);
   const [quantities, setQuantities] = useState<Record<string, string>>({});
+  const [unitPrices, setUnitPrices] = useState<Record<string, string>>({});
+  const [operationId] = useState(createOperationId);
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -91,6 +115,14 @@ export default function AdjustmentNoteComposer({
         setQuantities(
           Object.fromEntries(data.items.map((item) => [item.id, ''])),
         );
+        setUnitPrices(
+          Object.fromEntries(
+            data.items.map((item) => [
+              item.id,
+              String(item.unitPriceAmount ?? item.unitPrice),
+            ]),
+          ),
+        );
       })
       .catch((requestError) => {
         if (active)
@@ -114,24 +146,34 @@ export default function AdjustmentNoteComposer({
 
     return invoice.items.flatMap((item) => {
       const quantity = parseQuantity(quantities[item.id] ?? '');
-      return quantity === null
+      const unitPrice = parseUnitPrice(unitPrices[item.id] ?? '');
+      return quantity === null || unitPrice === null
         ? []
-        : [{ sourceInvoiceItemId: item.id, quantity }];
+        : [{ sourceInvoiceItemId: item.id, quantity, unitPrice }];
     });
-  }, [invoice, quantities]);
+  }, [invoice, quantities, unitPrices]);
 
   const adjustmentInput = useMemo<CreateAdjustmentNoteInput | null>(() => {
     const trimmedReason = reason.trim();
     if (!invoice || !trimmedReason || selectedItems.length === 0) return null;
 
     return {
+      operationId,
       sourceInvoiceId: invoice.id,
       reason: trimmedReason,
       items: selectedItems,
     };
-  }, [invoice, reason, selectedItems]);
+  }, [invoice, operationId, reason, selectedItems]);
 
   const selectedCount = selectedItems.length;
+  const selectedSubtotal = useMemo(
+    () =>
+      selectedItems.reduce(
+        (total, item) => total + item.quantity * (item.unitPrice ?? 0),
+        0,
+      ),
+    [selectedItems],
+  );
 
   useEffect(() => {
     if (!adjustmentInput) {
@@ -252,7 +294,9 @@ export default function AdjustmentNoteComposer({
               <p className="mt-1">
                 Esta factura não contém o detalhe dos artigos ou serviços
                 necessário para emitir {label.toLowerCase()}. Recupere o
-                documento original e registe as linhas antes de continuar.
+                documento original ou solicite a validação do respectivo
+                arquivo antes de continuar. A factura já emitida não será
+                alterada.
               </p>
             </div>
           </section>
@@ -352,23 +396,36 @@ export default function AdjustmentNoteComposer({
               Linhas a corrigir
             </h2>
             <p className="mt-1 text-sm text-[var(--fd-text-secondary)]">
-              Indique somente as quantidades abrangidas pela nota.
+              {kind === 'credit'
+                ? 'Indique a quantidade e o valor a creditar. O sistema confirma o saldo ainda disponível antes da emissão.'
+                : 'Indique a quantidade e o valor adicional por unidade. O sistema confirma a origem, os impostos e o cálculo antes da emissão.'}
             </p>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[760px] text-left text-sm">
+            <table className="w-full min-w-[900px] text-left text-sm">
               <thead className="bg-[var(--fd-table-header)] text-xs uppercase tracking-[0.08em] text-[var(--fd-muted)]">
                 <tr>
                   <th className="px-5 py-3">Descrição</th>
                   <th className="px-3 py-3 text-right">Disponível</th>
-                  <th className="px-3 py-3 text-right">Preço</th>
+                  <th className="px-3 py-3 text-right">Preço na factura</th>
+                  <th className="px-3 py-3 text-right">
+                    {kind === 'credit'
+                      ? 'Valor a creditar / un.'
+                      : 'Valor adicional / un.'}
+                  </th>
                   <th className="px-3 py-3 text-right">Quantidade da nota</th>
-                  <th className="px-5 py-3 text-right">Valor de referência</th>
+                  <th className="px-5 py-3 text-right">Valor da nota</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[var(--fd-border)]">
                 {invoice.items.map((item) => {
                   const available = Number(item.quantityAmount ?? item.quantity);
+                  const selectedQuantity = parseQuantity(quantities[item.id] ?? '');
+                  const selectedUnitPrice = parseUnitPrice(unitPrices[item.id] ?? '');
+                  const lineTotal =
+                    selectedQuantity !== null && selectedUnitPrice !== null
+                      ? selectedQuantity * selectedUnitPrice
+                      : null;
                   return (
                     <tr key={item.id}>
                       <td className="px-5 py-4 font-medium text-[var(--fd-text-primary)]">
@@ -379,6 +436,25 @@ export default function AdjustmentNoteComposer({
                       </td>
                       <td className="px-3 py-4 text-right tabular-nums text-[var(--fd-text-secondary)]">
                         {money.format(Number(item.unitPriceAmount ?? item.unitPrice))}
+                      </td>
+                      <td className="px-3 py-4 text-right">
+                        <input
+                          value={unitPrices[item.id] ?? ''}
+                          onChange={(event) =>
+                            setUnitPrices((current) => ({
+                              ...current,
+                              [item.id]: event.target.value,
+                            }))
+                          }
+                          inputMode="decimal"
+                          placeholder="0,00"
+                          aria-label={`${
+                            kind === 'credit'
+                              ? 'Valor a creditar'
+                              : 'Valor adicional'
+                          } de ${item.productName}`}
+                          className="w-32 rounded-lg border border-[var(--fd-border)] bg-[var(--fd-input)] px-3 py-2 text-right tabular-nums outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
+                        />
                       </td>
                       <td className="px-3 py-4 text-right">
                         <input
@@ -396,7 +472,7 @@ export default function AdjustmentNoteComposer({
                         />
                       </td>
                       <td className="px-5 py-4 text-right font-semibold tabular-nums text-[var(--fd-text-primary)]">
-                        {money.format(Number(item.totalAmount ?? item.total))}
+                        {lineTotal === null ? '—' : money.format(lineTotal)}
                       </td>
                     </tr>
                   );
@@ -431,6 +507,14 @@ export default function AdjustmentNoteComposer({
               <div className="flex justify-between gap-4">
                 <dt className="text-[var(--fd-text-secondary)]">Linhas seleccionadas</dt>
                 <dd className="font-medium">{selectedCount}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[var(--fd-text-secondary)]">
+                  Valor da nota antes de impostos
+                </dt>
+                <dd className="font-medium tabular-nums">
+                  {money.format(selectedSubtotal)}
+                </dd>
               </div>
               <div className="flex justify-between gap-4 border-t border-[var(--fd-border)] pt-3">
                 <dt className="text-[var(--fd-text-secondary)]">Cliente</dt>

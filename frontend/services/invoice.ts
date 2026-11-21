@@ -18,6 +18,7 @@ export type InvoiceItemInput = {
 
 export type CreateInvoiceInput = {
   clientId: string;
+  dueDate?: string;
   notes?: string;
   items: InvoiceItemInput[];
 };
@@ -27,11 +28,13 @@ export type InvoiceDocumentType = 'NORMAL' | 'PRO_FORMA';
 export type FiscalDocumentType = 'FT' | 'NC' | 'ND';
 
 export type CreateAdjustmentNoteInput = {
+  operationId: string;
   sourceInvoiceId: string;
   reason: string;
   items: Array<{
     sourceInvoiceItemId: string;
     quantity: number;
+    unitPrice?: number;
   }>;
 };
 
@@ -68,6 +71,18 @@ export type Invoice = {
     invoiceNumber: string;
     fiscalDocumentType?: FiscalDocumentType | null;
   } | null;
+  rectificationNotes?: Array<{
+    id: string;
+    invoiceNumber: string;
+    fiscalDocumentType?: FiscalDocumentType | null;
+    status: InvoiceStatus;
+    total: number;
+    totalAmount?: string | null;
+    issuedAt: string;
+    notes?: string | null;
+    adjustmentValidationStatus?: string | null;
+    adjustmentValidatedAt?: string | null;
+  }>;
   sourceProFormaId?: string | null;
   convertedInvoice?: { id: string; invoiceNumber: string } | null;
   status: InvoiceStatus;
@@ -95,6 +110,7 @@ export type Invoice = {
     unit: ProductUnit;
     taxRate?: string | null;
     electronicOperationType?: ElectronicOperationType | null;
+    sourceInvoiceItemId?: string | null;
   }>;
 };
 

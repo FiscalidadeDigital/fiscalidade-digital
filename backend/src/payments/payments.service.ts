@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -216,76 +217,19 @@ export class PaymentsService {
       );
     }
 
-    /*
-     * ========================================================
-     * DECLARAÇÃO
-     * ========================================================
-     */
+    const amount =
+      this.normalizePaymentAmount(
+        dto.amount,
+      );
 
-    let declaration:
-      | {
-          id: string;
-          tenantId: string;
-          taxType: TaxType;
-          period: string;
-          declaredAmount: number;
-          paidAmount: number;
-          status: DeclarationStatus;
-        }
-      | null = null;
+    const reference =
+      dto.reference?.trim() ||
+      null;
 
-    if (dto.declarationId) {
-      declaration =
-        await this.prisma.taxDeclaration.findFirst(
-          {
-            where: {
-              id: dto.declarationId,
-              tenantId,
-            },
-          },
-        );
-
-      if (!declaration) {
-        throw new NotFoundException(
-          'Declaração fiscal não encontrada.',
-        );
-      }
-
-      /*
-       * Evita associar um pagamento de IVA,
-       * por exemplo, a uma declaração de IRT.
-       */
-
-      if (
-        declaration.taxType !==
-        dto.taxType
-      ) {
-        throw new BadRequestException(
-          'O tipo de imposto do pagamento não corresponde à declaração.',
-        );
-      }
-
-      /*
-       * Não permite pagar acima do valor
-       * declarado.
-       */
-
-      const remaining =
-        Math.max(
-          declaration.declaredAmount -
-            declaration.paidAmount,
-          0,
-        );
-
-      if (
-        dto.amount >
-        remaining
-      ) {
-        throw new BadRequestException(
-          `O valor do pagamento (${dto.amount}) excede o saldo da declaração (${remaining}).`,
-        );
-      }
-    }
+    const paidAt =
+      this.resolvePaymentDate(
+        dto.paidAt,
+      );
 
     /*
      * ========================================================
@@ -296,96 +240,181 @@ export class PaymentsService {
     const result =
       await this.prisma.$transaction(
         async (tx) => {
-          const payment =
-            await tx.taxPayment.create(
-              {
-                data: {
+          /*
+           * O saldo é sempre relido dentro da transação. O bloqueio
+           * serializa pagamentos concorrentes para a mesma declaração e
+           * protege tentativas repetidas com a mesma referência.
+           */
+          const lockScopes = [
+            dto.declarationId
+              ? `tax-declaration:${tenantId}:${dto.declarationId}`
+              : null,
+            reference
+              ? `tax-payment-reference:${tenantId}:${reference}`
+              : null,
+          ]
+            .filter((scope): scope is string => Boolean(scope))
+            .sort();
+
+          for (const lockScope of lockScopes) {
+            await tx.$queryRaw`
+              SELECT pg_advisory_xact_lock(
+                hashtextextended(${lockScope}, 0)
+              )::text AS lock
+            `;
+          }
+
+          /*
+           * A referência identifica o comprovativo externo. Uma repetição
+           * exacta devolve o pagamento já confirmado; uma referência usada
+           * com outros valores é recusada antes de afectar os totais.
+           */
+          if (reference) {
+            const existing =
+              await tx.taxPayment.findFirst({
+                where: {
                   tenantId,
-
-                  declarationId:
-                    dto.declarationId ??
-                    null,
-
-                  taxType:
-                    dto.taxType,
-
-                  amount:
-                    dto.amount,
-
-                  reference:
-                    dto.reference ??
-                    null,
-
-                  paymentMethod:
-                    dto.paymentMethod ??
-                    null,
-
-                  paidAt:
-                    dto.paidAt
-                      ? new Date(
-                          dto.paidAt,
-                        )
-                      : new Date(),
+                  reference,
                 },
-
                 include: {
                   declaration: true,
                 },
-              },
-            );
+              });
 
-          /*
-           * ==================================================
-           * ATUALIZAR DECLARAÇÃO
-           * ==================================================
-           */
+            if (existing) {
+              if (
+                existing.taxType !==
+                  dto.taxType ||
+                existing.declarationId !==
+                  (dto.declarationId ?? null) ||
+                this.normalizeStoredAmount(
+                  existing.amount,
+                ) !== amount
+              ) {
+                throw new ConflictException(
+                  'A referência de pagamento já está associada a outro registo.',
+                );
+              }
 
-          if (
-            dto.declarationId
-          ) {
-            const current =
-              declaration!;
-
-            const newPaidAmount =
-              current.paidAmount +
-              dto.amount;
-
-            let status:
-              | DeclarationStatus =
-              DeclarationStatus.PARTIAL;
-
-            if (
-              newPaidAmount >=
-              current.declaredAmount
-            ) {
-              status =
-                DeclarationStatus.PAID;
-            } else {
-              status =
-                DeclarationStatus.PARTIAL;
+              return existing;
             }
-
-            await tx.taxDeclaration.update(
-              {
-                where: {
-                  id:
-                    dto.declarationId,
-                },
-
-                data: {
-                  paidAmount:
-                    newPaidAmount,
-
-                  status,
-
-                  paymentDate:
-                    new Date(),
-                },
-              },
-            );
           }
 
-          return payment;
+          let declaration:
+            | {
+                id: string;
+                taxType: TaxType;
+                declaredAmount: number;
+                paidAmount: number;
+              }
+            | null = null;
+
+          if (dto.declarationId) {
+            declaration =
+              await tx.taxDeclaration.findFirst({
+                where: {
+                  id: dto.declarationId,
+                  tenantId,
+                },
+              });
+
+            if (!declaration) {
+              throw new NotFoundException(
+                'Declaração fiscal não encontrada.',
+              );
+            }
+
+            if (
+              declaration.taxType !==
+              dto.taxType
+            ) {
+              throw new BadRequestException(
+                'O tipo de imposto do pagamento não corresponde à declaração.',
+              );
+            }
+
+            const declaredAmount =
+              this.normalizeStoredAmount(
+                declaration.declaredAmount,
+              );
+            const paidAmount =
+              this.normalizeStoredAmount(
+                declaration.paidAmount,
+              );
+            const remaining =
+              this.normalizeStoredAmount(
+                Math.max(
+                  declaredAmount - paidAmount,
+                  0,
+                ),
+              );
+
+            if (amount > remaining) {
+              throw new BadRequestException(
+                `O valor do pagamento (${amount}) excede o saldo da declaração (${remaining}).`,
+              );
+            }
+
+            const newPaidAmount =
+              this.normalizeStoredAmount(
+                paidAmount + amount,
+              );
+            const settled =
+              newPaidAmount >=
+              declaredAmount;
+
+            const payment =
+              await tx.taxPayment.create({
+                data: {
+                  tenantId,
+                  declarationId: dto.declarationId,
+                  taxType: dto.taxType,
+                  amount,
+                  reference,
+                  paymentMethod:
+                    dto.paymentMethod ??
+                    null,
+                  paidAt,
+                },
+                include: {
+                  declaration: true,
+                },
+              });
+
+            await tx.taxDeclaration.update({
+              where: {
+                id: declaration.id,
+              },
+              data: {
+                paidAmount: settled
+                  ? declaredAmount
+                  : newPaidAmount,
+                status: settled
+                  ? DeclarationStatus.PAID
+                  : DeclarationStatus.PARTIAL,
+                paymentDate: paidAt,
+              },
+            });
+
+            return payment;
+          }
+
+          return tx.taxPayment.create({
+            data: {
+              tenantId,
+              declarationId: null,
+              taxType: dto.taxType,
+              amount,
+              reference,
+              paymentMethod:
+                dto.paymentMethod ??
+                null,
+              paidAt,
+            },
+            include: {
+              declaration: true,
+            },
+          });
         },
       );
 
@@ -656,7 +685,6 @@ export class PaymentsService {
       months.map(
         (
           month,
-          index,
         ) => ({
           month,
           value: 0,
@@ -784,5 +812,57 @@ export class PaymentsService {
       descriptions[taxType] ??
       taxType
     );
+  }
+
+  private normalizePaymentAmount(
+    value: number,
+  ): number {
+    if (
+      typeof value !== 'number' ||
+      !Number.isFinite(value) ||
+      value <= 0
+    ) {
+      throw new BadRequestException(
+        'Indique um valor de pagamento válido.',
+      );
+    }
+
+    const normalized =
+      this.normalizeStoredAmount(
+        value,
+      );
+
+    if (normalized < 0.01) {
+      throw new BadRequestException(
+        'Indique um valor de pagamento válido.',
+      );
+    }
+
+    return normalized;
+  }
+
+  private normalizeStoredAmount(
+    value: number,
+  ): number {
+    return Math.round(
+      (Number(value) + Number.EPSILON) *
+        100,
+    ) / 100;
+  }
+
+  private resolvePaymentDate(
+    value?: string,
+  ): Date {
+    const paidAt = value
+      ? new Date(value)
+      : new Date();
+
+    if (Number.isNaN(paidAt.getTime())) {
+      throw new BadRequestException(
+        'Indique uma data de pagamento válida.',
+      );
+    }
+
+    return paidAt;
   }
 }

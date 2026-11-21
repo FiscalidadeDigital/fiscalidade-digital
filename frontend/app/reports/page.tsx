@@ -3,6 +3,12 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import DashboardLayout from '@/components/layout/DashboardLayout';
+import {
+  getFiscalDocumentDate,
+  getFiscalDocumentSign,
+  prepareFiscalReportDocuments,
+  uniqueFiscalDocuments,
+} from '@/lib/fiscal-report-documents';
 
 import { getCompany } from '@/services/company';
 import { getInvoices } from '@/services/invoice';
@@ -59,7 +65,9 @@ type Invoice = {
   total?: number | string;
   status?: string;
   createdAt?: string;
+  issuedAt?: string;
   issueDate?: string;
+  fiscalDocumentType?: 'FT' | 'NC' | 'ND' | null;
   client?: {
     name?: string;
     nif?: string;
@@ -284,6 +292,43 @@ function getTaxLabel(taxType?: string): string {
   return labels[taxType || ''] || taxType || 'Outros';
 }
 
+function getFiscalDocumentLabel(
+  fiscalDocumentType?: Invoice['fiscalDocumentType'],
+): string {
+  switch (fiscalDocumentType) {
+    case 'NC':
+      return 'Nota de cr\u00e9dito';
+
+    case 'ND':
+      return 'Nota de d\u00e9bito';
+
+    default:
+      return 'Factura';
+  }
+}
+
+async function getFiscalDocumentsForReport(): Promise<Invoice[]> {
+  const [invoices, creditNotes, debitNotes] = await Promise.all([
+    getInvoices(),
+    api
+      .get<Invoice[]>('/invoice', {
+        params: { fiscalDocumentType: 'NC' },
+      })
+      .then((response) => response.data),
+    api
+      .get<Invoice[]>('/invoice', {
+        params: { fiscalDocumentType: 'ND' },
+      })
+      .then((response) => response.data),
+  ]);
+
+  return uniqueFiscalDocuments([
+    invoices,
+    creditNotes,
+    debitNotes,
+  ]) as Invoice[];
+}
+
 /* =========================================================
    TOOLTIP PERSONALIZADO
 ========================================================= */
@@ -358,7 +403,7 @@ export default function ReportsPage() {
 
       const results = await Promise.allSettled([
         getCompany(),
-        getInvoices(),
+        getFiscalDocumentsForReport(),
         getEmployees(),
         api.get('/obligations?readOnly=true'),
         api.get('/payments'),
@@ -445,16 +490,30 @@ export default function ReportsPage() {
 
   function handleExportCSV() {
     const rows = [
-      ['Factura', 'Cliente', 'Data', 'Subtotal', 'IVA', 'Total', 'Estado'],
-      ...reportData.yearInvoices.map((invoice) => [
-        invoice.invoiceNumber || '',
-        invoice.client?.name || '',
-        formatDate(invoice.issueDate || invoice.createdAt),
-        numberValue(invoice.subtotal).toFixed(2),
-        numberValue(invoice.iva).toFixed(2),
-        numberValue(invoice.total).toFixed(2),
-        getStatusLabel(invoice.status),
-      ]),
+      [
+        'Documento',
+        'Tipo',
+        'Cliente',
+        'Data',
+        'Subtotal',
+        'IVA',
+        'Total',
+        'Estado',
+      ],
+      ...reportData.yearInvoices.map((invoice) => {
+        const sign = getFiscalDocumentSign(invoice);
+
+        return [
+          invoice.invoiceNumber || '',
+          getFiscalDocumentLabel(invoice.fiscalDocumentType),
+          invoice.client?.name || '',
+          formatDate(getFiscalDocumentDate(invoice)),
+          (sign * numberValue(invoice.subtotal)).toFixed(2),
+          (sign * numberValue(invoice.iva)).toFixed(2),
+          (sign * numberValue(invoice.total)).toFixed(2),
+          getStatusLabel(invoice.status),
+        ];
+      }),
     ];
 
     const csv = rows
@@ -495,15 +554,16 @@ export default function ReportsPage() {
   ======================================================= */
 
   const reportData = useMemo(() => {
-    const yearInvoices = invoices.filter((invoice) => {
-      const dateValue = invoice.issueDate || invoice.createdAt;
-
-      if (!dateValue) {
-        return false;
-      }
-
-      return new Date(dateValue).getFullYear() === selectedYear;
-    });
+    const fiscalReportDocuments = prepareFiscalReportDocuments(
+      invoices,
+      selectedYear,
+    );
+    const sourceYearInvoices =
+      fiscalReportDocuments.sourceDocuments as Invoice[];
+    const yearInvoices =
+      fiscalReportDocuments.documentsForTotals as Invoice[];
+    const cancelledInvoices =
+      fiscalReportDocuments.cancelledDocuments as Invoice[];
 
     const yearPayments = payments.filter((payment) => {
       if (!payment.paidAt) {
@@ -523,24 +583,15 @@ export default function ReportsPage() {
 
     /* TOTAL FACTURADO */
 
-    const totalInvoiced = yearInvoices.reduce(
-      (total, invoice) => total + numberValue(invoice.total),
-      0,
-    );
+    const totalInvoiced = fiscalReportDocuments.totals.total;
 
     /* IVA */
 
-    const totalVat = yearInvoices.reduce(
-      (total, invoice) => total + numberValue(invoice.iva),
-      0,
-    );
+    const totalVat = fiscalReportDocuments.totals.iva;
 
     /* SUBTOTAL */
 
-    const totalSubtotal = yearInvoices.reduce(
-      (total, invoice) => total + numberValue(invoice.subtotal),
-      0,
-    );
+    const totalSubtotal = fiscalReportDocuments.totals.subtotal;
 
     /* FACTURAS */
 
@@ -550,10 +601,6 @@ export default function ReportsPage() {
 
     const pendingInvoices = yearInvoices.filter(
       (invoice) => invoice.status === 'PENDING',
-    );
-
-    const cancelledInvoices = yearInvoices.filter(
-      (invoice) => invoice.status === 'CANCELLED',
     );
 
     const otherInvoices = yearInvoices.filter(
@@ -612,7 +659,7 @@ export default function ReportsPage() {
 
       const value = yearInvoices
         .filter((invoice) => {
-          const dateValue = invoice.issueDate || invoice.createdAt;
+          const dateValue = getFiscalDocumentDate(invoice);
 
           if (!dateValue) {
             return false;
@@ -622,7 +669,11 @@ export default function ReportsPage() {
 
           return date.getMonth() + 1 === month;
         })
-        .reduce((total, invoice) => total + numberValue(invoice.total), 0);
+        .reduce(
+          (total, invoice) =>
+            total + getFiscalDocumentSign(invoice) * numberValue(invoice.total),
+          0,
+        );
 
       return {
         month,
@@ -678,6 +729,7 @@ export default function ReportsPage() {
     }
 
     return {
+      sourceYearInvoices,
       yearInvoices,
       yearPayments,
       yearObligations,
@@ -976,7 +1028,7 @@ export default function ReportsPage() {
 
               <div className="mt-3 flex items-center justify-between">
                 <span className="text-xs text-slate-500">
-                  {reportData.yearInvoices.length} factura(s)
+                  {reportData.yearInvoices.length} documento(s)
                 </span>
 
                 <span className="inline-flex items-center gap-1 text-xs font-bold text-emerald-600">
@@ -1249,7 +1301,7 @@ export default function ReportsPage() {
                 </div>
 
                 <h2 className="text-lg font-black text-slate-950">
-                  Estado das facturas
+                  Estado dos documentos
                 </h2>
               </div>
 
@@ -1258,7 +1310,7 @@ export default function ReportsPage() {
               </p>
             </div>
 
-            {reportData.yearInvoices.length === 0 ? (
+            {reportData.sourceYearInvoices.length === 0 ? (
               <div className="flex min-h-[350px] items-center justify-center px-6 text-center">
                 <div>
                   <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-slate-50">
@@ -1308,7 +1360,7 @@ export default function ReportsPage() {
 
                   <div className="-mt-[155px] text-center">
                     <p className="text-3xl font-black text-slate-950">
-                      {reportData.yearInvoices.length}
+                      {reportData.sourceYearInvoices.length}
                     </p>
 
                     <p className="text-xs font-medium text-slate-400">
@@ -1320,8 +1372,8 @@ export default function ReportsPage() {
                 <div className="mt-10 space-y-3">
                   {reportData.invoiceStatusData.map((item, index) => {
                     const percentage =
-                      reportData.yearInvoices.length > 0
-                        ? (item.value / reportData.yearInvoices.length) * 100
+                      reportData.sourceYearInvoices.length > 0
+                        ? (item.value / reportData.sourceYearInvoices.length) * 100
                         : 0;
 
                     return (
@@ -1716,7 +1768,7 @@ export default function ReportsPage() {
                 </div>
 
                 <h2 className="text-lg font-black text-slate-950">
-                  Facturas recentes
+                  Documentos fiscais recentes
                 </h2>
               </div>
 
@@ -1726,7 +1778,7 @@ export default function ReportsPage() {
             </div>
 
             <span className="rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-500">
-              {reportData.yearInvoices.length} factura(s)
+              {reportData.yearInvoices.length} documento(s)
             </span>
           </div>
 
@@ -1750,7 +1802,7 @@ export default function ReportsPage() {
                 <thead>
                   <tr className="bg-slate-50/80">
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
-                      Factura
+                      Documento
                     </th>
 
                     <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wider text-slate-400">
@@ -1794,11 +1846,14 @@ export default function ReportsPage() {
                       </td>
 
                       <td className="px-6 py-4 text-sm text-slate-500">
-                        {formatDate(invoice.issueDate || invoice.createdAt)}
+                        {formatDate(getFiscalDocumentDate(invoice))}
                       </td>
 
                       <td className="px-6 py-4 text-right text-sm font-black text-slate-900">
-                        {formatAOA(numberValue(invoice.total))}
+                        {formatAOA(
+                          getFiscalDocumentSign(invoice) *
+                            numberValue(invoice.total),
+                        )}
                       </td>
 
                       <td className="px-6 py-4 text-center">

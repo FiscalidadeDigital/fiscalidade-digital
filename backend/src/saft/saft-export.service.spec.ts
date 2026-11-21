@@ -245,6 +245,112 @@ describe('SaftExportService company city preflight', () => {
     );
   });
 
+  it('mantém a disponibilidade externa bloqueada sem certificação confirmada', async () => {
+    const { service } = setup('Luanda');
+
+    const preflight = await service.preflight('tenant-1', 2026);
+
+    expect(preflight.ready).toBe(false);
+    expect(preflight.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          severity: 'BLOCKING',
+          message:
+            'A exportação ainda precisa de confirmação antes de continuar.',
+        }),
+      ]),
+    );
+    await expect(service.generate('tenant-1', 'user-1', 2026)).rejects.toMatchObject({
+      response: expect.objectContaining({ code: 'SAFT_PREFLIGHT_FAILED' }),
+    });
+  });
+
+  it('exclui documentos anulados dos totais monetários do resumo', async () => {
+    const issuedAt = new Date('2026-06-15T12:00:00.000Z');
+    const active = {
+      id: 'active',
+      clientId: 'client-1',
+      invoiceNumber: 'FT FT2026/00001',
+      fiscalDocumentType: 'FT',
+      status: 'PAID',
+      issuedAt,
+      createdAt: issuedAt,
+      subtotal: 100,
+      subtotalAmount: new Prisma.Decimal('100.00'),
+      iva: 14,
+      ivaAmount: new Prisma.Decimal('14.00'),
+      total: 114,
+      totalAmount: new Prisma.Decimal('114.00'),
+      fiscalHash: 'hash',
+      fiscalHashControl: '1',
+      client: {
+        id: 'client-1',
+        nif: '5000000001',
+        name: 'Cliente Teste',
+        address: 'Rua de Teste',
+        city: 'Luanda',
+        country: 'AO',
+        email: null,
+      },
+      items: [
+        {
+          productId: 'product-1',
+          productName: 'Serviço',
+          taxType: 'IVA',
+          taxCode: 'NOR',
+          taxRate: new Prisma.Decimal('14'),
+        },
+      ],
+    };
+    const prisma = {
+      tenant: {
+        findUnique: jest.fn().mockResolvedValue({
+          id: 'tenant-1',
+          nif: '5000000001',
+          name: 'Empresa Teste',
+          address: 'Avenida de Teste',
+          city: 'Luanda',
+          country: 'AO',
+          email: null,
+        }),
+      },
+      invoice: {
+        findMany: jest.fn().mockResolvedValue([
+          active,
+          {
+            ...active,
+            id: 'cancelled',
+            invoiceNumber: 'FT FT2026/00002',
+            status: 'CANCELLED',
+            subtotal: 900,
+            subtotalAmount: new Prisma.Decimal('900.00'),
+            iva: 126,
+            ivaAmount: new Prisma.Decimal('126.00'),
+            total: 1026,
+            totalAmount: new Prisma.Decimal('1026.00'),
+          },
+        ]),
+      },
+    };
+    const signature = {
+      configuration: jest.fn().mockReturnValue({ configured: true }),
+    };
+    const service = new SaftExportService(
+      prisma as any,
+      {} as any,
+      {} as any,
+      signature as any,
+    );
+
+    await expect(service.summary('tenant-1', 2026)).resolves.toMatchObject({
+      documentCount: 2,
+      cancelledCount: 1,
+      taxableBase: '100.00',
+      taxAmount: '14.00',
+      grossTotal: '114.00',
+    });
+  });
+
   it('usa a city persistida no Header sem fallback', () => {
     const { service } = setup('Lubango');
 

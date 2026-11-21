@@ -54,6 +54,7 @@ export class DashboardService {
       clientCount,
       productCount,
       paidInvoiceRevenue,
+      creditsAgainstPaidInvoices,
       loadedObligations,
       declarations,
       revenues,
@@ -135,6 +136,24 @@ export class DashboardService {
           status: 'PAID',
         },
 
+        _sum: {
+          total: true,
+        },
+      }),
+
+      // Uma nota de crédito não é uma saída de caixa isolada, mas reduz o
+      // valor já recebido da factura paga que rectifica. As notas de débito
+      // permanecem pendentes até ao respectivo recebimento.
+      this.prisma.invoice.aggregate({
+        where: {
+          tenantId,
+          documentType: InvoiceDocumentType.NORMAL,
+          fiscalDocumentType: 'NC',
+          status: { not: 'CANCELLED' },
+          rectifiedInvoice: {
+            is: { status: 'PAID' },
+          },
+        },
         _sum: {
           total: true,
         },
@@ -511,7 +530,11 @@ export class DashboardService {
     // RECEITA REAL
     // ==========================================================
 
-    const totalRevenue = this.number(paidInvoiceRevenue._sum.total);
+    const totalRevenue = Math.max(
+      0,
+      this.number(paidInvoiceRevenue._sum.total) -
+        this.number(creditsAgainstPaidInvoices._sum.total),
+    );
 
     // ==========================================================
     // RECEITAS MENSAIS

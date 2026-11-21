@@ -235,6 +235,81 @@ describe('FiscalEngineService integration', () => {
     });
   });
 
+  it('keeps credit and debit corrections from a paid source in the simplified review ledger', async () => {
+    const { prisma, ledger, enrollments } = fiscalPrisma({
+      A: {
+        invoices: [
+          {
+            id: 'ft-paid',
+            subtotal: 100,
+            iva: 14,
+            withholdingTax: 0,
+            issuedAt,
+            invoiceNumber: 'FT-PAID',
+            fiscalDocumentType: 'FT',
+            status: 'PAID',
+          },
+          {
+            id: 'nc-pending',
+            subtotal: 20,
+            iva: 2.8,
+            withholdingTax: 0,
+            issuedAt,
+            invoiceNumber: 'NC-PAID',
+            fiscalDocumentType: 'NC',
+            rectifiesInvoiceId: 'ft-paid',
+            rectifiedInvoice: { status: 'PAID' },
+            status: 'PENDING',
+          },
+          {
+            id: 'nd-pending',
+            subtotal: 10,
+            iva: 1.4,
+            withholdingTax: 0,
+            issuedAt,
+            invoiceNumber: 'ND-PAID',
+            fiscalDocumentType: 'ND',
+            rectifiesInvoiceId: 'ft-paid',
+            rectifiedInvoice: { status: 'PAID' },
+            status: 'PENDING',
+          },
+          {
+            id: 'cancelled',
+            subtotal: 999,
+            iva: 139.86,
+            withholdingTax: 0,
+            issuedAt,
+            invoiceNumber: 'FT-CANCELLED',
+            fiscalDocumentType: 'FT',
+            status: 'CANCELLED',
+          },
+        ],
+        enrollments: [
+          { taxType: 'IVA', regime: 'SIMPLIFICADO', validFrom: '2026-01-01' },
+        ],
+      },
+    });
+    const service = new FiscalEngineService(prisma as any, undefined, enrollments as any);
+
+    const result = await service.syncTenant('A', 2026);
+
+    expect(ledger.find((item) => item.sourceId === 'ft-paid')).toMatchObject({
+      sourceType: 'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
+      baseAmount: 100,
+    });
+    expect(ledger.find((item) => item.sourceId === 'nc-pending')).toMatchObject({
+      sourceType: 'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
+      baseAmount: -20,
+    });
+    expect(ledger.find((item) => item.sourceId === 'nd-pending')).toMatchObject({
+      sourceType: 'INVOICE_IVA_SIMPLIFICADO_REVIEW_REQUIRED',
+      baseAmount: 10,
+    });
+    expect(ledger.find((item) => item.sourceId === 'cancelled')).toBeUndefined();
+    expect(result.activity.invoices).toBe(3);
+    expect(result.totals.sales).toBe(90);
+  });
+
   it('keeps Industrial Tax undetermined instead of creating a zero payable amount', async () => {
     const { prisma, assessments, obligations, enrollments } = fiscalPrisma({
       A: {

@@ -34,6 +34,7 @@ import { FiscalEnrollmentService } from '../fiscal-enrollment/fiscal-enrollment.
 
 type FiscalDocumentCode = 'FT' | 'PF' | 'NC' | 'ND';
 type AdjustmentDocumentCode = 'NC' | 'ND';
+const ADJUSTMENT_VALIDATION_RULE_VERSION = 'ADJUSTMENT_VALIDATION_V2';
 type FiscalDocumentIdentity = {
   invoiceNumber: string;
   fiscalSeries: string;
@@ -106,38 +107,43 @@ export class InvoiceService {
   async createCreditNote(
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
+    actorUserId?: string,
   ) {
-    return this.createAdjustmentNote(tenantId, dto, 'NC');
+    return this.createAdjustmentNote(tenantId, dto, 'NC', actorUserId);
   }
 
   async validateCreditNote(
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
   ) {
-    return this.validateAdjustmentNote(tenantId, dto);
+    return this.validateAdjustmentNote(tenantId, dto, 'NC');
   }
 
   async createDebitNote(
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
+    actorUserId?: string,
   ) {
-    return this.createAdjustmentNote(tenantId, dto, 'ND');
+    return this.createAdjustmentNote(tenantId, dto, 'ND', actorUserId);
   }
 
   async validateDebitNote(
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
   ) {
-    return this.validateAdjustmentNote(tenantId, dto);
+    return this.validateAdjustmentNote(tenantId, dto, 'ND');
   }
 
   private async validateAdjustmentNote(
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
+    documentCode: AdjustmentDocumentCode,
   ): Promise<AdjustmentValidation> {
     const preparation = await this.prepareAdjustmentNote(
+      this.prisma,
       tenantId,
       dto,
+      documentCode,
     );
 
     return preparation.validation;
@@ -147,46 +153,14 @@ export class InvoiceService {
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
     documentCode: AdjustmentDocumentCode,
+    actorUserId?: string,
   ) {
-    const preparation = await this.prepareAdjustmentNote(
-      tenantId,
-      dto,
-    );
-    if (!preparation.validation.canCreate) {
-      throw new BadRequestException(preparation.validation.message);
-    }
-
-    const { sourceInvoice, noteLines } = preparation;
-    if (!sourceInvoice || !noteLines) {
+    if (!dto.operationId) {
       throw new BadRequestException(
-        'A validação automática precisa de ser concluída antes de emitir a nota.',
+        'Não foi possível confirmar esta operação. Actualize a página e tente novamente.',
       );
     }
 
-    const subtotal = noteLines
-      .reduce((sum, line) => sum.add(line.total), new Prisma.Decimal(0))
-      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-    const iva = noteLines
-      .reduce((sum, line) => sum.add(line.taxAmount), new Prisma.Decimal(0))
-      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-    const sourceSubtotal = this.decimal(
-      sourceInvoice.subtotalAmount,
-      sourceInvoice.subtotal,
-    );
-    const sourceWithholding = this.decimal(
-      sourceInvoice.withholdingTaxAmount,
-      sourceInvoice.withholdingTax,
-    );
-    const withholdingRate = sourceSubtotal.greaterThan(0)
-      ? sourceWithholding.div(sourceSubtotal)
-      : new Prisma.Decimal(0);
-    const withholdingTax = subtotal
-      .mul(withholdingRate)
-      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-    const total = subtotal
-      .add(iva)
-      .sub(withholdingTax)
-      .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
     const issuedAt = new Date();
     const year = Number(
       new Intl.DateTimeFormat('en-US', {
@@ -198,6 +172,78 @@ export class InvoiceService {
 
     try {
       const note = await this.prisma.$transaction(async (tx) => {
+        // Todas as notas da mesma factura de origem passam por este bloqueio.
+        // Assim o saldo de uma linha é relido e confirmado dentro da mesma
+        // transacção antes de qualquer novo documento ser emitido.
+        const sourceLockKey = `${tenantId}:adjustment:${dto.sourceInvoiceId}`;
+        await tx.$queryRaw`
+          SELECT pg_advisory_xact_lock(
+            hashtextextended(${sourceLockKey}, 0)
+          )::text AS lock
+        `;
+
+        const existingOperation = await tx.invoice.findFirst({
+          where: {
+            tenantId,
+            adjustmentOperationId: dto.operationId,
+          },
+          include: { client: true, items: true },
+        });
+        if (existingOperation) {
+          if (
+            existingOperation.fiscalDocumentType === documentCode &&
+            existingOperation.rectifiesInvoiceId === dto.sourceInvoiceId
+          ) {
+            return existingOperation;
+          }
+
+          throw new ConflictException(
+            'Esta operação já foi utilizada para outro documento. Actualize a página e tente novamente.',
+          );
+        }
+
+        const preparation = await this.prepareAdjustmentNote(
+          tx,
+          tenantId,
+          dto,
+          documentCode,
+        );
+        if (!preparation.validation.canCreate) {
+          throw new BadRequestException(preparation.validation.message);
+        }
+
+        const { sourceInvoice, noteLines } = preparation;
+        if (!sourceInvoice || !noteLines) {
+          throw new BadRequestException(
+            'A validação automática precisa de ser concluída antes de emitir a nota.',
+          );
+        }
+
+        const subtotal = noteLines
+          .reduce((sum, line) => sum.add(line.total), new Prisma.Decimal(0))
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+        const iva = noteLines
+          .reduce((sum, line) => sum.add(line.taxAmount), new Prisma.Decimal(0))
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+        const sourceSubtotal = this.decimal(
+          sourceInvoice.subtotalAmount,
+          sourceInvoice.subtotal,
+        );
+        const sourceWithholding = this.decimal(
+          sourceInvoice.withholdingTaxAmount,
+          sourceInvoice.withholdingTax,
+        );
+        const withholdingRate = sourceSubtotal.greaterThan(0)
+          ? sourceWithholding.div(sourceSubtotal)
+          : new Prisma.Decimal(0);
+        const withholdingTax = subtotal
+          .mul(withholdingRate)
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+        const total = subtotal
+          .add(iva)
+          .sub(withholdingTax)
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
         // The next number and the fiscal hash chain are shared by every
         // document in this tenant/type/year series. Serialise at that scope,
         // not only per source invoice, so concurrent notes cannot reuse a
@@ -208,23 +254,6 @@ export class InvoiceService {
             hashtextextended(${lockKey}, 0)
           )::text AS lock
         `;
-
-        if (documentCode === 'NC') {
-          const existingCreditNote = await tx.invoice.findFirst({
-            where: {
-              tenantId,
-              rectifiesInvoiceId: sourceInvoice.id,
-              fiscalDocumentType: 'NC',
-              status: { not: 'CANCELLED' },
-            },
-            select: { id: true },
-          });
-          if (existingCreditNote) {
-            throw new ConflictException(
-              'Já existe uma nota de crédito activa para esta factura. Anule-a antes de criar outra.',
-            );
-          }
-        }
 
         const fiscalIdentity = await this.getNextFiscalDocumentIdentity(
           tx,
@@ -264,7 +293,7 @@ export class InvoiceService {
           previousHash: previous?.fiscalHash ?? null,
         });
 
-        return tx.invoice.create({
+        const note = await tx.invoice.create({
           data: {
             tenantId,
             clientId: sourceInvoice.clientId,
@@ -285,6 +314,11 @@ export class InvoiceService {
             fiscalYear: year,
             fiscalSequence: fiscalIdentity.fiscalSequence,
             rectifiesInvoiceId: sourceInvoice.id,
+            adjustmentOperationId: dto.operationId,
+            adjustmentValidationStatus: 'VALIDATED',
+            adjustmentValidationRuleVersion:
+              ADJUSTMENT_VALIDATION_RULE_VERSION,
+            adjustmentValidatedAt: issuedAt,
             fiscalHash: signed.hash,
             fiscalHashControl: signed.hashControl,
             signatureKeyVersion: signed.keyVersion,
@@ -311,11 +345,34 @@ export class InvoiceService {
                 taxExemptionCode: line.source.taxExemptionCode,
                 taxExemptionReason: line.source.taxExemptionReason,
                 electronicOperationType: line.source.electronicOperationType,
+                sourceInvoiceItemId: line.source.id,
               })),
             },
           },
           include: { client: true, items: true },
         });
+
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            userId: actorUserId ?? null,
+            action: 'INVOICE_ADJUSTMENT_VALIDATED_AND_ISSUED',
+            entity: 'Invoice',
+            entityId: note.id,
+            newData: {
+              automaticValidation: true,
+              validationRuleVersion: ADJUSTMENT_VALIDATION_RULE_VERSION,
+              documentCode,
+              sourceInvoiceId: sourceInvoice.id,
+              operationId: dto.operationId,
+              subtotal: subtotal.toFixed(2),
+              iva: iva.toFixed(2),
+              total: total.toFixed(2),
+            },
+          },
+        });
+
+        return note;
       });
 
       await this.syncFiscalObligations(tenantId);
@@ -335,10 +392,12 @@ export class InvoiceService {
   }
 
   private async prepareAdjustmentNote(
+    client: Pick<PrismaService, 'invoice'>,
     tenantId: string,
     dto: CreateAdjustmentNoteDto,
+    documentCode: AdjustmentDocumentCode,
   ): Promise<AdjustmentPreparation> {
-    const sourceInvoice = await this.prisma.invoice.findFirst({
+    const sourceInvoice = await client.invoice.findFirst({
       where: {
         id: dto.sourceInvoiceId,
         tenantId,
@@ -361,6 +420,7 @@ export class InvoiceService {
         'Esta factura não contém o detalhe dos artigos ou serviços necessário. Recupere o documento original antes de emitir uma nota.',
         false,
         false,
+        documentCode,
       );
     }
 
@@ -376,7 +436,70 @@ export class InvoiceService {
         'A validação automática identificou dados incompletos na factura de origem. Recupere o documento original antes de emitir a nota.',
         sourceDetailsComplete,
         sourceValuesComplete,
+        documentCode,
       );
+    }
+
+    const activeAdjustments = await client.invoice.findMany({
+      where: {
+        tenantId,
+        rectifiesInvoiceId: sourceInvoice.id,
+        fiscalDocumentType: { in: ['NC', 'ND'] },
+        status: { not: 'CANCELLED' },
+      },
+      select: {
+        fiscalDocumentType: true,
+        items: {
+          select: {
+            sourceInvoiceItemId: true,
+            quantity: true,
+            quantityAmount: true,
+            total: true,
+            totalAmount: true,
+          },
+        },
+      },
+    });
+
+    // As notas emitidas antes deste controlo não têm ligação à linha de
+    // origem. Em vez de tentar reconstruir essa associação e alterar o
+    // histórico, a emissão adicional fica bloqueada para revisão segura.
+    const hasUnlinkedHistoricalAdjustment = activeAdjustments.some((note) =>
+      note.items.length === 0 ||
+      note.items.some((item) => !item.sourceInvoiceItemId),
+    );
+    if (hasUnlinkedHistoricalAdjustment) {
+      return this.adjustmentRecoveryRequired(
+        sourceInvoice,
+        'Existe uma rectificação anterior sem o detalhe de linha necessário para calcular o saldo com segurança. Consulte o documento original antes de emitir uma nova nota.',
+        sourceDetailsComplete,
+        sourceValuesComplete,
+        documentCode,
+      );
+    }
+
+    const creditedBySourceItem = new Map<
+      string,
+      { quantity: Prisma.Decimal; total: Prisma.Decimal }
+    >();
+    for (const note of activeAdjustments) {
+      if (note.fiscalDocumentType !== 'NC') continue;
+
+      for (const item of note.items) {
+        const sourceInvoiceItemId = item.sourceInvoiceItemId;
+        if (!sourceInvoiceItemId) continue;
+
+        const current = creditedBySourceItem.get(sourceInvoiceItemId) ?? {
+          quantity: new Prisma.Decimal(0),
+          total: new Prisma.Decimal(0),
+        };
+        creditedBySourceItem.set(sourceInvoiceItemId, {
+          quantity: current.quantity.add(
+            this.decimal(item.quantityAmount, item.quantity),
+          ),
+          total: current.total.add(this.decimal(item.totalAmount, item.total)),
+        });
+      }
     }
 
     const requestedItems = Array.isArray(dto.items) ? dto.items : [];
@@ -391,6 +514,7 @@ export class InvoiceService {
         sourceValuesComplete,
         false,
         Boolean(dto.reason?.trim()),
+        documentCode,
       );
     }
 
@@ -425,14 +549,63 @@ export class InvoiceService {
         continue;
       }
 
-      const unitPrice = this.decimal(
+      const sourceUnitPrice = this.decimal(
         source.unitPriceAmount,
         source.unitPrice,
       ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      const requestedUnitPrice = Number(
+        requested.unitPrice ?? sourceUnitPrice.toNumber(),
+      );
+      if (
+        !Number.isFinite(requestedUnitPrice) ||
+        requestedUnitPrice <= 0
+      ) {
+        quantitiesValid = false;
+        continue;
+      }
+      const unitPrice = new Prisma.Decimal(String(requestedUnitPrice))
+        .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+      if (
+        documentCode === 'NC' &&
+        unitPrice.greaterThan(sourceUnitPrice)
+      ) {
+        quantitiesValid = false;
+        continue;
+      }
+
       const total = quantity
         .mul(unitPrice)
         .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
-      const taxRate = new Prisma.Decimal(source.taxRate!.toString()).toDecimalPlaces(
+
+      if (documentCode === 'NC') {
+        const previouslyCredited = creditedBySourceItem.get(source.id) ?? {
+          quantity: new Prisma.Decimal(0),
+          total: new Prisma.Decimal(0),
+        };
+        const availableQuantity = sourceQuantity
+          .sub(previouslyCredited.quantity)
+          .toDecimalPlaces(4, Prisma.Decimal.ROUND_HALF_UP);
+        const availableAmount = this.decimal(
+          source.totalAmount,
+          source.total,
+        )
+          .sub(previouslyCredited.total)
+          .toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
+
+        if (
+          availableQuantity.lessThan(0) ||
+          availableAmount.lessThan(0) ||
+          quantity.greaterThan(
+            availableQuantity.add(new Prisma.Decimal('0.0001')),
+          ) ||
+          total.greaterThan(availableAmount.add(new Prisma.Decimal('0.01')))
+        ) {
+          quantitiesValid = false;
+          continue;
+        }
+      }
+
+      const taxRate = new Prisma.Decimal(source.taxRate?.toString() ?? '0').toDecimalPlaces(
         6,
         Prisma.Decimal.ROUND_HALF_UP,
       );
@@ -455,11 +628,14 @@ export class InvoiceService {
     if (!quantitiesValid || !reasonProvided) {
       return this.adjustmentReviewRequired(
         sourceInvoice,
-        'A validação automática não aprovou a nota. Revise as quantidades e o motivo indicado.',
+        documentCode === 'NC'
+          ? 'A validação automática não aprovou a nota de crédito. Revise as quantidades, o valor indicado, o saldo disponível e o motivo.'
+          : 'A validação automática não aprovou a nota de débito. Revise as quantidades, o valor adicional indicado e o motivo.',
         sourceDetailsComplete,
         sourceValuesComplete,
         quantitiesValid,
         reasonProvided,
+        documentCode,
       );
     }
 
@@ -468,12 +644,15 @@ export class InvoiceService {
       noteLines,
       validation: this.adjustmentValidation(
         'VALIDATED',
-        'Validação automática concluída. A nota pode ser emitida.',
+        documentCode === 'NC'
+          ? 'Validação automática concluída. O saldo de crédito foi confirmado e a nota pode ser emitida.'
+          : 'Validação automática concluída. Os dados da factura, o valor adicional e os impostos foram confirmados antes da emissão.',
         true,
         sourceDetailsComplete,
         sourceValuesComplete,
         true,
         true,
+        documentCode,
       ),
     };
   }
@@ -483,6 +662,7 @@ export class InvoiceService {
     message: string,
     sourceDetailsComplete: boolean,
     sourceValuesComplete: boolean,
+    documentCode: AdjustmentDocumentCode,
   ): AdjustmentPreparation {
     return {
       sourceInvoice,
@@ -494,6 +674,7 @@ export class InvoiceService {
         sourceValuesComplete,
         false,
         false,
+        documentCode,
       ),
     };
   }
@@ -505,6 +686,7 @@ export class InvoiceService {
     sourceValuesComplete: boolean,
     quantitiesValid: boolean,
     reasonProvided: boolean,
+    documentCode: AdjustmentDocumentCode,
   ): AdjustmentPreparation {
     return {
       sourceInvoice,
@@ -516,6 +698,7 @@ export class InvoiceService {
         sourceValuesComplete,
         quantitiesValid,
         reasonProvided,
+        documentCode,
       ),
     };
   }
@@ -528,6 +711,7 @@ export class InvoiceService {
     sourceValuesComplete: boolean,
     quantitiesValid: boolean,
     reasonProvided: boolean,
+    documentCode: AdjustmentDocumentCode,
   ): AdjustmentValidation {
     return {
       status,
@@ -543,7 +727,13 @@ export class InvoiceService {
           label: 'Valores e impostos confirmados',
           passed: sourceValuesComplete,
         },
-        { label: 'Quantidades confirmadas', passed: quantitiesValid },
+        {
+          label:
+            documentCode === 'NC'
+              ? 'Quantidades, valores e saldo de crédito confirmados'
+              : 'Quantidades e valor adicional confirmados',
+          passed: quantitiesValid,
+        },
         { label: 'Motivo da rectificação informado', passed: reasonProvided },
       ],
     };
@@ -685,6 +875,7 @@ export class InvoiceService {
       tenantId,
       {
         clientId: proForma.clientId,
+        dueDate: proForma.dueDate?.toISOString(),
         notes: proForma.notes ?? undefined,
         items: proForma.items.map((item) => ({
           productId: item.productId ?? undefined,
@@ -824,6 +1015,7 @@ export class InvoiceService {
     // ==========================================================
 
     const issuedAt = new Date();
+    const dueDate = dto.dueDate ? new Date(dto.dueDate) : null;
     const ivaEnrollment = documentType === InvoiceDocumentType.NORMAL
       ? await this.enrollments?.resolve(tenantId, TaxType.IVA, issuedAt)
       : null;
@@ -1000,6 +1192,8 @@ export class InvoiceService {
       sourceProFormaId:
         sourceProFormaId ??
         null,
+
+      dueDate,
 
       issuedAt,
 
@@ -1506,9 +1700,35 @@ export class InvoiceService {
         })
       : null;
 
+    const rectificationNotes =
+      invoice.documentType === InvoiceDocumentType.NORMAL &&
+      (invoice.fiscalDocumentType === 'FT' || invoice.fiscalDocumentType === null)
+        ? await this.prisma.invoice.findMany({
+            where: {
+              tenantId,
+              rectifiesInvoiceId: invoice.id,
+              fiscalDocumentType: { in: ['NC', 'ND'] },
+            },
+            select: {
+              id: true,
+              invoiceNumber: true,
+              fiscalDocumentType: true,
+              status: true,
+              total: true,
+              totalAmount: true,
+              issuedAt: true,
+              notes: true,
+              adjustmentValidationStatus: true,
+              adjustmentValidatedAt: true,
+            },
+            orderBy: { issuedAt: 'desc' },
+          })
+        : [];
+
     return {
       ...invoice,
       rectifiedInvoice,
+      rectificationNotes,
     };
   }
 
@@ -1519,6 +1739,7 @@ export class InvoiceService {
   async markAsPaid(
     tenantId: string,
     id: string,
+    actorUserId?: string,
   ) {
     const invoice =
       await this.prisma.invoice.findFirst({
@@ -1568,8 +1789,8 @@ export class InvoiceService {
       );
     }
 
-    const transition =
-      await this.prisma.invoice.updateMany({
+    const transition = await this.prisma.$transaction(async (tx) => {
+      const result = await tx.invoice.updateMany({
         where: {
           id: invoice.id,
           tenantId,
@@ -1580,6 +1801,23 @@ export class InvoiceService {
           status: 'PAID',
         },
       });
+
+      if (result.count > 0) {
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            userId: actorUserId ?? null,
+            action: 'INVOICE_MARKED_PAID',
+            entity: 'Invoice',
+            entityId: invoice.id,
+            oldData: { status: 'PENDING' },
+            newData: { status: 'PAID' },
+          },
+        });
+      }
+
+      return result;
+    });
 
     if (transition.count === 0) {
       const current = await this.findOne(
@@ -1619,6 +1857,7 @@ export class InvoiceService {
   async cancel(
     tenantId: string,
     id: string,
+    actorUserId?: string,
   ) {
     const invoice =
       await this.prisma.invoice.findFirst({
@@ -1653,8 +1892,36 @@ export class InvoiceService {
       );
     }
 
-    const transition =
-      await this.prisma.invoice.updateMany({
+    const transition = await this.prisma.$transaction(async (tx) => {
+      const adjustmentScopeId = invoice.rectifiesInvoiceId ?? invoice.id;
+      const lockKey = `${tenantId}:adjustment:${adjustmentScopeId}`;
+      await tx.$queryRaw`
+        SELECT pg_advisory_xact_lock(
+          hashtextextended(${lockKey}, 0)
+        )::text AS lock
+      `;
+
+      if (
+        invoice.documentType === InvoiceDocumentType.NORMAL &&
+        (invoice.fiscalDocumentType === 'FT' ||
+          invoice.fiscalDocumentType === null)
+      ) {
+        const activeAdjustments = await tx.invoice.count({
+          where: {
+            tenantId,
+            rectifiesInvoiceId: invoice.id,
+            fiscalDocumentType: { in: ['NC', 'ND'] },
+            status: { not: 'CANCELLED' },
+          },
+        });
+        if (activeAdjustments > 0) {
+          throw new BadRequestException(
+            'Esta factura possui notas activas. Cancele as respectivas notas antes de cancelar a factura de origem.',
+          );
+        }
+      }
+
+      const result = await tx.invoice.updateMany({
         where: {
           id: invoice.id,
           tenantId,
@@ -1665,6 +1932,23 @@ export class InvoiceService {
           status: 'CANCELLED',
         },
       });
+
+      if (result.count > 0) {
+        await tx.auditLog.create({
+          data: {
+            tenantId,
+            userId: actorUserId ?? null,
+            action: 'INVOICE_CANCELLED',
+            entity: 'Invoice',
+            entityId: invoice.id,
+            oldData: { status: 'PENDING' },
+            newData: { status: 'CANCELLED' },
+          },
+        });
+      }
+
+      return result;
+    });
 
     if (transition.count === 0) {
       const current = await this.findOne(
@@ -1715,6 +1999,7 @@ export class InvoiceService {
           id: true,
           status: true,
           fiscalDocumentType: true,
+          rectifiesInvoiceId: true,
           total: true,
           totalAmount: true,
         },
@@ -1760,11 +2045,55 @@ export class InvoiceService {
       new Prisma.Decimal(0),
     ).toDecimalPlaces(2, Prisma.Decimal.ROUND_HALF_UP);
 
-    // Uma nota fiscal ajusta o total emitido, mas não representa por si só
-    // uma entrada ou saída de dinheiro. Os valores de recebimento permanecem
-    // vinculados exclusivamente ao estado de pagamento da fatura comercial.
-    const revenueReceivedAmount = sumDocuments(paid);
-    const revenuePendingAmount = sumDocuments(pending);
+    // Uma nota não é um pagamento por si só, mas altera o saldo da factura
+    // que rectifica. Crédito sobre factura paga reduz o recebido; débito de
+    // factura paga passa a ser valor pendente. Para facturas pendentes, as
+    // duas notas ajustam directamente o valor ainda por liquidar.
+    const sourceInvoicesById = new Map(
+      commercialInvoices.map((invoice) => [invoice.id, invoice]),
+    );
+    let revenueReceivedAmount = sumDocuments(paid);
+    let revenuePendingAmount = sumDocuments(pending);
+    for (const adjustment of invoices) {
+      if (
+        adjustment.status === 'CANCELLED' ||
+        (adjustment.fiscalDocumentType !== 'NC' &&
+          adjustment.fiscalDocumentType !== 'ND')
+      ) {
+        continue;
+      }
+
+      const source = adjustment.rectifiesInvoiceId
+        ? sourceInvoicesById.get(adjustment.rectifiesInvoiceId)
+        : null;
+      if (!source || source.status === 'CANCELLED') continue;
+
+      const adjustmentAmount = this.decimal(
+        adjustment.totalAmount,
+        adjustment.total,
+      );
+      const signedAdjustment =
+        adjustment.fiscalDocumentType === 'NC'
+          ? adjustmentAmount.negated()
+          : adjustmentAmount;
+
+      if (
+        source.status === 'PAID' &&
+        adjustment.fiscalDocumentType === 'NC'
+      ) {
+        revenueReceivedAmount = revenueReceivedAmount.add(signedAdjustment);
+      } else {
+        revenuePendingAmount = revenuePendingAmount.add(signedAdjustment);
+      }
+    }
+    revenueReceivedAmount = revenueReceivedAmount.toDecimalPlaces(
+      2,
+      Prisma.Decimal.ROUND_HALF_UP,
+    );
+    revenuePendingAmount = revenuePendingAmount.toDecimalPlaces(
+      2,
+      Prisma.Decimal.ROUND_HALF_UP,
+    );
     const totalInvoicedAmount = sumDocuments(
       invoices.filter((invoice) => invoice.status !== 'CANCELLED'),
     );

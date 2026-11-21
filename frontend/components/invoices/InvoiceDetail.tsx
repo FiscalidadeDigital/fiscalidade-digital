@@ -127,6 +127,51 @@ export default function InvoiceDetail({ proForma = false }: { proForma?: boolean
         {converted && <section className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900"><p className="font-semibold">Pro Forma convertida</p><p className="mt-1">{document.invoiceNumber} <span aria-hidden="true">â†’</span> <Link href={`/invoices/${converted.id}`} className="font-semibold underline underline-offset-2">Factura {converted.invoiceNumber}</Link></p></section>}
         {isAdjustment && document.rectifiedInvoice && <section className="mt-5 rounded-xl border border-sky-200 bg-sky-50 p-4 text-sm text-sky-900"><p className="font-semibold">Documento de origem</p><p className="mt-1">Esta {documentLabel.toLowerCase()} corrige <Link href={`/invoices/${document.rectifiedInvoice.id}`} className="font-semibold underline underline-offset-2">{document.rectifiedInvoice.invoiceNumber}</Link>.</p></section>}
         {isAdjustment && document.taxCalculationStatus === 'RECTIFICATION_FROM_ORIGINAL_DOCUMENT' && <section className="mt-5 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm leading-6 text-emerald-900"><CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">Validação automática concluída</p><p className="mt-1">O sistema confirmou os dados de origem, os valores, os impostos e as quantidades antes de emitir esta nota.</p></div></section>}
+        {!isAdjustment && document.rectificationNotes?.length ? (
+          <section className="mt-5 rounded-xl border border-[var(--fd-border)] bg-[var(--fd-surface)] p-5 shadow-sm">
+            <div>
+              <h2 className="font-semibold text-[var(--fd-text-primary)]">
+                Rectificações associadas
+              </h2>
+              <p className="mt-1 text-sm text-[var(--fd-text-secondary)]">
+                Notas emitidas a partir desta factura.
+              </p>
+            </div>
+            <ul className="mt-4 divide-y divide-[var(--fd-border)] border-y border-[var(--fd-border)]">
+              {document.rectificationNotes.map((note) => (
+                <li
+                  key={note.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm"
+                >
+                  <div>
+                    <Link
+                      href={`/invoices/${note.id}`}
+                      className="font-semibold text-fd-primary underline-offset-4 hover:underline"
+                    >
+                      {note.invoiceNumber}
+                    </Link>
+                    <p className="mt-1 text-xs text-[var(--fd-muted)]">
+                      {note.fiscalDocumentType === 'NC'
+                        ? 'Nota de crédito'
+                        : 'Nota de débito'}{' '}
+                      · {new Date(note.issuedAt).toLocaleDateString('pt-AO')}
+                      {note.notes ? ` · ${note.notes}` : ''}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold tabular-nums text-[var(--fd-text-primary)]">
+                      {note.fiscalDocumentType === 'NC' ? '−' : '+'}
+                      {money.format(Number(note.totalAmount ?? note.total))}
+                    </p>
+                    <p className="mt-1 text-xs text-[var(--fd-muted)]">
+                      {note.status === 'CANCELLED' ? 'Cancelada' : 'Registada'}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         {error && <p role="alert" className="mt-5 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">{error}</p>}
         {!hasDocumentLines && <aside role="alert" className="mt-5 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900"><AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" /><div><p className="font-semibold">Não existem linhas registadas neste documento.</p><p className="mt-1">Esta factura não contém o detalhe dos artigos ou serviços necessário para emitir uma nota de crédito ou débito. Consulte o documento original antes de continuar.</p></div></aside>}
 

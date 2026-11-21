@@ -4,6 +4,7 @@ import {
   IsArray,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   IsUUID,
   Max,
@@ -22,9 +23,19 @@ export class CreateAdjustmentNoteItemDto {
   @Min(0.0001)
   @Max(1_000_000_000)
   quantity: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @Min(0.01)
+  @Max(1_000_000_000_000)
+  unitPrice?: number;
 }
 
 export class CreateAdjustmentNoteDto {
+  @IsUUID()
+  operationId: string;
+
   @IsUUID()
   sourceInvoiceId: string;
 

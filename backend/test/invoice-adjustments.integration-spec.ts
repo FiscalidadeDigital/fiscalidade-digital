@@ -238,6 +238,7 @@ describe('Invoice adjustment HTTP lifecycle', () => {
     expect(sourceItemId).toEqual(expect.any(String));
 
     const adjustmentInput = {
+      operationId: '10000000-0000-4000-8000-000000000001',
       sourceInvoiceId: source.id,
       reason: 'Regularização comercial',
       items: [{ sourceInvoiceItemId: sourceItemId, quantity: 0.5 }],
@@ -275,6 +276,7 @@ describe('Invoice adjustment HTTP lifecycle', () => {
       expect.objectContaining({
         productId: productAId,
         quantity: 0.5,
+        sourceInvoiceItemId: sourceItemId,
       }),
     ]);
     expect(decimal(credit.body.items[0]?.taxRate).equals('14')).toBe(true);
@@ -284,19 +286,37 @@ describe('Invoice adjustment HTTP lifecycle', () => {
       .set('Authorization', bearer(ownerAToken))
       .expect(400);
 
-    await request(app.getHttpServer())
+    const secondCredit = await request(app.getHttpServer())
       .post('/invoice/credit-note')
-      .set('Authorization', bearer(ownerAToken))
-      .send(adjustmentInput)
-      .expect(409);
-
-    await request(app.getHttpServer())
-      .post('/invoice/debit-note')
       .set('Authorization', bearer(ownerAToken))
       .send({
         ...adjustmentInput,
-        reason: 'Complemento comercial',
+        operationId: '10000000-0000-4000-8000-000000000002',
+        reason: 'Regularização complementar',
       })
+      .expect(201);
+
+    expect(secondCredit.body).toEqual(expect.objectContaining({
+      fiscalDocumentType: 'NC',
+      rectifiesInvoiceId: source.id,
+    }));
+
+    const debitInput = {
+      operationId: '10000000-0000-4000-8000-000000000003',
+      sourceInvoiceId: source.id,
+      reason: 'Complemento comercial',
+      items: [
+        {
+          sourceInvoiceItemId: sourceItemId,
+          quantity: 0.5,
+          unitPrice: 140,
+        },
+      ],
+    };
+    const debit = await request(app.getHttpServer())
+      .post('/invoice/debit-note')
+      .set('Authorization', bearer(ownerAToken))
+      .send(debitInput)
       .expect(201)
       .expect((response) => {
         expect(response.body).toEqual(
@@ -307,6 +327,17 @@ describe('Invoice adjustment HTTP lifecycle', () => {
           }),
         );
       });
+    expect(decimal(debit.body.subtotalAmount).equals('70.00')).toBe(true);
+    expect(decimal(debit.body.ivaAmount).equals('9.80')).toBe(true);
+    expect(decimal(debit.body.totalAmount).equals('79.80')).toBe(true);
+    expect(decimal(debit.body.items[0]?.unitPriceAmount).equals('140.00')).toBe(true);
+
+    const repeatedDebit = await request(app.getHttpServer())
+      .post('/invoice/debit-note')
+      .set('Authorization', bearer(ownerAToken))
+      .send(debitInput)
+      .expect(201);
+    expect(repeatedDebit.body.id).toBe(debit.body.id);
 
     const creditList = await request(app.getHttpServer())
       .get('/invoice?fiscalDocumentType=NC')
@@ -315,14 +346,27 @@ describe('Invoice adjustment HTTP lifecycle', () => {
     expect(creditList.body).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ id: credit.body.id, fiscalDocumentType: 'NC' }),
+        expect.objectContaining({ id: secondCredit.body.id, fiscalDocumentType: 'NC' }),
       ]),
     );
+
+    const debitList = await request(app.getHttpServer())
+      .get('/invoice?fiscalDocumentType=ND')
+      .set('Authorization', bearer(ownerAToken))
+      .expect(200);
+    expect(
+      debitList.body.filter(
+        (note: { adjustmentOperationId?: string }) =>
+          note.adjustmentOperationId === debitInput.operationId,
+      ),
+    ).toHaveLength(1);
 
     await request(app.getHttpServer())
       .post('/invoice/debit-note')
       .set('Authorization', bearer(ownerAToken))
       .send({
         ...adjustmentInput,
+        operationId: '10000000-0000-4000-8000-000000000004',
         reason: 'Quantidade acima da origem',
         items: [{ sourceInvoiceItemId: sourceItemId, quantity: 1.1 }],
       })
@@ -368,6 +412,7 @@ describe('Invoice adjustment HTTP lifecycle', () => {
       .post('/invoice/credit-note')
       .set('Authorization', bearer(ownerBToken))
       .send({
+        operationId: '20000000-0000-4000-8000-000000000001',
         sourceInvoiceId: source.body.id,
         reason: 'Ajuste simplificado',
         items: [
@@ -417,6 +462,7 @@ describe('Invoice adjustment HTTP lifecycle', () => {
         .post('/invoice/debit-note')
         .set('Authorization', bearer(ownerAToken))
         .send({
+          operationId: '30000000-0000-4000-8000-000000000001',
           sourceInvoiceId: firstSource.id,
           reason: 'Complemento A',
           items: [{ sourceInvoiceItemId: firstSource.items[0]?.id, quantity: 0.25 }],
@@ -426,6 +472,7 @@ describe('Invoice adjustment HTTP lifecycle', () => {
         .post('/invoice/debit-note')
         .set('Authorization', bearer(ownerAToken))
         .send({
+          operationId: '30000000-0000-4000-8000-000000000002',
           sourceInvoiceId: secondSource.id,
           reason: 'Complemento B',
           items: [{ sourceInvoiceItemId: secondSource.items[0]?.id, quantity: 0.25 }],

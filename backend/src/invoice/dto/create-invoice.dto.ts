@@ -2,6 +2,7 @@ import {
   ArrayMaxSize,
   ArrayMinSize,
   IsArray,
+  IsDateString,
   IsIn,
   IsNotEmpty,
   IsNumber,
@@ -53,6 +54,10 @@ export class CreateInvoiceItemDto {
 export class CreateInvoiceDto {
   @IsUUID()
   clientId: string;
+
+  @IsOptional()
+  @IsDateString()
+  dueDate?: string;
 
   @IsOptional()
   @Transform(({ value }: { value: unknown }) =>

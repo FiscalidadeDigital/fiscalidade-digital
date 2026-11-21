@@ -71,7 +71,11 @@ export class InvoiceController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateAdjustmentNoteDto,
   ) {
-    return this.invoiceService.createCreditNote(user.tenantId, dto);
+    return this.invoiceService.createCreditNote(
+      user.tenantId,
+      dto,
+      user.userId,
+    );
   }
 
   @Post('credit-note/validation')
@@ -89,7 +93,11 @@ export class InvoiceController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateAdjustmentNoteDto,
   ) {
-    return this.invoiceService.createDebitNote(user.tenantId, dto);
+    return this.invoiceService.createDebitNote(
+      user.tenantId,
+      dto,
+      user.userId,
+    );
   }
 
   @Post('debit-note/validation')
@@ -158,6 +166,7 @@ export class InvoiceController {
     return this.invoiceService.markAsPaid(
       user.tenantId,
       id,
+      user.userId,
     );
   }
 
@@ -170,6 +179,7 @@ export class InvoiceController {
     return this.invoiceService.cancel(
       user.tenantId,
       id,
+      user.userId,
     );
   }
 

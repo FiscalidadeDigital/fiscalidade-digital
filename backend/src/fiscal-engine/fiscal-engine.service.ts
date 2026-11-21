@@ -138,9 +138,15 @@ export class FiscalEngineService {
           iva: true,
           withholdingTax: true,
           fiscalDocumentType: true,
+          rectifiesInvoiceId: true,
           issuedAt: true,
           invoiceNumber: true,
           status: true,
+          rectifiedInvoice: {
+            select: {
+              status: true,
+            },
+          },
         },
 
         orderBy: {
@@ -240,6 +246,13 @@ export class FiscalEngineService {
       }),
     ]);
 
+    // Keep the fiscal result safe even if a repository implementation changes
+    // its query later. Cancelled commercial documents remain available for
+    // their own audit trail, but must never contribute to a new assessment.
+    const activeInvoices = invoices.filter(
+      (invoice) => invoice.status !== 'CANCELLED',
+    );
+
     // =======================================================
     // TRANSAÇÕES FISCAIS
     // =======================================================
@@ -261,7 +274,7 @@ export class FiscalEngineService {
     // =======================================================
 
     for (
-      const invoice of invoices
+      const invoice of activeInvoices
     ) {
       const fiscalDocumentType = invoice.fiscalDocumentType ?? 'FT';
       const adjustmentSign = fiscalDocumentType === 'NC' ? -1 : 1;
@@ -348,10 +361,7 @@ export class FiscalEngineService {
       // =====================================================
 
       if (ivaRegime === FiscalRegime.SIMPLIFICADO) {
-        if (
-          invoice.status ===
-          'PAID'
-        ) {
+        if (this.isSettledForSimplifiedVat(invoice)) {
           transactionData.push({
             tenantId,
 
@@ -849,15 +859,16 @@ export class FiscalEngineService {
       );
 
     const invoiceTotal =
-      invoices.reduce(
+      activeInvoices.reduce(
         (
           sum,
           invoice,
         ) =>
           sum +
-          this.number(
-            invoice.subtotal,
-          ),
+          (invoice.fiscalDocumentType === 'NC' ? -1 : 1) *
+            this.number(
+              invoice.subtotal,
+            ),
         0,
       );
 
@@ -958,7 +969,7 @@ export class FiscalEngineService {
 
         `Ano: ${year}`,
 
-        `Facturas: ${invoices.length}`,
+        `Facturas: ${activeInvoices.length}`,
 
         `Compras: ${purchases.length}`,
 
@@ -1008,7 +1019,7 @@ export class FiscalEngineService {
 
       activity: {
         invoices:
-          invoices.length,
+          activeInvoices.length,
 
         purchases:
           purchases.length,
@@ -2330,6 +2341,27 @@ export class FiscalEngineService {
       months[month - 1] ??
       ''
     );
+  }
+
+  /**
+   * Adjustment notes are corrective documents, not independent collections.
+   * The current model records their own operational status as PENDING even
+   * when the corrected invoice has already been paid. For the simplified
+   * regime, preserve the same treatment as the settled source document so a
+   * credit or debit correction is not silently omitted from the review
+   * ledger. No payment date is inferred here.
+   */
+  private isSettledForSimplifiedVat(invoice: {
+    status: string;
+    fiscalDocumentType: string | null;
+    rectifiedInvoice?: { status: string } | null;
+  }): boolean {
+    if (invoice.status === 'PAID') return true;
+
+    const documentType = invoice.fiscalDocumentType ?? 'FT';
+    if (documentType !== 'NC' && documentType !== 'ND') return false;
+
+    return invoice.rectifiedInvoice?.status === 'PAID';
   }
 
   // =========================================================

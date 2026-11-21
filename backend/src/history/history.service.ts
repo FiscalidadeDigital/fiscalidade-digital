@@ -372,20 +372,13 @@ export class HistoryService {
         new Date(a.date).getTime(),
     );
 
-    const totalIncome =
-      history
-        .filter(
-          (item) =>
-            item.type ===
-              'SALE' ||
-            item.type ===
-              'REVENUE',
-        )
-        .reduce(
-          (sum, item) =>
-            sum + item.amount,
-          0,
-        );
+    const totalIncome = history
+      .filter(
+        (item) =>
+          (item.type === 'SALE' || item.type === 'REVENUE') &&
+          item.status !== 'CANCELLED',
+      )
+      .reduce((sum, item) => sum + item.amount, 0);
 
     const totalPurchases =
       history
@@ -401,7 +394,11 @@ export class HistoryService {
         );
 
     const totalFiscalAdjustments = history
-      .filter((item) => item.type === 'FISCAL_ADJUSTMENT')
+      .filter(
+        (item) =>
+          item.type === 'FISCAL_ADJUSTMENT' &&
+          item.status !== 'CANCELLED',
+      )
       .reduce((sum, item) => sum + item.amount, 0);
 
     const totalTaxes =

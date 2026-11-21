@@ -121,6 +121,7 @@ export default function InvoiceComposer({
   const [ivaConfirmationRequired, setIvaConfirmationRequired] =
     useState(false);
   const [clientId, setClientId] = useState('');
+  const [dueDate, setDueDate] = useState('');
   const [items, setItems] = useState<DraftItem[]>([newItem()]);
   const [notes, setNotes] = useState('');
   const [catalogSearch, setCatalogSearch] = useState('');
@@ -270,6 +271,7 @@ export default function InvoiceComposer({
     try {
       const invoice = await (isProForma ? createProForma : createInvoice)({
         clientId,
+        dueDate: dueDate || undefined,
         notes: notes.trim() || undefined,
         items: items.map((item) => ({
           productId: item.productId || undefined,
@@ -362,13 +364,26 @@ export default function InvoiceComposer({
 
         <section className="rounded-xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 p-5"><h2 className="font-semibold text-slate-950">Destinatário</h2><p className="mt-1 text-sm text-slate-500">O número da factura é atribuído automaticamente por empresa e ano.</p></div>
-          <div className="grid gap-5 p-5 md:grid-cols-2">
+          <div className="grid gap-5 p-5 md:grid-cols-2 xl:grid-cols-3">
             <label className="text-sm font-medium text-slate-700">Cliente<span className="text-rose-600"> *</span>
               <select value={clientId} onChange={(event) => setClientId(event.target.value)} disabled={saving} className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus">
                 <option value="">Seleccione o cliente</option>
                 {clients.map((client) => <option key={client.id} value={client.id}>{client.name}{client.nif ? ` — NIF ${client.nif}` : ''}</option>)}
               </select>
               {clients.length === 0 && <span className="mt-2 block text-xs text-amber-700">Crie primeiro um cliente no directório.</span>}
+            </label>
+            <label className="text-sm font-medium text-slate-700">
+              Data de vencimento
+              <input
+                type="date"
+                value={dueDate}
+                onChange={(event) => setDueDate(event.target.value)}
+                disabled={saving}
+                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-950 outline-none focus:border-fd-accent focus:ring-4 focus:ring-fd-focus"
+              />
+              <span className="mt-2 block text-xs font-normal text-slate-500">
+                Opcional. É apresentada no documento quando indicada.
+              </span>
             </label>
             <div className="rounded-lg border border-slate-200 bg-slate-50 p-4"><p className="text-xs font-semibold uppercase tracking-wide text-slate-500">Número</p><p className="mt-2 text-sm font-semibold text-slate-900">Gerado automaticamente</p><p className="mt-1 text-xs text-slate-500">A numeração é atribuída por ordem de emissão.</p></div>
           </div>

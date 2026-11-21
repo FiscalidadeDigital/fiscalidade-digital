@@ -310,6 +310,10 @@ model Invoice {
   fiscalYear           Int?
   cancellationReason   String?
   rectifiesInvoiceId   String?
+  adjustmentOperationId String?
+  adjustmentValidationStatus String?
+  adjustmentValidationRuleVersion String?
+  adjustmentValidatedAt DateTime?
   fiscalHash           String?
   fiscalHashControl    String?
   signatureKeyVersion  Int?
@@ -321,13 +325,17 @@ model Invoice {
   documents             Document[]
   sourceProForma        Invoice?                      @relation("InvoiceConversion", fields: [sourceProFormaId], references: [id])
   convertedInvoice      Invoice?                      @relation("InvoiceConversion")
+  rectifiedInvoice      Invoice?                      @relation("InvoiceRectifications", fields: [rectifiesInvoiceId], references: [id], onDelete: Restrict)
+  rectificationNotes    Invoice[]                     @relation("InvoiceRectifications")
   electronicSubmissions ElectronicInvoiceSubmission[]
 
   @@unique([tenantId, invoiceNumber])
+  @@unique([tenantId, adjustmentOperationId])
   @@index([tenantId])
   @@index([clientId])
   @@index([tenantId, documentType])
   @@index([tenantId, fiscalDocumentType, fiscalSeries, fiscalYear, fiscalSequence])
+  @@index([tenantId, rectifiesInvoiceId, fiscalDocumentType, status])
 }
 
 model ElectronicInvoiceSubmission {
@@ -397,12 +405,16 @@ model InvoiceItem {
   taxExemptionCode        String?
   taxExemptionReason      String?
   electronicOperationType String?
+  sourceInvoiceItemId     String?
 
-  invoice Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  product Product? @relation(fields: [productId], references: [id])
+  invoice            Invoice      @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  product            Product?     @relation(fields: [productId], references: [id])
+  sourceInvoiceItem  InvoiceItem? @relation("InvoiceItemRectifications", fields: [sourceInvoiceItemId], references: [id], onDelete: Restrict)
+  rectificationItems InvoiceItem[] @relation("InvoiceItemRectifications")
 
   @@index([invoiceId])
   @@index([productId])
+  @@index([sourceInvoiceItemId])
 }
 
 model Revenue {

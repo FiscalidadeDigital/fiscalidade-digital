@@ -126,7 +126,11 @@ export class SaftExportService {
     return {
       fiscalYear: result.fiscalYear,
       period: result.period,
-      ready: result.technicalReadiness,
+      // A locally configured header only proves that a technical fixture can
+      // be composed. It is not evidence of official availability, so never
+      // expose the export as ready while certification remains unconfirmed.
+      ready:
+        result.technicalReadiness && result.certificationReadiness,
       issues: this.publicIssues(result.issues),
     };
   }
@@ -269,7 +273,10 @@ export class SaftExportService {
       });
     issues.push({
       code: 'CERTIFICATION_PENDING',
-      severity: 'WARNING',
+      // Environment values are configuration, not proof of an official
+      // certification. Keep external generation unavailable until that proof
+      // exists instead of implying that the file may be used officially.
+      severity: 'BLOCKING',
       message: 'A implementação não possui certificação AGT confirmada.',
     });
     return {

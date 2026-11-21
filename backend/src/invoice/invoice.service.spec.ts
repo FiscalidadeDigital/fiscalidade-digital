@@ -134,6 +134,7 @@ describe('InvoiceService paged list', () => {
 
     await service.create('tenant-a', {
       clientId: 'client-a',
+      dueDate: '2026-12-31',
       items: [{ productId: 'product-a', productName: 'ignorado', quantity: 1, unitPrice: 1 }],
     });
 
@@ -147,6 +148,7 @@ describe('InvoiceService paged list', () => {
       invoiceNumber: expect.stringMatching(/^FT FT\d{4}\/\d{5}$/),
       fiscalSeries: expect.stringMatching(/^FT\d{4}$/),
       fiscalSequence: 1,
+      dueDate: new Date('2026-12-31'),
     }));
     expect(persisted.items.create[0]).toEqual(expect.objectContaining({
       taxType: 'IVA', taxCode: 'NOR', taxRate: expect.anything(), taxAmount: expect.anything(),
@@ -413,14 +415,14 @@ describe('InvoiceService adjustment notes', () => {
       invoice: {
         findFirst: jest.fn()
           .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce(sourceInvoice)
           .mockResolvedValueOnce(null),
         findMany: jest.fn().mockResolvedValue([]),
         create,
       },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
     };
-    const findFirst = jest.fn().mockResolvedValue(sourceInvoice);
     const prisma = {
-      invoice: { findFirst },
       $transaction: jest.fn((callback) => callback(tx)),
     } as unknown as PrismaService;
     const signature = {
@@ -438,12 +440,13 @@ describe('InvoiceService adjustment notes', () => {
     );
 
     await service.createCreditNote('tenant-a', {
+      operationId: '796bd90b-d634-41b1-a6d3-45c77a91c6c1',
       sourceInvoiceId: 'invoice-source',
       reason: 'Devolucao parcial',
       items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
-    });
+    }, 'owner-a');
 
-    expect(findFirst).toHaveBeenCalledWith(expect.objectContaining({
+    expect(tx.invoice.findFirst).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({
         id: 'invoice-source',
         tenantId: 'tenant-a',
@@ -459,6 +462,8 @@ describe('InvoiceService adjustment notes', () => {
       fiscalSeries: expect.stringMatching(/^NC\d{4}$/),
       invoiceNumber: expect.stringMatching(/^NC NC\d{4}\/\d{5}$/),
       rectifiesInvoiceId: 'invoice-source',
+      adjustmentOperationId: '796bd90b-d634-41b1-a6d3-45c77a91c6c1',
+      adjustmentValidationStatus: 'VALIDATED',
       subtotal: 50,
       iva: 7,
       total: 57,
@@ -472,6 +477,14 @@ describe('InvoiceService adjustment notes', () => {
       taxRate: expect.anything(),
       taxAmount: expect.anything(),
       electronicOperationType: 'SE',
+      sourceInvoiceItemId: 'line-source',
+    }));
+    expect(tx.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({
+        tenantId: 'tenant-a',
+        userId: 'owner-a',
+        action: 'INVOICE_ADJUSTMENT_VALIDATED_AND_ISSUED',
+      }),
     }));
     expect(signature.sign).toHaveBeenCalledWith(expect.objectContaining({
       invoiceNo: expect.stringMatching(/^NC NC\d{4}\/\d{5}$/),
@@ -482,13 +495,14 @@ describe('InvoiceService adjustment notes', () => {
   it('approves a complete note automatically before it is issued', async () => {
     const findFirst = jest.fn().mockResolvedValue(sourceInvoice);
     const service = new InvoiceService(
-      { invoice: { findFirst } } as unknown as PrismaService,
+      { invoice: { findFirst, findMany: jest.fn().mockResolvedValue([]) } } as unknown as PrismaService,
       {} as ObligationsService,
       {} as FiscalEngineService,
     );
 
     await expect(
       service.validateCreditNote('tenant-a', {
+        operationId: '918e941b-75a1-4d0b-942b-d3028ac67784',
         sourceInvoiceId: 'invoice-source',
         reason: 'Devolução parcial',
         items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
@@ -505,6 +519,166 @@ describe('InvoiceService adjustment notes', () => {
         ]),
       }),
     );
+  });
+
+  it('requires a unique operation identifier before beginning note issuance', async () => {
+    const transaction = jest.fn();
+    const service = new InvoiceService(
+      { $transaction: transaction } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(
+      service.createCreditNote('tenant-a', {
+        sourceInvoiceId: 'invoice-source',
+        reason: 'Devolucao parcial',
+        items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
+      } as any),
+    ).rejects.toThrow('confirmar esta opera');
+
+    expect(transaction).not.toHaveBeenCalled();
+  });
+
+  it('allows another partial credit note while the remaining source balance is sufficient', async () => {
+    const service = new InvoiceService(
+      {
+        invoice: {
+          findFirst: jest.fn().mockResolvedValue(sourceInvoice),
+          findMany: jest.fn().mockResolvedValue([
+            {
+              fiscalDocumentType: 'NC',
+              items: [
+                {
+                  sourceInvoiceItemId: 'line-source',
+                  quantity: 1,
+                  quantityAmount: new Prisma.Decimal('1.0000'),
+                  total: 50,
+                  totalAmount: new Prisma.Decimal('50.00'),
+                },
+              ],
+            },
+          ]),
+        },
+      } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(
+      service.validateCreditNote('tenant-a', {
+        operationId: '4918a80d-680a-46fa-a174-87fb7936c8a2',
+        sourceInvoiceId: 'invoice-source',
+        reason: 'Regularizacao complementar',
+        items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
+      }),
+    ).resolves.toMatchObject({
+      status: 'VALIDATED',
+      canCreate: true,
+    });
+  });
+
+  it('blocks a credit note that exceeds the remaining balance after earlier partial credits', async () => {
+    const service = new InvoiceService(
+      {
+        invoice: {
+          findFirst: jest.fn().mockResolvedValue(sourceInvoice),
+          findMany: jest.fn().mockResolvedValue([
+            {
+              fiscalDocumentType: 'NC',
+              items: [
+                {
+                  sourceInvoiceItemId: 'line-source',
+                  quantity: 1.2,
+                  quantityAmount: new Prisma.Decimal('1.2000'),
+                  total: 60,
+                  totalAmount: new Prisma.Decimal('60.00'),
+                },
+              ],
+            },
+          ]),
+        },
+      } as unknown as PrismaService,
+      {} as ObligationsService,
+      {} as FiscalEngineService,
+    );
+
+    await expect(
+      service.validateCreditNote('tenant-a', {
+        operationId: '097f4a66-88fd-4f2e-9fa3-91e1e0f9523a',
+        sourceInvoiceId: 'invoice-source',
+        reason: 'Regularizacao acima do saldo',
+        items: [{ sourceInvoiceItemId: 'line-source', quantity: 0.9 }],
+      }),
+    ).resolves.toMatchObject({
+      status: 'REVIEW_REQUIRED',
+      canCreate: false,
+    });
+  });
+
+  it('uses the entered debit unit price and returns the prior document for a repeated operation', async () => {
+    let createdNote: any = null;
+    const create = jest.fn().mockImplementation(({ data }) => {
+      createdNote = {
+        id: 'debit-note-a',
+        ...data,
+        client: { id: 'client-a' },
+        items: data.items.create,
+      };
+      return createdNote;
+    });
+    const findFirst = jest.fn().mockImplementation(({ where }) => {
+      if (where.adjustmentOperationId) return Promise.resolve(createdNote);
+      if (where.id === 'invoice-source') return Promise.resolve(sourceInvoice);
+      if (where.fiscalDocumentType === 'ND') return Promise.resolve(null);
+      return Promise.resolve(null);
+    });
+    const tx = {
+      $queryRaw: jest.fn().mockResolvedValue([{ lock: '1' }]),
+      invoice: {
+        findFirst,
+        findMany: jest.fn().mockResolvedValue([]),
+        create,
+      },
+      auditLog: { create: jest.fn().mockResolvedValue({}) },
+    };
+    const signature = {
+      sign: jest.fn().mockReturnValue({
+        hash: 'debit-note-hash',
+        hashControl: '8',
+        keyVersion: 1,
+      }),
+    };
+    const service = new InvoiceService(
+      { $transaction: jest.fn((callback) => callback(tx)) } as unknown as PrismaService,
+      { syncCompany: jest.fn() } as any,
+      { syncTenant: jest.fn() } as any,
+      signature as any,
+    );
+    const request = {
+      operationId: '9d7a3c17-470d-477f-8434-9c1e03d7b077',
+      sourceInvoiceId: 'invoice-source',
+      reason: 'Valor adicional acordado',
+      items: [
+        {
+          sourceInvoiceItemId: 'line-source',
+          quantity: 1,
+          unitPrice: 75,
+        },
+      ],
+    };
+
+    const first = await service.createDebitNote('tenant-a', request, 'owner-a');
+    const repeated = await service.createDebitNote('tenant-a', request, 'owner-a');
+
+    expect(create).toHaveBeenCalledTimes(1);
+    expect(repeated.id).toBe(first.id);
+    expect(create.mock.calls[0][0].data.items.create[0]).toMatchObject({
+      unitPrice: 75,
+      total: 75,
+      sourceInvoiceItemId: 'line-source',
+    });
+    expect(tx.auditLog.create).toHaveBeenCalledTimes(1);
   });
 
   it('requires recovery instead of issuing a note without source lines', async () => {
@@ -525,6 +699,7 @@ describe('InvoiceService adjustment notes', () => {
 
     await expect(
       service.validateDebitNote('tenant-a', {
+        operationId: 'f82e6999-8e6d-4d4e-9f5f-9a6606d94532',
         sourceInvoiceId: 'invoice-source',
         reason: 'Acerto documentado',
         items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
@@ -545,7 +720,8 @@ describe('InvoiceService adjustment notes', () => {
       {} as FiscalEngineService,
     );
 
-    await expect(service.createDebitNote('tenant-a', {
+    await expect(service.validateDebitNote('tenant-a', {
+      operationId: '2cbf684f-c045-4cab-8903-88f9cc6a72a4',
       sourceInvoiceId: 'invoice-b',
       reason: 'Acerto documentado',
       items: [{ sourceInvoiceItemId: 'line-b', quantity: 1 }],
@@ -556,15 +732,24 @@ describe('InvoiceService adjustment notes', () => {
   });
 
   it('blocks adjustment notes when the source invoice has no recorded items', async () => {
-    const transaction = jest.fn();
-    const service = new InvoiceService(
-      {
-        invoice: {
-          findFirst: jest.fn().mockResolvedValue({
+    const create = jest.fn();
+    const tx = {
+      $queryRaw: jest.fn().mockResolvedValue([{ lock: '1' }]),
+      invoice: {
+        findFirst: jest.fn()
+          .mockResolvedValueOnce(null)
+          .mockResolvedValueOnce({
             ...sourceInvoice,
             items: [],
           }),
-        },
+        findMany: jest.fn(),
+        create,
+      },
+      auditLog: { create: jest.fn() },
+    };
+    const transaction = jest.fn((callback) => callback(tx));
+    const service = new InvoiceService(
+      {
         $transaction: transaction,
       } as unknown as PrismaService,
       {} as ObligationsService,
@@ -573,13 +758,15 @@ describe('InvoiceService adjustment notes', () => {
 
     await expect(
       service.createCreditNote('tenant-a', {
+        operationId: 'ac2dbe19-b1fb-4f3e-9912-c1641b80cce1',
         sourceInvoiceId: 'invoice-source',
         reason: 'Correcção documentada',
         items: [{ sourceInvoiceItemId: 'line-source', quantity: 1 }],
       }),
     ).rejects.toThrow('detalhe dos artigos ou serviços');
 
-    expect(transaction).not.toHaveBeenCalled();
+    expect(transaction).toHaveBeenCalledTimes(1);
+    expect(create).not.toHaveBeenCalled();
   });
 
   it('blocks payment of a Pro Forma before any state transition', async () => {
@@ -628,5 +815,64 @@ describe('InvoiceService adjustment notes', () => {
       'fluxo financeiro',
     );
     expect(updateMany).not.toHaveBeenCalled();
+  });
+
+  it('marks a commercial invoice as paid together with its audit record', async () => {
+    const tx = {
+      invoice: {
+        updateMany: jest.fn().mockResolvedValue({ count: 1 }),
+      },
+      auditLog: {
+        create: jest.fn().mockResolvedValue({}),
+      },
+    };
+    const findFirst = jest
+      .fn()
+      .mockResolvedValueOnce({
+        id: 'invoice-paid',
+        documentType: 'NORMAL',
+        fiscalDocumentType: 'FT',
+        status: 'PENDING',
+      })
+      .mockResolvedValueOnce({
+        id: 'invoice-paid',
+        documentType: 'NORMAL',
+        fiscalDocumentType: 'FT',
+        status: 'PAID',
+      });
+    const fiscalEngine = { syncTenant: jest.fn().mockResolvedValue({}) };
+    const service = new InvoiceService(
+      {
+        invoice: {
+          findFirst,
+          findMany: jest.fn().mockResolvedValue([]),
+        },
+        $transaction: jest.fn((callback) => callback(tx)),
+      } as unknown as PrismaService,
+      { syncCompany: jest.fn().mockResolvedValue({}) } as any,
+      fiscalEngine as any,
+    );
+
+    await expect(
+      service.markAsPaid('tenant-a', 'invoice-paid', 'owner-a'),
+    ).resolves.toMatchObject({ status: 'PAID' });
+
+    expect(tx.invoice.updateMany).toHaveBeenCalledWith({
+      where: {
+        id: 'invoice-paid',
+        tenantId: 'tenant-a',
+        status: 'PENDING',
+      },
+      data: { status: 'PAID' },
+    });
+    expect(tx.auditLog.create).toHaveBeenCalledWith({
+      data: expect.objectContaining({
+        tenantId: 'tenant-a',
+        userId: 'owner-a',
+        action: 'INVOICE_MARKED_PAID',
+        entityId: 'invoice-paid',
+      }),
+    });
+    expect(fiscalEngine.syncTenant).toHaveBeenCalledWith('tenant-a');
   });
 });
