@@ -1,19 +1,21 @@
-import {
-  BadRequestException,
-  ConflictException,
-} from '@nestjs/common';
+import { BadRequestException, ConflictException } from '@nestjs/common';
 
-import {
-  DeclarationStatus,
-  TaxType,
-} from '@prisma/client';
+import { DeclarationStatus, TaxType } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
 import { PaymentsService } from './payments.service';
 
-const paymentDate =
-  new Date('2026-11-20T09:15:00.000Z');
+const paymentDate = new Date('2026-11-20T09:15:00.000Z');
+
+type PaymentCreateArgs = {
+  data: Record<string, unknown>;
+};
+
+type PaymentFixture = Record<string, unknown> & {
+  id: string;
+  declaration: null;
+};
 
 function createFixture(options?: {
   declaration?: {
@@ -40,23 +42,18 @@ function createFixture(options?: {
       update: jest.fn().mockResolvedValue({ id: 'declaration-1' }),
     },
     taxPayment: {
-      findFirst: jest.fn().mockResolvedValue(
-        options?.existingPayment ??
-          null,
-      ),
-      create: jest.fn().mockImplementation(
-        ({ data }) => ({
-          id: 'payment-1',
-          ...data,
-          declaration: null,
-        }),
-      ),
+      findFirst: jest.fn().mockResolvedValue(options?.existingPayment ?? null),
+      create: jest.fn<PaymentFixture, [PaymentCreateArgs]>(({ data }) => ({
+        id: 'payment-1',
+        ...data,
+        declaration: null,
+      })),
     },
   };
+  type TransactionCallback = (value: typeof transaction) => unknown;
   const prisma = {
-    $transaction: jest.fn(
-      async (callback) =>
-        callback(transaction),
+    $transaction: jest.fn<Promise<unknown>, [TransactionCallback]>((callback) =>
+      Promise.resolve(callback(transaction)),
     ),
   } as unknown as PrismaService;
 
@@ -68,47 +65,33 @@ function createFixture(options?: {
 
 describe('PaymentsService create', () => {
   it('locks and rereads the declaration before recording a payment and its balance', async () => {
-    const { service, transaction } =
-      createFixture();
+    const { service, transaction } = createFixture();
 
-    const result = await service.create(
-      'tenant-1',
-      {
-        declarationId: 'declaration-1',
-        taxType: TaxType.IVA,
-        amount: 30,
-        reference: 'REC-2026-001',
-        paidAt: paymentDate.toISOString(),
-      },
-    );
+    const result = await service.create('tenant-1', {
+      declarationId: 'declaration-1',
+      taxType: TaxType.IVA,
+      amount: 30,
+      reference: 'REC-2026-001',
+      paidAt: paymentDate.toISOString(),
+    });
 
-    expect(
-      transaction.$queryRaw,
-    ).toHaveBeenCalledTimes(2);
-    expect(
-      transaction.taxDeclaration.findFirst,
-    ).toHaveBeenCalledWith({
+    expect(transaction.$queryRaw).toHaveBeenCalledTimes(2);
+    expect(transaction.taxDeclaration.findFirst).toHaveBeenCalledWith({
       where: {
         id: 'declaration-1',
         tenantId: 'tenant-1',
       },
     });
-    expect(
-      transaction.taxPayment.create,
-    ).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          tenantId: 'tenant-1',
-          declarationId: 'declaration-1',
-          amount: 30,
-          reference: 'REC-2026-001',
-          paidAt: paymentDate,
-        }),
-      }),
-    );
-    expect(
-      transaction.taxDeclaration.update,
-    ).toHaveBeenCalledWith({
+    expect(transaction.taxPayment.create).toHaveBeenCalledTimes(1);
+    const createPaymentArgs = transaction.taxPayment.create.mock.calls[0]?.[0];
+    expect(createPaymentArgs?.data).toMatchObject({
+      tenantId: 'tenant-1',
+      declarationId: 'declaration-1',
+      amount: 30,
+      reference: 'REC-2026-001',
+      paidAt: paymentDate,
+    });
+    expect(transaction.taxDeclaration.update).toHaveBeenCalledWith({
       where: { id: 'declaration-1' },
       data: {
         paidAmount: 100,
@@ -136,28 +119,18 @@ describe('PaymentsService create', () => {
       paidAt: paymentDate,
       declaration: null,
     };
-    const { service, transaction } =
-      createFixture({ existingPayment });
+    const { service, transaction } = createFixture({ existingPayment });
 
-    const result = await service.create(
-      'tenant-1',
-      {
-        declarationId: 'declaration-1',
-        taxType: TaxType.IVA,
-        amount: 30,
-        reference: 'REC-2026-001',
-      },
-    );
+    const result = await service.create('tenant-1', {
+      declarationId: 'declaration-1',
+      taxType: TaxType.IVA,
+      amount: 30,
+      reference: 'REC-2026-001',
+    });
 
-    expect(
-      transaction.taxPayment.create,
-    ).not.toHaveBeenCalled();
-    expect(
-      transaction.taxDeclaration.findFirst,
-    ).not.toHaveBeenCalled();
-    expect(
-      transaction.taxDeclaration.update,
-    ).not.toHaveBeenCalled();
+    expect(transaction.taxPayment.create).not.toHaveBeenCalled();
+    expect(transaction.taxDeclaration.findFirst).not.toHaveBeenCalled();
+    expect(transaction.taxDeclaration.update).not.toHaveBeenCalled();
     expect(result).toEqual(
       expect.objectContaining({
         id: 'payment-existing',
@@ -167,18 +140,17 @@ describe('PaymentsService create', () => {
   });
 
   it('rejects reuse of a reference with different values before changing totals', async () => {
-    const { service, transaction } =
-      createFixture({
-        existingPayment: {
-          id: 'payment-existing',
-          tenantId: 'tenant-1',
-          declarationId: 'declaration-1',
-          taxType: TaxType.IVA,
-          amount: 25,
-          reference: 'REC-2026-001',
-          declaration: null,
-        },
-      });
+    const { service, transaction } = createFixture({
+      existingPayment: {
+        id: 'payment-existing',
+        tenantId: 'tenant-1',
+        declarationId: 'declaration-1',
+        taxType: TaxType.IVA,
+        amount: 25,
+        reference: 'REC-2026-001',
+        declaration: null,
+      },
+    });
 
     await expect(
       service.create('tenant-1', {
@@ -187,31 +159,24 @@ describe('PaymentsService create', () => {
         amount: 30,
         reference: 'REC-2026-001',
       }),
-    ).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    ).rejects.toBeInstanceOf(ConflictException);
 
-    expect(
-      transaction.taxPayment.create,
-    ).not.toHaveBeenCalled();
-    expect(
-      transaction.taxDeclaration.update,
-    ).not.toHaveBeenCalled();
+    expect(transaction.taxPayment.create).not.toHaveBeenCalled();
+    expect(transaction.taxDeclaration.update).not.toHaveBeenCalled();
   });
 
   it('rejects reuse of a reference for another declaration in the same company', async () => {
-    const { service, transaction } =
-      createFixture({
-        existingPayment: {
-          id: 'payment-existing',
-          tenantId: 'tenant-1',
-          declarationId: 'declaration-other',
-          taxType: TaxType.IVA,
-          amount: 30,
-          reference: 'REC-2026-001',
-          declaration: null,
-        },
-      });
+    const { service, transaction } = createFixture({
+      existingPayment: {
+        id: 'payment-existing',
+        tenantId: 'tenant-1',
+        declarationId: 'declaration-other',
+        taxType: TaxType.IVA,
+        amount: 30,
+        reference: 'REC-2026-001',
+        declaration: null,
+      },
+    });
 
     await expect(
       service.create('tenant-1', {
@@ -220,28 +185,21 @@ describe('PaymentsService create', () => {
         amount: 30,
         reference: 'REC-2026-001',
       }),
-    ).rejects.toBeInstanceOf(
-      ConflictException,
-    );
+    ).rejects.toBeInstanceOf(ConflictException);
 
-    expect(
-      transaction.taxPayment.create,
-    ).not.toHaveBeenCalled();
-    expect(
-      transaction.taxDeclaration.update,
-    ).not.toHaveBeenCalled();
+    expect(transaction.taxPayment.create).not.toHaveBeenCalled();
+    expect(transaction.taxDeclaration.update).not.toHaveBeenCalled();
   });
 
   it('refuses an amount greater than the balance read inside the transaction', async () => {
-    const { service, transaction } =
-      createFixture({
-        declaration: {
-          id: 'declaration-1',
-          taxType: TaxType.IVA,
-          declaredAmount: 100,
-          paidAmount: 90,
-        },
-      });
+    const { service, transaction } = createFixture({
+      declaration: {
+        id: 'declaration-1',
+        taxType: TaxType.IVA,
+        declaredAmount: 100,
+        paidAmount: 90,
+      },
+    });
 
     await expect(
       service.create('tenant-1', {
@@ -250,15 +208,9 @@ describe('PaymentsService create', () => {
         amount: 10.01,
         reference: 'REC-2026-001',
       }),
-    ).rejects.toBeInstanceOf(
-      BadRequestException,
-    );
+    ).rejects.toBeInstanceOf(BadRequestException);
 
-    expect(
-      transaction.taxPayment.create,
-    ).not.toHaveBeenCalled();
-    expect(
-      transaction.taxDeclaration.update,
-    ).not.toHaveBeenCalled();
+    expect(transaction.taxPayment.create).not.toHaveBeenCalled();
+    expect(transaction.taxDeclaration.update).not.toHaveBeenCalled();
   });
 });

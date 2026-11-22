@@ -1,10 +1,21 @@
 const path = require('path');
+const { existsSync } = require('fs');
 const { spawnSync } = require('child_process');
 const { generateKeyPairSync } = require('crypto');
 const dotenv = require('dotenv');
 
 const backendRoot = path.resolve(__dirname, '..');
 dotenv.config({ path: path.join(backendRoot, '.env') });
+
+const bundledSchemaEngine = path.join(
+  backendRoot,
+  'node_modules',
+  '@prisma',
+  'engines',
+  process.platform === 'win32'
+    ? 'schema-engine-windows.exe'
+    : 'schema-engine',
+);
 
 const configuredUrl = process.env.DATABASE_URL;
 if (!configuredUrl) {
@@ -47,6 +58,17 @@ const childEnvironment = {
   FISCAL_SIGNATURE_KEY_VERSION: '1',
 };
 
+// The local integration runner must remain self-contained. When Prisma's
+// bundled schema engine is available, use it instead of asking the network
+// for a checksum before applying migrations to the local test database.
+if (
+  !childEnvironment.PRISMA_SCHEMA_ENGINE_BINARY &&
+  existsSync(bundledSchemaEngine)
+) {
+  childEnvironment.PRISMA_SCHEMA_ENGINE_BINARY = bundledSchemaEngine;
+  childEnvironment.PRISMA_ENGINES_CHECKSUM_IGNORE_MISSING = '1';
+}
+
 const run = (entrypoint, args) => {
   const result = spawnSync(process.execPath, [entrypoint, ...args], {
     cwd: backendRoot,
@@ -68,7 +90,7 @@ run(path.join(backendRoot, 'node_modules', 'prisma', 'build', 'index.js'), [
   'deploy',
 ]);
 
-run(path.join(backendRoot, '..', 'node_modules', 'jest', 'bin', 'jest.js'), [
+run(path.join(backendRoot, 'node_modules', 'jest', 'bin', 'jest.js'), [
   '--config',
   'test/jest.integration.json',
   '--runInBand',

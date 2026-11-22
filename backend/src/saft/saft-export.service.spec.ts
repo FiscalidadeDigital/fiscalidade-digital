@@ -2,6 +2,7 @@ import { generateKeyPairSync } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 
 import { FiscalSignatureService } from '../fiscal-signature/fiscal-signature.service';
+import type { PrismaService } from '../prisma/prisma.service';
 import { SaftExportService } from './saft-export.service';
 import { SaftXmlSerializer } from './serializers/saft-xml.serializer';
 import { SaftXsdValidator } from './validators/saft-xsd.validator';
@@ -136,7 +137,7 @@ describe('SaftExportService technical fixture', () => {
     const serializer = new SaftXmlSerializer();
     const validator = new SaftXsdValidator();
     const service = new SaftExportService(
-      {} as any,
+      {} as unknown as PrismaService,
       serializer,
       validator,
       new FiscalSignatureService(),
@@ -199,10 +200,10 @@ describe('SaftExportService company city preflight', () => {
       configuration: jest.fn().mockReturnValue({ configured: true }),
     };
     const service = new SaftExportService(
-      prisma as any,
-      {} as any,
-      {} as any,
-      signature as any,
+      prisma as unknown as PrismaService,
+      {} as SaftXmlSerializer,
+      {} as SaftXsdValidator,
+      signature as unknown as FiscalSignatureService,
     );
     return { prisma, service };
   }
@@ -260,8 +261,10 @@ describe('SaftExportService company city preflight', () => {
         }),
       ]),
     );
-    await expect(service.generate('tenant-1', 'user-1', 2026)).rejects.toMatchObject({
-      response: expect.objectContaining({ code: 'SAFT_PREFLIGHT_FAILED' }),
+    await expect(
+      service.generate('tenant-1', 'user-1', 2026),
+    ).rejects.toMatchObject({
+      response: { code: 'SAFT_PREFLIGHT_FAILED' },
     });
   });
 
@@ -336,10 +339,10 @@ describe('SaftExportService company city preflight', () => {
       configuration: jest.fn().mockReturnValue({ configured: true }),
     };
     const service = new SaftExportService(
-      prisma as any,
-      {} as any,
-      {} as any,
-      signature as any,
+      prisma as unknown as PrismaService,
+      {} as SaftXmlSerializer,
+      {} as SaftXsdValidator,
+      signature as unknown as FiscalSignatureService,
     );
 
     await expect(service.summary('tenant-1', 2026)).resolves.toMatchObject({

@@ -113,7 +113,7 @@ export class SaftExportService {
       invoices: invoices.map((invoice) => ({
         ...invoice,
         rectifiedInvoiceNumber: invoice.rectifiesInvoiceId
-          ? rectifiedInvoiceNumberById.get(invoice.rectifiesInvoiceId) ?? null
+          ? (rectifiedInvoiceNumberById.get(invoice.rectifiesInvoiceId) ?? null)
           : null,
       })),
       start,
@@ -129,8 +129,7 @@ export class SaftExportService {
       // A locally configured header only proves that a technical fixture can
       // be composed. It is not evidence of official availability, so never
       // expose the export as ready while certification remains unconfirmed.
-      ready:
-        result.technicalReadiness && result.certificationReadiness,
+      ready: result.technicalReadiness && result.certificationReadiness,
       issues: this.publicIssues(result.issues),
     };
   }

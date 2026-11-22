@@ -90,14 +90,44 @@ As regras fiscais que não podem ser confirmadas com os dados existentes não se
 ### Lint, estilo e builds
 
 - Lint completo do frontend: **0 erros e 15 avisos**, exactamente o mesmo resultado da referência `origin/main`; não foram introduzidos avisos novos pela versão fiscal.
-- Lint completo do backend: **6 014 erros e 289 avisos**. A referência `origin/main` já contém **5 891 erros e 274 avisos**; esta versão acrescenta **123 erros e 15 avisos**, sobretudo regras de estilo e tipagem em ficheiros de teste e de pagamentos já alterados pela funcionalidade fiscal. Não foi feita uma reescrita ampla de ficheiros antigos apenas para reduzir esse número.
+- Medição preliminar do lint do backend: **6 014 erros e 289 avisos**. Este resultado foi substituído pela comparação completa e reprodutível registada na correcção final abaixo.
 - A formatação do DTO alterado foi ajustada e a verificação de espaços em branco do conjunto de alterações terminou sem falhas.
 - Build optimizado do frontend: aprovado.
-- Compilação directa do backend: aprovada. O comando completo continua interrompido antes da compilação porque a geração local do cliente Prisma tenta obter um componente externo indisponível neste ambiente; é uma limitação do ambiente local, mas deve ser repetida no ambiente de integração antes da publicação.
+- Compilação directa do backend: aprovada. O bloqueio então observado no comando completo foi posteriormente resolvido e o resultado final encontra-se registado abaixo.
 
 ### Resultado e bloqueios
 
 - Nenhuma alteração foi publicada em produção e nenhuma base de dados remota foi alterada nesta retoma.
 - As validações funcionais, a migração isolada, os cálculos, os documentos relacionados, a prevenção de duplicados e o painel estão aprovados.
-- A versão **não é ainda declarada pronta para aprovação de produção**: a verificação global de lint do backend continua não conforme e o build completo do backend ainda depende de confirmação num ambiente com os componentes Prisma disponíveis.
-- Antes de solicitar produção, é necessário resolver ou aceitar formalmente as 123 novas ocorrências de lint do backend, executar o build completo num ambiente de integração e ensaiar a migração com cópia de segurança e plano de reversão da base de produção.
+- Este estado preliminar foi substituído pela validação final abaixo, que confirma os builds completos, a integração isolada e a situação actual do lint.
+- Antes de solicitar produção, é necessário aceitar formalmente a dívida histórica do lint global ou resolvê-la, além de ensaiar a migração com cópia de segurança e plano de reversão da base de produção.
+
+## Correcção final e preparação para revisão — 22-11-2026
+
+### Bloqueios resolvidos
+
+- O comando local de integração passou a localizar o executável de testes dentro do backend e a reutilizar o motor Prisma já instalado. Assim, os testes locais não dependem de descarregar componentes nem de qualquer credencial externa.
+- O bloqueio do build completo do backend foi confirmado como uma configuração inválida de proxy do ambiente, e não como uma dependência ou falha do serviço. Com o motor local disponível e sem esse proxy, `npm run build` terminou com sucesso.
+- Os testes afectados pela emissão de documentos foram tipados e formatados sem alterar regras fiscais, cálculos, fluxos de pagamento ou comportamento da aplicação.
+
+### Validações executadas nesta retoma
+
+- TypeScript do backend: aprovado (`tsc --noEmit`).
+- TypeScript do frontend: aprovado (`tsc --noEmit`).
+- Build completo do backend: aprovado em 22-11-2026 (`prisma generate` e `nest build`).
+- Build optimizado do frontend: aprovado nesta mesma versão antes das correcções exclusivamente de teste; não houve alteração de código do frontend depois dessa confirmação. A repetição também compilou e validou os tipos antes da fase final de optimização.
+- Prisma: schema válido e 42 migrações confirmadas como aplicadas e actualizadas numa instância PostgreSQL temporária em `127.0.0.1:55434`.
+- Integração HTTP fiscal: **4 de 4 verificações aprovadas** (31,738 s) na base isolada. Foram confirmados emissão de factura, IVA, subtotal e total, notas de crédito e débito, documentos relacionados, limites acumulados, prevenção de duplicados, regras de pagamento, isolamento por empresa, numeração concorrente e actualização do painel.
+- A instância de teste e os seus dados foram encerrados e removidos após a validação. Não foi usada qualquer base ou dado de produção.
+
+### Lint e risco de migração
+
+- O lint completo do backend terminou com **4 771 erros e 257 avisos**, pelo que mantém saída técnica não nula. Uma comparação com a referência principal usando o mesmo comando registou **6 473 erros e 277 avisos**; esta versão fica **1 702 erros e 20 avisos abaixo** dessa referência. Não foram desactivadas regras nem ocultados erros.
+- As correcções desta preparação eliminaram as ocorrências de estilo e tipagem introduzidas nos testes e serviços fiscais alterados. A dívida remanescente é anterior e global ao âmbito desta publicação, devendo ser tratada numa iniciativa própria.
+- A única migração nova é aditiva: acrescenta campos, índices e relações `NOT VALID`; não contém `DROP`, `TRUNCATE`, remoção de dados ou recálculo de facturas existentes. O risco remanescente para produção é operacional: validar referências históricas antes de tornar obrigatórias as novas relações.
+
+### Estado para publicação
+
+- A versão está tecnicamente validada para **revisão da branch**, com builds, schema, migrações isoladas e integração fiscal aprovados.
+- Não foi feito deploy nem alterada produção.
+- A aprovação de produção continua dependente de aceitar formalmente a dívida histórica do lint global ou de a resolver; esse ponto não foi ocultado nem convertido numa aprovação indevida.

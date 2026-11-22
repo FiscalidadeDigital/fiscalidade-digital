@@ -1,17 +1,32 @@
 import { HistoryService } from './history.service';
+import type { PrismaService } from '../prisma/prisma.service';
+
+type HistoryInvoiceFixture = {
+  id: string;
+  invoiceNumber: string;
+  fiscalDocumentType: 'FT' | 'NC' | 'ND';
+  status: string;
+  total: number;
+  iva: number;
+  withholdingTax: number;
+  issuedAt: Date;
+  rectifiesInvoiceId: string | null;
+};
 
 describe('HistoryService fiscal document totals', () => {
   const prisma = {
-    invoice: { findMany: jest.fn() },
-    purchaseInvoice: { findMany: jest.fn() },
-    revenue: { findMany: jest.fn() },
-    taxTransaction: { findMany: jest.fn() },
-    taxAssessment: { findMany: jest.fn() },
-    fiscalObligation: { findMany: jest.fn() },
-    taxDeclaration: { findMany: jest.fn() },
-    taxPayment: { findMany: jest.fn() },
-  } as any;
-  const service = new HistoryService(prisma);
+    invoice: {
+      findMany: jest.fn<Promise<HistoryInvoiceFixture[]>, [unknown]>(),
+    },
+    purchaseInvoice: { findMany: jest.fn<Promise<unknown[]>, [unknown]>() },
+    revenue: { findMany: jest.fn<Promise<unknown[]>, [unknown]>() },
+    taxTransaction: { findMany: jest.fn<Promise<unknown[]>, [unknown]>() },
+    taxAssessment: { findMany: jest.fn<Promise<unknown[]>, [unknown]>() },
+    fiscalObligation: { findMany: jest.fn<Promise<unknown[]>, [unknown]>() },
+    taxDeclaration: { findMany: jest.fn<Promise<unknown[]>, [unknown]>() },
+    taxPayment: { findMany: jest.fn<Promise<unknown[]>, [unknown]>() },
+  };
+  const service = new HistoryService(prisma as unknown as PrismaService);
 
   function invoice(
     id: string,
@@ -19,7 +34,7 @@ describe('HistoryService fiscal document totals', () => {
     status: string,
     total: number,
     day: number,
-  ) {
+  ): HistoryInvoiceFixture {
     return {
       id,
       invoiceNumber: `${fiscalDocumentType}-2026-${id}`,
@@ -29,8 +44,7 @@ describe('HistoryService fiscal document totals', () => {
       iva: 0,
       withholdingTax: 0,
       issuedAt: new Date(`2026-09-${String(day).padStart(2, '0')}T10:00:00Z`),
-      rectifiesInvoiceId:
-        fiscalDocumentType === 'FT' ? null : 'ft-active',
+      rectifiesInvoiceId: fiscalDocumentType === 'FT' ? null : 'ft-active',
     };
   }
 

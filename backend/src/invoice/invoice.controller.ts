@@ -40,9 +40,7 @@ const INVOICE_WRITE_ROLES = [
 @Controller('invoice')
 @UseGuards(JwtAuthGuard)
 export class InvoiceController {
-  constructor(
-    private readonly invoiceService: InvoiceService,
-  ) {}
+  constructor(private readonly invoiceService: InvoiceService) {}
 
   @Post()
   @Roles(...INVOICE_WRITE_ROLES)
@@ -50,10 +48,7 @@ export class InvoiceController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateInvoiceDto,
   ) {
-    return this.invoiceService.create(
-      user.tenantId,
-      dto,
-    );
+    return this.invoiceService.create(user.tenantId, dto);
   }
 
   @Post('pro-forma')
@@ -93,11 +88,7 @@ export class InvoiceController {
     @CurrentUser() user: CurrentUserPayload,
     @Body() dto: CreateAdjustmentNoteDto,
   ) {
-    return this.invoiceService.createDebitNote(
-      user.tenantId,
-      dto,
-      user.userId,
-    );
+    return this.invoiceService.createDebitNote(user.tenantId, dto, user.userId);
   }
 
   @Post('debit-note/validation')
@@ -137,50 +128,26 @@ export class InvoiceController {
 
   @Get('dashboard/stats')
   @Roles(...INVOICE_READ_ROLES)
-  getDashboardStats(
-    @CurrentUser() user: CurrentUserPayload,
-  ) {
-    return this.invoiceService.getDashboardStats(
-      user.tenantId,
-    );
+  getDashboardStats(@CurrentUser() user: CurrentUserPayload) {
+    return this.invoiceService.getDashboardStats(user.tenantId);
   }
 
   @Get(':id')
   @Roles(...INVOICE_READ_ROLES)
-  findOne(
-    @CurrentUser() user: CurrentUserPayload,
-    @Param('id') id: string,
-  ) {
-    return this.invoiceService.findOne(
-      user.tenantId,
-      id,
-    );
+  findOne(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.invoiceService.findOne(user.tenantId, id);
   }
 
   @Patch(':id/pay')
   @Roles(...INVOICE_WRITE_ROLES)
-  markAsPaid(
-    @CurrentUser() user: CurrentUserPayload,
-    @Param('id') id: string,
-  ) {
-    return this.invoiceService.markAsPaid(
-      user.tenantId,
-      id,
-      user.userId,
-    );
+  markAsPaid(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.invoiceService.markAsPaid(user.tenantId, id, user.userId);
   }
 
   @Patch(':id/cancel')
   @Roles(UserRole.OWNER, UserRole.ADMIN)
-  cancel(
-    @CurrentUser() user: CurrentUserPayload,
-    @Param('id') id: string,
-  ) {
-    return this.invoiceService.cancel(
-      user.tenantId,
-      id,
-      user.userId,
-    );
+  cancel(@CurrentUser() user: CurrentUserPayload, @Param('id') id: string) {
+    return this.invoiceService.cancel(user.tenantId, id, user.userId);
   }
 
   @Get(':id/pdf')
@@ -190,10 +157,6 @@ export class InvoiceController {
     @Param('id') id: string,
     @Res() res: Response,
   ) {
-    return this.invoiceService.generatePdf(
-      user.tenantId,
-      id,
-      res,
-    );
+    return this.invoiceService.generatePdf(user.tenantId, id, res);
   }
 }
