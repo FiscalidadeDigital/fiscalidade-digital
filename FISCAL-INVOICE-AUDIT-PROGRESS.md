@@ -69,3 +69,35 @@ As regras fiscais que não podem ser confirmadas com os dados existentes não se
 - A confirmação do estado no painel de publicação não ficou disponível nesta sessão; a pré-publicação não é declarada concluída sem essa confirmação.
 - A migração não foi aplicada a qualquer base de dados.
 - Produção exige nova autorização explícita para este conjunto de alterações e confirmação do plano de reversão.
+
+## Retoma da pré-publicação — 22-11-2026
+
+### Base de dados isolada e migrações
+
+- Foi criada uma instância PostgreSQL temporária e isolada, limitada a `127.0.0.1:55432`, com a base `fiscalidade_invoice_integration_test_20261121` e dados exclusivamente de teste. Não foram usados dados, credenciais ou serviços de produção.
+- As 42 migrações foram aplicadas do zero nessa base. A verificação posterior confirmou que o schema está actualizado.
+- A migração `20261121093000_invoice_adjustment_integrity` foi inspeccionada nessa base: as duas relações novas usam `ON DELETE RESTRICT`, `ON UPDATE CASCADE` e `NOT VALID`, tal como confirmado no catálogo PostgreSQL.
+- A migração é somente aditiva: acrescenta colunas, índices e relações; não altera nem apaga facturas existentes. As relações `NOT VALID` protegem as novas emissões sem bloquear uma instalação por referências históricas. A validação futura das referências históricas continua recomendada antes de remover essa salvaguarda.
+
+### Integração fiscal executada
+
+- A suite HTTP isolada de facturas, notas de crédito e notas de débito terminou com **4 de 4 verificações aprovadas** (76,945 s).
+- Foram validados emissão, IVA, subtotal e total; criação de notas de crédito e débito; ligação à factura e linha de origem; prevenção de repetição por identificador de operação; limites acumulados; isolamento por empresa; e numeração concorrente.
+- A factura de origem passou a ser confirmada pelo teste como apresentando as duas notas relacionadas.
+- O painel foi validado no mesmo cenário: uma factura paga de 114,00 Kz passou a 85,50 Kz após uma nota de crédito activa de 28,50 Kz.
+- O atalho local `test:integration:local` ainda tem uma referência antiga para o executável de testes dentro do worktree. A suite foi por isso executada directamente, com as mesmas protecções de isolamento, e passou. O atalho deve ser corrigido numa tarefa própria antes de o adoptar em automatizações.
+
+### Lint, estilo e builds
+
+- Lint completo do frontend: **0 erros e 15 avisos**, exactamente o mesmo resultado da referência `origin/main`; não foram introduzidos avisos novos pela versão fiscal.
+- Lint completo do backend: **6 014 erros e 289 avisos**. A referência `origin/main` já contém **5 891 erros e 274 avisos**; esta versão acrescenta **123 erros e 15 avisos**, sobretudo regras de estilo e tipagem em ficheiros de teste e de pagamentos já alterados pela funcionalidade fiscal. Não foi feita uma reescrita ampla de ficheiros antigos apenas para reduzir esse número.
+- A formatação do DTO alterado foi ajustada e a verificação de espaços em branco do conjunto de alterações terminou sem falhas.
+- Build optimizado do frontend: aprovado.
+- Compilação directa do backend: aprovada. O comando completo continua interrompido antes da compilação porque a geração local do cliente Prisma tenta obter um componente externo indisponível neste ambiente; é uma limitação do ambiente local, mas deve ser repetida no ambiente de integração antes da publicação.
+
+### Resultado e bloqueios
+
+- Nenhuma alteração foi publicada em produção e nenhuma base de dados remota foi alterada nesta retoma.
+- As validações funcionais, a migração isolada, os cálculos, os documentos relacionados, a prevenção de duplicados e o painel estão aprovados.
+- A versão **não é ainda declarada pronta para aprovação de produção**: a verificação global de lint do backend continua não conforme e o build completo do backend ainda depende de confirmação num ambiente com os componentes Prisma disponíveis.
+- Antes de solicitar produção, é necessário resolver ou aceitar formalmente as 123 novas ocorrências de lint do backend, executar o build completo num ambiente de integração e ensaiar a migração com cópia de segurança e plano de reversão da base de produção.

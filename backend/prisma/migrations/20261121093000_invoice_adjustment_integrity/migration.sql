@@ -35,6 +35,7 @@ BEGIN
       FOREIGN KEY ("rectifiesInvoiceId")
       REFERENCES "Invoice"("id")
       ON DELETE RESTRICT
+      ON UPDATE CASCADE
       NOT VALID;
   END IF;
 
@@ -48,6 +49,7 @@ BEGIN
       FOREIGN KEY ("sourceInvoiceItemId")
       REFERENCES "InvoiceItem"("id")
       ON DELETE RESTRICT
+      ON UPDATE CASCADE
       NOT VALID;
   END IF;
 END

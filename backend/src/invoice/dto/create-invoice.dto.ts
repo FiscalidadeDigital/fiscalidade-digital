@@ -35,7 +35,20 @@ export class CreateInvoiceItemDto {
   unit?: 'UN' | 'SERVICO' | 'HORA' | 'KG' | 'L' | 'M';
 
   @IsOptional()
-  @IsIn(['SE', 'SS', 'STP', 'SR', 'SIF', 'SHS', 'ST', 'SG', 'TB', 'AS', 'QT', 'RD'])
+  @IsIn([
+    'SE',
+    'SS',
+    'STP',
+    'SR',
+    'SIF',
+    'SHS',
+    'ST',
+    'SG',
+    'TB',
+    'AS',
+    'QT',
+    'RD',
+  ])
   electronicOperationType?: string;
 
   @Type(() => Number)

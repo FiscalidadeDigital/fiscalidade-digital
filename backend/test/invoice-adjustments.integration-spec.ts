@@ -7,6 +7,7 @@ import request from 'supertest';
 import { AuthModule } from '../src/auth/auth.module';
 import { AccountingSaftModule } from '../src/accounting-saft/accounting-saft.module';
 import { ClientModule } from '../src/client/client.module';
+import { DashboardModule } from '../src/dashboard/dashboard.module';
 import { InvoiceModule } from '../src/invoice/invoice.module';
 import { PrismaModule } from '../src/prisma/prisma.module';
 import { PrismaService } from '../src/prisma/prisma.service';
@@ -74,6 +75,7 @@ describe('Invoice adjustment HTTP lifecycle', () => {
         AuthModule,
         AccountingSaftModule,
         ClientModule,
+        DashboardModule,
         InvoiceModule,
         ProductModule,
       ],
@@ -339,6 +341,23 @@ describe('Invoice adjustment HTTP lifecycle', () => {
       .expect(201);
     expect(repeatedDebit.body.id).toBe(debit.body.id);
 
+    const sourceDetail = await request(app.getHttpServer())
+      .get(`/invoice/${source.id}`)
+      .set('Authorization', bearer(ownerAToken))
+      .expect(200);
+    expect(sourceDetail.body.rectificationNotes).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: credit.body.id,
+          fiscalDocumentType: 'NC',
+        }),
+        expect.objectContaining({
+          id: debit.body.id,
+          fiscalDocumentType: 'ND',
+        }),
+      ]),
+    );
+
     const creditList = await request(app.getHttpServer())
       .get('/invoice?fiscalDocumentType=NC')
       .set('Authorization', bearer(ownerAToken))
@@ -371,6 +390,43 @@ describe('Invoice adjustment HTTP lifecycle', () => {
         items: [{ sourceInvoiceItemId: sourceItemId, quantity: 1.1 }],
       })
       .expect(400);
+  });
+
+  it('reflects an active credit note against a paid source invoice on the dashboard', async () => {
+    const source = await createSourceInvoice('Origem paga para o painel');
+    const sourceItemId = source.items[0]?.id;
+
+    await request(app.getHttpServer())
+      .patch(`/invoice/${source.id}/pay`)
+      .set('Authorization', bearer(ownerAToken))
+      .expect(200);
+
+    const dashboardBeforeCredit = await request(app.getHttpServer())
+      .get('/dashboard')
+      .set('Authorization', bearer(ownerAToken))
+      .expect(200);
+    expect(
+      decimal(dashboardBeforeCredit.body.metrics.totalRevenue).equals('114.00'),
+    ).toBe(true);
+
+    await request(app.getHttpServer())
+      .post('/invoice/credit-note')
+      .set('Authorization', bearer(ownerAToken))
+      .send({
+        operationId: '10000000-0000-4000-8000-000000000005',
+        sourceInvoiceId: source.id,
+        reason: 'Crédito parcial para o painel',
+        items: [{ sourceInvoiceItemId: sourceItemId, quantity: 0.25 }],
+      })
+      .expect(201);
+
+    const dashboardAfterCredit = await request(app.getHttpServer())
+      .get('/dashboard')
+      .set('Authorization', bearer(ownerAToken))
+      .expect(200);
+    expect(
+      decimal(dashboardAfterCredit.body.metrics.totalRevenue).equals('85.50'),
+    ).toBe(true);
   });
 
   it('emits simplified-regime invoices and notes with exportable fiscal metadata', async () => {
