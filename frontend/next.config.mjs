@@ -32,10 +32,32 @@ const noIndexRoutes = [
   '/users/:path*',
 ];
 
-const apiProxyTarget = (
-  process.env.API_PROXY_URL ||
-  'https://fiscalidade-digital-api.onrender.com'
-).replace(/\/+$/, '');
+const productionApiProxyTarget =
+  'https://fiscalidade-digital-api.onrender.com';
+
+function getApiProxyTarget() {
+  const configuredTarget = process.env.API_PROXY_URL?.trim();
+
+  if (configuredTarget) {
+    try {
+      const url = new URL(configuredTarget);
+
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return url.toString().replace(/\/+$/, '');
+      }
+    } catch {
+      return null;
+    }
+
+    return null;
+  }
+
+  return process.env.VERCEL_ENV === 'production'
+    ? productionApiProxyTarget
+    : null;
+}
+
+const apiProxyTarget = getApiProxyTarget();
 
 // Os URLs de preview da Vercel são dinâmicos. Ao encaminhar os pedidos da
 // aplicação pelo mesmo domínio, não é necessário abrir o CORS do backend a
@@ -87,6 +109,15 @@ const nextConfig = {
   async rewrites() {
     if (!useVercelApiProxy) {
       return [];
+    }
+
+    if (!apiProxyTarget) {
+      return [
+        {
+          source: '/api/:path*',
+          destination: '/preview-api-unavailable',
+        },
+      ];
     }
 
     return [

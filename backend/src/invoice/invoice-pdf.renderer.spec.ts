@@ -66,6 +66,44 @@ async function createPdf(data: InvoicePdfData) {
   return completed;
 }
 
+async function createPdfWithTextPositions(data: InvoicePdfData) {
+  const doc = new PDFDocument({
+    size: 'A4',
+    margin: 38,
+    bufferPages: true,
+    compress: false,
+  });
+  const chunks: Buffer[] = [];
+  const textPositions: Array<{
+    text: string;
+    x?: number;
+    y?: number;
+  }> = [];
+  const capturedDocument = doc as unknown as {
+    text: (
+      text: string,
+      x?: number,
+      y?: number,
+      options?: PDFKit.Mixins.TextOptions,
+    ) => PDFKit.PDFDocument;
+  };
+  const originalText = capturedDocument.text;
+  capturedDocument.text = (text, x, y, options) => {
+    textPositions.push({ text: String(text), x, y });
+    return originalText.call(doc, text, x, y, options) as PDFKit.PDFDocument;
+  };
+  doc.on('data', (chunk: Buffer) => chunks.push(chunk));
+  const completed = new Promise<Buffer>((resolve, reject) => {
+    doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', reject);
+  });
+
+  renderInvoicePdf(doc, data);
+  doc.end();
+
+  return { pdf: await completed, textPositions };
+}
+
 async function createPdfWithPageText(data: InvoicePdfData) {
   const doc = new PDFDocument({
     size: 'A4',
@@ -199,6 +237,32 @@ describe('invoice PDF renderer', () => {
       title: 'NOTA DE CRÉDITO',
     });
     expect(resolveLineVatRate(creditNote, creditNote.items[0])).toBe(14);
+  });
+
+  it('places adjustment payment status below the rectified-document metadata', async () => {
+    const { pdf, textPositions } = await createPdfWithTextPositions(
+      fixture({
+        fiscalDocumentType: 'NC',
+        rectifiedInvoiceNumber: 'FT-2026-00001',
+      }),
+    );
+
+    expect(pageCount(pdf)).toBe(1);
+    expect(textPositions).toContainEqual({
+      text: 'ESTADO DE PAGAMENTO',
+      x: 38,
+      y: 148,
+    });
+    expect(textPositions).toContainEqual({
+      text: 'Pendente',
+      x: 38,
+      y: 160,
+    });
+    expect(textPositions).toContainEqual({
+      text: 'DOCUMENTO RECTIFICADO',
+      x: 225,
+      y: 119,
+    });
   });
 
   it.each([

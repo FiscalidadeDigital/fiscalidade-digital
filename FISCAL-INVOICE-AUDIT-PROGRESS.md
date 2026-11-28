@@ -131,3 +131,32 @@ As regras fiscais que não podem ser confirmadas com os dados existentes não se
 - A versão está tecnicamente validada para **revisão da branch**, com builds, schema, migrações isoladas e integração fiscal aprovados.
 - Não foi feito deploy nem alterada produção.
 - A aprovação de produção continua dependente de aceitar formalmente a dívida histórica do lint global ou de a resolver; esse ponto não foi ocultado nem convertido numa aprovação indevida.
+
+## Preparacao de encerramento - 28-11-2026
+
+### Correccoes actuais
+
+- A pre-publicacao passou a falhar de forma segura: sem uma ligacao propria e valida, os pedidos deixam de poder seguir para o servico oficial e recebem uma indisponibilidade controlada. Quando existe ligacao configurada para a pre-publicacao, e usada exclusivamente essa ligacao.
+- Foi corrigida a apresentacao dos PDFs de nota de credito e nota de debito: o estado de pagamento deixou de sobrepor a referencia do documento rectificado, o conteudo foi reposicionado e o cabecalho foi ajustado para nao cortar a designacao do documento.
+
+### Evidencia de validacao
+
+- A proteccao da pre-publicacao foi verificada em dois cenarios: sem ligacao propria e com ligacao exclusiva configurada; ambos aprovados.
+- A validacao de tipos e a verificacao dirigida do frontend foram aprovadas. O build optimizado completo do frontend terminou com sucesso em 28-11-2026.
+- Os testes do gerador de PDFs foram aprovados: **13 de 13**. Foram gerados e inspeccionados localmente PDFs ficticios de factura, nota de credito e nota de debito; os tres ficaram numa pagina A4, com valores, referencia do documento e totais legiveis.
+- A validacao de tipos, o lint dirigido e a compilacao completa do backend foram aprovados. Mantem-se validos os testes de integracao isolados ja registados para factura, nota de credito, nota de debito, IVA, documentos relacionados, limites acumulados, prevencao de duplicados, isolamento por empresa e actualizacao do painel.
+- As migracoes foram revistas como aditivas, sem `DROP`, `TRUNCATE` ou remocao de dados. A verificacao real de compatibilidade ja foi feita apenas na base PostgreSQL isolada descrita acima; essa instancia foi removida depois dos testes.
+
+### Bloqueios reais antes de producao
+
+- A pre-publicacao isolada ainda nao pode ser considerada configurada: nesta sessao nao foi possivel confirmar nem alterar as definicoes administrativas necessarias para ligar um backend e uma base de dados exclusivos de teste. A proteccao no codigo impede que uma pre-publicacao sem configuracao valida use automaticamente o servico oficial.
+- Nao foi possivel confirmar a copia de seguranca de producao, o procedimento de reversao executavel, as variaveis de producao, nem o estado actual da pre-publicacao no painel de publicacao. O procedimento documentado exige essas confirmacoes operacionais.
+- O lint global do backend continua com divida anterior a esta versao: **4 771 erros e 257 avisos**, contra **6 473 erros e 277 avisos** na referencia principal. As alteracoes actuais nao introduzem falhas dirigidas, mas a verificacao global continua nao aprovada.
+- Existe uma questao financeira que nao deve ser presumida: actualmente, uma nota de credito ligada a uma factura marcada como paga reduz o indicador de valor recebido, embora nao exista um registo autonomo de reembolso. O modelo actual tambem nao regista recebimentos e reembolsos de factura de forma individual. Sem uma regra contabilistica aprovada e um fluxo proprio para esses movimentos, nao e possivel certificar a separacao entre rectificacao documental, valor a receber, valor recebido e reembolso.
+- A verificacao visual confirmou a identificacao textual e fiscal do emitente. O gerador de PDF nao recebe um logotipo grafico por empresa; por isso a presenca de logotipo nao pode ser certificada sem uma origem aprovada para esse activo.
+
+### Estado
+
+- Nao houve alteracao de dados, migracoes ou publicacao em producao nesta retoma. A `main` permanece sem alteracao.
+- Os ficheiros temporarios de validacao visual foram removidos depois da inspeccao.
+- A versao pode seguir para revisao tecnica da branch, mas a publicacao em producao deve permanecer suspensa ate a resolucao ou aceitacao formal dos bloqueios acima.

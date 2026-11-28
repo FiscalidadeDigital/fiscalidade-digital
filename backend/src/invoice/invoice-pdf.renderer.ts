@@ -199,7 +199,11 @@ function addPageHeader(
     .text(`NIF ${invoice.tenant.nif}`, MARGIN, 44);
   doc
     .font('Helvetica-Bold')
-    .fontSize(10)
+    .fontSize(
+      !continued && (presentation.code === 'NC' || presentation.code === 'ND')
+        ? 8
+        : 10,
+    )
     .fillColor(BLUE)
     .text(
       continued
@@ -373,10 +377,12 @@ export function renderInvoicePdf(
   if (isAdjustment && invoice.rectifiedInvoiceNumber) {
     label(doc, 'Documento rectificado', 225, 119);
     value(doc, invoice.rectifiedInvoiceNumber, 225, 131, 150);
+    label(doc, 'Estado de pagamento', MARGIN, 148);
+    value(doc, formatPaymentStatus(invoice.status), MARGIN, 160, 180);
+  } else {
+    label(doc, 'Estado de pagamento', 225, 119);
+    value(doc, formatPaymentStatus(invoice.status), 225, 131, 105);
   }
-  const statusX = isAdjustment && invoice.rectifiedInvoiceNumber ? 400 : 225;
-  label(doc, 'Estado de pagamento', statusX, 119);
-  value(doc, formatPaymentStatus(invoice.status), statusX, 131, 105);
 
   label(doc, 'Número do documento', 355, 86);
   value(doc, invoice.invoiceNumber, 355, 98, 202);
@@ -385,7 +391,7 @@ export function renderInvoicePdf(
   label(doc, 'Vencimento', 458, 120);
   value(doc, date(invoice.dueDate), 458, 132, 99);
 
-  const cardY = 166;
+  const cardY = isAdjustment ? 190 : 166;
   doc
     .roundedRect(MARGIN, cardY, 252, 112, 2)
     .lineWidth(0.7)
@@ -428,7 +434,7 @@ export function renderInvoicePdf(
   if (invoice.client.phone)
     value(doc, `Contacto: ${invoice.client.phone}`, 317, clientY, 228);
 
-  let y = 304;
+  let y = cardY + 138;
   label(doc, 'Artigos e serviços', MARGIN, y);
   y = tableHeader(doc, y + 16);
   doc
